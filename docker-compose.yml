@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: kyofuse-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: kyofuse
+      POSTGRES_USER: kyofuse
+      POSTGRES_PASSWORD: kyofuse
+    ports:
+      - "5432:5432"
+    volumes:
+      - kyofuse_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  kyofuse_postgres_data:
