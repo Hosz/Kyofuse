@@ -322,7 +322,7 @@ Use environment variables or ignored local configuration files for sensitive val
 
 ## License
 
-This project is licensed under the Apache License 2.0.
+This project is licensed under the MIT License.
 
 ## Status
 
@@ -656,7 +656,7 @@ Use variáveis de ambiente ou arquivos locais ignorados pelo Git para valores se
 
 ## Licença
 
-Este projeto está licenciado sob a Apache License 2.0.
+Este projeto está licenciado sob a MIT License.
 
 ## Status
 
