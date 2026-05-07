@@ -2,3 +2,24 @@ Project kyofuse {
   database_type: "PostgreSQL"
   note: "Database model for Kyofuse, a CS2 social platform."
 }
+
+Table users {
+  id uuid [pk]
+
+  first_name varchar(80) [not null]
+  last_name varchar(120) [not null]
+
+  email varchar(160) [not null, unique]
+  username varchar(40) [not null, unique]
+
+  password_hash varchar(255) [not null]
+
+  role varchar(30) [not null]
+  status varchar(30) [not null]
+
+  deactivated_at timestamptz
+  deletion_scheduled_at timestamptz
+
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
