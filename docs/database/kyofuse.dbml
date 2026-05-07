@@ -1,0 +1,4 @@
+Project kyofuse {
+  database_type: "PostgreSQL"
+  note: "Database model for Kyofuse, a CS2 social platform."
+}
