@@ -23,3 +23,61 @@ Table users {
   created_at timestamptz [not null]
   updated_at timestamptz [not null]
 }
+
+Table gamer_profiles {
+  id uuid [pk]
+
+  user_id uuid [not null, unique, ref: > users.id]
+
+  nickname varchar(40) [not null]
+  bio varchar(500)
+  avatar_url varchar(500)
+
+  country varchar(80)
+  state varchar(80)
+  city varchar(80)
+
+  main_role varchar(40)
+  secondary_role varchar(40)
+
+  premier_rating int
+  faceit_level int
+  gc_rank int
+
+  playstyle varchar(40)
+
+  looking_for_team boolean [not null, default: false]
+  looking_for_duo boolean [not null, default: false]
+
+  setup_status varchar(30) [not null]
+
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  indexes {
+    user_id [unique]
+    nickname
+    main_role
+    secondary_role
+    premier_rating
+    faceit_level
+    gc_rank
+    looking_for_team
+    looking_for_duo
+    (country, state)
+  }
+}
+
+Table gamer_profile_favorite_maps {
+  id uuid [pk]
+
+  profile_id uuid [not null, ref: > gamer_profiles.id]
+  map_name varchar(60) [not null]
+
+  created_at timestamptz [not null]
+
+  indexes {
+    (profile_id, map_name) [unique]
+    map_name
+  }
+}
