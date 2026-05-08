@@ -235,3 +235,28 @@ Table team_required_roles {
     role_name
   }
 }
+
+Table team_members {
+  id uuid [pk]
+
+  team_id uuid [not null, ref: > teams.id]
+  user_id uuid [not null, ref: > users.id]
+
+  role_in_team varchar(40)
+  member_type varchar(40) [not null]
+  status varchar(40) [not null]
+
+  joined_at timestamptz [not null]
+  left_at timestamptz
+
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  indexes {
+    team_id
+    user_id
+    role_in_team
+    member_type
+    status
+  }
+}
