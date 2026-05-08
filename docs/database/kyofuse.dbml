@@ -92,6 +92,10 @@ Table posts {
   visibility varchar(40) [not null]
   status varchar(40) [not null]
 
+  reaction_count int [not null, default: 0]
+  like_count int [not null, default: 0]
+  comment_count int [not null, default: 0]
+
   created_at timestamptz [not null]
   updated_at timestamptz [not null]
 
@@ -127,6 +131,9 @@ Table comments {
   content varchar(2000) [not null]
   status varchar(40) [not null]
 
+  reaction_count int [not null, default: 0]
+  like_count int [not null, default: 0]
+
   created_at timestamptz [not null]
   updated_at timestamptz [not null]
 
@@ -135,5 +142,43 @@ Table comments {
     author_id
     status
     created_at
+  }
+}
+
+Table post_reactions {
+  id uuid [pk]
+
+  post_id uuid [not null, ref: > posts.id]
+  user_id uuid [not null, ref: > users.id]
+
+  reaction_type varchar(40) [not null]
+
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  indexes {
+    (post_id, user_id) [unique]
+    post_id
+    user_id
+    reaction_type
+  }
+}
+
+Table comment_reactions {
+  id uuid [pk]
+
+  comment_id uuid [not null, ref: > comments.id]
+  user_id uuid [not null, ref: > users.id]
+
+  reaction_type varchar(40) [not null]
+
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  indexes {
+    (comment_id, user_id) [unique]
+    comment_id
+    user_id
+    reaction_type
   }
 }
