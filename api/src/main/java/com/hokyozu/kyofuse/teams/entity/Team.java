@@ -24,7 +24,7 @@ public class Team {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "owner_id", nullable = false)
-    private User ownerId;
+    private User owner;
 
     @Column(name = "name", length = 80, nullable = false)
     private String name;

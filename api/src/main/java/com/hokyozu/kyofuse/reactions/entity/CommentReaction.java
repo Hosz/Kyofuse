@@ -25,14 +25,14 @@ public class CommentReaction {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "comment_id", nullable = false)
-    private Comment commentId;
+    private Comment comment;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
-    private User userId;
+    private User user;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "rection_type", length = 40, nullable = false)
+    @Column(name = "reaction_type", length = 40, nullable = false)
     private ReactionType reactionType;
 
     @Column(name = "created_at", nullable = false)

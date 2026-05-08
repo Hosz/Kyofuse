@@ -22,7 +22,7 @@ public class PostMap {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "post_id", nullable = false)
-    private Post postId;
+    private Post post;
 
     @Column(name = "map_name", length = 60, nullable = false)
     private String mapName;

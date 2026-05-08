@@ -27,15 +27,15 @@ public class TeamInvite {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "team_id", nullable = false)
-    private Team teamId;
+    private Team team;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "sender_id", nullable = false)
-    private User senderId;
+    private User sender;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "receiver_id", nullable = false)
-    private User receiverId;
+    private User receiver;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 40, nullable = false)
@@ -59,8 +59,8 @@ public class TeamInvite {
     @Column(name = "cancellation_reason", length = 500)
     private String cancellationReason;
 
-    @Column(name = "create_at", nullable = false)
-    private Instant createAt;
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
 
     @Column(name = "responded_at")
     private Instant respondedAt;

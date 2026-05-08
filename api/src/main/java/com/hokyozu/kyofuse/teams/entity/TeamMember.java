@@ -1,5 +1,6 @@
 package com.hokyozu.kyofuse.teams.entity;
 
+import com.hokyozu.kyofuse.profiles.enums.PlayerRole;
 import com.hokyozu.kyofuse.teams.enums.TeamMemberStatus;
 import com.hokyozu.kyofuse.teams.enums.TeamMemberType;
 import com.hokyozu.kyofuse.users.entity.User;
@@ -25,14 +26,14 @@ public class TeamMember {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "team_id", nullable = false)
-    private Team teamId;
+    private Team team;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
-    private User userId;
+    private User user;
 
-    @Column(name = "role_int_team", length = 40)
-    private String roleIntTeam;
+    @Column(name = "role_in_team", length = 40)
+    private PlayerRole roleInTeam;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "member_type", length = 40, nullable = false)

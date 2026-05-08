@@ -26,7 +26,7 @@ public class GamerProfile {
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
-    private User userId;
+    private User user;
 
     @Column(name = "nickname", length = 40, nullable = false)
     private String nickname;
@@ -82,6 +82,6 @@ public class GamerProfile {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @Column(name = "update_at", nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 }

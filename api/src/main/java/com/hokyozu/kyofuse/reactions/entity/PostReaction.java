@@ -25,11 +25,11 @@ public class PostReaction {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "post_id", nullable = false)
-    private Post postId;
+    private Post post;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name ="user_id", nullable = false)
-    private User userid;
+    private User user;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "reaction_type", length = 40, nullable = false)

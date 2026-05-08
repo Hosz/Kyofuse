@@ -29,11 +29,11 @@ public class Notification {
 
     @ManyToOne(fetch = FetchType.LAZY,  optional = false)
     @JoinColumn(name = "user_id", nullable = false)
-    private User userId;
+    private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "actor_id")
-    private User actorId;
+    private User actor;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "type", length = 60, nullable = false)

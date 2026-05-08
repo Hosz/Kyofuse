@@ -22,7 +22,7 @@ public class TeamRequiredRole {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "team_id", nullable = false)
-    private Team teamId;
+    private Team team;
 
     @Column(name = "role_name", length = 40, nullable = false)
     private String roleName;

@@ -23,7 +23,7 @@ public class GamerProfileFavoriteMap {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "profile_id", nullable = false)
-    private User profileId;
+    private GamerProfile profile;
 
     @Column(name = "map_name", length = 60, nullable = false)
     private String mapName;
