@@ -33,6 +33,8 @@ application-local.yml
 application-local.yaml
 application-*.local.yml
 application-*.local.yaml
+application-prod.yml
+application-prod.yaml
 
 # Logs
 logs/
@@ -43,6 +45,7 @@ yarn-error.log*
 pnpm-debug.log*
 hs_err_pid*
 replay_pid*
+spring.log
 
 # Java, Maven and Spring Boot
 target/
@@ -53,13 +56,11 @@ out/
 *.war
 *.nar
 *.ear
-.mvn/wrapper/maven-wrapper.jar
 .mvn/timing.properties
 .mvn/wrapper/MavenWrapperDownloader.java
 HELP.md
-spring.log
 
-# Keep source folders named target or build trackable.
+# Keep source folders named target or build trackable
 !**/src/main/**/target/
 !**/src/test/**/target/
 !**/src/main/**/build/
@@ -119,6 +120,9 @@ docker-compose.*.override.yml
 *.sqlite3
 *.dump
 *.bak
+*.backup
+dump.sql
+*.sql.gz
 
 # Archives and generated bundles
 *.tgz

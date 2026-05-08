@@ -292,3 +292,34 @@ Table team_invites {
     canceled_by
   }
 }
+
+Table notifications {
+  id uuid [pk]
+
+  user_id uuid [not null, ref: > users.id]
+  actor_id uuid [ref: > users.id]
+
+  type varchar(60) [not null]
+  title varchar(160) [not null]
+  message varchar(500) [not null]
+  status varchar(40) [not null]
+
+  target_type varchar(60)
+  target_id uuid
+
+  metadata_json jsonb
+
+  created_at timestamptz [not null]
+  read_at timestamptz
+
+  indexes {
+    user_id
+    actor_id
+    type
+    status
+    target_type
+    target_id
+    created_at
+    read_at
+  }
+}
