@@ -117,3 +117,23 @@ Table post_maps {
     map_name
   }
 }
+
+Table comments {
+  id uuid [pk]
+
+  post_id uuid [not null, ref: > posts.id]
+  author_id uuid [not null, ref: > users.id]
+
+  content varchar(2000) [not null]
+  status varchar(40) [not null]
+
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  indexes {
+    post_id
+    author_id
+    status
+    created_at
+  }
+}
