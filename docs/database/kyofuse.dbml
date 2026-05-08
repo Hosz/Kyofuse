@@ -2,3 +2,324 @@ Project kyofuse {
   database_type: "PostgreSQL"
   note: "Database model for Kyofuse, a CS2 social platform."
 }
+
+Table users {
+  id uuid [pk]
+
+  first_name varchar(80) [not null]
+  last_name varchar(120) [not null]
+
+  email varchar(160) [not null, unique]
+  username varchar(40) [not null, unique]
+
+  password_hash varchar(255) [not null]
+
+  role varchar(30) [not null]
+  status varchar(30) [not null]
+
+  deactivated_at timestamptz
+  deletion_scheduled_at timestamptz
+
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table gamer_profiles {
+  id uuid [pk]
+
+  user_id uuid [not null, unique, ref: > users.id]
+
+  nickname varchar(40) [not null]
+  bio varchar(500)
+  avatar_url varchar(500)
+
+  country varchar(80)
+  state varchar(80)
+  city varchar(80)
+
+  main_role varchar(40)
+  secondary_role varchar(40)
+
+  premier_rating int
+  faceit_level int
+  gc_rank int
+
+  playstyle varchar(40)
+
+  looking_for_team boolean [not null, default: false]
+  looking_for_duo boolean [not null, default: false]
+
+  setup_status varchar(30) [not null]
+
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  indexes {
+    user_id [unique]
+    nickname
+    main_role
+    secondary_role
+    premier_rating
+    faceit_level
+    gc_rank
+    looking_for_team
+    looking_for_duo
+    (country, state)
+  }
+}
+
+Table gamer_profile_favorite_maps {
+  id uuid [pk]
+
+  profile_id uuid [not null, ref: > gamer_profiles.id]
+  map_name varchar(60) [not null]
+
+  created_at timestamptz [not null]
+
+  indexes {
+    (profile_id, map_name) [unique]
+    map_name
+  }
+}
+
+Table posts {
+  id uuid [pk]
+
+  author_id uuid [not null, ref: > users.id]
+
+  content varchar(2000) [not null]
+  post_type varchar(40) [not null]
+  visibility varchar(40) [not null]
+  status varchar(40) [not null]
+
+  reaction_count int [not null, default: 0]
+  like_count int [not null, default: 0]
+  comment_count int [not null, default: 0]
+
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  indexes {
+    author_id
+    post_type
+    visibility
+    status
+    created_at
+  }
+}
+
+Table post_maps {
+  id uuid [pk]
+
+  post_id uuid [not null, ref: > posts.id]
+  map_name varchar(60) [not null]
+
+  created_at timestamptz [not null]
+
+  indexes {
+    (post_id, map_name) [unique]
+    map_name
+  }
+}
+
+Table comments {
+  id uuid [pk]
+
+  post_id uuid [not null, ref: > posts.id]
+  author_id uuid [not null, ref: > users.id]
+
+  content varchar(2000) [not null]
+  status varchar(40) [not null]
+
+  reaction_count int [not null, default: 0]
+  like_count int [not null, default: 0]
+
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  indexes {
+    post_id
+    author_id
+    status
+    created_at
+  }
+}
+
+Table post_reactions {
+  id uuid [pk]
+
+  post_id uuid [not null, ref: > posts.id]
+  user_id uuid [not null, ref: > users.id]
+
+  reaction_type varchar(40) [not null]
+
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  indexes {
+    (post_id, user_id) [unique]
+    post_id
+    user_id
+    reaction_type
+  }
+}
+
+Table comment_reactions {
+  id uuid [pk]
+
+  comment_id uuid [not null, ref: > comments.id]
+  user_id uuid [not null, ref: > users.id]
+
+  reaction_type varchar(40) [not null]
+
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  indexes {
+    (comment_id, user_id) [unique]
+    comment_id
+    user_id
+    reaction_type
+  }
+}
+
+Table teams {
+  id uuid [pk]
+
+  owner_id uuid [not null, ref: > users.id]
+
+  name varchar(80) [not null]
+  slug varchar(100) [not null, unique]
+  description varchar(500)
+
+  region varchar(80)
+
+  min_premier_rating int
+  max_premier_rating int
+
+  min_faceit_level int
+  max_faceit_level int
+
+  min_gc_rank int
+  max_gc_rank int
+
+  status varchar(40) [not null]
+
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  indexes {
+    owner_id
+    slug [unique]
+    status
+    region
+    min_premier_rating
+    max_premier_rating
+    min_faceit_level
+    max_faceit_level
+    min_gc_rank
+    max_gc_rank
+  }
+}
+
+Table team_required_roles {
+  id uuid [pk]
+
+  team_id uuid [not null, ref: > teams.id]
+  role_name varchar(40) [not null]
+
+  created_at timestamptz [not null]
+
+  indexes {
+    (team_id, role_name) [unique]
+    role_name
+  }
+}
+
+Table team_members {
+  id uuid [pk]
+
+  team_id uuid [not null, ref: > teams.id]
+  user_id uuid [not null, ref: > users.id]
+
+  role_in_team varchar(40)
+  member_type varchar(40) [not null]
+  status varchar(40) [not null]
+
+  joined_at timestamptz [not null]
+  left_at timestamptz
+  assignment_due_at timestamptz
+
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  indexes {
+    team_id
+    user_id
+    role_in_team
+    member_type
+    status
+    assignment_due_at
+  }
+}
+
+Table team_invites {
+  id uuid [pk]
+
+  team_id uuid [not null, ref: > teams.id]
+  sender_id uuid [not null, ref: > users.id]
+  receiver_id uuid [not null, ref: > users.id]
+
+  status varchar(40) [not null]
+  message varchar(500)
+
+  proposed_member_type varchar(40)
+  proposed_role_in_team varchar(40)
+
+  canceled_by uuid [ref: > users.id]
+  cancellation_reason varchar(500)
+
+  created_at timestamptz [not null]
+  responded_at timestamptz
+  canceled_at timestamptz
+
+  indexes {
+    team_id
+    sender_id
+    receiver_id
+    status
+    created_at
+    canceled_by
+  }
+}
+
+Table notifications {
+  id uuid [pk]
+
+  user_id uuid [not null, ref: > users.id]
+  actor_id uuid [ref: > users.id]
+
+  type varchar(60) [not null]
+  title varchar(160) [not null]
+  message varchar(500) [not null]
+  status varchar(40) [not null]
+
+  target_type varchar(60)
+  target_id uuid
+
+  metadata_json jsonb
+
+  created_at timestamptz [not null]
+  read_at timestamptz
+
+  indexes {
+    user_id
+    actor_id
+    type
+    status
+    target_type
+    target_id
+    created_at
+    read_at
+  }
+}

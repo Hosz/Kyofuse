@@ -1,0 +1,132 @@
+# Operating system files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Editor and IDE files
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/mcp.json
+.history/
+*.swp
+*.swo
+*~
+
+# Environment and local configuration
+.env
+.env.*
+!.env.example
+!.env.sample
+application-local.yml
+application-local.yaml
+application-*.local.yml
+application-*.local.yaml
+application-prod.yml
+application-prod.yaml
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+hs_err_pid*
+replay_pid*
+spring.log
+
+# Java, Maven and Spring Boot
+target/
+build/
+out/
+*.class
+*.jar
+*.war
+*.nar
+*.ear
+.mvn/timing.properties
+.mvn/wrapper/MavenWrapperDownloader.java
+HELP.md
+
+# Keep source folders named target or build trackable
+!**/src/main/**/target/
+!**/src/test/**/target/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# STS and Eclipse
+.apt_generated/
+.apt_generated_tests/
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+
+# NetBeans
+nbproject/private/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# Node, Angular and frontend tooling
+node_modules/
+.angular/cache/
+.cache/
+.parcel-cache/
+.eslintcache
+.stylelintcache
+coverage/
+libpeerconnection.log
+testem.log
+typings/
+tmp/
+out-tsc/
+bazel-out/
+__screenshots__/
+
+# Package manager caches
+.npm/
+.pnpm-store/
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# Docker and runtime data
+.docker/
+docker-compose.override.yml
+docker-compose.*.override.yml
+*.pid
+*.seed
+
+# Databases, dumps and generated data
+*.db
+*.sqlite
+*.sqlite3
+*.dump
+*.bak
+*.backup
+dump.sql
+*.sql.gz
+
+# Archives and generated bundles
+*.tgz
+*.zip
+*.tar
+*.tar.gz
+*.rar
