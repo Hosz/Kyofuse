@@ -248,6 +248,7 @@ Table team_members {
 
   joined_at timestamptz [not null]
   left_at timestamptz
+  assignment_due_at timestamptz
 
   created_at timestamptz [not null]
   updated_at timestamptz [not null]
@@ -258,5 +259,36 @@ Table team_members {
     role_in_team
     member_type
     status
+    assignment_due_at
+  }
+}
+
+Table team_invites {
+  id uuid [pk]
+
+  team_id uuid [not null, ref: > teams.id]
+  sender_id uuid [not null, ref: > users.id]
+  receiver_id uuid [not null, ref: > users.id]
+
+  status varchar(40) [not null]
+  message varchar(500)
+
+  proposed_member_type varchar(40)
+  proposed_role_in_team varchar(40)
+
+  canceled_by uuid [ref: > users.id]
+  cancellation_reason varchar(500)
+
+  created_at timestamptz [not null]
+  responded_at timestamptz
+  canceled_at timestamptz
+
+  indexes {
+    team_id
+    sender_id
+    receiver_id
+    status
+    created_at
+    canceled_by
   }
 }
