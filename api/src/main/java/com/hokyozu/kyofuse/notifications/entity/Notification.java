@@ -9,6 +9,7 @@ import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
@@ -23,7 +24,7 @@ import java.util.UUID;
 public class Notification {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY,  optional = false)
@@ -35,21 +36,21 @@ public class Notification {
     private User actorId;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 60, nullable = false)
+    @Column(name = "type", length = 60, nullable = false)
     private NotificationType type;
 
-    @Column(length = 160, nullable = false)
+    @Column(name = "title", length = 160, nullable = false)
     private String title;
 
-    @Column(length = 500, nullable = false)
+    @Column(name = "message", length = 500, nullable = false)
     private String message;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 40, nullable = false)
+    @Column(name = "status", length = 40, nullable = false)
     private NotificationStatus status;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 60)
+    @Column(name = "target_type", length = 60)
     private NotificationTargetType targetType;
 
     @Column(name = "target_id")
@@ -59,8 +60,9 @@ public class Notification {
     @Column(name = "metadata_json", columnDefinition = "jsonb")
     private Map<String, Object> metadataJson;
 
-    @Column(nullable = false)
-    private OffsetDateTime createdAt;
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
 
-    private OffsetDateTime readAt;
+    @Column(name = "read_at")
+    private Instant readAt;
 }

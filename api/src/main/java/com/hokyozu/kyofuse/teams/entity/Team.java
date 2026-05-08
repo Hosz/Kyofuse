@@ -5,6 +5,7 @@ import com.hokyozu.kyofuse.users.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -18,44 +19,50 @@ import java.util.UUID;
 public class Team {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "owner_id", nullable = false)
     private User ownerId;
 
-    @Column(length = 80, nullable = false)
+    @Column(name = "name", length = 80, nullable = false)
     private String name;
 
-    @Column(length = 100, nullable = false)
+    @Column(name = "slug", length = 100, nullable = false)
     private String slug;
 
-    @Column(length = 500)
+    @Column(name = "description", length = 500)
     private String description;
 
-    @Column(length = 80)
+    @Column(name = "region", length = 80)
     private String region;
 
+    @Column(name = "min_premier_rating")
     private Integer minPremierRating;
 
+    @Column(name = "max_premier_rating")
     private Integer maxPremierRating;
 
+    @Column(name = "min_faceit_level")
     private Integer minFaceitLevel;
 
+    @Column(name = "max_faceit_level")
     private Integer maxFaceitLevel;
 
+    @Column(name = "min_gc_rank")
     private Integer minGcRank;
 
+    @Column(name = "max_gc_rank")
     private Integer maxGcRank;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 40, nullable = false)
+    @Column(name = "status", length = 40, nullable = false)
     private TeamStatus status;
 
-    @Column(nullable = false)
-    private OffsetDateTime createdAt;
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
 
-    @Column(nullable = false)
-    private OffsetDateTime updatedAt;
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
 }

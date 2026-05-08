@@ -5,6 +5,7 @@ import com.hokyozu.kyofuse.users.enums.UserStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -18,40 +19,45 @@ import java.util.UUID;
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(length = 80, nullable = false)
+    @Column(name = "first_name", length = 80, nullable = false)
     private String firstName;
 
-    @Column(length = 120, nullable = false)
+    @Column(name = "last_name", length = 120, nullable = false)
     private String lastName;
 
-    @Column(length = 160, nullable = false)
+    @Column(name = "email", length = 160, nullable = false)
     private String email;
 
-    @Column(nullable = false)
+    @Column(name = "username", length = 40, nullable = false)
+    private String username;
+
+    @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
-    @Column(length = 30, nullable = false)
+    @Column(name = "role", length = 30, nullable = false)
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private UserRole role = UserRole.USER;
 
-    @Column(length =30, nullable = false)
+    @Column(name = "status", length =30, nullable = false)
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private UserStatus status = UserStatus.ACTIVE;
 
     @Builder.Default
-    private OffsetDateTime deactivatedAt = null;
+    @Column(name = "deactivated_at")
+    private Instant deactivatedAt = null;
 
     @Builder.Default
-    private OffsetDateTime deletionScheduledAt = null;
+    @Column(name = "deletion_scheduled_at")
+    private Instant deletionScheduledAt = null;
 
-    @Column(nullable = false)
-    private OffsetDateTime createdAt;
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
 
-    @Column(nullable = false)
-    private OffsetDateTime updatedAt;
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
 }

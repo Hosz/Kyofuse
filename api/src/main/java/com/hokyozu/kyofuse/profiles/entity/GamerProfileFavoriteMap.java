@@ -4,6 +4,7 @@ import com.hokyozu.kyofuse.users.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -17,16 +18,16 @@ import java.util.UUID;
 public class GamerProfileFavoriteMap {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "profile_id", nullable = false)
     private User profileId;
 
-    @Column(length = 60, nullable = false)
+    @Column(name = "map_name", length = 60, nullable = false)
     private String mapName;
 
-    @Column(nullable = false)
-    private OffsetDateTime createdAt;
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
 }

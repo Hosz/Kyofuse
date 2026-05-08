@@ -6,6 +6,7 @@ import com.hokyozu.kyofuse.users.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -19,7 +20,7 @@ import java.util.UUID;
 public class Comment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -30,24 +31,24 @@ public class Comment {
     @JoinColumn(name = "author_id", nullable = false)
     private User authorId;
 
-    @Column(length = 2000, nullable = false)
+    @Column(name = "content", length = 2000, nullable = false)
     private String content;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 40, nullable = false)
+    @Column(name = "status", length = 40, nullable = false)
     private CommentStatus status;
 
-    @Column(nullable = false)
+    @Column(name = "reaction_count", nullable = false)
     @Builder.Default
     private Integer reactionCount = 0;
 
-    @Column(nullable = false)
+    @Column(name = "like_count", nullable = false)
     @Builder.Default
     private Integer likeCount = 0;
 
-    @Column(nullable = false)
-    private OffsetDateTime createdAt;
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
 
-    @Column(nullable = false)
-    private OffsetDateTime updatedAt;
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
 }

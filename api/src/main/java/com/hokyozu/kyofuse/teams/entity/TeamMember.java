@@ -6,6 +6,7 @@ import com.hokyozu.kyofuse.users.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -19,7 +20,7 @@ import java.util.UUID;
 public class TeamMember {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -30,27 +31,29 @@ public class TeamMember {
     @JoinColumn(name = "user_id", nullable = false)
     private User userId;
 
-    @Column(length = 40)
+    @Column(name = "role_int_team", length = 40)
     private String roleIntTeam;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 40, nullable = false)
+    @Column(name = "member_type", length = 40, nullable = false)
     private TeamMemberType memberType;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 40, nullable = false)
+    @Column(name = "status", length = 40, nullable = false)
     private TeamMemberStatus status;
 
-    @Column(nullable = false)
-    private OffsetDateTime joinedAt;
+    @Column(name = "joined_at", nullable = false)
+    private Instant joinedAt;
 
-    private OffsetDateTime leftAt;
+    @Column(name = "left_at")
+    private Instant leftAt;
 
-    private OffsetDateTime assignmentDueAt;
+    @Column(name = "assignment_due_at")
+    private Instant assignmentDueAt;
 
-    @Column(nullable = false)
-    private OffsetDateTime createdAt;
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
 
-    @Column(nullable = false)
-    private OffsetDateTime updatedAt;
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
 }

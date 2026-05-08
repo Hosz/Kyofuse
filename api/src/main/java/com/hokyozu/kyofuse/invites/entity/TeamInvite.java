@@ -8,6 +8,7 @@ import com.hokyozu.kyofuse.users.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -21,7 +22,7 @@ import java.util.UUID;
 public class TeamInvite {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -37,31 +38,33 @@ public class TeamInvite {
     private User receiverId;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 40, nullable = false)
+    @Column(name = "status", length = 40, nullable = false)
     private TeamInviteStatus status;
 
-    @Column(length = 500)
+    @Column(name = "message", length = 500)
     private String message;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 40)
+    @Column(name = "proposed_member_type", length = 40)
     private TeamMemberType proposedMemberType;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 40)
+    @Column(name = "proposed_role_in_team", length = 40)
     private PlayerRole proposedRoleInTeam;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "canceled_by")
     private User canceledBy;
 
-    @Column(length = 500)
+    @Column(name = "cancellation_reason", length = 500)
     private String cancellationReason;
 
-    @Column(nullable = false)
-    private OffsetDateTime createAt;
+    @Column(name = "create_at", nullable = false)
+    private Instant createAt;
 
-    private OffsetDateTime respondedAt;
+    @Column(name = "responded_at")
+    private Instant respondedAt;
 
-    private OffsetDateTime canceledAt;
+    @Column(name = "canceled_at")
+    private Instant canceledAt;
 }

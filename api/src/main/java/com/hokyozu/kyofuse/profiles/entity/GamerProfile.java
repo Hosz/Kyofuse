@@ -7,6 +7,7 @@ import com.hokyozu.kyofuse.users.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -20,64 +21,67 @@ import java.util.UUID;
 public class GamerProfile {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User userId;
 
-    @Column(length = 40, nullable = false)
+    @Column(name = "nickname", length = 40, nullable = false)
     private String nickname;
 
-    @Column(length = 500)
+    @Column(name = "bio", length = 500)
     private String bio;
 
-    @Column(length = 500)
+    @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
 
-    @Column(length = 80)
+    @Column(name = "country", length = 80)
     private String country;
 
-    @Column(length = 80)
+    @Column(name = "state", length = 80)
     private String state;
 
-    @Column(length = 80)
+    @Column(name = "city", length = 80)
     private String city;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 40)
+    @Column(name = "main_role", length = 40)
     private PlayerRole mainRole;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 40)
+    @Column(name = "secondary_role", length = 40)
     private PlayerRole secondaryRole;
 
+    @Column(name = "premier_rating")
     private Integer premierRating;
 
+    @Column(name = "faceit_level")
     private Integer faceitLevel;
 
+    @Column(name = "gc_rank")
     private Integer gcRank;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 40)
+    @Column(name = "playstyle", length = 40)
     private Playstyle playstyle;
 
-    @Column(nullable = false)
+    @Column(name = "looking_for_team", nullable = false)
     @Builder.Default
     private Boolean lookingForTeam = false;
 
-    @Column(nullable = false)
+    @Column(name = "looking_for_duo", nullable = false)
     @Builder.Default
     private Boolean lookingForDuo = false;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 30, nullable = false)
+    @Column(name = "setup_status", length = 30, nullable = false)
     private GamerProfileSetupStatus setupStatus;
 
-    @Column(nullable = false)
-    private OffsetDateTime createdAt;
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
 
-    @Column(nullable = false)
-    private OffsetDateTime updatedAt;
+    @Column(name = "update_at", nullable = false)
+    private Instant updatedAt;
 }
