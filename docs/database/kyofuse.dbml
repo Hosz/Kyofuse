@@ -81,3 +81,39 @@ Table gamer_profile_favorite_maps {
     map_name
   }
 }
+
+Table posts {
+  id uuid [pk]
+
+  author_id uuid [not null, ref: > users.id]
+
+  content varchar(2000) [not null]
+  post_type varchar(40) [not null]
+  visibility varchar(40) [not null]
+  status varchar(40) [not null]
+
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  indexes {
+    author_id
+    post_type
+    visibility
+    status
+    created_at
+  }
+}
+
+Table post_maps {
+  id uuid [pk]
+
+  post_id uuid [not null, ref: > posts.id]
+  map_name varchar(60) [not null]
+
+  created_at timestamptz [not null]
+
+  indexes {
+    (post_id, map_name) [unique]
+    map_name
+  }
+}
