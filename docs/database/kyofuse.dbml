@@ -182,3 +182,56 @@ Table comment_reactions {
     reaction_type
   }
 }
+
+Table teams {
+  id uuid [pk]
+
+  owner_id uuid [not null, ref: > users.id]
+
+  name varchar(80) [not null]
+  slug varchar(100) [not null, unique]
+  description varchar(500)
+
+  region varchar(80)
+
+  min_premier_rating int
+  max_premier_rating int
+
+  min_faceit_level int
+  max_faceit_level int
+
+  min_gc_rank int
+  max_gc_rank int
+
+  status varchar(40) [not null]
+
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  indexes {
+    owner_id
+    slug [unique]
+    status
+    region
+    min_premier_rating
+    max_premier_rating
+    min_faceit_level
+    max_faceit_level
+    min_gc_rank
+    max_gc_rank
+  }
+}
+
+Table team_required_roles {
+  id uuid [pk]
+
+  team_id uuid [not null, ref: > teams.id]
+  role_name varchar(40) [not null]
+
+  created_at timestamptz [not null]
+
+  indexes {
+    (team_id, role_name) [unique]
+    role_name
+  }
+}
