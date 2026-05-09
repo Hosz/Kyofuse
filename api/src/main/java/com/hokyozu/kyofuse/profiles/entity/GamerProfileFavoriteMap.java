@@ -1,5 +1,6 @@
 package com.hokyozu.kyofuse.profiles.entity;
 
+import com.hokyozu.kyofuse.profiles.enums.Cs2Map;
 import com.hokyozu.kyofuse.users.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -25,8 +26,9 @@ public class GamerProfileFavoriteMap {
     @JoinColumn(name = "profile_id", nullable = false)
     private GamerProfile profile;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "map_name", length = 60, nullable = false)
-    private String mapName;
+    private Cs2Map mapName;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
