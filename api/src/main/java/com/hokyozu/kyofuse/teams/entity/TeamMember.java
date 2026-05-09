@@ -32,6 +32,7 @@ public class TeamMember {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "role_in_team", length = 40)
     private PlayerRole roleInTeam;
 
