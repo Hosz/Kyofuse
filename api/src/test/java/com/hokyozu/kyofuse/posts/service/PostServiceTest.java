@@ -9,6 +9,7 @@ import com.hokyozu.kyofuse.posts.enums.PostType;
 import com.hokyozu.kyofuse.posts.enums.PostVisibility;
 import com.hokyozu.kyofuse.posts.repository.PostMapRepository;
 import com.hokyozu.kyofuse.posts.repository.PostRepository;
+import com.hokyozu.kyofuse.posts.validator.PostMapsValidator;
 import com.hokyozu.kyofuse.posts.validator.PostValidator;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.profiles.enums.Cs2Map;
@@ -47,6 +48,9 @@ class PostServiceTest {
     @Mock
     private PostValidator postValidator;
 
+    @Mock
+    private PostMapsValidator postMapsValidator;
+
     @InjectMocks
     private PostService postService;
 
@@ -77,6 +81,7 @@ class PostServiceTest {
 
         ArgumentCaptor<Post> postCaptor = ArgumentCaptor.forClass(Post.class);
         verify(postValidator).validate(request);
+        verify(postMapsValidator).validate(request);
         verify(postRepository).save(postCaptor.capture());
         ArgumentCaptor<List<PostMap>> postMapsCaptor = ArgumentCaptor.forClass(List.class);
         verify(postMapRepository).saveAll(postMapsCaptor.capture());
@@ -127,6 +132,8 @@ class PostServiceTest {
 
         PostResponse response = postService.post(userId, request);
 
+        verify(postValidator).validate(request);
+        verify(postMapsValidator).validate(request);
         verify(postMapRepository, never()).saveAll(any());
         assertThat(response.maps()).isEmpty();
     }
