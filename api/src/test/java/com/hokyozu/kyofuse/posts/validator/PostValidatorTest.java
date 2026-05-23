@@ -15,14 +15,14 @@ class PostValidatorTest {
 
     @Test
     void validatePassesWhenVisibilityIsPublic() {
-        CreatePostRequest request = new CreatePostRequest("content", PostType.TEXT, PostVisibility.PUBLIC);
+        CreatePostRequest request = new CreatePostRequest("content", PostType.TEXT, PostVisibility.PUBLIC, null);
 
         assertThatCode(() -> validator.validate(request)).doesNotThrowAnyException();
     }
 
     @Test
     void validateThrowsWhenVisibilityIsTeamOnly() {
-        CreatePostRequest request = new CreatePostRequest("content", PostType.TEXT, PostVisibility.TEAM_ONLY);
+        CreatePostRequest request = new CreatePostRequest("content", PostType.TEXT, PostVisibility.TEAM_ONLY, null);
 
         assertThatThrownBy(() -> validator.validate(request))
                 .isInstanceOf(BadRequestException.class)

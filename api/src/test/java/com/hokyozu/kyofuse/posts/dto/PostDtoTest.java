@@ -5,12 +5,14 @@ import com.hokyozu.kyofuse.posts.dto.response.PostResponse;
 import com.hokyozu.kyofuse.posts.enums.PostStatus;
 import com.hokyozu.kyofuse.posts.enums.PostType;
 import com.hokyozu.kyofuse.posts.enums.PostVisibility;
+import com.hokyozu.kyofuse.profiles.enums.Cs2Map;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -22,14 +24,19 @@ class PostDtoTest {
 
     @Test
     void createPostRequestAcceptsValidPayload() {
-        CreatePostRequest request = new CreatePostRequest("content", PostType.TEXT, PostVisibility.PUBLIC);
+        CreatePostRequest request = new CreatePostRequest(
+                "content",
+                PostType.TEXT,
+                PostVisibility.PUBLIC,
+                List.of(Cs2Map.MIRAGE)
+        );
 
         assertThat(validator.validate(request)).isEmpty();
     }
 
     @Test
     void createPostRequestRejectsBlankContentAndNullEnums() {
-        CreatePostRequest request = new CreatePostRequest("", null, null);
+        CreatePostRequest request = new CreatePostRequest("", null, null, null);
 
         Set<ConstraintViolation<CreatePostRequest>> violations = validator.validate(request);
 
@@ -39,12 +46,32 @@ class PostDtoTest {
 
     @Test
     void createPostRequestRejectsContentOverMaxLength() {
-        CreatePostRequest request = new CreatePostRequest("a".repeat(2001), PostType.TEXT, PostVisibility.PUBLIC);
+        CreatePostRequest request = new CreatePostRequest(
+                "a".repeat(2001),
+                PostType.TEXT,
+                PostVisibility.PUBLIC,
+                List.of()
+        );
 
         Set<ConstraintViolation<CreatePostRequest>> violations = validator.validate(request);
 
         assertThat(violations).extracting(violation -> violation.getPropertyPath().toString())
                 .contains("content");
+    }
+
+    @Test
+    void createPostRequestRejectsNullMapItem() {
+        CreatePostRequest request = new CreatePostRequest(
+                "content",
+                PostType.TEXT,
+                PostVisibility.PUBLIC,
+                java.util.Arrays.asList(Cs2Map.MIRAGE, null)
+        );
+
+        Set<ConstraintViolation<CreatePostRequest>> violations = validator.validate(request);
+
+        assertThat(violations).extracting(violation -> violation.getPropertyPath().toString())
+                .contains("maps[1].<list element>");
     }
 
     @Test
@@ -63,6 +90,7 @@ class PostDtoTest {
                 1,
                 1,
                 2,
+                List.of("MIRAGE", "INFERNO"),
                 now,
                 now
         );
@@ -71,5 +99,6 @@ class PostDtoTest {
         assertThat(response.authorId()).isEqualTo(authorId);
         assertThat(response.reactionCount()).isEqualTo(1);
         assertThat(response.commentCount()).isEqualTo(2);
+        assertThat(response.maps()).containsExactly("MIRAGE", "INFERNO");
     }
 }

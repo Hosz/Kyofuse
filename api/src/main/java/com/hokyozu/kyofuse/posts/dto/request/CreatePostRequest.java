@@ -2,9 +2,12 @@ package com.hokyozu.kyofuse.posts.dto.request;
 
 import com.hokyozu.kyofuse.posts.enums.PostType;
 import com.hokyozu.kyofuse.posts.enums.PostVisibility;
+import com.hokyozu.kyofuse.profiles.enums.Cs2Map;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+
+import java.util.List;
 
 public record CreatePostRequest(
 
@@ -16,6 +19,8 @@ public record CreatePostRequest(
         PostType postType,
 
         @NotNull(message = "Post visibility is required")
-        PostVisibility visibility
+        PostVisibility visibility,
+
+        List<@NotNull Cs2Map> maps
 ) {
 }
