@@ -3,6 +3,8 @@ package com.hokyozu.kyofuse.shared.exception;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.hokyozu.kyofuse.posts.enums.PostVisibility;
+import jakarta.validation.ConstraintViolationException;
+import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpStatus;
@@ -10,7 +12,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
+import org.springframework.validation.method.MethodValidationResult;
+import org.springframework.validation.method.ParameterValidationResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 import java.lang.reflect.Method;
 
@@ -52,6 +57,47 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody().status()).isEqualTo(400);
         assertThat(response.getBody().error()).isEqualTo("Bad Request");
         assertThat(response.getBody().message()).isEqualTo("Invalid request");
+    }
+
+    @Test
+    void handleConstraintViolationReturnsBadRequestResponse() {
+        ResponseEntity<ApiErrorResponse> response = handler.handleConstraintViolation(
+                new ConstraintViolationException("getFeed.page: must be greater than or equal to 0", java.util.Set.of())
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().status()).isEqualTo(400);
+        assertThat(response.getBody().error()).isEqualTo("Bad Request");
+        assertThat(response.getBody().message()).isEqualTo("getFeed.page: must be greater than or equal to 0");
+    }
+
+    @Test
+    void handleHandlerMethodValidationReturnsBadRequestResponse() throws NoSuchMethodException {
+        Method method = GlobalExceptionHandlerTest.class.getDeclaredMethod("dummyValidationTarget", String.class);
+        ParameterValidationResult parameterResult = new ParameterValidationResult(
+                new MethodParameter(method, 0),
+                -1,
+                java.util.List.of(new DefaultMessageSourceResolvable(
+                        new String[]{"Min"},
+                        "must be greater than or equal to 0"
+                )),
+                null,
+                null,
+                null,
+                (resolvable, type) -> null
+        );
+        HandlerMethodValidationException exception = new HandlerMethodValidationException(
+                MethodValidationResult.create(this, method, java.util.List.of(parameterResult))
+        );
+
+        ResponseEntity<ApiErrorResponse> response = handler.handleHandlerMethodValidation(exception);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().status()).isEqualTo(400);
+        assertThat(response.getBody().error()).isEqualTo("Bad Request");
+        assertThat(response.getBody().message()).isNotBlank();
     }
 
     @Test

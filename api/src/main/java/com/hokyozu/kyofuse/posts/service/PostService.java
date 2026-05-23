@@ -4,6 +4,8 @@ import com.hokyozu.kyofuse.posts.dto.request.CreatePostRequest;
 import com.hokyozu.kyofuse.posts.dto.response.PostResponse;
 import com.hokyozu.kyofuse.posts.entity.Post;
 import com.hokyozu.kyofuse.posts.entity.PostMap;
+import com.hokyozu.kyofuse.posts.enums.PostStatus;
+import com.hokyozu.kyofuse.posts.enums.PostVisibility;
 import com.hokyozu.kyofuse.posts.mapper.PostMapper;
 import com.hokyozu.kyofuse.posts.repository.PostMapRepository;
 import com.hokyozu.kyofuse.posts.repository.PostRepository;
@@ -12,7 +14,10 @@ import com.hokyozu.kyofuse.posts.validator.PostValidator;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.profiles.enums.Cs2Map;
 import com.hokyozu.kyofuse.profiles.repository.GamerProfileRepository;
+import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,5 +53,55 @@ public class PostService {
         }
 
         return PostMapper.toResponse(savedPost, postMaps);
+    }
+
+    public PostResponse getPost(UUID userId, UUID postId) {
+        Post post = postRepository.findVisiblePostForUser(postId, userId, PostStatus.DELETED, PostVisibility.PUBLIC)
+                .orElseThrow(() -> new BadRequestException("Post not found for ID: " + postId));
+
+        List<PostMap> postMaps = postMapRepository.findByPostId(postId);
+
+        return PostMapper.toResponse(post, postMaps);
+    }
+
+    public Page<PostResponse> getFeed(Pageable pageable) {
+        Page<Post> postsPage = postRepository.findByVisibilityAndStatus(
+                PostVisibility.PUBLIC,
+                PostStatus.ACTIVE,
+                pageable
+        );
+
+        return postsPage.map(post -> {
+            List<PostMap> postMaps = postMapRepository.findByPostId(post.getId());
+            return PostMapper.toResponse(post, postMaps);
+        });
+    }
+
+    public Page<PostResponse> getProfilePosts(UUID profileId, Pageable pageable) {
+        Page<Post> postsPage = postRepository.findByAuthorIdAndVisibilityInAndStatus(
+                profileId,
+                List.of(PostVisibility.PUBLIC),
+                PostStatus.ACTIVE,
+                pageable
+        );
+
+        return postsPage.map(post -> {
+            List<PostMap> postMaps = postMapRepository.findByPostId(post.getId());
+            return PostMapper.toResponse(post, postMaps);
+        });
+    }
+
+    public Page<PostResponse> getMyPosts(UUID authorId, Pageable pageable) {
+        Page<Post> postsPage = postRepository.findByAuthorIdAndVisibilityInAndStatusIn(
+                authorId,
+                List.of(PostVisibility.PUBLIC, PostVisibility.PRIVATE),
+                List.of(PostStatus.ACTIVE, PostStatus.HIDDEN),
+                pageable
+        );
+
+        return postsPage.map(post -> {
+            List<PostMap> postMaps = postMapRepository.findByPostId(post.getId());
+            return PostMapper.toResponse(post, postMaps);
+        });
     }
 }
