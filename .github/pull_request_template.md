@@ -1,19 +1,19 @@
-## Resumo
+## Summary
 
-Descreva de forma direta o que este PR implementa.
+Describe directly what this PR implements.
 
-## Alterações
+## Changes
 
 - 
 - 
 - 
 
-## Testes
+## Tests
 
-- [ ] Aplicação sobe localmente
-- [ ] Testado manualmente
-- [ ] Testes automatizados executados/adicionados
+- [ ] Application starts locally
+- [ ] Tested manually
+- [ ] Automated tests executed/added
 
-## Issue relacionada
+## Related issue
 
 Closes #
