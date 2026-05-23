@@ -3,10 +3,15 @@ package com.hokyozu.kyofuse.posts.mapper;
 import com.hokyozu.kyofuse.posts.dto.request.CreatePostRequest;
 import com.hokyozu.kyofuse.posts.dto.response.PostResponse;
 import com.hokyozu.kyofuse.posts.entity.Post;
+import com.hokyozu.kyofuse.posts.entity.PostMap;
 import com.hokyozu.kyofuse.posts.enums.PostStatus;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
+import com.hokyozu.kyofuse.profiles.enums.Cs2Map;
 
 import java.time.Instant;
+import java.util.List;
+
+import static java.util.stream.Collectors.toList;
 
 public class PostMapper {
 
@@ -22,7 +27,14 @@ public class PostMapper {
                 .build();
     }
 
-    public static PostResponse toResponse(Post savedPost) {
+    public static PostResponse toResponse(Post savedPost, List<PostMap> postMaps) {
+
+        List<String> maps = postMaps == null
+                ? List.of()
+                : postMaps.stream()
+                        .map(PostMap::getMapName)
+                        .toList();
+
         return new PostResponse(
                 savedPost.getId(),
                 savedPost.getAuthor().getId(),
@@ -33,8 +45,24 @@ public class PostMapper {
                 savedPost.getReactionCount(),
                 savedPost.getLikeCount(),
                 savedPost.getCommentCount(),
+                maps,
                 savedPost.getCreatedAt(),
                 savedPost.getUpdatedAt()
         );
+    }
+
+    public static List<PostMap> toPostMap(Post post, List<Cs2Map> maps) {
+
+        if (maps == null || maps.isEmpty()) {
+            return List.of();
+        }
+
+        return maps.stream()
+                .map(map -> PostMap.builder()
+                        .post(post)
+                        .mapName(map.name())
+                        .createdAt(Instant.now())
+                        .build())
+                .toList();
     }
 }

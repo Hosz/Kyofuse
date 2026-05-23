@@ -5,6 +5,7 @@ import com.hokyozu.kyofuse.posts.enums.PostType;
 import com.hokyozu.kyofuse.posts.enums.PostVisibility;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 public record PostResponse(
@@ -17,6 +18,7 @@ public record PostResponse(
         Integer reactionCount,
         Integer likeCount,
         Integer commentCount,
+        List<String> maps,
         Instant createdAt,
         Instant updatedAt
 ) {

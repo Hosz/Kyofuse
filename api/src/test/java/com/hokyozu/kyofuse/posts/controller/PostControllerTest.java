@@ -6,6 +6,7 @@ import com.hokyozu.kyofuse.posts.enums.PostStatus;
 import com.hokyozu.kyofuse.posts.enums.PostType;
 import com.hokyozu.kyofuse.posts.enums.PostVisibility;
 import com.hokyozu.kyofuse.posts.service.PostService;
+import com.hokyozu.kyofuse.profiles.enums.Cs2Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -14,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,7 +34,12 @@ class PostControllerTest {
     @Test
     void postUsesAuthenticatedUserId() {
         UUID userId = UUID.randomUUID();
-        CreatePostRequest request = new CreatePostRequest("content", PostType.TEXT, PostVisibility.PUBLIC);
+        CreatePostRequest request = new CreatePostRequest(
+                "content",
+                PostType.TEXT,
+                PostVisibility.PUBLIC,
+                List.of(Cs2Map.MIRAGE)
+        );
         PostResponse expected = new PostResponse(
                 UUID.randomUUID(),
                 userId,
@@ -43,6 +50,7 @@ class PostControllerTest {
                 0,
                 0,
                 0,
+                List.of("MIRAGE"),
                 Instant.now(),
                 Instant.now()
         );
