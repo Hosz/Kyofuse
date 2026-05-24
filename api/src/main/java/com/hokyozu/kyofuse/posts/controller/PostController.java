@@ -74,4 +74,11 @@ public class PostController {
     private Pageable defaultPageable(int page, int size) {
         return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
     }
+
+    @PatchMapping("/post/{postId}")
+    public void deletePost(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID postId) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+
+        postService.deletePost(userId, postId);
+    }
 }

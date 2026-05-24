@@ -9,12 +9,14 @@ import com.hokyozu.kyofuse.posts.enums.PostVisibility;
 import com.hokyozu.kyofuse.posts.mapper.PostMapper;
 import com.hokyozu.kyofuse.posts.repository.PostMapRepository;
 import com.hokyozu.kyofuse.posts.repository.PostRepository;
+import com.hokyozu.kyofuse.posts.validator.DeletePostValidator;
 import com.hokyozu.kyofuse.posts.validator.PostMapsValidator;
 import com.hokyozu.kyofuse.posts.validator.PostValidator;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.profiles.enums.Cs2Map;
 import com.hokyozu.kyofuse.profiles.repository.GamerProfileRepository;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
+import com.hokyozu.kyofuse.shared.exception.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -34,6 +36,7 @@ public class PostService {
 
     private final PostValidator postValidator;
     private final PostMapsValidator postMapsValidator;
+    private final DeletePostValidator deletePostValidator;
 
     @Transactional
     public PostResponse post(UUID userId, CreatePostRequest request) {
@@ -103,5 +106,16 @@ public class PostService {
             List<PostMap> postMaps = postMapRepository.findByPostId(post.getId());
             return PostMapper.toResponse(post, postMaps);
         });
+    }
+
+    @Transactional
+    public void deletePost(UUID userId, UUID postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new BadRequestException("Post not found for ID: " + postId));
+
+        deletePostValidator.validate(post, userId);
+
+        post.setStatus(PostStatus.DELETED);
+        postRepository.save(post);
     }
 }
