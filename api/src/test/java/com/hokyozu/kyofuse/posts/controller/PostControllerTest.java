@@ -126,6 +126,16 @@ class PostControllerTest {
     }
 
     @Test
+    void deletePostUsesAuthenticatedUserIdAndPathPostId() {
+        UUID userId = UUID.randomUUID();
+        UUID postId = UUID.randomUUID();
+
+        controller.deletePost(jwt(userId), postId);
+
+        verify(postService).deletePost(userId, postId);
+    }
+
+    @Test
     void paginationRejectsNegativePageAndOutOfRangeSize() throws NoSuchMethodException {
         Method method = PostController.class.getMethod("getFeed", int.class, int.class);
 

@@ -9,6 +9,7 @@ import com.hokyozu.kyofuse.posts.enums.PostType;
 import com.hokyozu.kyofuse.posts.enums.PostVisibility;
 import com.hokyozu.kyofuse.posts.repository.PostMapRepository;
 import com.hokyozu.kyofuse.posts.repository.PostRepository;
+import com.hokyozu.kyofuse.posts.validator.DeletePostValidator;
 import com.hokyozu.kyofuse.posts.validator.PostMapsValidator;
 import com.hokyozu.kyofuse.posts.validator.PostValidator;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
@@ -58,6 +59,9 @@ class PostServiceTest {
 
     @Mock
     private PostMapsValidator postMapsValidator;
+
+    @Mock
+    private DeletePostValidator deletePostValidator;
 
     @InjectMocks
     private PostService postService;
@@ -267,6 +271,36 @@ class PostServiceTest {
         assertThat(response.getContent()).singleElement()
                 .extracting(PostResponse::postStatus)
                 .isEqualTo(PostStatus.HIDDEN);
+    }
+
+    @Test
+    void deletePostMarksPostAsDeletedAfterValidation() {
+        UUID userId = UUID.randomUUID();
+        UUID postId = UUID.randomUUID();
+        Post post = post(postId, userId, PostVisibility.PUBLIC, PostStatus.ACTIVE);
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+
+        postService.deletePost(userId, postId);
+
+        verify(deletePostValidator).validate(post, userId);
+        ArgumentCaptor<Post> postCaptor = ArgumentCaptor.forClass(Post.class);
+        verify(postRepository).save(postCaptor.capture());
+        assertThat(postCaptor.getValue()).isSameAs(post);
+        assertThat(post.getStatus()).isEqualTo(PostStatus.DELETED);
+    }
+
+    @Test
+    void deletePostThrowsBadRequestWhenPostDoesNotExist() {
+        UUID userId = UUID.randomUUID();
+        UUID postId = UUID.randomUUID();
+        when(postRepository.findById(postId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> postService.deletePost(userId, postId))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Post not found for ID: " + postId);
+
+        verify(deletePostValidator, never()).validate(any(), any());
+        verify(postRepository, never()).save(any());
     }
 
     private static Post post(UUID postId, UUID authorId, PostVisibility visibility, PostStatus status) {
