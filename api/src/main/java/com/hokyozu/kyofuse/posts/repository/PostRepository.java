@@ -29,4 +29,6 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
             )
 """)
     Optional<Post> findVisiblePostForUser(UUID postId, UUID requesterUserId, PostStatus deletedStatus, PostVisibility publicVisibility);
+
+    Optional<Post> findByIdAndStatus(UUID id, PostStatus postStatus);
 }

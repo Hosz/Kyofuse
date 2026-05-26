@@ -4,6 +4,7 @@ import com.hokyozu.kyofuse.profiles.dto.request.GamerProfileRequest;
 import com.hokyozu.kyofuse.profiles.dto.response.GamerProfileResponse;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfileFavoriteMap;
+import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import com.hokyozu.kyofuse.profiles.mapper.GamerProfileMapper;
 import com.hokyozu.kyofuse.profiles.repository.GamerProfileFavoriteMapRepository;
 import com.hokyozu.kyofuse.profiles.repository.GamerProfileRepository;
@@ -26,6 +27,8 @@ public class GamerProfileService {
     private final GamerProfileSetupStatusResolverService setupStatusResolverService;
     private final UpdateFavoriteMapsService updateFavoriteMapsService;
 
+    private final GamerProfileFinder gamerProfileFinder;
+
     @Transactional
     public void createGamerProfileMin(User user) {
         GamerProfile minProfile = GamerProfileMapper.toEntity(user);
@@ -39,8 +42,7 @@ public class GamerProfileService {
             throw new UnauthorizedException("Nickname cannot be empty");
         }
 
-        GamerProfile profile = gamerProfileRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Gamer profile not found for user ID: " + userId));
+        GamerProfile profile = gamerProfileFinder.findProfileByUserId(userId);
 
         GamerProfileMapper.updateEntity(profile, request);
         updateFavoriteMapsService.execute(profile, request.favoriteMaps());
@@ -53,8 +55,7 @@ public class GamerProfileService {
     }
 
     public GamerProfileResponse viewMyProfile(UUID userId) {
-        GamerProfile gamerProfile = gamerProfileRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Gamer profile not found for user ID: " + userId));
+        GamerProfile gamerProfile = gamerProfileFinder.findProfileByUserId(userId);
 
         List<GamerProfileFavoriteMap> favoriteMaps =
                 gamerProfileFavoriteMapRepository.findByProfile_Id(gamerProfile.getId());
@@ -63,8 +64,7 @@ public class GamerProfileService {
     }
 
     public GamerProfileResponse viewUserProfile(UUID profileId) {
-        GamerProfile gamerProfile = gamerProfileRepository.findById(profileId)
-                .orElseThrow(() -> new RuntimeException("Gamer profile not found for profile ID: " + profileId));
+        GamerProfile gamerProfile = gamerProfileFinder.findProfileById(profileId);
 
         List<GamerProfileFavoriteMap> favoriteMaps =
                 gamerProfileFavoriteMapRepository.findByProfile_Id(gamerProfile.getId());

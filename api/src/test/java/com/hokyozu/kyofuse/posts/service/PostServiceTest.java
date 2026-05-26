@@ -7,6 +7,7 @@ import com.hokyozu.kyofuse.posts.entity.PostMap;
 import com.hokyozu.kyofuse.posts.enums.PostStatus;
 import com.hokyozu.kyofuse.posts.enums.PostType;
 import com.hokyozu.kyofuse.posts.enums.PostVisibility;
+import com.hokyozu.kyofuse.posts.finder.PostFinder;
 import com.hokyozu.kyofuse.posts.repository.PostMapRepository;
 import com.hokyozu.kyofuse.posts.repository.PostRepository;
 import com.hokyozu.kyofuse.posts.validator.DeletePostValidator;
@@ -14,7 +15,7 @@ import com.hokyozu.kyofuse.posts.validator.PostMapsValidator;
 import com.hokyozu.kyofuse.posts.validator.PostValidator;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.profiles.enums.Cs2Map;
-import com.hokyozu.kyofuse.profiles.repository.GamerProfileRepository;
+import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.users.entity.User;
 import org.junit.jupiter.api.Test;
@@ -30,7 +31,6 @@ import org.springframework.data.domain.Pageable;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,9 +46,6 @@ import static org.mockito.Mockito.when;
 class PostServiceTest {
 
     @Mock
-    private GamerProfileRepository gamerProfileRepository;
-
-    @Mock
     private PostRepository postRepository;
 
     @Mock
@@ -62,6 +59,12 @@ class PostServiceTest {
 
     @Mock
     private DeletePostValidator deletePostValidator;
+
+    @Mock
+    private GamerProfileFinder gamerProfileFinder;
+
+    @Mock
+    private PostFinder postFinder;
 
     @InjectMocks
     private PostService postService;
@@ -82,7 +85,7 @@ class PostServiceTest {
                 List.of(Cs2Map.MIRAGE, Cs2Map.INFERNO)
         );
 
-        when(gamerProfileRepository.findByUserId(userId)).thenReturn(Optional.of(profile));
+        when(gamerProfileFinder.findProfileByUserId(userId)).thenReturn(profile);
         when(postRepository.save(any(Post.class))).thenAnswer(invocation -> {
             Post post = invocation.getArgument(0);
             post.setId(postId);
@@ -135,7 +138,7 @@ class PostServiceTest {
                 null
         );
 
-        when(gamerProfileRepository.findByUserId(userId)).thenReturn(Optional.of(profile));
+        when(gamerProfileFinder.findProfileByUserId(userId)).thenReturn(profile);
         when(postRepository.save(any(Post.class))).thenAnswer(invocation -> {
             Post post = invocation.getArgument(0);
             post.setId(postId);
@@ -153,7 +156,8 @@ class PostServiceTest {
     @Test
     void postThrowsWhenUserProfileDoesNotExist() {
         UUID userId = UUID.randomUUID();
-        when(gamerProfileRepository.findByUserId(userId)).thenReturn(Optional.empty());
+        when(gamerProfileFinder.findProfileByUserId(userId))
+                .thenThrow(new RuntimeException("Gamer profile not found for user ID: " + userId));
 
         assertThatThrownBy(() -> postService.post(
                 userId,
@@ -169,13 +173,13 @@ class PostServiceTest {
         UUID postId = UUID.randomUUID();
         Post post = post(postId, requesterId, PostVisibility.PRIVATE, PostStatus.ACTIVE);
         List<PostMap> postMaps = List.of(postMap(post, "MIRAGE"));
-        when(postRepository.findVisiblePostForUser(postId, requesterId, PostStatus.DELETED, PostVisibility.PUBLIC))
-                .thenReturn(Optional.of(post));
+        when(postFinder.findVisiblePostForUser(postId, requesterId, PostStatus.DELETED, PostVisibility.PUBLIC))
+                .thenReturn(post);
         when(postMapRepository.findByPostId(postId)).thenReturn(postMaps);
 
         PostResponse response = postService.getPost(requesterId, postId);
 
-        verify(postRepository).findVisiblePostForUser(postId, requesterId, PostStatus.DELETED, PostVisibility.PUBLIC);
+        verify(postFinder).findVisiblePostForUser(postId, requesterId, PostStatus.DELETED, PostVisibility.PUBLIC);
         verify(postMapRepository).findByPostId(postId);
         assertThat(response.id()).isEqualTo(postId);
         assertThat(response.authorId()).isEqualTo(requesterId);
@@ -186,8 +190,8 @@ class PostServiceTest {
     void getPostThrowsBadRequestWhenPostIsNotVisibleForRequester() {
         UUID requesterId = UUID.randomUUID();
         UUID postId = UUID.randomUUID();
-        when(postRepository.findVisiblePostForUser(postId, requesterId, PostStatus.DELETED, PostVisibility.PUBLIC))
-                .thenReturn(Optional.empty());
+        when(postFinder.findVisiblePostForUser(postId, requesterId, PostStatus.DELETED, PostVisibility.PUBLIC))
+                .thenThrow(new BadRequestException("Post not found for ID: " + postId));
 
         assertThatThrownBy(() -> postService.getPost(requesterId, postId))
                 .isInstanceOf(BadRequestException.class)
@@ -278,7 +282,7 @@ class PostServiceTest {
         UUID userId = UUID.randomUUID();
         UUID postId = UUID.randomUUID();
         Post post = post(postId, userId, PostVisibility.PUBLIC, PostStatus.ACTIVE);
-        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(postFinder.findById(postId)).thenReturn(post);
 
         postService.deletePost(userId, postId);
 
@@ -293,7 +297,8 @@ class PostServiceTest {
     void deletePostThrowsBadRequestWhenPostDoesNotExist() {
         UUID userId = UUID.randomUUID();
         UUID postId = UUID.randomUUID();
-        when(postRepository.findById(postId)).thenReturn(Optional.empty());
+        when(postFinder.findById(postId))
+                .thenThrow(new BadRequestException("Post not found for ID: " + postId));
 
         assertThatThrownBy(() -> postService.deletePost(userId, postId))
                 .isInstanceOf(BadRequestException.class)

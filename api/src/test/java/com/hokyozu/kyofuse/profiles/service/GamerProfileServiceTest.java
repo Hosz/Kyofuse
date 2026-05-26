@@ -8,6 +8,7 @@ import com.hokyozu.kyofuse.profiles.enums.Cs2Map;
 import com.hokyozu.kyofuse.profiles.enums.GamerProfileSetupStatus;
 import com.hokyozu.kyofuse.profiles.enums.PlayerRole;
 import com.hokyozu.kyofuse.profiles.enums.Playstyle;
+import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import com.hokyozu.kyofuse.profiles.repository.GamerProfileFavoriteMapRepository;
 import com.hokyozu.kyofuse.profiles.repository.GamerProfileRepository;
 import com.hokyozu.kyofuse.shared.exception.UnauthorizedException;
@@ -21,7 +22,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,6 +43,9 @@ class GamerProfileServiceTest {
 
     @Mock
     private UpdateFavoriteMapsService updateFavoriteMapsService;
+
+    @Mock
+    private GamerProfileFinder gamerProfileFinder;
 
     @InjectMocks
     private GamerProfileService service;
@@ -104,7 +107,7 @@ class GamerProfileServiceTest {
                 .createdAt(Instant.now())
                 .build();
 
-        when(gamerProfileRepository.findByUserId(userId)).thenReturn(Optional.of(profile));
+        when(gamerProfileFinder.findProfileByUserId(userId)).thenReturn(profile);
         when(setupStatusResolverService.resolve(profile)).thenReturn(GamerProfileSetupStatus.COMPLETED);
         when(gamerProfileRepository.save(profile)).thenReturn(profile);
         when(favoriteMapRepository.findByProfile_Id(profileId)).thenReturn(List.of(favoriteMap));
@@ -147,7 +150,8 @@ class GamerProfileServiceTest {
     @Test
     void editProfileThrowsWhenProfileDoesNotExist() {
         UUID userId = UUID.randomUUID();
-        when(gamerProfileRepository.findByUserId(userId)).thenReturn(Optional.empty());
+        when(gamerProfileFinder.findProfileByUserId(userId))
+                .thenThrow(new RuntimeException("Gamer profile not found for user ID: " + userId));
 
         assertThatThrownBy(() -> service.editProfile(userId, emptyRequest()))
                 .isInstanceOf(RuntimeException.class)
@@ -163,7 +167,7 @@ class GamerProfileServiceTest {
                 .mapName(Cs2Map.INFERNO)
                 .createdAt(Instant.now())
                 .build();
-        when(gamerProfileRepository.findByUserId(userId)).thenReturn(Optional.of(profile));
+        when(gamerProfileFinder.findProfileByUserId(userId)).thenReturn(profile);
         when(favoriteMapRepository.findByProfile_Id(profile.getId())).thenReturn(List.of(favoriteMap));
 
         GamerProfileResponse response = service.viewMyProfile(userId);
@@ -175,7 +179,8 @@ class GamerProfileServiceTest {
     @Test
     void viewMyProfileThrowsWhenProfileDoesNotExist() {
         UUID userId = UUID.randomUUID();
-        when(gamerProfileRepository.findByUserId(userId)).thenReturn(Optional.empty());
+        when(gamerProfileFinder.findProfileByUserId(userId))
+                .thenThrow(new RuntimeException("Gamer profile not found for user ID: " + userId));
 
         assertThatThrownBy(() -> service.viewMyProfile(userId))
                 .isInstanceOf(RuntimeException.class)
@@ -188,7 +193,7 @@ class GamerProfileServiceTest {
         UUID userId = UUID.randomUUID();
         GamerProfile profile = profile(userId);
         profile.setId(profileId);
-        when(gamerProfileRepository.findById(profileId)).thenReturn(Optional.of(profile));
+        when(gamerProfileFinder.findProfileById(profileId)).thenReturn(profile);
         when(favoriteMapRepository.findByProfile_Id(profileId)).thenReturn(List.of());
 
         GamerProfileResponse response = service.viewUserProfile(profileId);
@@ -200,7 +205,8 @@ class GamerProfileServiceTest {
     @Test
     void viewUserProfileThrowsWhenProfileDoesNotExist() {
         UUID profileId = UUID.randomUUID();
-        when(gamerProfileRepository.findById(profileId)).thenReturn(Optional.empty());
+        when(gamerProfileFinder.findProfileById(profileId))
+                .thenThrow(new RuntimeException("Gamer profile not found for profile ID: " + profileId));
 
         assertThatThrownBy(() -> service.viewUserProfile(profileId))
                 .isInstanceOf(RuntimeException.class)
