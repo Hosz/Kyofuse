@@ -6,6 +6,7 @@ import com.hokyozu.kyofuse.posts.entity.Post;
 import com.hokyozu.kyofuse.posts.entity.PostMap;
 import com.hokyozu.kyofuse.posts.enums.PostStatus;
 import com.hokyozu.kyofuse.posts.enums.PostVisibility;
+import com.hokyozu.kyofuse.posts.finder.PostFinder;
 import com.hokyozu.kyofuse.posts.mapper.PostMapper;
 import com.hokyozu.kyofuse.posts.repository.PostMapRepository;
 import com.hokyozu.kyofuse.posts.repository.PostRepository;
@@ -13,10 +14,7 @@ import com.hokyozu.kyofuse.posts.validator.DeletePostValidator;
 import com.hokyozu.kyofuse.posts.validator.PostMapsValidator;
 import com.hokyozu.kyofuse.posts.validator.PostValidator;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
-import com.hokyozu.kyofuse.profiles.enums.Cs2Map;
-import com.hokyozu.kyofuse.profiles.repository.GamerProfileRepository;
-import com.hokyozu.kyofuse.shared.exception.BadRequestException;
-import com.hokyozu.kyofuse.shared.exception.UnauthorizedException;
+import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,7 +28,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PostService {
 
-    private final GamerProfileRepository gamerProfileRepository;
     private final PostRepository postRepository;
     private final PostMapRepository postMapRepository;
 
@@ -38,10 +35,12 @@ public class PostService {
     private final PostMapsValidator postMapsValidator;
     private final DeletePostValidator deletePostValidator;
 
+    private final GamerProfileFinder gamerProfileFinder;
+    private final PostFinder postFinder;
+
     @Transactional
     public PostResponse post(UUID userId, CreatePostRequest request) {
-        GamerProfile profile = gamerProfileRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Gamer profile not found for user ID: " + userId));
+        GamerProfile profile = gamerProfileFinder.findProfileByUserId(userId);
 
         postValidator.validate(request);
         postMapsValidator.validate(request);
@@ -59,8 +58,7 @@ public class PostService {
     }
 
     public PostResponse getPost(UUID userId, UUID postId) {
-        Post post = postRepository.findVisiblePostForUser(postId, userId, PostStatus.DELETED, PostVisibility.PUBLIC)
-                .orElseThrow(() -> new BadRequestException("Post not found for ID: " + postId));
+        Post post = postFinder.findVisiblePostForUser(postId, userId, PostStatus.DELETED, PostVisibility.PUBLIC);
 
         List<PostMap> postMaps = postMapRepository.findByPostId(postId);
 
@@ -110,8 +108,7 @@ public class PostService {
 
     @Transactional
     public void deletePost(UUID userId, UUID postId) {
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new BadRequestException("Post not found for ID: " + postId));
+        Post post = postFinder.findById(postId);
 
         deletePostValidator.validate(post, userId);
 
