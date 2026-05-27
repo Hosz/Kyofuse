@@ -9,9 +9,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,6 +44,37 @@ class CommentControllerTest {
 
         assertThat(result).isSameAs(expected);
         verify(commentService).postComment(userId, postId, request);
+    }
+
+    @Test
+    void getCommentUsesPathCommentId() {
+        UUID commentId = UUID.randomUUID();
+        UUID postId = UUID.randomUUID();
+        UUID authorId = UUID.randomUUID();
+        CommentResponse expected = response(commentId, postId, authorId);
+        when(commentService.getComment(commentId)).thenReturn(expected);
+
+        CommentResponse result = controller.getComment(commentId);
+
+        assertThat(result).isSameAs(expected);
+        verify(commentService).getComment(commentId);
+    }
+
+    @Test
+    void listCommentsUsesPathPostIdAndPageable() {
+        UUID postId = UUID.randomUUID();
+        Pageable pageable = PageRequest.of(1, 10);
+        Page<CommentResponse> expected = new PageImpl<>(
+                List.of(response(UUID.randomUUID(), postId, UUID.randomUUID())),
+                pageable,
+                1
+        );
+        when(commentService.listComments(postId, pageable)).thenReturn(expected);
+
+        Page<CommentResponse> result = controller.listComments(postId, pageable);
+
+        assertThat(result).isSameAs(expected);
+        verify(commentService).listComments(postId, pageable);
     }
 
     private static Jwt jwt(UUID userId) {
