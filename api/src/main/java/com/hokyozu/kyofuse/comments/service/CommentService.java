@@ -3,6 +3,8 @@ package com.hokyozu.kyofuse.comments.service;
 import com.hokyozu.kyofuse.comments.dto.request.CreateCommentRequest;
 import com.hokyozu.kyofuse.comments.dto.response.CommentResponse;
 import com.hokyozu.kyofuse.comments.entity.Comment;
+import com.hokyozu.kyofuse.comments.enums.CommentStatus;
+import com.hokyozu.kyofuse.comments.finder.CommentFinder;
 import com.hokyozu.kyofuse.comments.mapper.CommentMapper;
 import com.hokyozu.kyofuse.comments.repository.CommentRepository;
 import com.hokyozu.kyofuse.posts.entity.Post;
@@ -12,6 +14,8 @@ import com.hokyozu.kyofuse.posts.repository.PostRepository;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +30,7 @@ public class CommentService {
 
     private final PostFinder postFinder;
     private final GamerProfileFinder gamerProfileFinder;
+    private final CommentFinder commentFinder;
 
     @Transactional
     public CommentResponse postComment(UUID userId, UUID postId, CreateCommentRequest request) {
@@ -40,5 +45,21 @@ public class CommentService {
         postRepository.save(post);
 
         return CommentMapper.toResponse(savedComment);
+    }
+
+    public CommentResponse getComment(UUID commentId) {
+
+        Comment comment = commentFinder.findById(commentId);
+
+        return CommentMapper.toResponse(comment);
+    }
+
+    public Page<CommentResponse> listComments(UUID postId, Pageable pageable) {
+
+        postFinder.findPostByIdAndStatus(postId, PostStatus.ACTIVE);
+
+        return commentRepository
+                .findByPostIdAndStatus(postId, CommentStatus.ACTIVE, pageable)
+                .map(CommentMapper::toResponse);
     }
 }

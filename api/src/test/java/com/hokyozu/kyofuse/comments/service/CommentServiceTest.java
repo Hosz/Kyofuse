@@ -4,6 +4,7 @@ import com.hokyozu.kyofuse.comments.dto.request.CreateCommentRequest;
 import com.hokyozu.kyofuse.comments.dto.response.CommentResponse;
 import com.hokyozu.kyofuse.comments.entity.Comment;
 import com.hokyozu.kyofuse.comments.enums.CommentStatus;
+import com.hokyozu.kyofuse.comments.finder.CommentFinder;
 import com.hokyozu.kyofuse.comments.repository.CommentRepository;
 import com.hokyozu.kyofuse.posts.entity.Post;
 import com.hokyozu.kyofuse.posts.enums.PostStatus;
@@ -19,8 +20,13 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,6 +50,9 @@ class CommentServiceTest {
 
     @Mock
     private GamerProfileFinder gamerProfileFinder;
+
+    @Mock
+    private CommentFinder commentFinder;
 
     @InjectMocks
     private CommentService commentService;
@@ -159,5 +168,93 @@ class CommentServiceTest {
         assertThat(response.likeCount()).isEqualTo(2);
         assertThat(response.createdAt()).isEqualTo(now);
         assertThat(response.updatedAt()).isEqualTo(now);
+    }
+
+    @Test
+    void getCommentReturnsMappedCommentFromFinder() {
+        UUID commentId = UUID.randomUUID();
+        UUID postId = UUID.randomUUID();
+        UUID authorId = UUID.randomUUID();
+        Instant now = Instant.now();
+        Comment comment = comment(commentId, postId, authorId, CommentStatus.ACTIVE, now);
+        when(commentFinder.findById(commentId)).thenReturn(comment);
+
+        CommentResponse response = commentService.getComment(commentId);
+
+        verify(commentFinder).findById(commentId);
+        assertThat(response.id()).isEqualTo(commentId);
+        assertThat(response.postId()).isEqualTo(postId);
+        assertThat(response.authorId()).isEqualTo(authorId);
+        assertThat(response.content()).isEqualTo("content");
+        assertThat(response.commentStatus()).isEqualTo(CommentStatus.ACTIVE);
+        assertThat(response.reactionCount()).isEqualTo(3);
+        assertThat(response.likeCount()).isEqualTo(2);
+        assertThat(response.createdAt()).isEqualTo(now);
+        assertThat(response.updatedAt()).isEqualTo(now);
+    }
+
+    @Test
+    void getCommentPropagatesBadRequestWhenCommentDoesNotExist() {
+        UUID commentId = UUID.randomUUID();
+        when(commentFinder.findById(commentId))
+                .thenThrow(new BadRequestException("Comment not found for ID: " + commentId));
+
+        assertThatThrownBy(() -> commentService.getComment(commentId))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Comment not found for ID: " + commentId);
+    }
+
+    @Test
+    void listCommentsValidatesActivePostAndReturnsOnlyActiveComments() {
+        UUID postId = UUID.randomUUID();
+        UUID authorId = UUID.randomUUID();
+        Pageable pageable = PageRequest.of(0, 20);
+        Instant now = Instant.now();
+        Comment firstComment = comment(UUID.randomUUID(), postId, authorId, CommentStatus.ACTIVE, now);
+        Comment secondComment = comment(UUID.randomUUID(), postId, authorId, CommentStatus.ACTIVE, now);
+        Post post = Post.builder().id(postId).status(PostStatus.ACTIVE).build();
+        when(postFinder.findPostByIdAndStatus(postId, PostStatus.ACTIVE)).thenReturn(post);
+        when(commentRepository.findByPostIdAndStatus(postId, CommentStatus.ACTIVE, pageable))
+                .thenReturn(new PageImpl<>(List.of(firstComment, secondComment), pageable, 2));
+
+        Page<CommentResponse> response = commentService.listComments(postId, pageable);
+
+        verify(postFinder).findPostByIdAndStatus(postId, PostStatus.ACTIVE);
+        verify(commentRepository).findByPostIdAndStatus(postId, CommentStatus.ACTIVE, pageable);
+        assertThat(response.getTotalElements()).isEqualTo(2);
+        assertThat(response.getContent())
+                .extracting(CommentResponse::id)
+                .containsExactly(firstComment.getId(), secondComment.getId());
+        assertThat(response.getContent())
+                .extracting(CommentResponse::commentStatus)
+                .containsOnly(CommentStatus.ACTIVE);
+    }
+
+    @Test
+    void listCommentsDoesNotQueryCommentsWhenPostIsNotActive() {
+        UUID postId = UUID.randomUUID();
+        Pageable pageable = PageRequest.of(0, 20);
+        when(postFinder.findPostByIdAndStatus(postId, PostStatus.ACTIVE))
+                .thenThrow(new BadRequestException("Post not found for ID: " + postId));
+
+        assertThatThrownBy(() -> commentService.listComments(postId, pageable))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Post not found for ID: " + postId);
+
+        verify(commentRepository, never()).findByPostIdAndStatus(any(), any(), any());
+    }
+
+    private static Comment comment(UUID commentId, UUID postId, UUID authorId, CommentStatus status, Instant now) {
+        return Comment.builder()
+                .id(commentId)
+                .post(Post.builder().id(postId).build())
+                .author(User.builder().id(authorId).build())
+                .content("content")
+                .status(status)
+                .reactionCount(3)
+                .likeCount(2)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
     }
 }
