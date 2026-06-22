@@ -26,6 +26,20 @@ class GlobalExceptionHandlerTest {
     private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
 
     @Test
+    void handleNotFoundReturnsNotFoundResponse() {
+        ResponseEntity<ApiErrorResponse> response = handler.handleNotFound(
+                new NotFoundException("Comentário não encontrado.")
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().status()).isEqualTo(404);
+        assertThat(response.getBody().error()).isEqualTo("Not Found");
+        assertThat(response.getBody().message()).isEqualTo("Comentário não encontrado.");
+        assertThat(response.getBody().timestamp()).isNotNull();
+    }
+
+    @Test
     void handleConflictReturnsConflictResponse() {
         ResponseEntity<ApiErrorResponse> response = handler.handleConflict(new ConflictException("Email já está em uso."));
 
@@ -46,6 +60,20 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody().status()).isEqualTo(401);
         assertThat(response.getBody().error()).isEqualTo("Unauthorized");
         assertThat(response.getBody().message()).isEqualTo("Credenciais inválidas.");
+    }
+
+    @Test
+    void handleForbiddenReturnsForbiddenResponse() {
+        ResponseEntity<ApiErrorResponse> response = handler.handleForbidden(
+                new ForbiddenException("Você não tem permissão para acessar este recurso.")
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().status()).isEqualTo(403);
+        assertThat(response.getBody().error()).isEqualTo("Forbidden");
+        assertThat(response.getBody().message()).isEqualTo("Você não tem permissão para acessar este recurso.");
+        assertThat(response.getBody().timestamp()).isNotNull();
     }
 
     @Test

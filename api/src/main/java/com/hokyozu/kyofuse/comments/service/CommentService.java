@@ -13,12 +13,19 @@ import com.hokyozu.kyofuse.posts.finder.PostFinder;
 import com.hokyozu.kyofuse.posts.repository.PostRepository;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
+import com.hokyozu.kyofuse.shared.exception.BadRequestException;
+import com.hokyozu.kyofuse.shared.exception.ForbiddenException;
+import com.hokyozu.kyofuse.shared.exception.NotFoundException;
+import com.hokyozu.kyofuse.shared.exception.UnauthorizedException;
+import com.hokyozu.kyofuse.users.entity.User;
+import com.hokyozu.kyofuse.users.finder.UserFinder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -31,6 +38,7 @@ public class CommentService {
     private final PostFinder postFinder;
     private final GamerProfileFinder gamerProfileFinder;
     private final CommentFinder commentFinder;
+    private final UserFinder userFinder;
 
     @Transactional
     public CommentResponse postComment(UUID userId, UUID postId, CreateCommentRequest request) {
@@ -51,6 +59,14 @@ public class CommentService {
 
         Comment comment = commentFinder.findById(commentId);
 
+        if (comment.getStatus() == CommentStatus.DELETED) {
+            throw new NotFoundException("Comentário não encontrado.");
+        }
+
+        if (comment.getStatus() == CommentStatus.HIDDEN) {
+            throw new UnauthorizedException("Comentário em análise");
+        }
+
         return CommentMapper.toResponse(comment);
     }
 
@@ -61,5 +77,32 @@ public class CommentService {
         return commentRepository
                 .findByPostIdAndStatus(postId, CommentStatus.ACTIVE, pageable)
                 .map(CommentMapper::toResponse);
+    }
+
+    @Transactional
+    public void deleteComment(UUID commentId, UUID postId, UUID user) {
+
+        Comment comment = commentFinder.findById(commentId);
+        Post post = postFinder.findById(postId);
+        User userProfile = userFinder.findProfileByUserId(user);
+
+        if (!commentRepository.existsByIdAndPostId(commentId, postId)) {
+            throw new NotFoundException("O comentário não existe nesse post.");
+        }
+
+        if (comment.getAuthor().getId() != userProfile.getId()) {
+            throw new ForbiddenException("Apenas o autor pode remover o comentário.");
+        }
+
+        if (comment.getStatus() == CommentStatus.DELETED) {
+            throw new BadRequestException("O comentário ja foi excluído");
+        }
+
+        comment.setStatus(CommentStatus.DELETED);
+        comment.setUpdatedAt(Instant.now());
+        commentRepository.save(comment);
+
+        post.setCommentCount(post.getCommentCount() - 1);
+        postRepository.save(post);
     }
 }

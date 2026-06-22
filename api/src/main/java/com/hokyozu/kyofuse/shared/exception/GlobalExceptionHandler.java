@@ -19,6 +19,18 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleNotFound(NotFoundException exception) {
+        ApiErrorResponse response = new ApiErrorResponse(
+                Instant.now(),
+                HttpStatus.NOT_FOUND.value(),
+                "Not Found",
+                exception.getMessage()
+        );
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ApiErrorResponse> handleConflict(ConflictException exception) {
         ApiErrorResponse response = new ApiErrorResponse(
@@ -41,6 +53,18 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ApiErrorResponse> handleForbidden(ForbiddenException exception) {
+        ApiErrorResponse response = new ApiErrorResponse(
+                Instant.now(),
+                HttpStatus.FORBIDDEN.value(),
+                "Forbidden",
+                exception.getMessage()
+        );
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
