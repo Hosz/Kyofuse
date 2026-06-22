@@ -3,7 +3,6 @@ package com.hokyozu.kyofuse.comments.controller;
 import com.hokyozu.kyofuse.comments.dto.request.CreateCommentRequest;
 import com.hokyozu.kyofuse.comments.dto.response.CommentResponse;
 import com.hokyozu.kyofuse.comments.service.CommentService;
-import com.hokyozu.kyofuse.users.entity.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

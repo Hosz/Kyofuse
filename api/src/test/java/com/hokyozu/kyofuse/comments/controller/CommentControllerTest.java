@@ -77,6 +77,17 @@ class CommentControllerTest {
         verify(commentService).listComments(postId, pageable);
     }
 
+    @Test
+    void deleteCommentUsesAuthenticatedUserIdAndPathIds() {
+        UUID userId = UUID.randomUUID();
+        UUID postId = UUID.randomUUID();
+        UUID commentId = UUID.randomUUID();
+
+        controller.deleteComment(commentId, postId, jwt(userId));
+
+        verify(commentService).deleteComment(commentId, postId, userId);
+    }
+
     private static Jwt jwt(UUID userId) {
         return Jwt.withTokenValue("token")
                 .header("alg", "HS256")

@@ -13,7 +13,11 @@ import com.hokyozu.kyofuse.posts.repository.PostRepository;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
+import com.hokyozu.kyofuse.shared.exception.ForbiddenException;
+import com.hokyozu.kyofuse.shared.exception.NotFoundException;
+import com.hokyozu.kyofuse.shared.exception.UnauthorizedException;
 import com.hokyozu.kyofuse.users.entity.User;
+import com.hokyozu.kyofuse.users.finder.UserFinder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -33,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -53,6 +58,9 @@ class CommentServiceTest {
 
     @Mock
     private CommentFinder commentFinder;
+
+    @Mock
+    private UserFinder userFinder;
 
     @InjectMocks
     private CommentService commentService;
@@ -139,6 +147,46 @@ class CommentServiceTest {
     }
 
     @Test
+    void postCommentDoesNotSaveWhenPostDoesNotExist() {
+        UUID userId = UUID.randomUUID();
+        UUID postId = UUID.randomUUID();
+        GamerProfile profile = GamerProfile.builder()
+                .user(User.builder().id(userId).build())
+                .build();
+        CreateCommentRequest request = new CreateCommentRequest("content");
+        when(gamerProfileFinder.findProfileByUserId(userId)).thenReturn(profile);
+        when(postFinder.findPostByIdAndStatus(postId, PostStatus.ACTIVE))
+                .thenThrow(new BadRequestException("Post not found for ID: " + postId));
+
+        assertThatThrownBy(() -> commentService.postComment(userId, postId, request))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Post not found for ID: " + postId);
+
+        verify(commentRepository, never()).save(any());
+        verify(postRepository, never()).save(any());
+    }
+
+    @Test
+    void postCommentDoesNotSaveWhenPostIsDeleted() {
+        UUID userId = UUID.randomUUID();
+        UUID postId = UUID.randomUUID();
+        GamerProfile profile = GamerProfile.builder()
+                .user(User.builder().id(userId).build())
+                .build();
+        CreateCommentRequest request = new CreateCommentRequest("content");
+        when(gamerProfileFinder.findProfileByUserId(userId)).thenReturn(profile);
+        when(postFinder.findPostByIdAndStatus(postId, PostStatus.ACTIVE))
+                .thenThrow(new BadRequestException("Post not found for ID: " + postId));
+
+        assertThatThrownBy(() -> commentService.postComment(userId, postId, request))
+                .isInstanceOf(BadRequestException.class);
+
+        verify(postFinder).findPostByIdAndStatus(postId, PostStatus.ACTIVE);
+        verify(commentRepository, never()).save(any());
+        verify(postRepository, never()).save(any());
+    }
+
+    @Test
     void postCommentPropagatesSavedCommentCounts() {
         UUID userId = UUID.randomUUID();
         UUID postId = UUID.randomUUID();
@@ -205,6 +253,40 @@ class CommentServiceTest {
     }
 
     @Test
+    void getCommentRejectsDeletedComment() {
+        UUID commentId = UUID.randomUUID();
+        Comment deletedComment = comment(
+                commentId,
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                CommentStatus.DELETED,
+                Instant.now()
+        );
+        when(commentFinder.findById(commentId)).thenReturn(deletedComment);
+
+        assertThatThrownBy(() -> commentService.getComment(commentId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Comentário não encontrado.");
+    }
+
+    @Test
+    void getCommentRejectsHiddenComment() {
+        UUID commentId = UUID.randomUUID();
+        Comment hiddenComment = comment(
+                commentId,
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                CommentStatus.HIDDEN,
+                Instant.now()
+        );
+        when(commentFinder.findById(commentId)).thenReturn(hiddenComment);
+
+        assertThatThrownBy(() -> commentService.getComment(commentId))
+                .isInstanceOf(UnauthorizedException.class)
+                .hasMessage("Comentário em análise");
+    }
+
+    @Test
     void listCommentsValidatesActivePostAndReturnsOnlyActiveComments() {
         UUID postId = UUID.randomUUID();
         UUID authorId = UUID.randomUUID();
@@ -242,6 +324,117 @@ class CommentServiceTest {
                 .hasMessage("Post not found for ID: " + postId);
 
         verify(commentRepository, never()).findByPostIdAndStatus(any(), any(), any());
+    }
+
+    @Test
+    void deleteCommentLogicallyDeletesOwnCommentAndDecrementsPostCount() {
+        UUID commentId = UUID.randomUUID();
+        UUID postId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Instant originalUpdatedAt = Instant.now().minusSeconds(60);
+        Comment comment = comment(commentId, postId, userId, CommentStatus.ACTIVE, originalUpdatedAt);
+        Post post = Post.builder().id(postId).commentCount(2).build();
+        User user = User.builder().id(userId).build();
+        when(commentFinder.findById(commentId)).thenReturn(comment);
+        when(postFinder.findById(postId)).thenReturn(post);
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
+        when(commentRepository.existsByIdAndPostId(commentId, postId)).thenReturn(true);
+
+        commentService.deleteComment(commentId, postId, userId);
+
+        assertThat(comment.getStatus()).isEqualTo(CommentStatus.DELETED);
+        assertThat(comment.getUpdatedAt()).isAfter(originalUpdatedAt);
+        assertThat(post.getCommentCount()).isEqualTo(1);
+        verify(commentRepository).save(comment);
+        verify(postRepository).save(post);
+    }
+
+    @Test
+    void deleteCommentRejectsDeletionByNonAuthor() {
+        UUID commentId = UUID.randomUUID();
+        UUID postId = UUID.randomUUID();
+        UUID authorId = UUID.randomUUID();
+        UUID requesterId = UUID.randomUUID();
+        Comment comment = comment(commentId, postId, authorId, CommentStatus.ACTIVE, Instant.now());
+        Post post = Post.builder().id(postId).commentCount(1).build();
+        when(commentFinder.findById(commentId)).thenReturn(comment);
+        when(postFinder.findById(postId)).thenReturn(post);
+        when(userFinder.findProfileByUserId(requesterId))
+                .thenReturn(User.builder().id(requesterId).build());
+        when(commentRepository.existsByIdAndPostId(commentId, postId)).thenReturn(true);
+
+        assertThatThrownBy(() -> commentService.deleteComment(commentId, postId, requesterId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("Apenas o autor pode remover o comentário.");
+
+        assertThat(comment.getStatus()).isEqualTo(CommentStatus.ACTIVE);
+        assertThat(post.getCommentCount()).isEqualTo(1);
+        verify(commentRepository, never()).save(any());
+        verify(postRepository, never()).save(any());
+    }
+
+    @Test
+    void deleteCommentRejectsCommentThatDoesNotBelongToPost() {
+        UUID commentId = UUID.randomUUID();
+        UUID postId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Comment comment = comment(commentId, UUID.randomUUID(), userId, CommentStatus.ACTIVE, Instant.now());
+        Post post = Post.builder().id(postId).commentCount(1).build();
+        when(commentFinder.findById(commentId)).thenReturn(comment);
+        when(postFinder.findById(postId)).thenReturn(post);
+        when(userFinder.findProfileByUserId(userId)).thenReturn(User.builder().id(userId).build());
+        when(commentRepository.existsByIdAndPostId(commentId, postId)).thenReturn(false);
+
+        assertThatThrownBy(() -> commentService.deleteComment(commentId, postId, userId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("O comentário não existe nesse post.");
+
+        assertThat(post.getCommentCount()).isEqualTo(1);
+        verify(commentRepository, never()).save(any());
+        verify(postRepository, never()).save(any());
+    }
+
+    @Test
+    void deleteCommentDoesNotDecrementPostCountTwice() {
+        UUID commentId = UUID.randomUUID();
+        UUID postId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Comment comment = comment(commentId, postId, userId, CommentStatus.ACTIVE, Instant.now());
+        Post post = Post.builder().id(postId).commentCount(2).build();
+        User user = User.builder().id(userId).build();
+        when(commentFinder.findById(commentId)).thenReturn(comment);
+        when(postFinder.findById(postId)).thenReturn(post);
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
+        when(commentRepository.existsByIdAndPostId(commentId, postId)).thenReturn(true);
+
+        commentService.deleteComment(commentId, postId, userId);
+
+        assertThatThrownBy(() -> commentService.deleteComment(commentId, postId, userId))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("O comentário ja foi excluído");
+
+        assertThat(post.getCommentCount()).isEqualTo(1);
+        verify(commentRepository, times(1)).save(comment);
+        verify(postRepository, times(1)).save(post);
+    }
+
+    @Test
+    void deleteCommentDoesNotAllowPostCountToBecomeNegative() {
+        UUID commentId = UUID.randomUUID();
+        UUID postId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Comment comment = comment(commentId, postId, userId, CommentStatus.ACTIVE, Instant.now());
+        Post post = Post.builder().id(postId).commentCount(0).build();
+        User user = User.builder().id(userId).build();
+        when(commentFinder.findById(commentId)).thenReturn(comment);
+        when(postFinder.findById(postId)).thenReturn(post);
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
+        when(commentRepository.existsByIdAndPostId(commentId, postId)).thenReturn(true);
+
+        commentService.deleteComment(commentId, postId, userId);
+
+        assertThat(post.getCommentCount()).isZero();
+        verify(postRepository).save(post);
     }
 
     private static Comment comment(UUID commentId, UUID postId, UUID authorId, CommentStatus status, Instant now) {

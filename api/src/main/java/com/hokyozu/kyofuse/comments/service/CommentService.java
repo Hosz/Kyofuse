@@ -90,7 +90,7 @@ public class CommentService {
             throw new NotFoundException("O comentário não existe nesse post.");
         }
 
-        if (comment.getAuthor().getId() != userProfile.getId()) {
+        if (!comment.getAuthor().getId().equals(userProfile.getId())) {
             throw new ForbiddenException("Apenas o autor pode remover o comentário.");
         }
 
@@ -103,6 +103,11 @@ public class CommentService {
         commentRepository.save(comment);
 
         post.setCommentCount(post.getCommentCount() - 1);
+
+        if (post.getCommentCount() < 0) {
+            post.setCommentCount(0);
+        }
+
         postRepository.save(post);
     }
 }
