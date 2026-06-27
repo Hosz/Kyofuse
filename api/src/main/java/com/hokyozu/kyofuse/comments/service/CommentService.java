@@ -9,6 +9,7 @@ import com.hokyozu.kyofuse.comments.mapper.CommentMapper;
 import com.hokyozu.kyofuse.comments.repository.CommentRepository;
 import com.hokyozu.kyofuse.posts.entity.Post;
 import com.hokyozu.kyofuse.posts.enums.PostStatus;
+import com.hokyozu.kyofuse.posts.enums.PostVisibility;
 import com.hokyozu.kyofuse.posts.finder.PostFinder;
 import com.hokyozu.kyofuse.posts.repository.PostRepository;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
@@ -44,7 +45,7 @@ public class CommentService {
     public CommentResponse postComment(UUID userId, UUID postId, CreateCommentRequest request) {
         GamerProfile profile = gamerProfileFinder.findProfileByUserId(userId);
 
-        Post post = postFinder.findPostByIdAndStatus(postId, PostStatus.ACTIVE);
+        Post post = postFinder.findVisiblePostForUser(postId, userId, PostStatus.ACTIVE, PostVisibility.PUBLIC);
 
         Comment comment = CommentMapper.toEntity(profile, request, post);
         Comment savedComment = commentRepository.save(comment);

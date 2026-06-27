@@ -5,6 +5,7 @@ import com.hokyozu.kyofuse.posts.enums.PostStatus;
 import com.hokyozu.kyofuse.posts.enums.PostVisibility;
 import com.hokyozu.kyofuse.posts.repository.PostRepository;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
+import com.hokyozu.kyofuse.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -29,5 +30,16 @@ public class PostFinder {
     public Post findById(UUID postId) {
         return postRepository.findById(postId)
                 .orElseThrow(() -> new BadRequestException("Post not found for ID: " + postId));
+    }
+
+    public Post findVisibleActivePost(UUID postId, UUID userId) {
+        return postRepository
+                .findVisiblePostForUser(
+                        postId,
+                        userId,
+                        PostStatus.ACTIVE,
+                        PostVisibility.PUBLIC
+                )
+                .orElseThrow(() -> new NotFoundException("Post não encontrado."));
     }
 }

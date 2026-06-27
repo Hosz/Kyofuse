@@ -45,4 +45,20 @@ class PostReactionControllerTest {
         assertThat(result).isSameAs(expected);
         verify(service).upsertReaction(userId, postId, request);
     }
+
+    @Test
+    void removeReactionUsesAuthenticatedUserAndPostId() {
+        UUID userId = UUID.randomUUID();
+        UUID postId = UUID.randomUUID();
+        Jwt jwt = Jwt.withTokenValue("token")
+                .header("alg", "none")
+                .subject(userId.toString())
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(60))
+                .build();
+
+        controller.removeReaction(postId, jwt);
+
+        verify(service).removeReaction(userId, postId);
+    }
 }

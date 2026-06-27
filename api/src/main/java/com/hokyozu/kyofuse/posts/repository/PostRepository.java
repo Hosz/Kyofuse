@@ -22,13 +22,13 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
     @Query("""
         select p from Post p
         where p.id = :postId
-            and p.status <> :deletedStatus
+            and p.status = :activeStatus
             and (
                 p.visibility = :publicVisibility
                 or p.author.id = :requesterUserId
             )
 """)
-    Optional<Post> findVisiblePostForUser(UUID postId, UUID requesterUserId, PostStatus deletedStatus, PostVisibility publicVisibility);
+    Optional<Post> findVisiblePostForUser(UUID postId, UUID requesterUserId, PostStatus activeStatus, PostVisibility publicVisibility);
 
     Optional<Post> findByIdAndStatus(UUID id, PostStatus postStatus);
 }

@@ -173,13 +173,13 @@ class PostServiceTest {
         UUID postId = UUID.randomUUID();
         Post post = post(postId, requesterId, PostVisibility.PRIVATE, PostStatus.ACTIVE);
         List<PostMap> postMaps = List.of(postMap(post, "MIRAGE"));
-        when(postFinder.findVisiblePostForUser(postId, requesterId, PostStatus.DELETED, PostVisibility.PUBLIC))
+        when(postFinder.findVisiblePostForUser(postId, requesterId, PostStatus.ACTIVE, PostVisibility.PUBLIC))
                 .thenReturn(post);
         when(postMapRepository.findByPostId(postId)).thenReturn(postMaps);
 
         PostResponse response = postService.getPost(requesterId, postId);
 
-        verify(postFinder).findVisiblePostForUser(postId, requesterId, PostStatus.DELETED, PostVisibility.PUBLIC);
+        verify(postFinder).findVisiblePostForUser(postId, requesterId, PostStatus.ACTIVE, PostVisibility.PUBLIC);
         verify(postMapRepository).findByPostId(postId);
         assertThat(response.id()).isEqualTo(postId);
         assertThat(response.authorId()).isEqualTo(requesterId);
@@ -190,7 +190,7 @@ class PostServiceTest {
     void getPostThrowsBadRequestWhenPostIsNotVisibleForRequester() {
         UUID requesterId = UUID.randomUUID();
         UUID postId = UUID.randomUUID();
-        when(postFinder.findVisiblePostForUser(postId, requesterId, PostStatus.DELETED, PostVisibility.PUBLIC))
+        when(postFinder.findVisiblePostForUser(postId, requesterId, PostStatus.ACTIVE, PostVisibility.PUBLIC))
                 .thenThrow(new BadRequestException("Post not found for ID: " + postId));
 
         assertThatThrownBy(() -> postService.getPost(requesterId, postId))

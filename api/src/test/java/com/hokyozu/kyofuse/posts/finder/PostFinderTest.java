@@ -5,6 +5,7 @@ import com.hokyozu.kyofuse.posts.enums.PostStatus;
 import com.hokyozu.kyofuse.posts.enums.PostVisibility;
 import com.hokyozu.kyofuse.posts.repository.PostRepository;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
+import com.hokyozu.kyofuse.shared.exception.NotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -88,6 +89,31 @@ class PostFinderTest {
         when(repository.findById(postId)).thenReturn(Optional.empty());
 
         assertMissing(() -> finder.findById(postId), postId);
+    }
+
+    @Test
+    void findsVisibleActivePost() {
+        UUID postId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Post post = Post.builder().id(postId).build();
+        when(repository.findVisiblePostForUser(
+                postId, userId, PostStatus.ACTIVE, PostVisibility.PUBLIC
+        )).thenReturn(Optional.of(post));
+
+        assertThat(finder.findVisibleActivePost(postId, userId)).isSameAs(post);
+    }
+
+    @Test
+    void rejectsMissingVisibleActivePost() {
+        UUID postId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        when(repository.findVisiblePostForUser(
+                postId, userId, PostStatus.ACTIVE, PostVisibility.PUBLIC
+        )).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> finder.findVisibleActivePost(postId, userId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Post não encontrado.");
     }
 
     private void assertMissing(Runnable invocation, UUID postId) {

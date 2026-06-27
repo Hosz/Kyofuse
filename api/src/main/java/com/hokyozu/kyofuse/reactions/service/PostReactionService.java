@@ -2,6 +2,7 @@ package com.hokyozu.kyofuse.reactions.service;
 
 import com.hokyozu.kyofuse.posts.entity.Post;
 import com.hokyozu.kyofuse.posts.enums.PostStatus;
+import com.hokyozu.kyofuse.posts.enums.PostVisibility;
 import com.hokyozu.kyofuse.posts.finder.PostFinder;
 import com.hokyozu.kyofuse.posts.repository.PostRepository;
 import com.hokyozu.kyofuse.reactions.dto.request.PostReactionRequest;
@@ -11,6 +12,7 @@ import com.hokyozu.kyofuse.reactions.enums.ReactionType;
 import com.hokyozu.kyofuse.reactions.mapper.PostReactionMapper;
 import com.hokyozu.kyofuse.reactions.repository.PostReactionRepository;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
+import com.hokyozu.kyofuse.shared.exception.NotFoundException;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.finder.UserFinder;
 import jakarta.validation.Valid;
@@ -34,7 +36,7 @@ public class PostReactionService {
 
     @Transactional
     public PostReactionResponse upsertReaction(UUID userId, UUID postId, @Valid PostReactionRequest request) {
-        Post post = postFinder.findById(postId);
+        Post post = postFinder.findVisiblePostForUser(postId, userId, PostStatus.ACTIVE, PostVisibility.PUBLIC);
         User user = userFinder.findProfileByUserId(userId);
         Optional<PostReaction> postReactionExist = postReactionRepository.findByPostIdAndUserId(postId, userId);
 
@@ -73,5 +75,23 @@ public class PostReactionService {
 
             return PostReactionMapper.toResponse(postReactionSaved);
         }
+    }
+
+    @Transactional
+    public void removeReaction(UUID userId, UUID postId) {
+        userFinder.findProfileByUserId(userId);
+        Post post = postFinder.findVisibleActivePost(postId, userId);
+
+        PostReaction postReaction = postReactionRepository.findByPostIdAndUserId(postId, userId)
+                        .orElseThrow(() -> new NotFoundException("Reação de post não encontrada."));
+
+        if (postReaction.getReactionType() == ReactionType.LIKE) {
+            post.setLikeCount(post.getLikeCount() - 1);
+        } else {
+            post.setReactionCount(post.getReactionCount() - 1);
+        }
+        postRepository.save(post);
+
+        postReactionRepository.delete(postReaction);
     }
 }
