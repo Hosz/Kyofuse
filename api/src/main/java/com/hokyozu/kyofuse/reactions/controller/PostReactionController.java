@@ -24,4 +24,11 @@ public class PostReactionController {
 
         return postReactionService.upsertReaction(userId, postId, request);
     }
+
+    @DeleteMapping("/{postId}/remove")
+    public void removeReaction(@PathVariable UUID postId, @AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+
+        postReactionService.removeReaction(userId, postId);
+    }
 }

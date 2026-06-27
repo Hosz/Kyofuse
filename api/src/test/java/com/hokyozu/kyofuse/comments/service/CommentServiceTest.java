@@ -8,6 +8,7 @@ import com.hokyozu.kyofuse.comments.finder.CommentFinder;
 import com.hokyozu.kyofuse.comments.repository.CommentRepository;
 import com.hokyozu.kyofuse.posts.entity.Post;
 import com.hokyozu.kyofuse.posts.enums.PostStatus;
+import com.hokyozu.kyofuse.posts.enums.PostVisibility;
 import com.hokyozu.kyofuse.posts.finder.PostFinder;
 import com.hokyozu.kyofuse.posts.repository.PostRepository;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
@@ -82,7 +83,9 @@ class CommentServiceTest {
         CreateCommentRequest request = new CreateCommentRequest("content");
 
         when(gamerProfileFinder.findProfileByUserId(userId)).thenReturn(profile);
-        when(postFinder.findPostByIdAndStatus(postId, PostStatus.ACTIVE)).thenReturn(post);
+        when(postFinder.findVisiblePostForUser(
+                postId, userId, PostStatus.ACTIVE, PostVisibility.PUBLIC
+        )).thenReturn(post);
         when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
             Comment comment = invocation.getArgument(0);
             comment.setId(commentId);
@@ -122,7 +125,7 @@ class CommentServiceTest {
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("Gamer profile not found for user ID: " + userId);
 
-        verify(postFinder, never()).findPostByIdAndStatus(any(), any());
+        verify(postFinder, never()).findVisiblePostForUser(any(), any(), any(), any());
         verify(commentRepository, never()).save(any());
         verify(postRepository, never()).save(any());
     }
@@ -135,7 +138,9 @@ class CommentServiceTest {
         GamerProfile profile = GamerProfile.builder().user(user).build();
         CreateCommentRequest request = new CreateCommentRequest("content");
         when(gamerProfileFinder.findProfileByUserId(userId)).thenReturn(profile);
-        when(postFinder.findPostByIdAndStatus(postId, PostStatus.ACTIVE))
+        when(postFinder.findVisiblePostForUser(
+                postId, userId, PostStatus.ACTIVE, PostVisibility.PUBLIC
+        ))
                 .thenThrow(new BadRequestException("Post not found for ID: " + postId));
 
         assertThatThrownBy(() -> commentService.postComment(userId, postId, request))
@@ -155,7 +160,9 @@ class CommentServiceTest {
                 .build();
         CreateCommentRequest request = new CreateCommentRequest("content");
         when(gamerProfileFinder.findProfileByUserId(userId)).thenReturn(profile);
-        when(postFinder.findPostByIdAndStatus(postId, PostStatus.ACTIVE))
+        when(postFinder.findVisiblePostForUser(
+                postId, userId, PostStatus.ACTIVE, PostVisibility.PUBLIC
+        ))
                 .thenThrow(new BadRequestException("Post not found for ID: " + postId));
 
         assertThatThrownBy(() -> commentService.postComment(userId, postId, request))
@@ -175,13 +182,17 @@ class CommentServiceTest {
                 .build();
         CreateCommentRequest request = new CreateCommentRequest("content");
         when(gamerProfileFinder.findProfileByUserId(userId)).thenReturn(profile);
-        when(postFinder.findPostByIdAndStatus(postId, PostStatus.ACTIVE))
+        when(postFinder.findVisiblePostForUser(
+                postId, userId, PostStatus.ACTIVE, PostVisibility.PUBLIC
+        ))
                 .thenThrow(new BadRequestException("Post not found for ID: " + postId));
 
         assertThatThrownBy(() -> commentService.postComment(userId, postId, request))
                 .isInstanceOf(BadRequestException.class);
 
-        verify(postFinder).findPostByIdAndStatus(postId, PostStatus.ACTIVE);
+        verify(postFinder).findVisiblePostForUser(
+                postId, userId, PostStatus.ACTIVE, PostVisibility.PUBLIC
+        );
         verify(commentRepository, never()).save(any());
         verify(postRepository, never()).save(any());
     }
@@ -197,7 +208,9 @@ class CommentServiceTest {
         CreateCommentRequest request = new CreateCommentRequest("content");
         Instant now = Instant.now();
         when(gamerProfileFinder.findProfileByUserId(userId)).thenReturn(profile);
-        when(postFinder.findPostByIdAndStatus(postId, PostStatus.ACTIVE)).thenReturn(post);
+        when(postFinder.findVisiblePostForUser(
+                postId, userId, PostStatus.ACTIVE, PostVisibility.PUBLIC
+        )).thenReturn(post);
         when(commentRepository.save(any(Comment.class))).thenReturn(Comment.builder()
                 .id(commentId)
                 .post(post)

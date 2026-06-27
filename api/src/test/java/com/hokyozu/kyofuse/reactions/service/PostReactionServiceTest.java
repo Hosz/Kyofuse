@@ -2,6 +2,7 @@ package com.hokyozu.kyofuse.reactions.service;
 
 import com.hokyozu.kyofuse.posts.entity.Post;
 import com.hokyozu.kyofuse.posts.enums.PostStatus;
+import com.hokyozu.kyofuse.posts.enums.PostVisibility;
 import com.hokyozu.kyofuse.posts.finder.PostFinder;
 import com.hokyozu.kyofuse.posts.repository.PostRepository;
 import com.hokyozu.kyofuse.reactions.dto.request.PostReactionRequest;
@@ -10,6 +11,7 @@ import com.hokyozu.kyofuse.reactions.entity.PostReaction;
 import com.hokyozu.kyofuse.reactions.enums.ReactionType;
 import com.hokyozu.kyofuse.reactions.repository.PostReactionRepository;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
+import com.hokyozu.kyofuse.shared.exception.NotFoundException;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.finder.UserFinder;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -60,7 +63,9 @@ class PostReactionServiceTest {
                 .reactionCount(4)
                 .likeCount(3)
                 .build();
-        when(postFinder.findById(postId)).thenReturn(post);
+        lenient().when(postFinder.findVisiblePostForUser(
+                postId, userId, PostStatus.ACTIVE, PostVisibility.PUBLIC
+        )).thenReturn(post);
         when(userFinder.findProfileByUserId(userId)).thenReturn(user);
     }
 
@@ -150,6 +155,49 @@ class PostReactionServiceTest {
         assertThat(post.getLikeCount()).isEqualTo(3);
         assertThat(post.getReactionCount()).isEqualTo(4);
         assertThat(existing.getReactionType()).isEqualTo(ReactionType.LOL);
+    }
+
+    @Test
+    void removesLikeAndDecrementsLikeCount() {
+        PostReaction existing = reaction(ReactionType.LIKE);
+        when(postFinder.findVisibleActivePost(postId, userId)).thenReturn(post);
+        when(postReactionRepository.findByPostIdAndUserId(postId, userId))
+                .thenReturn(Optional.of(existing));
+
+        service.removeReaction(userId, postId);
+
+        assertThat(post.getLikeCount()).isEqualTo(2);
+        assertThat(post.getReactionCount()).isEqualTo(4);
+        verify(postRepository).save(post);
+        verify(postReactionRepository).delete(existing);
+    }
+
+    @Test
+    void removesNonLikeAndDecrementsReactionCount() {
+        PostReaction existing = reaction(ReactionType.FIRE);
+        when(postFinder.findVisibleActivePost(postId, userId)).thenReturn(post);
+        when(postReactionRepository.findByPostIdAndUserId(postId, userId))
+                .thenReturn(Optional.of(existing));
+
+        service.removeReaction(userId, postId);
+
+        assertThat(post.getLikeCount()).isEqualTo(3);
+        assertThat(post.getReactionCount()).isEqualTo(3);
+        verify(postReactionRepository).delete(existing);
+    }
+
+    @Test
+    void rejectsRemovalWhenReactionDoesNotExist() {
+        when(postFinder.findVisibleActivePost(postId, userId)).thenReturn(post);
+        when(postReactionRepository.findByPostIdAndUserId(postId, userId))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.removeReaction(userId, postId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Reação de post não encontrada.");
+
+        verify(postRepository, never()).save(any());
+        verify(postReactionRepository, never()).delete(any());
     }
 
     private void stubExisting(PostReaction reaction) {

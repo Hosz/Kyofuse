@@ -58,7 +58,7 @@ public class PostService {
     }
 
     public PostResponse getPost(UUID userId, UUID postId) {
-        Post post = postFinder.findVisiblePostForUser(postId, userId, PostStatus.DELETED, PostVisibility.PUBLIC);
+        Post post = postFinder.findVisiblePostForUser(postId, userId, PostStatus.ACTIVE, PostVisibility.PUBLIC);
 
         List<PostMap> postMaps = postMapRepository.findByPostId(postId);
 
