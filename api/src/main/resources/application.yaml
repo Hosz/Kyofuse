@@ -2,10 +2,16 @@ spring:
   application:
     name: kyofuse
 
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE}
+
+  config:
+    import: optional:file:.env[.properties]
+
   datasource:
-    url: jdbc:postgresql://localhost:5432/kyofuse
-    username: kyofuse
-    password: kyofuse
+    url: ${DB_URL}
+    username: ${DB_APP_USERNAME}
+    password: ${DB_APP_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -19,13 +25,16 @@ spring:
           time_zone: UTC
 
   flyway:
-    enabled: true
+    enabled: ${FLYWAY_ENABLED:false}
+    url: ${DB_URL}
+    user: ${DB_MIGRATION_USERNAME}
+    password: ${DB_MIGRATION_PASSWORD}
     locations: classpath:db/migration
 
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 security:
   jwt:
-    secret: ${JWT_SECRET:kyofuse-local-development-secret-key-change-me-please-123456789}
-    expiration-minutes: ${JWT_EXPIRATION_MINUTES:120}
+    secret: ${JWT_SECRET}
+    expiration-minutes: ${JWT_EXPIRATION_MINUTES:360}
