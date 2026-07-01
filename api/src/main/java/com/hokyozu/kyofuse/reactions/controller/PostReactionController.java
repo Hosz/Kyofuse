@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/posts/reactions")
+@RequestMapping("/api/posts/reactions")
 @RequiredArgsConstructor
 public class PostReactionController {
 
