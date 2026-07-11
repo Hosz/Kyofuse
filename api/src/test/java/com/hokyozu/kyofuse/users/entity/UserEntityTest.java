@@ -1,4 +1,4 @@
-﻿package com.hokyozu.kyofuse.users.entity;
+package com.hokyozu.kyofuse.users.entity;
 
 import com.hokyozu.kyofuse.users.enums.UserRole;
 import com.hokyozu.kyofuse.users.enums.UserStatus;
@@ -14,13 +14,18 @@ class UserEntityTest {
     @Test
     void shouldCreateUserWithAllFields() {
         UUID userId = UUID.randomUUID();
+        String email = "test@example.com";
+        String username = "testuser";
+        String firstName = "Test";
+        String lastName = "User";
         Instant now = Instant.now();
 
         User user = User.builder()
                 .id(userId)
-                .username("testuser")
-                .email("test@example.com")
-                .password("hashed_password")
+                .email(email)
+                .username(username)
+                .firstName(firstName)
+                .lastName(lastName)
                 .role(UserRole.USER)
                 .status(UserStatus.ACTIVE)
                 .createdAt(now)
@@ -28,9 +33,10 @@ class UserEntityTest {
                 .build();
 
         assertThat(user.getId()).isEqualTo(userId);
-        assertThat(user.getUsername()).isEqualTo("testuser");
-        assertThat(user.getEmail()).isEqualTo("test@example.com");
-        assertThat(user.getPassword()).isEqualTo("hashed_password");
+        assertThat(user.getEmail()).isEqualTo(email);
+        assertThat(user.getUsername()).isEqualTo(username);
+        assertThat(user.getFirstName()).isEqualTo(firstName);
+        assertThat(user.getLastName()).isEqualTo(lastName);
         assertThat(user.getRole()).isEqualTo(UserRole.USER);
         assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
         assertThat(user.getCreatedAt()).isEqualTo(now);
@@ -38,18 +44,16 @@ class UserEntityTest {
     }
 
     @Test
-    void shouldUpdateUserPassword() {
-        User user = createUser();
-        String newPassword = "new_hashed_password";
-
-        user.setPassword(newPassword);
-
-        assertThat(user.getPassword()).isEqualTo(newPassword);
-    }
-
-    @Test
     void shouldUpdateUserStatus() {
-        User user = createUser();
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .email("test@example.com")
+                .username("testuser")
+                .firstName("Test")
+                .lastName("User")
+                .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
+                .build();
 
         user.setStatus(UserStatus.INACTIVE);
 
@@ -58,7 +62,15 @@ class UserEntityTest {
 
     @Test
     void shouldUpdateUserRole() {
-        User user = createUser();
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .email("test@example.com")
+                .username("testuser")
+                .firstName("Test")
+                .lastName("User")
+                .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
+                .build();
 
         user.setRole(UserRole.ADMIN);
 
@@ -66,87 +78,123 @@ class UserEntityTest {
     }
 
     @Test
-    void shouldHandleDifferentUserRoles() {
-        User user = createUser();
+    void shouldSetDeactivationTimestamp() {
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .email("test@example.com")
+                .username("testuser")
+                .firstName("Test")
+                .lastName("User")
+                .role(UserRole.USER)
+                .status(UserStatus.INACTIVE)
+                .build();
 
-        for (UserRole role : UserRole.values()) {
-            user.setRole(role);
-            assertThat(user.getRole()).isEqualTo(role);
-        }
+        Instant deactivatedAt = Instant.now();
+        user.setDeactivatedAt(deactivatedAt);
+
+        assertThat(user.getDeactivatedAt()).isEqualTo(deactivatedAt);
     }
 
     @Test
-    void shouldHandleDifferentUserStatuses() {
-        User user = createUser();
+    void shouldSetDeletionScheduledTimestamp() {
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .email("test@example.com")
+                .username("testuser")
+                .firstName("Test")
+                .lastName("User")
+                .role(UserRole.USER)
+                .status(UserStatus.BANNED)
+                .build();
 
-        for (UserStatus status : UserStatus.values()) {
-            user.setStatus(status);
-            assertThat(user.getStatus()).isEqualTo(status);
-        }
+        Instant deletionScheduledAt = Instant.now();
+        user.setDeletionScheduledAt(deletionScheduledAt);
+
+        assertThat(user.getDeletionScheduledAt()).isEqualTo(deletionScheduledAt);
     }
 
     @Test
-    void shouldUpdateTimestamps() {
-        User user = createUser();
-        Instant originalCreatedAt = user.getCreatedAt();
-        Instant newUpdatedAt = Instant.now().plusSeconds(3600);
+    void shouldBanUser() {
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .email("test@example.com")
+                .username("testuser")
+                .firstName("Test")
+                .lastName("User")
+                .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
+                .build();
 
-        user.setUpdatedAt(newUpdatedAt);
+        user.setStatus(UserStatus.BANNED);
 
-        assertThat(user.getCreatedAt()).isEqualTo(originalCreatedAt);
-        assertThat(user.getUpdatedAt()).isEqualTo(newUpdatedAt);
+        assertThat(user.getStatus()).isEqualTo(UserStatus.BANNED);
     }
 
     @Test
-    void shouldUpdateEmail() {
-        User user = createUser();
-        String newEmail = "newemail@example.com";
+    void shouldUpdateUserEmail() {
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .email("old@example.com")
+                .username("testuser")
+                .firstName("Test")
+                .lastName("User")
+                .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
+                .build();
 
-        user.setEmail(newEmail);
+        user.setEmail("new@example.com");
 
-        assertThat(user.getEmail()).isEqualTo(newEmail);
+        assertThat(user.getEmail()).isEqualTo("new@example.com");
     }
 
     @Test
-    void shouldUpdateUsername() {
-        User user = createUser();
-        String newUsername = "newusername";
+    void shouldPreserveCreatedAtTimestamp() {
+        Instant createdAt = Instant.now().minusSeconds(3600);
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .email("test@example.com")
+                .username("testuser")
+                .firstName("Test")
+                .lastName("User")
+                .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
+                .createdAt(createdAt)
+                .build();
 
-        user.setUsername(newUsername);
-
-        assertThat(user.getUsername()).isEqualTo(newUsername);
+        assertThat(user.getCreatedAt()).isEqualTo(createdAt);
     }
 
     @Test
-    void shouldHaveDefaultValues() {
-        User user = new User();
+    void shouldAllowUpdatingLastName() {
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .email("test@example.com")
+                .username("testuser")
+                .firstName("Test")
+                .lastName("User")
+                .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
+                .build();
 
-        assertThat(user.getId()).isNull();
-        assertThat(user.getUsername()).isNull();
-        assertThat(user.getEmail()).isNull();
+        user.setLastName("UpdatedLastName");
+
+        assertThat(user.getLastName()).isEqualTo("UpdatedLastName");
     }
 
     @Test
-    void shouldAllowNullPassword() {
-        User user = new User();
-        user.setId(UUID.randomUUID());
-        user.setUsername("user");
-        user.setEmail("user@example.com");
-        user.setPassword(null);
+    void shouldAllowUpdatingFirstName() {
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .email("test@example.com")
+                .username("testuser")
+                .firstName("Test")
+                .lastName("User")
+                .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
+                .build();
 
-        assertThat(user.getPassword()).isNull();
-    }
+        user.setFirstName("UpdatedFirstName");
 
-    private User createUser() {
-        User user = new User();
-        user.setId(UUID.randomUUID());
-        user.setUsername("testuser");
-        user.setEmail("test@example.com");
-        user.setPassword("hashed_password");
-        user.setRole(UserRole.USER);
-        user.setStatus(UserStatus.ACTIVE);
-        user.setCreatedAt(Instant.now());
-        user.setUpdatedAt(Instant.now());
-        return user;
+        assertThat(user.getFirstName()).isEqualTo("UpdatedFirstName");
     }
 }

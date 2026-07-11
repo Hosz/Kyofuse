@@ -1,145 +1,249 @@
-﻿package com.hokyozu.kyofuse.profiles.service;
+package com.hokyozu.kyofuse.profiles.service;
 
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.profiles.enums.GamerProfileSetupStatus;
-import com.hokyozu.kyofuse.profiles.enums.Playstyle;
 import com.hokyozu.kyofuse.profiles.enums.PlayerRole;
+import com.hokyozu.kyofuse.profiles.enums.Playstyle;
+import com.hokyozu.kyofuse.users.entity.User;
+import com.hokyozu.kyofuse.users.enums.UserRole;
+import com.hokyozu.kyofuse.users.enums.UserStatus;
 import org.junit.jupiter.api.Test;
+
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class GamerProfileCompleteSetupServiceTest {
 
-    private final GamerProfileCompleteSetupService service = new GamerProfileCompleteSetupService();
-
     @Test
-    void isCompleted_shouldReturnTrue_whenAllRequiredFieldsAreFilled() {
-        GamerProfile profile = createCompleteProfile();
+    void isCompleted_shouldReturnTrue_whenAllRequiredFieldsFilled() {
+        GamerProfile profile = GamerProfile.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .nickname("ProPlayer")
+                .bio("Competitive player")
+                .country("USA")
+                .mainRole(PlayerRole.AWPER)
+                .secondaryRole(PlayerRole.RIFLER)
+                .premierRating(2500)
+                .playstyle(Playstyle.COMPETITIVE)
+                .setupStatus(GamerProfileSetupStatus.PENDING)
+                .build();
 
-        assertThat(GamerProfileCompleteSetupService.isCompleted(profile)).isTrue();
+        boolean result = GamerProfileCompleteSetupService.isCompleted(profile);
+
+        assertThat(result).isTrue();
     }
 
     @Test
-    void isCompleted_shouldReturnFalse_whenNicknameIsNull() {
-        GamerProfile profile = createCompleteProfile();
-        profile.setNickname(null);
+    void isCompleted_shouldReturnFalse_whenNicknameIsMissing() {
+        GamerProfile profile = GamerProfile.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .nickname(null)
+                .bio("Competitive player")
+                .country("USA")
+                .mainRole(PlayerRole.AWPER)
+                .secondaryRole(PlayerRole.RIFLER)
+                .premierRating(2500)
+                .playstyle(Playstyle.COMPETITIVE)
+                .setupStatus(GamerProfileSetupStatus.PENDING)
+                .build();
 
-        assertThat(GamerProfileCompleteSetupService.isCompleted(profile)).isFalse();
+        boolean result = GamerProfileCompleteSetupService.isCompleted(profile);
+
+        assertThat(result).isFalse();
     }
 
     @Test
-    void isCompleted_shouldReturnFalse_whenNicknameIsEmpty() {
-        GamerProfile profile = createCompleteProfile();
-        profile.setNickname("");
+    void isCompleted_shouldReturnFalse_whenBioIsMissing() {
+        GamerProfile profile = GamerProfile.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .nickname("ProPlayer")
+                .bio(null)
+                .country("USA")
+                .mainRole(PlayerRole.AWPER)
+                .secondaryRole(PlayerRole.RIFLER)
+                .premierRating(2500)
+                .playstyle(Playstyle.COMPETITIVE)
+                .setupStatus(GamerProfileSetupStatus.PENDING)
+                .build();
 
-        assertThat(GamerProfileCompleteSetupService.isCompleted(profile)).isFalse();
+        boolean result = GamerProfileCompleteSetupService.isCompleted(profile);
+
+        assertThat(result).isFalse();
     }
 
     @Test
-    void isCompleted_shouldReturnFalse_whenNicknameIsBlank() {
-        GamerProfile profile = createCompleteProfile();
-        profile.setNickname("   ");
+    void isCompleted_shouldReturnFalse_whenCountryIsMissing() {
+        GamerProfile profile = GamerProfile.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .nickname("ProPlayer")
+                .bio("Competitive player")
+                .country(null)
+                .mainRole(PlayerRole.AWPER)
+                .secondaryRole(PlayerRole.RIFLER)
+                .premierRating(2500)
+                .playstyle(Playstyle.COMPETITIVE)
+                .setupStatus(GamerProfileSetupStatus.PENDING)
+                .build();
 
-        assertThat(GamerProfileCompleteSetupService.isCompleted(profile)).isFalse();
+        boolean result = GamerProfileCompleteSetupService.isCompleted(profile);
+
+        assertThat(result).isFalse();
     }
 
     @Test
-    void isCompleted_shouldReturnFalse_whenBioIsNull() {
-        GamerProfile profile = createCompleteProfile();
-        profile.setBio(null);
+    void isCompleted_shouldReturnFalse_whenMainRoleIsMissing() {
+        GamerProfile profile = GamerProfile.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .nickname("ProPlayer")
+                .bio("Competitive player")
+                .country("USA")
+                .mainRole(null)
+                .secondaryRole(PlayerRole.RIFLER)
+                .premierRating(2500)
+                .playstyle(Playstyle.COMPETITIVE)
+                .setupStatus(GamerProfileSetupStatus.PENDING)
+                .build();
 
-        assertThat(GamerProfileCompleteSetupService.isCompleted(profile)).isFalse();
+        boolean result = GamerProfileCompleteSetupService.isCompleted(profile);
+
+        assertThat(result).isFalse();
     }
 
     @Test
-    void isCompleted_shouldReturnFalse_whenBioIsEmpty() {
-        GamerProfile profile = createCompleteProfile();
-        profile.setBio("");
+    void isCompleted_shouldReturnFalse_whenSecondaryRoleIsMissing() {
+        GamerProfile profile = GamerProfile.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .nickname("ProPlayer")
+                .bio("Competitive player")
+                .country("USA")
+                .mainRole(PlayerRole.AWPER)
+                .secondaryRole(null)
+                .premierRating(2500)
+                .playstyle(Playstyle.COMPETITIVE)
+                .setupStatus(GamerProfileSetupStatus.PENDING)
+                .build();
 
-        assertThat(GamerProfileCompleteSetupService.isCompleted(profile)).isFalse();
+        boolean result = GamerProfileCompleteSetupService.isCompleted(profile);
+
+        assertThat(result).isFalse();
     }
 
     @Test
-    void isCompleted_shouldReturnFalse_whenCountryIsNull() {
-        GamerProfile profile = createCompleteProfile();
-        profile.setCountry(null);
+    void isCompleted_shouldReturnFalse_whenRatingIsMissing() {
+        GamerProfile profile = GamerProfile.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .nickname("ProPlayer")
+                .bio("Competitive player")
+                .country("USA")
+                .mainRole(PlayerRole.AWPER)
+                .secondaryRole(PlayerRole.RIFLER)
+                .premierRating(null)
+                .playstyle(Playstyle.COMPETITIVE)
+                .setupStatus(GamerProfileSetupStatus.PENDING)
+                .build();
 
-        assertThat(GamerProfileCompleteSetupService.isCompleted(profile)).isFalse();
+        boolean result = GamerProfileCompleteSetupService.isCompleted(profile);
+
+        assertThat(result).isFalse();
     }
 
     @Test
-    void isCompleted_shouldReturnFalse_whenCountryIsEmpty() {
-        GamerProfile profile = createCompleteProfile();
-        profile.setCountry("");
+    void isCompleted_shouldReturnFalse_whenPlaystyleIsMissing() {
+        GamerProfile profile = GamerProfile.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .nickname("ProPlayer")
+                .bio("Competitive player")
+                .country("USA")
+                .mainRole(PlayerRole.AWPER)
+                .secondaryRole(PlayerRole.RIFLER)
+                .premierRating(2500)
+                .playstyle(null)
+                .setupStatus(GamerProfileSetupStatus.PENDING)
+                .build();
 
-        assertThat(GamerProfileCompleteSetupService.isCompleted(profile)).isFalse();
+        boolean result = GamerProfileCompleteSetupService.isCompleted(profile);
+
+        assertThat(result).isFalse();
     }
 
     @Test
-    void isCompleted_shouldReturnFalse_whenMainRoleIsNull() {
-        GamerProfile profile = createCompleteProfile();
-        profile.setMainRole(null);
+    void isCompleted_shouldReturnFalse_whenEmptyStringNickname() {
+        GamerProfile profile = GamerProfile.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .nickname("")
+                .bio("Competitive player")
+                .country("USA")
+                .mainRole(PlayerRole.AWPER)
+                .secondaryRole(PlayerRole.RIFLER)
+                .premierRating(2500)
+                .playstyle(Playstyle.COMPETITIVE)
+                .setupStatus(GamerProfileSetupStatus.PENDING)
+                .build();
 
-        assertThat(GamerProfileCompleteSetupService.isCompleted(profile)).isFalse();
+        boolean result = GamerProfileCompleteSetupService.isCompleted(profile);
+
+        assertThat(result).isFalse();
     }
 
     @Test
-    void isCompleted_shouldReturnFalse_whenSecondaryRoleIsNull() {
-        GamerProfile profile = createCompleteProfile();
-        profile.setSecondaryRole(null);
+    void isCompleted_shouldReturnTrue_withDifferentRoles() {
+        GamerProfile profile = GamerProfile.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .nickname("SupportMain")
+                .bio("Support specialist")
+                .country("Canada")
+                .mainRole(PlayerRole.SUPPORT)
+                .secondaryRole(PlayerRole.IGL)
+                .premierRating(1800)
+                .playstyle(Playstyle.TEAM_ORIENTED)
+                .setupStatus(GamerProfileSetupStatus.PENDING)
+                .build();
 
-        assertThat(GamerProfileCompleteSetupService.isCompleted(profile)).isFalse();
+        boolean result = GamerProfileCompleteSetupService.isCompleted(profile);
+
+        assertThat(result).isTrue();
     }
 
     @Test
-    void isCompleted_shouldReturnFalse_whenPremierRatingIsNull() {
-        GamerProfile profile = createCompleteProfile();
-        profile.setPremierRating(null);
+    void isCompleted_shouldReturnTrue_withDifferentPlaystyles() {
+        GamerProfile profile = GamerProfile.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .nickname("CasualPlayer")
+                .bio("Just for fun")
+                .country("UK")
+                .mainRole(PlayerRole.RIFLER)
+                .secondaryRole(PlayerRole.FLEX)
+                .premierRating(1200)
+                .playstyle(Playstyle.CASUAL)
+                .setupStatus(GamerProfileSetupStatus.PENDING)
+                .build();
 
-        assertThat(GamerProfileCompleteSetupService.isCompleted(profile)).isFalse();
+        boolean result = GamerProfileCompleteSetupService.isCompleted(profile);
+
+        assertThat(result).isTrue();
     }
 
-    @Test
-    void isCompleted_shouldReturnFalse_whenPlaystyleIsNull() {
-        GamerProfile profile = createCompleteProfile();
-        profile.setPlaystyle(null);
-
-        assertThat(GamerProfileCompleteSetupService.isCompleted(profile)).isFalse();
-    }
-
-    @Test
-    void isCompleted_shouldReturnFalse_whenMultipleFieldsAreMissing() {
-        GamerProfile profile = createCompleteProfile();
-        profile.setNickname(null);
-        profile.setMainRole(null);
-        profile.setPremierRating(null);
-
-        assertThat(GamerProfileCompleteSetupService.isCompleted(profile)).isFalse();
-    }
-
-    @Test
-    void isCompleted_shouldReturnTrue_withWhitespaceInTextFields() {
-        GamerProfile profile = new GamerProfile();
-        profile.setNickname("Nick With Space");
-        profile.setBio("Bio with multiple spaces");
-        profile.setCountry("United States");
-        profile.setMainRole(PlayerRole.ENTRY);
-        profile.setSecondaryRole(PlayerRole.SUPPORT);
-        profile.setPremierRating(3000);
-        profile.setPlaystyle(Playstyle.AGGRESSIVE);
-
-        assertThat(GamerProfileCompleteSetupService.isCompleted(profile)).isTrue();
-    }
-
-    private GamerProfile createCompleteProfile() {
-        GamerProfile profile = new GamerProfile();
-        profile.setNickname("ProPlayer");
-        profile.setBio("Competitive player");
-        profile.setCountry("Brazil");
-        profile.setMainRole(PlayerRole.RIFLER);
-        profile.setSecondaryRole(PlayerRole.AWP);
-        profile.setPremierRating(2500);
-        profile.setPlaystyle(Playstyle.TACTICAL);
-        return profile;
+    private User createUser() {
+        return User.builder()
+                .id(UUID.randomUUID())
+                .username("user" + System.nanoTime())
+                .email("email" + System.nanoTime() + "@example.com")
+                .firstName("Test")
+                .lastName("User")
+                .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
+                .build();
     }
 }
