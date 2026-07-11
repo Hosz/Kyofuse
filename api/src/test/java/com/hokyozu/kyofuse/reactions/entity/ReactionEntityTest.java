@@ -1,4 +1,4 @@
-﻿package com.hokyozu.kyofuse.reactions.entity;
+package com.hokyozu.kyofuse.reactions.entity;
 
 import com.hokyozu.kyofuse.comments.entity.Comment;
 import com.hokyozu.kyofuse.comments.enums.CommentStatus;
@@ -32,6 +32,7 @@ class ReactionEntityTest {
                 .post(post)
                 .reactionType(ReactionType.LIKE)
                 .createdAt(now)
+                .updatedAt(now)
                 .build();
 
         assertThat(reaction.getId()).isEqualTo(reactionId);
@@ -39,6 +40,7 @@ class ReactionEntityTest {
         assertThat(reaction.getPost()).isEqualTo(post);
         assertThat(reaction.getReactionType()).isEqualTo(ReactionType.LIKE);
         assertThat(reaction.getCreatedAt()).isEqualTo(now);
+        assertThat(reaction.getUpdatedAt()).isEqualTo(now);
     }
 
     @Test
@@ -52,183 +54,186 @@ class ReactionEntityTest {
                 .id(reactionId)
                 .user(user)
                 .comment(comment)
-                .reactionType(ReactionType.LOVE)
+                .reactionType(ReactionType.LIKE)
                 .createdAt(now)
+                .updatedAt(now)
                 .build();
 
         assertThat(reaction.getId()).isEqualTo(reactionId);
         assertThat(reaction.getUser()).isEqualTo(user);
         assertThat(reaction.getComment()).isEqualTo(comment);
-        assertThat(reaction.getReactionType()).isEqualTo(ReactionType.LOVE);
+        assertThat(reaction.getReactionType()).isEqualTo(ReactionType.LIKE);
         assertThat(reaction.getCreatedAt()).isEqualTo(now);
+        assertThat(reaction.getUpdatedAt()).isEqualTo(now);
     }
 
     @Test
     void shouldUpdatePostReactionType() {
         PostReaction reaction = createPostReaction();
+        reaction.setReactionType(ReactionType.FIRE);
 
-        reaction.setReactionType(ReactionType.DISLIKE);
-
-        assertThat(reaction.getReactionType()).isEqualTo(ReactionType.DISLIKE);
+        assertThat(reaction.getReactionType()).isEqualTo(ReactionType.FIRE);
     }
 
     @Test
     void shouldUpdateCommentReactionType() {
         CommentReaction reaction = createCommentReaction();
+        reaction.setReactionType(ReactionType.FIRE);
 
-        reaction.setReactionType(ReactionType.HAHA);
-
-        assertThat(reaction.getReactionType()).isEqualTo(ReactionType.HAHA);
+        assertThat(reaction.getReactionType()).isEqualTo(ReactionType.FIRE);
     }
 
     @Test
-    void shouldPreservePostReactionUserRelationship() {
+    void shouldMaintainPostReactionUserRelationship() {
         User user = createUser();
-        PostReaction reaction = createPostReactionWithUser(user);
+        Post post = createPost();
+        PostReaction reaction = PostReaction.builder()
+                .id(UUID.randomUUID())
+                .user(user)
+                .post(post)
+                .reactionType(ReactionType.LIKE)
+                .build();
 
         assertThat(reaction.getUser()).isEqualTo(user);
-        assertThat(reaction.getUser().getId()).isEqualTo(user.getId());
+        assertThat(reaction.getUser().getUsername()).isEqualTo(user.getUsername());
     }
 
     @Test
-    void shouldPreservePostReactionPostRelationship() {
+    void shouldMaintainPostReactionPostRelationship() {
         Post post = createPost();
-        PostReaction reaction = createPostReactionWithPost(post);
+        PostReaction reaction = PostReaction.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .post(post)
+                .reactionType(ReactionType.LIKE)
+                .build();
 
         assertThat(reaction.getPost()).isEqualTo(post);
         assertThat(reaction.getPost().getId()).isEqualTo(post.getId());
     }
 
     @Test
-    void shouldPreserveCommentReactionUserRelationship() {
+    void shouldMaintainCommentReactionUserRelationship() {
         User user = createUser();
-        CommentReaction reaction = createCommentReactionWithUser(user);
+        Comment comment = createComment();
+        CommentReaction reaction = CommentReaction.builder()
+                .id(UUID.randomUUID())
+                .user(user)
+                .comment(comment)
+                .reactionType(ReactionType.LIKE)
+                .build();
 
         assertThat(reaction.getUser()).isEqualTo(user);
-        assertThat(reaction.getUser().getId()).isEqualTo(user.getId());
     }
 
     @Test
-    void shouldPreserveCommentReactionCommentRelationship() {
+    void shouldMaintainCommentReactionCommentRelationship() {
         Comment comment = createComment();
-        CommentReaction reaction = createCommentReactionWithComment(comment);
+        CommentReaction reaction = CommentReaction.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .comment(comment)
+                .reactionType(ReactionType.LIKE)
+                .build();
 
         assertThat(reaction.getComment()).isEqualTo(comment);
-        assertThat(reaction.getComment().getId()).isEqualTo(comment.getId());
+    }
+
+    @Test
+    void shouldHandleDifferentPostReactionTypes() {
+        PostReaction likeReaction = createPostReaction();
+        likeReaction.setReactionType(ReactionType.LIKE);
+
+        PostReaction fireReaction = createPostReaction();
+        fireReaction.setReactionType(ReactionType.FIRE);
+
+        assertThat(likeReaction.getReactionType()).isEqualTo(ReactionType.LIKE);
+        assertThat(fireReaction.getReactionType()).isEqualTo(ReactionType.FIRE);
+    }
+
+    @Test
+    void shouldHandleDifferentCommentReactionTypes() {
+        CommentReaction likeReaction = createCommentReaction();
+        likeReaction.setReactionType(ReactionType.LIKE);
+
+        CommentReaction clutchReaction = createCommentReaction();
+        clutchReaction.setReactionType(ReactionType.CLUTCH);
+
+        assertThat(likeReaction.getReactionType()).isEqualTo(ReactionType.LIKE);
+        assertThat(clutchReaction.getReactionType()).isEqualTo(ReactionType.CLUTCH);
     }
 
     @Test
     void shouldHandleAllReactionTypes() {
-        PostReaction postReaction = createPostReaction();
-
-        for (ReactionType type : ReactionType.values()) {
-            postReaction.setReactionType(type);
-            assertThat(postReaction.getReactionType()).isEqualTo(type);
-        }
-    }
-
-    @Test
-    void shouldHaveDifferentCreatedAtTimes() {
         PostReaction reaction1 = createPostReaction();
-        PostReaction reaction2 = createPostReaction();
+        reaction1.setReactionType(ReactionType.LIKE);
+        assertThat(reaction1.getReactionType()).isEqualTo(ReactionType.LIKE);
 
-        assertThat(reaction1.getCreatedAt()).isNotNull();
-        assertThat(reaction2.getCreatedAt()).isNotNull();
+        PostReaction reaction2 = createPostReaction();
+        reaction2.setReactionType(ReactionType.FIRE);
+        assertThat(reaction2.getReactionType()).isEqualTo(ReactionType.FIRE);
+
+        PostReaction reaction3 = createPostReaction();
+        reaction3.setReactionType(ReactionType.CLUTCH);
+        assertThat(reaction3.getReactionType()).isEqualTo(ReactionType.CLUTCH);
+
+        PostReaction reaction4 = createPostReaction();
+        reaction4.setReactionType(ReactionType.NICE_SHOT);
+        assertThat(reaction4.getReactionType()).isEqualTo(ReactionType.NICE_SHOT);
+
+        PostReaction reaction5 = createPostReaction();
+        reaction5.setReactionType(ReactionType.LOL);
+        assertThat(reaction5.getReactionType()).isEqualTo(ReactionType.LOL);
     }
 
     private PostReaction createPostReaction() {
-        PostReaction reaction = new PostReaction();
-        reaction.setId(UUID.randomUUID());
-        reaction.setUser(createUser());
-        reaction.setPost(createPost());
-        reaction.setReactionType(ReactionType.LIKE);
-        reaction.setCreatedAt(Instant.now());
-        return reaction;
-    }
-
-    private PostReaction createPostReactionWithUser(User user) {
-        PostReaction reaction = new PostReaction();
-        reaction.setId(UUID.randomUUID());
-        reaction.setUser(user);
-        reaction.setPost(createPost());
-        reaction.setReactionType(ReactionType.LIKE);
-        reaction.setCreatedAt(Instant.now());
-        return reaction;
-    }
-
-    private PostReaction createPostReactionWithPost(Post post) {
-        PostReaction reaction = new PostReaction();
-        reaction.setId(UUID.randomUUID());
-        reaction.setUser(createUser());
-        reaction.setPost(post);
-        reaction.setReactionType(ReactionType.LIKE);
-        reaction.setCreatedAt(Instant.now());
-        return reaction;
+        return PostReaction.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .post(createPost())
+                .reactionType(ReactionType.LIKE)
+                .build();
     }
 
     private CommentReaction createCommentReaction() {
-        CommentReaction reaction = new CommentReaction();
-        reaction.setId(UUID.randomUUID());
-        reaction.setUser(createUser());
-        reaction.setComment(createComment());
-        reaction.setReactionType(ReactionType.LIKE);
-        reaction.setCreatedAt(Instant.now());
-        return reaction;
-    }
-
-    private CommentReaction createCommentReactionWithUser(User user) {
-        CommentReaction reaction = new CommentReaction();
-        reaction.setId(UUID.randomUUID());
-        reaction.setUser(user);
-        reaction.setComment(createComment());
-        reaction.setReactionType(ReactionType.LIKE);
-        reaction.setCreatedAt(Instant.now());
-        return reaction;
-    }
-
-    private CommentReaction createCommentReactionWithComment(Comment comment) {
-        CommentReaction reaction = new CommentReaction();
-        reaction.setId(UUID.randomUUID());
-        reaction.setUser(createUser());
-        reaction.setComment(comment);
-        reaction.setReactionType(ReactionType.LIKE);
-        reaction.setCreatedAt(Instant.now());
-        return reaction;
-    }
-
-    private User createUser() {
-        User user = new User();
-        user.setId(UUID.randomUUID());
-        user.setUsername("testuser");
-        user.setEmail("test@example.com");
-        user.setRole(UserRole.USER);
-        user.setStatus(UserStatus.ACTIVE);
-        return user;
+        return CommentReaction.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .comment(createComment())
+                .reactionType(ReactionType.LIKE)
+                .build();
     }
 
     private Post createPost() {
-        Post post = new Post();
-        post.setId(UUID.randomUUID());
-        post.setAuthor(createUser());
-        post.setTitle("Test Post");
-        post.setContent("Test content");
-        post.setType(PostType.GENERAL);
-        post.setVisibility(PostVisibility.PUBLIC);
-        post.setStatus(PostStatus.ACTIVE);
-        post.setCreatedAt(Instant.now());
-        post.setUpdatedAt(Instant.now());
-        return post;
+        return Post.builder()
+                .id(UUID.randomUUID())
+                .author(createUser())
+                .content("Test post")
+                .postType(PostType.TEXT)
+                .visibility(PostVisibility.PUBLIC)
+                .status(PostStatus.ACTIVE)
+                .build();
     }
 
     private Comment createComment() {
-        Comment comment = new Comment();
-        comment.setId(UUID.randomUUID());
-        comment.setAuthor(createUser());
-        comment.setPost(createPost());
-        comment.setContent("Test comment");
-        comment.setStatus(CommentStatus.ACTIVE);
-        comment.setCreatedAt(Instant.now());
-        comment.setUpdatedAt(Instant.now());
-        return comment;
+        return Comment.builder()
+                .id(UUID.randomUUID())
+                .post(createPost())
+                .author(createUser())
+                .content("Test comment")
+                .status(CommentStatus.ACTIVE)
+                .build();
+    }
+
+    private User createUser() {
+        return User.builder()
+                .id(UUID.randomUUID())
+                .username("testuser")
+                .email("test@example.com")
+                .firstName("Test")
+                .lastName("User")
+                .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
+                .build();
     }
 }

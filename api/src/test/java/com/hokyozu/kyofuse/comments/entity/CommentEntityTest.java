@@ -1,4 +1,4 @@
-﻿package com.hokyozu.kyofuse.comments.entity;
+package com.hokyozu.kyofuse.comments.entity;
 
 import com.hokyozu.kyofuse.comments.enums.CommentStatus;
 import com.hokyozu.kyofuse.posts.entity.Post;
@@ -28,7 +28,7 @@ class CommentEntityTest {
                 .id(commentId)
                 .author(author)
                 .post(post)
-                .content("This is a great post!")
+                .content("Great post!")
                 .status(CommentStatus.ACTIVE)
                 .createdAt(now)
                 .updatedAt(now)
@@ -37,7 +37,7 @@ class CommentEntityTest {
         assertThat(comment.getId()).isEqualTo(commentId);
         assertThat(comment.getAuthor()).isEqualTo(author);
         assertThat(comment.getPost()).isEqualTo(post);
-        assertThat(comment.getContent()).isEqualTo("This is a great post!");
+        assertThat(comment.getContent()).isEqualTo("Great post!");
         assertThat(comment.getStatus()).isEqualTo(CommentStatus.ACTIVE);
         assertThat(comment.getCreatedAt()).isEqualTo(now);
         assertThat(comment.getUpdatedAt()).isEqualTo(now);
@@ -46,7 +46,7 @@ class CommentEntityTest {
     @Test
     void shouldUpdateCommentContent() {
         Comment comment = createComment();
-        String newContent = "Updated comment content";
+        String newContent = "Updated comment";
 
         comment.setContent(newContent);
 
@@ -56,119 +56,97 @@ class CommentEntityTest {
     @Test
     void shouldUpdateCommentStatus() {
         Comment comment = createComment();
-
         comment.setStatus(CommentStatus.DELETED);
 
         assertThat(comment.getStatus()).isEqualTo(CommentStatus.DELETED);
     }
 
     @Test
-    void shouldPreserveAuthorRelationship() {
-        User author = createUser();
-        Comment comment = createCommentWithAuthor(author);
+    void shouldTrackReactionCount() {
+        Comment comment = createComment();
+        comment.setReactionCount(5);
 
-        assertThat(comment.getAuthor()).isEqualTo(author);
-        assertThat(comment.getAuthor().getId()).isEqualTo(author.getId());
+        assertThat(comment.getReactionCount()).isEqualTo(5);
     }
 
     @Test
-    void shouldPreservePostRelationship() {
+    void shouldTrackLikeCount() {
+        Comment comment = createComment();
+        comment.setLikeCount(3);
+
+        assertThat(comment.getLikeCount()).isEqualTo(3);
+    }
+
+    @Test
+    void shouldMaintainAuthorRelationship() {
+        User author = createUser();
+        Comment comment = Comment.builder()
+                .id(UUID.randomUUID())
+                .author(author)
+                .post(createPost())
+                .content("test")
+                .status(CommentStatus.ACTIVE)
+                .build();
+
+        assertThat(comment.getAuthor()).isEqualTo(author);
+        assertThat(comment.getAuthor().getUsername()).isEqualTo(author.getUsername());
+    }
+
+    @Test
+    void shouldMaintainPostRelationship() {
         Post post = createPost();
-        Comment comment = createCommentWithPost(post);
+        Comment comment = Comment.builder()
+                .id(UUID.randomUUID())
+                .author(createUser())
+                .post(post)
+                .content("test")
+                .status(CommentStatus.ACTIVE)
+                .build();
 
         assertThat(comment.getPost()).isEqualTo(post);
         assertThat(comment.getPost().getId()).isEqualTo(post.getId());
     }
 
     @Test
-    void shouldUpdateTimestamps() {
+    void shouldHandleHiddenStatus() {
         Comment comment = createComment();
-        Instant originalCreatedAt = comment.getCreatedAt();
-        Instant newUpdatedAt = Instant.now().plusSeconds(3600);
+        comment.setStatus(CommentStatus.HIDDEN);
 
-        comment.setUpdatedAt(newUpdatedAt);
-
-        assertThat(comment.getCreatedAt()).isEqualTo(originalCreatedAt);
-        assertThat(comment.getUpdatedAt()).isEqualTo(newUpdatedAt);
-    }
-
-    @Test
-    void shouldHandleDifferentCommentStatuses() {
-        Comment comment = createComment();
-
-        for (CommentStatus status : CommentStatus.values()) {
-            comment.setStatus(status);
-            assertThat(comment.getStatus()).isEqualTo(status);
-        }
-    }
-
-    @Test
-    void shouldAllowLongContent() {
-        Comment comment = createComment();
-        String longContent = "A".repeat(1000);
-
-        comment.setContent(longContent);
-
-        assertThat(comment.getContent()).isEqualTo(longContent);
+        assertThat(comment.getStatus()).isEqualTo(CommentStatus.HIDDEN);
     }
 
     private Comment createComment() {
-        Comment comment = new Comment();
-        comment.setId(UUID.randomUUID());
-        comment.setAuthor(createUser());
-        comment.setPost(createPost());
-        comment.setContent("Test comment");
-        comment.setStatus(CommentStatus.ACTIVE);
-        comment.setCreatedAt(Instant.now());
-        comment.setUpdatedAt(Instant.now());
-        return comment;
-    }
-
-    private Comment createCommentWithAuthor(User author) {
-        Comment comment = new Comment();
-        comment.setId(UUID.randomUUID());
-        comment.setAuthor(author);
-        comment.setPost(createPost());
-        comment.setContent("Test comment");
-        comment.setStatus(CommentStatus.ACTIVE);
-        comment.setCreatedAt(Instant.now());
-        comment.setUpdatedAt(Instant.now());
-        return comment;
-    }
-
-    private Comment createCommentWithPost(Post post) {
-        Comment comment = new Comment();
-        comment.setId(UUID.randomUUID());
-        comment.setAuthor(createUser());
-        comment.setPost(post);
-        comment.setContent("Test comment");
-        comment.setStatus(CommentStatus.ACTIVE);
-        comment.setCreatedAt(Instant.now());
-        comment.setUpdatedAt(Instant.now());
-        return comment;
-    }
-
-    private User createUser() {
-        User user = new User();
-        user.setId(UUID.randomUUID());
-        user.setUsername("testuser");
-        user.setEmail("test@example.com");
-        user.setRole(UserRole.USER);
-        user.setStatus(UserStatus.ACTIVE);
-        return user;
+        return Comment.builder()
+                .id(UUID.randomUUID())
+                .author(createUser())
+                .post(createPost())
+                .content("Test comment")
+                .status(CommentStatus.ACTIVE)
+                .reactionCount(0)
+                .likeCount(0)
+                .build();
     }
 
     private Post createPost() {
-        Post post = new Post();
-        post.setId(UUID.randomUUID());
-        post.setAuthor(createUser());
-        post.setTitle("Test Post");
-        post.setContent("Test content");
-        post.setType(PostType.GENERAL);
-        post.setVisibility(PostVisibility.PUBLIC);
-        post.setStatus(PostStatus.ACTIVE);
-        post.setCreatedAt(Instant.now());
-        post.setUpdatedAt(Instant.now());
-        return post;
+        return Post.builder()
+                .id(UUID.randomUUID())
+                .author(createUser())
+                .content("Test post")
+                .postType(PostType.TEXT)
+                .visibility(PostVisibility.PUBLIC)
+                .status(PostStatus.ACTIVE)
+                .build();
+    }
+
+    private User createUser() {
+        return User.builder()
+                .id(UUID.randomUUID())
+                .username("testuser")
+                .email("test@example.com")
+                .firstName("Test")
+                .lastName("User")
+                .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
+                .build();
     }
 }

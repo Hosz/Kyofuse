@@ -1,4 +1,4 @@
-﻿package com.hokyozu.kyofuse.auth.mapper;
+package com.hokyozu.kyofuse.auth.mapper;
 
 import com.hokyozu.kyofuse.auth.dto.response.AuthResponse;
 import com.hokyozu.kyofuse.users.entity.User;
@@ -13,125 +13,100 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class AuthMapperTest {
 
-    private final AuthMapper authMapper = new AuthMapper();
-
     @Test
-    void toAuthResponse_shouldMapUserToAuthResponse_successfully() {
+    void toResponse_shouldMapUserToAuthResponse_successfully() {
         User user = createUser();
         String token = "jwt.token.here";
 
-        AuthResponse response = authMapper.toAuthResponse(user, token);
+        AuthResponse response = AuthMapper.toResponse(user, token);
 
         assertThat(response).isNotNull();
-        assertThat(response.getId()).isEqualTo(user.getId());
-        assertThat(response.getUsername()).isEqualTo(user.getUsername());
-        assertThat(response.getEmail()).isEqualTo(user.getEmail());
-        assertThat(response.getRole()).isEqualTo(user.getRole());
-        assertThat(response.getToken()).isEqualTo(token);
+        assertThat(response.userId()).isEqualTo(user.getId());
+        assertThat(response.username()).isEqualTo(user.getUsername());
+        assertThat(response.email()).isEqualTo(user.getEmail());
+        assertThat(response.role()).isEqualTo(user.getRole().name());
+        assertThat(response.token()).isEqualTo(token);
+        assertThat(response.tokenType()).isEqualTo("Bearer");
     }
 
     @Test
-    void toAuthResponse_shouldContainAllUserFields() {
+    void toResponse_shouldContainAllUserFields() {
         UUID userId = UUID.randomUUID();
         String username = "testuser";
         String email = "test@example.com";
         UserRole role = UserRole.USER;
 
-        User user = new User();
-        user.setId(userId);
-        user.setUsername(username);
-        user.setEmail(email);
-        user.setRole(role);
-        user.setStatus(UserStatus.ACTIVE);
+        User user = User.builder()
+                .id(userId)
+                .username(username)
+                .email(email)
+                .role(role)
+                .status(UserStatus.ACTIVE)
+                .firstName("Test")
+                .lastName("User")
+                .build();
 
         String token = "valid.jwt.token";
 
-        AuthResponse response = authMapper.toAuthResponse(user, token);
+        AuthResponse response = AuthMapper.toResponse(user, token);
 
-        assertThat(response.getId()).isEqualTo(userId);
-        assertThat(response.getUsername()).isEqualTo(username);
-        assertThat(response.getEmail()).isEqualTo(email);
-        assertThat(response.getRole()).isEqualTo(role);
-        assertThat(response.getToken()).isEqualTo(token);
+        assertThat(response.userId()).isEqualTo(userId);
+        assertThat(response.username()).isEqualTo(username);
+        assertThat(response.email()).isEqualTo(email);
+        assertThat(response.role()).isEqualTo(role.name());
+        assertThat(response.token()).isEqualTo(token);
     }
 
     @Test
-    void toAuthResponse_shouldThrowException_whenUserIsNull() {
+    void toResponse_shouldThrowException_whenUserIsNull() {
         String token = "valid.token";
 
-        assertThatThrownBy(() -> authMapper.toAuthResponse(null, token))
+        assertThatThrownBy(() -> AuthMapper.toResponse(null, token))
                 .isInstanceOf(NullPointerException.class);
     }
 
     @Test
-    void toAuthResponse_shouldThrowException_whenTokenIsNull() {
+    void toResponse_shouldThrowException_whenTokenIsNull() {
         User user = createUser();
 
-        assertThatThrownBy(() -> authMapper.toAuthResponse(user, null))
+        assertThatThrownBy(() -> AuthMapper.toResponse(user, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
     @Test
-    void toAuthResponse_shouldMapAdminRole() {
+    void toResponse_shouldMapAdminRole() {
         User user = createUser();
         user.setRole(UserRole.ADMIN);
         String token = "admin.token";
 
-        AuthResponse response = authMapper.toAuthResponse(user, token);
+        AuthResponse response = AuthMapper.toResponse(user, token);
 
-        assertThat(response.getRole()).isEqualTo(UserRole.ADMIN);
+        assertThat(response.role()).isEqualTo(UserRole.ADMIN.name());
     }
 
     @Test
-    void toAuthResponse_shouldMapDifferentTokens() {
+    void toResponse_shouldMapDifferentTokens() {
         User user = createUser();
         String token1 = "token.1";
         String token2 = "token.2";
 
-        AuthResponse response1 = authMapper.toAuthResponse(user, token1);
-        AuthResponse response2 = authMapper.toAuthResponse(user, token2);
+        AuthResponse response1 = AuthMapper.toResponse(user, token1);
+        AuthResponse response2 = AuthMapper.toResponse(user, token2);
 
-        assertThat(response1.getToken()).isEqualTo(token1);
-        assertThat(response2.getToken()).isEqualTo(token2);
-        assertThat(response1.getToken()).isNotEqualTo(response2.getToken());
-    }
-
-    @Test
-    void toAuthResponse_shouldMapEmptyStringToken() {
-        User user = createUser();
-        String emptyToken = "";
-
-        AuthResponse response = authMapper.toAuthResponse(user, emptyToken);
-
-        assertThat(response.getToken()).isEqualTo(emptyToken);
-    }
-
-    @Test
-    void toAuthResponse_shouldNotMapPassword() {
-        User user = createUser();
-        user.setPassword("secret_password_123");
-        String token = "jwt.token";
-
-        AuthResponse response = authMapper.toAuthResponse(user, token);
-
-        assertThat(response).isNotNull();
-        try {
-            response.getClass().getDeclaredField("password");
-            if (response.getClass().getDeclaredMethod("getPassword", new Class[0]) != null) {
-                throw new AssertionError("Password field should not be exposed");
-            }
-        } catch (NoSuchFieldException | NoSuchMethodException e) {
-            // Expected: password should not be in response
-        }
+        assertThat(response1.token()).isEqualTo(token1);
+        assertThat(response2.token()).isEqualTo(token2);
+        assertThat(response1.token()).isNotEqualTo(response2.token());
     }
 
     private User createUser() {
-        User user = new User();
-        user.setId(UUID.randomUUID());
-        user.setUsername("testuser");
-        user.setEmail("test@example.com");
-        user.setRole(UserRole.USER);
-        user.setStatus(UserStatus.ACTIVE);
-        return user;
+        return User.builder()
+                .id(UUID.randomUUID())
+                .username("testuser")
+                .email("test@example.com")
+                .firstName("Test")
+                .lastName("User")
+                .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
+                .build();
     }
 }

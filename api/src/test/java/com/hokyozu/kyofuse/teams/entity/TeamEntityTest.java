@@ -1,4 +1,4 @@
-﻿package com.hokyozu.kyofuse.teams.entity;
+package com.hokyozu.kyofuse.teams.entity;
 
 import com.hokyozu.kyofuse.teams.enums.TeamStatus;
 import com.hokyozu.kyofuse.users.entity.User;

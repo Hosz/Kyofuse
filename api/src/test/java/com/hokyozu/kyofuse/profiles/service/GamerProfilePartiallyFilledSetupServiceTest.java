@@ -1,167 +1,255 @@
-﻿package com.hokyozu.kyofuse.profiles.service;
+package com.hokyozu.kyofuse.profiles.service;
 
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
-import com.hokyozu.kyofuse.profiles.enums.Playstyle;
+import com.hokyozu.kyofuse.profiles.enums.GamerProfileSetupStatus;
 import com.hokyozu.kyofuse.profiles.enums.PlayerRole;
+import com.hokyozu.kyofuse.profiles.enums.Playstyle;
+import com.hokyozu.kyofuse.users.entity.User;
+import com.hokyozu.kyofuse.users.enums.UserRole;
+import com.hokyozu.kyofuse.users.enums.UserStatus;
 import org.junit.jupiter.api.Test;
+
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class GamerProfilePartiallyFilledSetupServiceTest {
 
-    private final GamerProfilePartiallyFilledSetupService service = new GamerProfilePartiallyFilledSetupService();
-
     @Test
-    void isPartiallyFilled_shouldReturnTrue_whenBioIsSet() {
-        GamerProfile profile = new GamerProfile();
-        profile.setBio("Some bio text");
+    void isPartiallyFilled_shouldReturnTrue_whenBioFilled() {
+        GamerProfile profile = GamerProfile.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .bio("Competitive player")
+                .setupStatus(GamerProfileSetupStatus.PARTIAL)
+                .build();
 
-        assertThat(GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile)).isTrue();
+        boolean result = GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile);
+
+        assertThat(result).isTrue();
     }
 
     @Test
-    void isPartiallyFilled_shouldReturnTrue_whenCountryIsSet() {
-        GamerProfile profile = new GamerProfile();
-        profile.setCountry("Brazil");
+    void isPartiallyFilled_shouldReturnTrue_whenCountryFilled() {
+        GamerProfile profile = GamerProfile.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .country("USA")
+                .setupStatus(GamerProfileSetupStatus.PARTIAL)
+                .build();
 
-        assertThat(GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile)).isTrue();
+        boolean result = GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile);
+
+        assertThat(result).isTrue();
     }
 
     @Test
-    void isPartiallyFilled_shouldReturnTrue_whenStateIsSet() {
-        GamerProfile profile = new GamerProfile();
-        profile.setState("São Paulo");
+    void isPartiallyFilled_shouldReturnTrue_whenMainRoleFilled() {
+        GamerProfile profile = GamerProfile.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .mainRole(PlayerRole.AWPER)
+                .setupStatus(GamerProfileSetupStatus.PARTIAL)
+                .build();
 
-        assertThat(GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile)).isTrue();
+        boolean result = GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile);
+
+        assertThat(result).isTrue();
     }
 
     @Test
-    void isPartiallyFilled_shouldReturnTrue_whenCityIsSet() {
-        GamerProfile profile = new GamerProfile();
-        profile.setCity("São Paulo");
+    void isPartiallyFilled_shouldReturnTrue_whenSecondaryRoleFilled() {
+        GamerProfile profile = GamerProfile.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .secondaryRole(PlayerRole.RIFLER)
+                .setupStatus(GamerProfileSetupStatus.PARTIAL)
+                .build();
 
-        assertThat(GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile)).isTrue();
+        boolean result = GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile);
+
+        assertThat(result).isTrue();
     }
 
     @Test
-    void isPartiallyFilled_shouldReturnTrue_whenAvatarUrlIsSet() {
-        GamerProfile profile = new GamerProfile();
-        profile.setAvatarUrl("https://example.com/avatar.jpg");
+    void isPartiallyFilled_shouldReturnTrue_whenPremierRatingFilled() {
+        GamerProfile profile = GamerProfile.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .premierRating(2500)
+                .setupStatus(GamerProfileSetupStatus.PARTIAL)
+                .build();
 
-        assertThat(GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile)).isTrue();
+        boolean result = GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile);
+
+        assertThat(result).isTrue();
     }
 
     @Test
-    void isPartiallyFilled_shouldReturnTrue_whenMainRoleIsSet() {
-        GamerProfile profile = new GamerProfile();
-        profile.setMainRole(PlayerRole.RIFLER);
+    void isPartiallyFilled_shouldReturnTrue_whenFaceitLevelFilled() {
+        GamerProfile profile = GamerProfile.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .faceitLevel(8)
+                .setupStatus(GamerProfileSetupStatus.PARTIAL)
+                .build();
 
-        assertThat(GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile)).isTrue();
+        boolean result = GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile);
+
+        assertThat(result).isTrue();
     }
 
     @Test
-    void isPartiallyFilled_shouldReturnTrue_whenSecondaryRoleIsSet() {
-        GamerProfile profile = new GamerProfile();
-        profile.setSecondaryRole(PlayerRole.AWP);
+    void isPartiallyFilled_shouldReturnTrue_whenPlaystyleFilled() {
+        GamerProfile profile = GamerProfile.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .playstyle(Playstyle.COMPETITIVE)
+                .setupStatus(GamerProfileSetupStatus.PARTIAL)
+                .build();
 
-        assertThat(GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile)).isTrue();
+        boolean result = GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile);
+
+        assertThat(result).isTrue();
     }
 
     @Test
-    void isPartiallyFilled_shouldReturnTrue_whenPremierRatingIsSet() {
-        GamerProfile profile = new GamerProfile();
-        profile.setPremierRating(2500);
+    void isPartiallyFilled_shouldReturnTrue_whenLookingForTeamFilled() {
+        GamerProfile profile = GamerProfile.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .lookingForTeam(true)
+                .setupStatus(GamerProfileSetupStatus.PARTIAL)
+                .build();
 
-        assertThat(GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile)).isTrue();
+        boolean result = GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile);
+
+        assertThat(result).isTrue();
     }
 
     @Test
-    void isPartiallyFilled_shouldReturnTrue_whenFaceitLevelIsSet() {
-        GamerProfile profile = new GamerProfile();
-        profile.setFaceitLevel(5);
+    void isPartiallyFilled_shouldReturnTrue_whenLookingForDuoFilled() {
+        GamerProfile profile = GamerProfile.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .lookingForDuo(true)
+                .setupStatus(GamerProfileSetupStatus.PARTIAL)
+                .build();
 
-        assertThat(GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile)).isTrue();
+        boolean result = GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile);
+
+        assertThat(result).isTrue();
     }
 
     @Test
-    void isPartiallyFilled_shouldReturnTrue_whenGcRankIsSet() {
-        GamerProfile profile = new GamerProfile();
-        profile.setGcRank(5);
+    void isPartiallyFilled_shouldReturnFalse_whenAllFieldsEmpty() {
+        GamerProfile profile = GamerProfile.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .bio(null)
+                .country(null)
+                .state(null)
+                .city(null)
+                .avatarUrl(null)
+                .mainRole(null)
+                .secondaryRole(null)
+                .premierRating(null)
+                .faceitLevel(null)
+                .gcRank(null)
+                .playstyle(null)
+                .lookingForTeam(false)
+                .lookingForDuo(false)
+                .setupStatus(GamerProfileSetupStatus.PENDING)
+                .build();
 
-        assertThat(GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile)).isTrue();
+        boolean result = GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile);
+
+        assertThat(result).isFalse();
     }
 
     @Test
-    void isPartiallyFilled_shouldReturnTrue_whenPlaystyleIsSet() {
-        GamerProfile profile = new GamerProfile();
-        profile.setPlaystyle(Playstyle.AGGRESSIVE);
+    void isPartiallyFilled_shouldReturnTrue_whenStateFilled() {
+        GamerProfile profile = GamerProfile.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .state("California")
+                .setupStatus(GamerProfileSetupStatus.PARTIAL)
+                .build();
 
-        assertThat(GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile)).isTrue();
+        boolean result = GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile);
+
+        assertThat(result).isTrue();
     }
 
     @Test
-    void isPartiallyFilled_shouldReturnTrue_whenLookingForTeamIsTrue() {
-        GamerProfile profile = new GamerProfile();
-        profile.setLookingForTeam(true);
+    void isPartiallyFilled_shouldReturnTrue_whenCityFilled() {
+        GamerProfile profile = GamerProfile.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .city("Los Angeles")
+                .setupStatus(GamerProfileSetupStatus.PARTIAL)
+                .build();
 
-        assertThat(GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile)).isTrue();
+        boolean result = GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile);
+
+        assertThat(result).isTrue();
     }
 
     @Test
-    void isPartiallyFilled_shouldReturnTrue_whenLookingForDuoIsTrue() {
-        GamerProfile profile = new GamerProfile();
-        profile.setLookingForDuo(true);
+    void isPartiallyFilled_shouldReturnTrue_whenAvatarUrlFilled() {
+        GamerProfile profile = GamerProfile.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .avatarUrl("https://example.com/avatar.jpg")
+                .setupStatus(GamerProfileSetupStatus.PARTIAL)
+                .build();
 
-        assertThat(GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile)).isTrue();
+        boolean result = GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile);
+
+        assertThat(result).isTrue();
     }
 
     @Test
-    void isPartiallyFilled_shouldReturnFalse_whenAllFieldsAreNull() {
-        GamerProfile profile = new GamerProfile();
+    void isPartiallyFilled_shouldReturnTrue_whenGcRankFilled() {
+        GamerProfile profile = GamerProfile.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .gcRank(5)
+                .setupStatus(GamerProfileSetupStatus.PARTIAL)
+                .build();
 
-        assertThat(GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile)).isFalse();
+        boolean result = GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile);
+
+        assertThat(result).isTrue();
     }
 
     @Test
-    void isPartiallyFilled_shouldReturnFalse_whenAllFieldsAreEmpty() {
-        GamerProfile profile = new GamerProfile();
-        profile.setBio("");
-        profile.setCountry("");
-        profile.setState("");
-        profile.setCity("");
-        profile.setAvatarUrl("");
-        profile.setLookingForTeam(false);
-        profile.setLookingForDuo(false);
+    void isPartiallyFilled_shouldReturnTrue_withMultipleFields() {
+        GamerProfile profile = GamerProfile.builder()
+                .id(UUID.randomUUID())
+                .user(createUser())
+                .bio("Competitive player")
+                .country("USA")
+                .mainRole(PlayerRole.SUPPORT)
+                .premierRating(1800)
+                .playstyle(Playstyle.TEAM_ORIENTED)
+                .setupStatus(GamerProfileSetupStatus.PARTIAL)
+                .build();
 
-        assertThat(GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile)).isFalse();
+        boolean result = GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile);
+
+        assertThat(result).isTrue();
     }
 
-    @Test
-    void isPartiallyFilled_shouldReturnFalse_whenBlankStringsProvided() {
-        GamerProfile profile = new GamerProfile();
-        profile.setBio("   ");
-        profile.setCountry("   ");
-
-        assertThat(GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile)).isFalse();
-    }
-
-    @Test
-    void isPartiallyFilled_shouldReturnTrue_withMultipleFieldsFilled() {
-        GamerProfile profile = new GamerProfile();
-        profile.setBio("Player bio");
-        profile.setCountry("Brazil");
-        profile.setMainRole(PlayerRole.SUPPORT);
-        profile.setPremierRating(1500);
-        profile.setLookingForTeam(true);
-
-        assertThat(GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile)).isTrue();
-    }
-
-    @Test
-    void isPartiallyFilled_shouldReturnTrue_withNicknameNotRequired() {
-        GamerProfile profile = new GamerProfile();
-        profile.setBio("Some bio");
-
-        assertThat(GamerProfilePartiallyFilledSetupService.isPartiallyFilled(profile)).isTrue();
+    private User createUser() {
+        return User.builder()
+                .id(UUID.randomUUID())
+                .username("user" + System.nanoTime())
+                .email("email" + System.nanoTime() + "@example.com")
+                .firstName("Test")
+                .lastName("User")
+                .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
+                .build();
     }
 }

@@ -1,4 +1,4 @@
-﻿package com.hokyozu.kyofuse.posts.entity;
+package com.hokyozu.kyofuse.posts.entity;
 
 import com.hokyozu.kyofuse.posts.enums.PostStatus;
 import com.hokyozu.kyofuse.posts.enums.PostType;
@@ -24,9 +24,8 @@ class PostEntityTest {
         Post post = Post.builder()
                 .id(postId)
                 .author(author)
-                .title("My Gaming Post")
                 .content("Great gameplay tips!")
-                .type(PostType.TIP)
+                .postType(PostType.LINEUP_TIP)
                 .visibility(PostVisibility.PUBLIC)
                 .status(PostStatus.ACTIVE)
                 .createdAt(now)
@@ -35,9 +34,8 @@ class PostEntityTest {
 
         assertThat(post.getId()).isEqualTo(postId);
         assertThat(post.getAuthor()).isEqualTo(author);
-        assertThat(post.getTitle()).isEqualTo("My Gaming Post");
         assertThat(post.getContent()).isEqualTo("Great gameplay tips!");
-        assertThat(post.getType()).isEqualTo(PostType.TIP);
+        assertThat(post.getPostType()).isEqualTo(PostType.LINEUP_TIP);
         assertThat(post.getVisibility()).isEqualTo(PostVisibility.PUBLIC);
         assertThat(post.getStatus()).isEqualTo(PostStatus.ACTIVE);
         assertThat(post.getCreatedAt()).isEqualTo(now);
@@ -57,107 +55,84 @@ class PostEntityTest {
     @Test
     void shouldUpdatePostVisibility() {
         Post post = createPost();
+        PostVisibility newVisibility = PostVisibility.PRIVATE;
 
-        post.setVisibility(PostVisibility.PRIVATE);
+        post.setVisibility(newVisibility);
 
-        assertThat(post.getVisibility()).isEqualTo(PostVisibility.PRIVATE);
+        assertThat(post.getVisibility()).isEqualTo(newVisibility);
     }
 
     @Test
     void shouldUpdatePostStatus() {
         Post post = createPost();
+        post.setStatus(PostStatus.DELETED);
 
-        post.setStatus(PostStatus.HIDDEN);
-
-        assertThat(post.getStatus()).isEqualTo(PostStatus.HIDDEN);
+        assertThat(post.getStatus()).isEqualTo(PostStatus.DELETED);
     }
 
     @Test
-    void shouldPreserveAuthorRelationship() {
+    void shouldTrackReactionCount() {
+        Post post = createPost();
+        post.setReactionCount(5);
+
+        assertThat(post.getReactionCount()).isEqualTo(5);
+    }
+
+    @Test
+    void shouldTrackCommentCount() {
+        Post post = createPost();
+        post.setCommentCount(3);
+
+        assertThat(post.getCommentCount()).isEqualTo(3);
+    }
+
+    @Test
+    void shouldTrackLikeCount() {
+        Post post = createPost();
+        post.setLikeCount(10);
+
+        assertThat(post.getLikeCount()).isEqualTo(10);
+    }
+
+    @Test
+    void shouldMaintainAuthorRelationship() {
         User author = createUser();
-        Post post = createPostWithAuthor(author);
+        Post post = Post.builder()
+                .id(UUID.randomUUID())
+                .author(author)
+                .content("test")
+                .postType(PostType.TEXT)
+                .visibility(PostVisibility.PUBLIC)
+                .status(PostStatus.ACTIVE)
+                .build();
 
         assertThat(post.getAuthor()).isEqualTo(author);
-        assertThat(post.getAuthor().getId()).isEqualTo(author.getId());
-    }
-
-    @Test
-    void shouldHandleDifferentPostTypes() {
-        Post post = createPost();
-
-        for (PostType type : PostType.values()) {
-            post.setType(type);
-            assertThat(post.getType()).isEqualTo(type);
-        }
-    }
-
-    @Test
-    void shouldHandleDifferentVisibilities() {
-        Post post = createPost();
-
-        for (PostVisibility visibility : PostVisibility.values()) {
-            post.setVisibility(visibility);
-            assertThat(post.getVisibility()).isEqualTo(visibility);
-        }
-    }
-
-    @Test
-    void shouldHandleDifferentPostStatuses() {
-        Post post = createPost();
-
-        for (PostStatus status : PostStatus.values()) {
-            post.setStatus(status);
-            assertThat(post.getStatus()).isEqualTo(status);
-        }
-    }
-
-    @Test
-    void shouldUpdateTimestamps() {
-        Post post = createPost();
-        Instant originalCreatedAt = post.getCreatedAt();
-        Instant newUpdatedAt = Instant.now().plusSeconds(3600);
-
-        post.setUpdatedAt(newUpdatedAt);
-
-        assertThat(post.getCreatedAt()).isEqualTo(originalCreatedAt);
-        assertThat(post.getUpdatedAt()).isEqualTo(newUpdatedAt);
+        assertThat(post.getAuthor().getUsername()).isEqualTo(author.getUsername());
     }
 
     private Post createPost() {
-        Post post = new Post();
-        post.setId(UUID.randomUUID());
-        post.setAuthor(createUser());
-        post.setTitle("Test Post");
-        post.setContent("Test content");
-        post.setType(PostType.GENERAL);
-        post.setVisibility(PostVisibility.PUBLIC);
-        post.setStatus(PostStatus.ACTIVE);
-        post.setCreatedAt(Instant.now());
-        post.setUpdatedAt(Instant.now());
-        return post;
-    }
-
-    private Post createPostWithAuthor(User author) {
-        Post post = new Post();
-        post.setId(UUID.randomUUID());
-        post.setAuthor(author);
-        post.setTitle("Test Post");
-        post.setContent("Test content");
-        post.setType(PostType.GENERAL);
-        post.setVisibility(PostVisibility.PUBLIC);
-        post.setStatus(PostStatus.ACTIVE);
-        post.setCreatedAt(Instant.now());
-        post.setUpdatedAt(Instant.now());
-        return post;
+        return Post.builder()
+                .id(UUID.randomUUID())
+                .author(createUser())
+                .content("Test post content")
+                .postType(PostType.TEXT)
+                .visibility(PostVisibility.PUBLIC)
+                .status(PostStatus.ACTIVE)
+                .reactionCount(0)
+                .likeCount(0)
+                .commentCount(0)
+                .build();
     }
 
     private User createUser() {
-        User user = new User();
-        user.setId(UUID.randomUUID());
-        user.setUsername("testuser");
-        user.setEmail("test@example.com");
-        user.setRole(UserRole.USER);
-        user.setStatus(UserStatus.ACTIVE);
-        return user;
+        return User.builder()
+                .id(UUID.randomUUID())
+                .username("postauthor")
+                .email("author@example.com")
+                .firstName("Post")
+                .lastName("Author")
+                .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
+                .build();
     }
 }

@@ -1,4 +1,4 @@
-﻿package com.hokyozu.kyofuse.users.service;
+package com.hokyozu.kyofuse.users.service;
 
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.users.entity.User;

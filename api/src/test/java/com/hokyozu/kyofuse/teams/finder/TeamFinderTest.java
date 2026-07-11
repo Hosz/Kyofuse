@@ -1,4 +1,4 @@
-﻿package com.hokyozu.kyofuse.teams.finder;
+package com.hokyozu.kyofuse.teams.finder;
 
 import com.hokyozu.kyofuse.shared.exception.NotFoundException;
 import com.hokyozu.kyofuse.teams.entity.Team;

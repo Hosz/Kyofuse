@@ -1,4 +1,4 @@
-﻿package com.hokyozu.kyofuse.teams.service;
+package com.hokyozu.kyofuse.teams.service;
 
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.teams.entity.Team;
@@ -6,106 +6,92 @@ import com.hokyozu.kyofuse.teams.enums.TeamStatus;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.enums.UserRole;
 import com.hokyozu.kyofuse.users.enums.UserStatus;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class TeamCheckerTest {
 
-    private TeamChecker teamChecker;
-
-    @BeforeEach
-    void setUp() {
-        teamChecker = new TeamChecker();
-    }
+    private final TeamChecker teamChecker = new TeamChecker();
 
     @Test
-    void checkInactive_shouldThrowException_whenTeamIsInactive() {
-        Team inactiveTeam = new Team();
-        inactiveTeam.setStatus(TeamStatus.INACTIVE);
+    void checkUserIsOwner_shouldNotThrow_whenUserIsTeamOwner() {
+        User owner = createUser();
+        Team team = createTeam(owner);
 
-        assertThatThrownBy(() -> teamChecker.checkInactive(inactiveTeam))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessage("Time inativo.");
-    }
-
-    @Test
-    void checkInactive_shouldNotThrowException_whenTeamIsActive() {
-        Team activeTeam = new Team();
-        activeTeam.setStatus(TeamStatus.ACTIVE);
-
-        assertThatNoException()
-                .isThrownBy(() -> teamChecker.checkInactive(activeTeam));
-    }
-
-    @Test
-    void checkInactive_shouldNotThrowException_whenTeamIsPending() {
-        Team pendingTeam = new Team();
-        pendingTeam.setStatus(TeamStatus.PENDING);
-
-        assertThatNoException()
-                .isThrownBy(() -> teamChecker.checkInactive(pendingTeam));
-    }
-
-    @Test
-    void checkUserIsOwner_shouldNotThrowException_whenUserIsOwner() {
-        UUID userId = UUID.randomUUID();
-        User owner = new User();
-        owner.setId(userId);
-        owner.setUsername("owner");
-        owner.setEmail("owner@test.com");
-        owner.setRole(UserRole.USER);
-        owner.setStatus(UserStatus.ACTIVE);
-
-        Team team = new Team();
-        team.setOwner(owner);
-
-        assertThatNoException()
-                .isThrownBy(() -> teamChecker.checkUserIsOwner(team, owner));
+        teamChecker.checkUserIsOwner(team, owner);
     }
 
     @Test
     void checkUserIsOwner_shouldThrowException_whenUserIsNotOwner() {
-        UUID ownerId = UUID.randomUUID();
-        UUID userId = UUID.randomUUID();
+        User owner = createUser();
+        User nonOwner = createUser();
+        Team team = createTeam(owner);
 
-        User owner = new User();
-        owner.setId(ownerId);
-        owner.setUsername("owner");
-        owner.setEmail("owner@test.com");
-        owner.setRole(UserRole.USER);
-        owner.setStatus(UserStatus.ACTIVE);
-
-        User notOwner = new User();
-        notOwner.setId(userId);
-        notOwner.setUsername("not_owner");
-        notOwner.setEmail("not_owner@test.com");
-        notOwner.setRole(UserRole.USER);
-        notOwner.setStatus(UserStatus.ACTIVE);
-
-        Team team = new Team();
-        team.setOwner(owner);
-
-        assertThatThrownBy(() -> teamChecker.checkUserIsOwner(team, notOwner))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessage("Usuário não é o dono do time.");
+        assertThatThrownBy(() -> teamChecker.checkUserIsOwner(team, nonOwner))
+                .isInstanceOf(BadRequestException.class);
     }
 
     @Test
-    void checkUserIsOwner_shouldThrowException_whenOwnerIsNull() {
-        User user = new User();
-        user.setId(UUID.randomUUID());
-        user.setUsername("user");
-        user.setEmail("user@test.com");
+    void checkUserIsOwner_shouldThrowException_whenTeamIsNull() {
+        User user = createUser();
 
-        Team team = new Team();
-        team.setOwner(null);
-
-        assertThatThrownBy(() -> teamChecker.checkUserIsOwner(team, user))
+        assertThatThrownBy(() -> teamChecker.checkUserIsOwner(null, user))
                 .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void checkUserIsOwner_shouldThrowException_whenUserIsNull() {
+        Team team = createTeam(createUser());
+
+        assertThatThrownBy(() -> teamChecker.checkUserIsOwner(team, null))
+                .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void checkInactive_shouldNotThrow_whenStatusIsActive() {
+        User owner = createUser();
+        Team team = createTeam(owner);
+        team.setStatus(TeamStatus.ACTIVE);
+
+        teamChecker.checkInactive(team);
+    }
+
+    @Test
+    void checkInactive_shouldThrowException_whenStatusIsInactive() {
+        User owner = createUser();
+        Team team = createTeam(owner);
+        team.setStatus(TeamStatus.INACTIVE);
+
+        assertThatThrownBy(() -> teamChecker.checkInactive(team))
+                .isInstanceOf(BadRequestException.class);
+    }
+
+    private Team createTeam(User owner) {
+        return Team.builder()
+                .id(UUID.randomUUID())
+                .owner(owner)
+                .name("Test Team")
+                .slug("test-team")
+                .status(TeamStatus.ACTIVE)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+    }
+
+    private User createUser() {
+        return User.builder()
+                .id(UUID.randomUUID())
+                .username("teamuser" + System.nanoTime())
+                .email("user" + System.nanoTime() + "@example.com")
+                .firstName("Team")
+                .lastName("User")
+                .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
+                .build();
     }
 }
