@@ -38,7 +38,7 @@ public final class TeamSpecification {
     public static Specification<Team> hasStatus(TeamStatus status) {
         return (root, query, cb) ->
                 status == null
-                        ? cb.conjunction()
+                        ? cb.notEqual(root.get("status"), TeamStatus.INACTIVE)
                         : cb.equal(root.get("status"), status);
     }
 

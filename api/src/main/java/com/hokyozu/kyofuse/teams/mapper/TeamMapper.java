@@ -66,34 +66,50 @@ public class TeamMapper {
 
         if (updateTeamRequest.description() != null) {
             team.setDescription(updateTeamRequest.description());
+        } else {
+            team.setDescription(null);
         }
 
         if (updateTeamRequest.region() != null) {
             team.setRegion(updateTeamRequest.region());
+        } else {
+            team.setRegion(null);
         }
 
         if (updateTeamRequest.minPremierRating() != null) {
             team.setMinPremierRating(updateTeamRequest.minPremierRating());
+        } else {
+            team.setMinPremierRating(null);
         }
 
         if (updateTeamRequest.maxPremierRating() != null) {
             team.setMaxPremierRating(updateTeamRequest.maxPremierRating());
+        } else {
+            team.setMaxPremierRating(null);
         }
 
         if (updateTeamRequest.minFaceitLevel() != null) {
             team.setMinFaceitLevel(updateTeamRequest.minFaceitLevel());
+        } else {
+            team.setMinFaceitLevel(null);
         }
 
         if (updateTeamRequest.maxFaceitLevel() != null) {
             team.setMaxFaceitLevel(updateTeamRequest.maxFaceitLevel());
+        } else {
+            team.setMaxFaceitLevel(null);
         }
 
         if (updateTeamRequest.minGcRank() != null) {
             team.setMinGcRank(updateTeamRequest.minGcRank());
+        } else {
+            team.setMinGcRank(null);
         }
 
         if (updateTeamRequest.maxGcRank() != null) {
             team.setMaxGcRank(updateTeamRequest.maxGcRank());
+        } else {
+            team.setMaxGcRank(null);
         }
 
         team.setUpdatedAt(Instant.now());

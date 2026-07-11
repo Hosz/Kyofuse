@@ -41,7 +41,7 @@ public record TeamFilter(
         Integer maxGcRank
 ) {
     public TeamStatus statusOrActive() {
-        return status == null ? TeamStatus.ACTIVE : status;
+        return status;
     }
 
     @AssertTrue(message = "minPremierRating must be less than or equal to maxPremierRating")

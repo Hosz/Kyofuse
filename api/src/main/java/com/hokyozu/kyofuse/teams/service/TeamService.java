@@ -92,6 +92,10 @@ public class TeamService {
                 .and(TeamSpecification.minGcRankAtLeast(filter.minGcRank()))
                 .and(TeamSpecification.maxGcRankAtMost(filter.maxGcRank()));
 
+        if (filter.status() == TeamStatus.INACTIVE) {
+            throw new BadRequestException("Filtro de status inválido.");
+        }
+
         Page<Team> teams = teamRepository.findAll(spec, pageable);
         List<UUID> teamIds = teams.stream()
                 .map(Team::getId)
@@ -122,6 +126,40 @@ public class TeamService {
 
         if (updateTeamRequest.status() == TeamStatus.INACTIVE) {
             throw new BadRequestException("Use o endpoint de inativação para inativar o time.");
+        }
+
+        if (updateTeamRequest.name() != null && updateTeamRequest.name().strip().isBlank()) {
+            throw new BadRequestException("O nome do time não pode ser vazio.");
+        } else if (team.getName().equals(updateTeamRequest.name())) {
+            throw new BadRequestException("O nome do time não foi alterado.");
+        }
+
+        if (updateTeamRequest.description() != null && updateTeamRequest.description().strip().isBlank()) {
+            throw new BadRequestException("A descrição do time não pode ser vazio.");
+        } else if (team.getDescription().equals(updateTeamRequest.description())) {
+            throw new BadRequestException("A descrição do time não foi alterada.");
+        }
+
+        if (updateTeamRequest.region() != null && updateTeamRequest.region().strip().isBlank()) {
+            throw new BadRequestException("A região do time não pode ser vazio.");
+        } else if (team.getRegion().equals(updateTeamRequest.region())) {
+            throw new BadRequestException("A região do time não foi alterada.");
+        }
+
+        if (updateTeamRequest.status() != null && updateTeamRequest.status().equals(team.getStatus())) {
+            throw new BadRequestException("O status do time não foi alterado.");
+        }
+        if (updateTeamRequest.minGcRank() != null && updateTeamRequest.minGcRank().equals(team.getMinGcRank())) {
+            throw new BadRequestException("O minGcRank do time não foi alterado.");
+        }
+        if (updateTeamRequest.maxGcRank() != null && updateTeamRequest.maxGcRank().equals(team.getMaxGcRank())) {
+            throw new BadRequestException("O maxGcRank do time não foi alterado.");
+        }
+        if (updateTeamRequest.minFaceitLevel() != null && updateTeamRequest.minFaceitLevel().equals(team.getMinFaceitLevel())) {
+            throw new BadRequestException("O minFaceitLevel do time não foi alterado.");
+        }
+        if (updateTeamRequest.maxFaceitLevel() != null && updateTeamRequest.maxFaceitLevel().equals(team.getMaxFaceitLevel())) {
+            throw new BadRequestException("O maxFaceitLevel do time não foi alterado.");
         }
 
         TeamMapper.toUpdate(team, updateTeamRequest);
