@@ -1,5 +1,6 @@
 package com.hokyozu.kyofuse.teams.mapper;
 
+import com.hokyozu.kyofuse.teams.dto.request.TeamMemberEditRequest;
 import com.hokyozu.kyofuse.teams.dto.response.TeamMemberResponse;
 import com.hokyozu.kyofuse.teams.entity.Team;
 import com.hokyozu.kyofuse.teams.entity.TeamMember;
@@ -38,5 +39,18 @@ public class TeamMemberMapper {
                 savedTeamMember.getCreatedAt(),
                 savedTeamMember.getUpdatedAt()
         );
+    }
+
+    public static void toUpdate(TeamMember teamMember, TeamMemberEditRequest request) {
+
+        if (request.roleInTeam() != null) {
+            teamMember.setRoleInTeam(request.roleInTeam());
+        }
+
+        if (request.memberType() != null) {
+            teamMember.setMemberType(request.memberType());
+        }
+
+        teamMember.setUpdatedAt(Instant.now());
     }
 }
