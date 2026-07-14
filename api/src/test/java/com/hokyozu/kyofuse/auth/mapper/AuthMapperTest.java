@@ -66,11 +66,12 @@ class AuthMapperTest {
     }
 
     @Test
-    void toResponse_shouldThrowException_whenTokenIsNull() {
+    void toResponse_shouldAllowNullToken() {
         User user = createUser();
 
-        assertThatThrownBy(() -> AuthMapper.toResponse(user, null))
-                .isInstanceOf(NullPointerException.class);
+        AuthResponse response = AuthMapper.toResponse(user, null);
+
+        assertThat(response.token()).isNull();
     }
 
     @Test

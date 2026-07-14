@@ -89,7 +89,46 @@ class TeamDtoTest {
     }
 
     @Test
-    void teamFilterDefaultsStatusToActive() {
+    void teamRequestAcceptsOpenEndedRanges() {
+        TeamRequest maxOnlyRequest = new TeamRequest(
+                "Kyofuse Academy",
+                "kyofuse-academy",
+                null,
+                null,
+                null,
+                40000,
+                null,
+                10,
+                null,
+                21,
+                null
+        );
+        TeamRequest minOnlyRequest = new TeamRequest(
+                "Kyofuse Academy",
+                "kyofuse-academy",
+                null,
+                null,
+                1000,
+                null,
+                1,
+                null,
+                1,
+                null,
+                null
+        );
+
+        assertThat(maxOnlyRequest.isPremierRatingRangeValid()).isTrue();
+        assertThat(maxOnlyRequest.isFaceitLevelRangeValid()).isTrue();
+        assertThat(maxOnlyRequest.isGcRankRangeValid()).isTrue();
+        assertThat(minOnlyRequest.isPremierRatingRangeValid()).isTrue();
+        assertThat(minOnlyRequest.isFaceitLevelRangeValid()).isTrue();
+        assertThat(minOnlyRequest.isGcRankRangeValid()).isTrue();
+        assertThat(validator.validate(maxOnlyRequest)).isEmpty();
+        assertThat(validator.validate(minOnlyRequest)).isEmpty();
+    }
+
+    @Test
+    void teamFilterReturnsNullStatusWhenNotProvided() {
         TeamFilter filter = new TeamFilter(
                 null,
                 null,
@@ -104,7 +143,7 @@ class TeamDtoTest {
                 null
         );
 
-        assertThat(filter.statusOrActive()).isEqualTo(TeamStatus.ACTIVE);
+        assertThat(filter.statusOrActive()).isNull();
         assertThat(validator.validate(filter)).isEmpty();
     }
 
@@ -181,6 +220,67 @@ class TeamDtoTest {
     }
 
     @Test
+    void teamFilterAcceptsOpenEndedRanges() {
+        TeamFilter maxOnlyFilter = new TeamFilter(
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                40000,
+                null,
+                10,
+                null,
+                21
+        );
+        TeamFilter minOnlyFilter = new TeamFilter(
+                null,
+                null,
+                null,
+                null,
+                null,
+                1000,
+                null,
+                1,
+                null,
+                1,
+                null
+        );
+
+        assertThat(maxOnlyFilter.isPremierRatingRangeValid()).isTrue();
+        assertThat(maxOnlyFilter.isFaceitLevelRangeValid()).isTrue();
+        assertThat(maxOnlyFilter.isGcRankRangeValid()).isTrue();
+        assertThat(minOnlyFilter.isPremierRatingRangeValid()).isTrue();
+        assertThat(minOnlyFilter.isFaceitLevelRangeValid()).isTrue();
+        assertThat(minOnlyFilter.isGcRankRangeValid()).isTrue();
+        assertThat(validator.validate(maxOnlyFilter)).isEmpty();
+        assertThat(validator.validate(minOnlyFilter)).isEmpty();
+    }
+
+    @Test
+    void teamFilterAcceptsValidClosedRanges() {
+        TeamFilter filter = new TeamFilter(
+                null,
+                null,
+                null,
+                null,
+                null,
+                1000,
+                40000,
+                1,
+                10,
+                1,
+                21
+        );
+
+        assertThat(filter.isPremierRatingRangeValid()).isTrue();
+        assertThat(filter.isFaceitLevelRangeValid()).isTrue();
+        assertThat(filter.isGcRankRangeValid()).isTrue();
+        assertThat(validator.validate(filter)).isEmpty();
+    }
+
+    @Test
     void updateTeamRequestAcceptsPartialValidPayload() {
         UpdateTeamRequest request = new UpdateTeamRequest(
                 "Kyofuse Academy",
@@ -217,12 +317,68 @@ class TeamDtoTest {
 
         assertThat(violations).extracting(violation -> violation.getPropertyPath().toString())
                 .contains(
-                        "name",
                         "description",
-                        "region",
                         "premierRatingRangeValid",
                         "faceitLevelRangeValid",
                         "gcRankRangeValid"
                 );
+    }
+
+    @Test
+    void updateTeamRequestAcceptsOpenEndedRanges() {
+        UpdateTeamRequest maxOnlyRequest = new UpdateTeamRequest(
+                null,
+                null,
+                null,
+                null,
+                40000,
+                null,
+                10,
+                null,
+                21,
+                null
+        );
+        UpdateTeamRequest minOnlyRequest = new UpdateTeamRequest(
+                null,
+                null,
+                null,
+                1000,
+                null,
+                1,
+                null,
+                1,
+                null,
+                null
+        );
+
+        assertThat(maxOnlyRequest.isPremierRatingRangeValid()).isTrue();
+        assertThat(maxOnlyRequest.isFaceitLevelRangeValid()).isTrue();
+        assertThat(maxOnlyRequest.isGcRankRangeValid()).isTrue();
+        assertThat(minOnlyRequest.isPremierRatingRangeValid()).isTrue();
+        assertThat(minOnlyRequest.isFaceitLevelRangeValid()).isTrue();
+        assertThat(minOnlyRequest.isGcRankRangeValid()).isTrue();
+        assertThat(validator.validate(maxOnlyRequest)).isEmpty();
+        assertThat(validator.validate(minOnlyRequest)).isEmpty();
+    }
+
+    @Test
+    void updateTeamRequestAcceptsValidClosedRanges() {
+        UpdateTeamRequest request = new UpdateTeamRequest(
+                null,
+                null,
+                null,
+                1000,
+                40000,
+                1,
+                10,
+                1,
+                21,
+                null
+        );
+
+        assertThat(request.isPremierRatingRangeValid()).isTrue();
+        assertThat(request.isFaceitLevelRangeValid()).isTrue();
+        assertThat(request.isGcRankRangeValid()).isTrue();
+        assertThat(validator.validate(request)).isEmpty();
     }
 }
