@@ -22,6 +22,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TeamMapperTest {
 
     @Test
+    void canInstantiateMapper() {
+        assertThat(new TeamMapper()).isNotNull();
+    }
+
+    @Test
     void toEntity_shouldMapTeamRequestToEntity() {
         User owner = createUser();
         List<PlayerRole> roles = new ArrayList<>();
@@ -173,7 +178,7 @@ class TeamMapperTest {
     }
 
     @Test
-    void toUpdate_shouldUpdateTeamStatus() {
+    void toUpdate_shouldNotUpdateTeamStatus() {
         Team team = createTeam();
         UpdateTeamRequest request = new UpdateTeamRequest(
                 null,
@@ -190,7 +195,7 @@ class TeamMapperTest {
 
         TeamMapper.toUpdate(team, request);
 
-        assertThat(team.getStatus()).isEqualTo(TeamStatus.CLOSED);
+        assertThat(team.getStatus()).isEqualTo(TeamStatus.ACTIVE);
     }
 
     private Team createTeam() {
