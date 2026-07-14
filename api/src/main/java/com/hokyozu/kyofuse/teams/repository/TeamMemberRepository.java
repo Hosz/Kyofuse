@@ -4,6 +4,8 @@ import com.hokyozu.kyofuse.teams.entity.Team;
 import com.hokyozu.kyofuse.teams.entity.TeamMember;
 import com.hokyozu.kyofuse.teams.enums.TeamMemberType;
 import com.hokyozu.kyofuse.users.entity.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.Instant;
@@ -16,4 +18,6 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, UUID> {
     TeamMember findByTeamAndUser(Team team, User userEdited);
 
     List<TeamMember> findByMemberTypeAndAssignmentDueAtBefore(TeamMemberType memberType, Instant instant);
+
+    Page<TeamMember> findByTeam(Team team, Pageable pageable);
 }
