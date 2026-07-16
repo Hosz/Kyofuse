@@ -16,4 +16,6 @@ public interface TeamInviteRepository extends JpaRepository<TeamInvite, UUID> {
     Page<TeamInvite> findAllByTeamAndStatus(Team team, Pageable pageable, TeamInviteStatus status);
 
     Page<TeamInvite> findAllByTeam(Team team, Pageable pageable);
+
+    TeamInvite findByTeamAndReceiver(Team team, User userInvited);
 }

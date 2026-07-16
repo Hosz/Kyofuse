@@ -98,15 +98,40 @@ public class TeamInviteService {
         TeamInvite invite = teamInviteRepository.findById(inviteId)
                 .orElseThrow(() -> new BadRequestException("Invite not found for ID: " + inviteId));
         Team team = teamFinder.findTeamById(invite.getTeam().getId());
+        boolean hasInvite = teamInviteRepository.existsByTeamAndReceiverAndStatus(team, user, TeamInviteStatus.PENDING);
 
         userChecker.checkActive(user);
         teamChecker.checkInactive(invite.getTeam());
 
-        invite.setStatus(TeamInviteStatus.ACCEPTED);
-        invite.setRespondedAt(java.time.Instant.now());
+        if (!user.getId().equals(invite.getReceiver().getId())) {
+            throw new BadRequestException("You are not authorized to accept this invite.");
+        }
+
+        switch (invite.getStatus()) {
+            case ACCEPTED:
+                throw new BadRequestException("Esse convite ja foi aceito.");
+            case DECLINED:
+                throw new BadRequestException("Esse convite ja foi rejeitado.");
+            case CANCELED:
+                throw new BadRequestException("Esse convite foi cancelado.");
+            default:
+                break;
+        }
+
+        if (hasInvite && teamMemberRepository.existsByTeamAndUser(team, user)) {
+            invite.setStatus(TeamInviteStatus.ACCEPTED);
+            invite.setRespondedAt(Instant.now());
+            teamInviteRepository.save(invite);
+            return;
+        }
 
         teamMemberService.addMember(team.getId(), invite.getSender().getId(), invite.getReceiver().getId());
-        TeamMember teamMember = TeamMemberMapper.toEntity(invite.getReceiver(), team);
+
+        invite.setStatus(TeamInviteStatus.ACCEPTED);
+        invite.setRespondedAt(Instant.now());
+        teamInviteRepository.save(invite);
+
+        TeamMember teamMember = teamMemberRepository.findByTeamAndUser(team, invite.getReceiver());
         teamMember.setRoleInTeam(invite.getProposedRoleInTeam());
         teamMember.setMemberType(invite.getProposedMemberType());
         if (teamMember.getMemberType() != TeamMemberType.UNASSIGNED) {
@@ -125,6 +150,21 @@ public class TeamInviteService {
         userChecker.checkActive(user);
         teamChecker.checkInactive(invite.getTeam());
 
+        switch (invite.getStatus()) {
+            case DECLINED:
+                throw new BadRequestException("Esse convite ja foi rejeitado.");
+            case CANCELED:
+                throw new BadRequestException("Esse convite foi cancelado.");
+            case ACCEPTED:
+                throw new BadRequestException("Esse convite ja foi aceito.");
+            default:
+                break;
+        }
+
+        if (!user.getId().equals(invite.getReceiver().getId())) {
+            throw new BadRequestException("You are not authorized to decline this invite.");
+        }
+
         invite.setStatus(TeamInviteStatus.DECLINED);
         invite.setRespondedAt(java.time.Instant.now());
         teamInviteRepository.save(invite);
@@ -140,6 +180,17 @@ public class TeamInviteService {
         userChecker.checkActive(user);
         teamChecker.checkInactive(invite.getTeam());
         teamChecker.checkUserIsOwner(team, user);
+
+        switch (invite.getStatus()) {
+            case DECLINED:
+                throw new BadRequestException("Esse convite ja foi rejeitado.");
+            case CANCELED:
+                throw new BadRequestException("Esse convite foi cancelado.");
+            case ACCEPTED:
+                throw new BadRequestException("Esse convite ja foi aceito.");
+            default:
+                break;
+        }
 
         invite.setStatus(TeamInviteStatus.CANCELED);
         invite.setCancellationReason(request.cancellationReason());

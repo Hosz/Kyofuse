@@ -1,5 +1,9 @@
 package com.hokyozu.kyofuse.teams.service;
 
+import com.hokyozu.kyofuse.auth.repository.UserRepository;
+import com.hokyozu.kyofuse.invites.entity.TeamInvite;
+import com.hokyozu.kyofuse.invites.enums.TeamInviteStatus;
+import com.hokyozu.kyofuse.invites.repository.TeamInviteRepository;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.teams.dto.request.TeamMemberEditRequest;
 import com.hokyozu.kyofuse.teams.dto.response.TeamMemberResponse;
@@ -18,6 +22,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -30,12 +35,14 @@ public class TeamMemberService {
 
     private final TeamMemberRepository teamMemberRepository;
     private final TeamChecker teamChecker;
+    private final TeamInviteRepository teamInviteRepository;
 
     @Transactional
     public TeamMemberResponse addMember(UUID teamId, UUID userId, UUID userInvitedId) {
         User user = userFinder.findProfileByUserId(userId);
         User userInvited = userFinder.findProfileByUserId(userInvitedId);
         Team team = teamFinder.findTeamById(teamId);
+        boolean hasInvite = teamInviteRepository.existsByTeamAndReceiverAndStatus(team, userInvited, TeamInviteStatus.PENDING);
 
         teamChecker.checkInactive(team);
         teamChecker.checkUserIsOwner(team, user);
@@ -45,6 +52,17 @@ public class TeamMemberService {
 
         if (teamMemberRepository.existsByTeamAndUser(team, userInvited)) {
             throw new BadRequestException("User is already a member of the team.");
+        }
+
+        if (hasInvite) {
+            try {
+                TeamMember teamMember = TeamMemberMapper.toEntity(userInvited, team);
+                TeamMember savedTeamMember = teamMemberRepository.save(teamMember);
+
+                return TeamMemberMapper.toResponse(savedTeamMember);
+            } catch (Exception e) {
+                throw new BadRequestException("Failed to update the invite status. Error: " + e.getMessage());
+            }
         }
 
         TeamMember teamMember = TeamMemberMapper.toEntity(userInvited, team);
