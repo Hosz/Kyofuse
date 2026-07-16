@@ -7,6 +7,10 @@ import com.hokyozu.kyofuse.comments.enums.CommentStatus;
 import com.hokyozu.kyofuse.comments.finder.CommentFinder;
 import com.hokyozu.kyofuse.comments.mapper.CommentMapper;
 import com.hokyozu.kyofuse.comments.repository.CommentRepository;
+import com.hokyozu.kyofuse.notifications.dto.request.CreateNotificationRequest;
+import com.hokyozu.kyofuse.notifications.enums.NotificationTargetType;
+import com.hokyozu.kyofuse.notifications.enums.NotificationType;
+import com.hokyozu.kyofuse.notifications.service.NotificationService;
 import com.hokyozu.kyofuse.posts.entity.Post;
 import com.hokyozu.kyofuse.posts.enums.PostStatus;
 import com.hokyozu.kyofuse.posts.enums.PostVisibility;
@@ -27,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -40,6 +45,7 @@ public class CommentService {
     private final GamerProfileFinder gamerProfileFinder;
     private final CommentFinder commentFinder;
     private final UserFinder userFinder;
+    private final NotificationService notificationService;
 
     @Transactional
     public CommentResponse postComment(UUID userId, UUID postId, CreateCommentRequest request) {
@@ -52,6 +58,22 @@ public class CommentService {
 
         post.setCommentCount(post.getCommentCount() + 1);
         postRepository.save(post);
+
+        notificationService.createNotification(
+                CreateNotificationRequest.builder()
+                        .recipient(post.getAuthor())
+                        .actor(profile.getUser())
+                        .type(NotificationType.POST_COMMENT)
+                        .title("Novo comentário.")
+                        .message(profile.getNickname() + " comentou no seu post.")
+                        .targetType(NotificationTargetType.COMMENT)
+                        .targetId(comment.getId())
+                        .metadata(Map.of(
+                                "PostPreview", post.getContent(),
+                                "CommentPreview", comment.getContent()
+                        ))
+                        .build()
+        );
 
         return CommentMapper.toResponse(savedComment);
     }

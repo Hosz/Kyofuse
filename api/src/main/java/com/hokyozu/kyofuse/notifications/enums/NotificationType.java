@@ -1,8 +1,21 @@
 package com.hokyozu.kyofuse.notifications.enums;
 
 public enum NotificationType {
-    PENDING,
-    ACCEPTED,
-    DECLINED,
-    CANCELED
+    TEAM_INVITE_RECEIVED,
+    TEAM_INVITE_ACCEPTED,
+    TEAM_INVITE_DECLINED,
+    TEAM_INVITE_CANCELED,
+
+    TEAM_MEMBER_ADDED,
+    TEAM_MEMBER_REMOVED,
+    TEAM_MEMBER_LEFT,
+    TEAM_MEMBER_EDITED,
+
+    NEW_POST,
+    POST_COMMENT,
+    POST_REACTION,
+
+    COMMENT_REACTION,
+
+    SYSTEM
 }

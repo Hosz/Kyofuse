@@ -7,6 +7,10 @@ import com.hokyozu.kyofuse.invites.entity.TeamInvite;
 import com.hokyozu.kyofuse.invites.enums.TeamInviteStatus;
 import com.hokyozu.kyofuse.invites.mapper.TeamInviteMapper;
 import com.hokyozu.kyofuse.invites.repository.TeamInviteRepository;
+import com.hokyozu.kyofuse.notifications.dto.request.CreateNotificationRequest;
+import com.hokyozu.kyofuse.notifications.enums.NotificationTargetType;
+import com.hokyozu.kyofuse.notifications.enums.NotificationType;
+import com.hokyozu.kyofuse.notifications.service.NotificationService;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.teams.entity.Team;
 import com.hokyozu.kyofuse.teams.entity.TeamMember;
@@ -26,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -42,6 +47,7 @@ public class TeamInviteService {
     private final TeamChecker teamChecker;
 
     private final TeamMemberService teamMemberService;
+    private final NotificationService notificationService;
 
     @Transactional
     public TeamInviteResponse inviteUser(UUID userId, UUID teamId, UUID receiverId, TeamInviteRequest request) {
@@ -72,6 +78,22 @@ public class TeamInviteService {
 
         TeamInvite teamInvite = TeamInviteMapper.toEntity(team, user, receiver, request);
         teamInviteRepository.save(teamInvite);
+
+        notificationService.createNotification(
+                CreateNotificationRequest.builder()
+                        .recipient(receiver)
+                        .actor(user)
+                        .type(NotificationType.TEAM_INVITE_RECEIVED)
+                        .title("Nova convite.")
+                        .message(user.getUsername() + " convidou você para se juntar a um time.")
+                        .targetType(NotificationTargetType.TEAM_INVITE)
+                        .targetId(teamInvite.getId())
+                        .metadata(Map.of(
+                                "TeamName", team.getName()
+                        ))
+                        .build()
+        );
+
         return TeamInviteMapper.toResponse(teamInvite);
     }
 
@@ -139,6 +161,21 @@ public class TeamInviteService {
         }
 
         teamMemberRepository.save(teamMember);
+
+        notificationService.createNotification(
+                CreateNotificationRequest.builder()
+                        .recipient(invite.getSender())
+                        .actor(user)
+                        .type(NotificationType.TEAM_INVITE_ACCEPTED)
+                        .title("Convite aceito.")
+                        .message(user.getUsername() + " Aceitou o convite do time.")
+                        .targetType(NotificationTargetType.TEAM_INVITE)
+                        .targetId(invite.getId())
+                        .metadata(Map.of(
+                                "TeamName", team.getName()
+                        ))
+                        .build()
+        );
     }
 
     @Transactional
@@ -168,6 +205,21 @@ public class TeamInviteService {
         invite.setStatus(TeamInviteStatus.DECLINED);
         invite.setRespondedAt(java.time.Instant.now());
         teamInviteRepository.save(invite);
+
+        notificationService.createNotification(
+                CreateNotificationRequest.builder()
+                        .recipient(invite.getSender())
+                        .actor(user)
+                        .type(NotificationType.TEAM_INVITE_DECLINED)
+                        .title("Convite rejeitado.")
+                        .message(user.getUsername() + " Rejeitou o convite do time.")
+                        .targetType(NotificationTargetType.TEAM_INVITE)
+                        .targetId(invite.getId())
+                        .metadata(Map.of(
+                                "TeamName", invite.getTeam().getName()
+                        ))
+                        .build()
+        );
     }
 
     @Transactional
@@ -197,5 +249,20 @@ public class TeamInviteService {
         invite.setCanceledAt(Instant.now());
         invite.setCanceledBy(user);
         teamInviteRepository.save(invite);
+
+        notificationService.createNotification(
+                CreateNotificationRequest.builder()
+                        .recipient(invite.getReceiver())
+                        .actor(user)
+                        .type(NotificationType.TEAM_INVITE_CANCELED)
+                        .title("Convite cancelado.")
+                        .message(user.getUsername() + " Cancelou o convite do time.")
+                        .targetType(NotificationTargetType.TEAM_INVITE)
+                        .targetId(invite.getId())
+                        .metadata(Map.of(
+                                "TeamName", team.getName()
+                        ))
+                        .build()
+        );
     }
 }
