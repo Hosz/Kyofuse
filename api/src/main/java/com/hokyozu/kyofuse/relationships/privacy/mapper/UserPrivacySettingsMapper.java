@@ -3,7 +3,11 @@ package com.hokyozu.kyofuse.relationships.privacy.mapper;
 import com.hokyozu.kyofuse.relationships.privacy.dto.request.UserPrivacySettingsRequest;
 import com.hokyozu.kyofuse.relationships.privacy.dto.response.UserPrivacySettingsResponse;
 import com.hokyozu.kyofuse.relationships.privacy.entity.UserPrivacySettings;
+import com.hokyozu.kyofuse.relationships.privacy.enums.*;
+import com.hokyozu.kyofuse.users.entity.User;
 import jakarta.validation.Valid;
+
+import java.time.Instant;
 
 public class UserPrivacySettingsMapper {
     public static void toUpdate(UserPrivacySettings settings, @Valid UserPrivacySettingsRequest request) {
@@ -48,5 +52,22 @@ public class UserPrivacySettingsMapper {
                 settings.getTeamInvitePermission(),
                 settings.getDuoInvitePermission()
         );
+    }
+
+    public static UserPrivacySettings createDefault(User user) {
+        return UserPrivacySettings.builder()
+                .user(user)
+                .profileVisibility(ProfileVisibility.PUBLIC)
+                .postsVisibility(ProfileVisibility.PUBLIC)
+                .followersVisibility(ProfileVisibility.PUBLIC)
+                .followingVisibility(ProfileVisibility.PUBLIC)
+                .messagePermission(MessagePermission.EVERYONE)
+                .friendRequestPermission(FriendRequestPermission.EVERYONE)
+                .followPermission(FollowPermission.EVERYONE)
+                .teamInvitePermission(TeamInvitePermission.EVERYONE)
+                .duoInvitePermission(DuoInvitePermission.FRIENDS)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
     }
 }

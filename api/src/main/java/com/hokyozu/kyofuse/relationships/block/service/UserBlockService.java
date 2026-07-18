@@ -34,6 +34,8 @@ public class UserBlockService {
         userChecker.checkActive(userBlocked);
 
         UserBlock block = UserBlockMapper.toEntity(user, userBlocked);
+        userBlockRepository.save(block);
+
         return UserBlockMapper.toResponse(block);
     }
 
