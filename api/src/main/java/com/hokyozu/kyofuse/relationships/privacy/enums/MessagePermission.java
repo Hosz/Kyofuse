@@ -1,0 +1,8 @@
+package com.hokyozu.kyofuse.relationships.privacy.enums;
+
+public enum MessagePermission {
+    EVERYONE,
+    FOLLOWERS,
+    FRIENDS,
+    NOBODY
+}

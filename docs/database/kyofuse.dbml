@@ -328,6 +328,101 @@ Table notifications {
   }
 }
 
+Table user_privacy_settings {
+  id uuid [pk]
+
+  user_id uuid [not null, unique, ref: > users.id]
+
+  profile_visibility varchar(40) [not null]
+  posts_visibility varchar(40) [not null]
+  likes_visibility varchar(40) [not null]
+  reposts_visibility varchar(40) [not null]
+  friends_visibility varchar(40) [not null]
+  followers_visibility varchar(40) [not null]
+  following_visibility varchar(40) [not null]
+
+  message_permission varchar(40) [not null]
+  friend_request_permission varchar(40) [not null]
+  follow_permission varchar(40) [not null]
+  team_invite_permission varchar(40) [not null]
+  duo_invite_permission varchar(40) [not null]
+
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  indexes {
+    user_id
+  }
+}
+
+Table user_blocks {
+  id uuid [pk]
+
+  blocker_id uuid [not null, ref: > users.id]
+  blocked_id uuid [not null, ref: > users.id]
+
+  created_at timestamptz [not null]
+
+  indexes {
+    (blocker_id, blocked_id) [unique]
+
+    blocker_id
+    blocked_id
+  }
+}
+
+Table user_follows {
+  id uuid [pk]
+
+  follower_id uuid [not null, ref: > users.id]
+  followed_id uuid [not null, ref: > users.id]
+
+  status varchar(30) [not null]
+
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  indexes {
+    (follower_id, followed_id) [unique]
+
+    follower_id
+    followed_id
+    status
+  }
+}
+
+Table user_friend_requests {
+  id uuid [pk]
+
+  sender_id uuid [not null, ref: > users.id]
+  receiver_id uuid [not null, ref: > users.id]
+
+  created_at timestamptz [not null]
+
+  indexes {
+    (sender_id, receiver_id) [unique]
+
+    sender_id
+    receiver_id
+  }
+}
+
+Table user_friendships {
+  id uuid [pk]
+
+  user_one_id uuid [not null, ref: > users.id]
+  user_two_id uuid [not null, ref: > users.id]
+
+  created_at timestamptz [not null]
+
+  indexes {
+    (user_one_id, user_two_id) [unique]
+
+    user_one_id
+    user_two_id
+  }
+}
+
 // PostgreSQL partial indexes to be created in Flyway migrations:
 //
 // CREATE UNIQUE INDEX uk_team_members_active_member
