@@ -10,6 +10,7 @@ import com.hokyozu.kyofuse.auth.validator.LoginFinderValidator;
 import com.hokyozu.kyofuse.auth.validator.LoginValidator;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.JwtService;
 import com.hokyozu.kyofuse.profiles.service.GamerProfileService;
+import com.hokyozu.kyofuse.relationships.privacy.service.UserPrivacySettingsService;
 import com.hokyozu.kyofuse.users.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,6 +26,7 @@ public class AuthService {
     private final JwtService jwtService;
 
     private final GamerProfileService gamerProfileService;
+    private final UserPrivacySettingsService userPrivacySettingsService;
 
     private final EmailAndUsernameAvailabilityValidator emailAndUsernameAvailabilityValidator;
     private final LoginFinderValidator loginFinderValidator;
@@ -38,6 +40,7 @@ public class AuthService {
        User user = AuthMapper.toEntity(request, passwordHash);
        User savedUser = userRepository.save(user);
        gamerProfileService.createGamerProfileMin(savedUser);
+       userPrivacySettingsService.createDefault(savedUser);
 
        String token = jwtService.generateToken(savedUser);
 

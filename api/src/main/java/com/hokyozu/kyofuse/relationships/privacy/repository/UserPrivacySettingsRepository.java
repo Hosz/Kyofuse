@@ -8,4 +8,6 @@ import java.util.UUID;
 
 public interface UserPrivacySettingsRepository extends JpaRepository<UserPrivacySettings, UUID> {
     UserPrivacySettings findByUser(User user);
+
+    boolean existsByUser(User user);
 }
