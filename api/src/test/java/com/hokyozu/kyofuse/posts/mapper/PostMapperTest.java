@@ -38,7 +38,7 @@ class PostMapperTest {
                 List.of(Cs2Map.MIRAGE)
         );
 
-        Post post = PostMapper.toEntity(profile, request);
+        Post post = PostMapper.toEntity(user, request);
         post.setId(postId);
         post.setReactionCount(3);
         post.setLikeCount(2);

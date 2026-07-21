@@ -38,13 +38,14 @@ public class AuthService {
        emailAndUsernameAvailabilityValidator.validate(request.email(), request.username());
        String passwordHash = passwordEncoder.encode(request.password());
        User user = AuthMapper.toEntity(request, passwordHash);
-       User savedUser = userRepository.save(user);
-       gamerProfileService.createGamerProfileMin(savedUser);
-       userPrivacySettingsService.createDefault(savedUser);
+       userRepository.save(user);
+       System.out.println(user.getId());
+       gamerProfileService.createGamerProfileMin(user);
+       userPrivacySettingsService.createDefault(user);
 
-       String token = jwtService.generateToken(savedUser);
+       String token = jwtService.generateToken(user);
 
-       return AuthMapper.toResponse(savedUser, token);
+       return AuthMapper.toResponse(user, token);
     }
 
     public AuthResponse login(LoginRequest request) {

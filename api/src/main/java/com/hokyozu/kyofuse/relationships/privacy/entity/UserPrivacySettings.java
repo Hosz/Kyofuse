@@ -35,6 +35,18 @@ public class UserPrivacySettings {
     private ProfileVisibility postsVisibility;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "likes_visibility", length = 40, nullable = false)
+    private ProfileVisibility likesVisibility;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "reposts_visibility", length = 40, nullable = false)
+    private ProfileVisibility repostsVisibility;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "friends_visibility", length = 40, nullable = false)
+    private ProfileVisibility friendsVisibility;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "followers_visibility", length = 40, nullable = false)
     private ProfileVisibility followersVisibility;
 

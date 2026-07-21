@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record UserFollowResponse(
+        UUID id,
         UUID followerId,
         String followerUsername,
         UUID followedId,

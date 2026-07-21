@@ -18,6 +18,7 @@ public class UserFriendRequestMapper {
 
     public static UserFriendRequestResponse toResponse(UserFriendRequest friendRequest) {
         return new UserFriendRequestResponse(
+                friendRequest.getId(),
                 friendRequest.getSender().getId(),
                 friendRequest.getSender().getUsername(),
                 friendRequest.getReceiver().getId(),

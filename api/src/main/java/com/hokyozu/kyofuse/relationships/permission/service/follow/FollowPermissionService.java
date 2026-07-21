@@ -62,7 +62,7 @@ public class FollowPermissionService {
 
     public void validateUnfollow(User sender, User receiver) {
 
-        if (isFollowing(sender, receiver)) {
+        if (areFollowing(sender, receiver)) {
             return;
         }
 
@@ -91,5 +91,9 @@ public class FollowPermissionService {
     private boolean existRequest(User receiver, User sender) {
         return userFollowRepository.existsByFollowerAndFollowedAndStatus(sender, receiver, FollowStatus.PENDING)||
                 userFollowRepository.existsByFollowerAndFollowedAndStatus(receiver, sender, FollowStatus.PENDING);
+    }
+
+    private boolean areFollowing(User follower, User followed) {
+        return userFollowRepository.existsByFollowerAndFollowedAndStatus(follower, followed, FollowStatus.ACTIVE);
     }
 }

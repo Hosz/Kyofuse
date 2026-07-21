@@ -7,8 +7,11 @@ import com.hokyozu.kyofuse.notifications.service.NotificationService;
 import com.hokyozu.kyofuse.relationships.block.repository.UserBlockRepository;
 import com.hokyozu.kyofuse.relationships.follow.dto.response.UserFollowResponse;
 import com.hokyozu.kyofuse.relationships.follow.entity.UserFollow;
+import com.hokyozu.kyofuse.relationships.follow.enums.FollowStatus;
 import com.hokyozu.kyofuse.relationships.follow.mapper.UserFollowMapper;
 import com.hokyozu.kyofuse.relationships.follow.repository.UserFollowRepository;
+import com.hokyozu.kyofuse.relationships.permission.service.follow.FollowPermissionService;
+import com.hokyozu.kyofuse.relationships.permission.service.profile.ProfilePermissionService;
 import com.hokyozu.kyofuse.relationships.privacy.entity.UserPrivacySettings;
 import com.hokyozu.kyofuse.relationships.privacy.enums.FollowPermission;
 import com.hokyozu.kyofuse.relationships.privacy.enums.ProfileVisibility;
@@ -33,53 +36,23 @@ public class UserFollowService {
 
     private final UserFinder userFinder;
     private final UserChecker userChecker;
-    private final UserBlockRepository userBlockRepository;
-    private final UserPrivacySettingsRepository userPrivacySettingsRepository;
-    private final UserFollowRepository userFollowRepository;
+
     private final NotificationService notificationService;
+    private final ProfilePermissionService profilePermissionService;
+
+    private final UserBlockRepository userBlockRepository;
+    private final UserFollowRepository userFollowRepository;
+    private final FollowPermissionService followPermissionService;
 
     @Transactional
     public UserFollowResponse followUser(UUID userId, UUID userFollowId) {
         User user = userFinder.findProfileByUserId(userId);
         User followedUser = userFinder.findProfileByUserId(userFollowId);
-        UserPrivacySettings settings = userPrivacySettingsRepository.findByUser(followedUser);
 
         userChecker.checkActive(user);
         userChecker.checkActive(followedUser);
 
-        if (userFollowRepository.existsByFollowerAndFollowed(user, followedUser)) {
-            throw new ForbiddenException("You are already following this user.");
-        }
-
-        if (userBlockRepository.existsByBlockerAndBlocked(followedUser, user)) {
-            throw new ForbiddenException("You cannot follow this user because they have blocked you.");
-        }
-
-        if (userBlockRepository.existsByBlockerAndBlocked(user, followedUser)) {
-            throw new ForbiddenException("You cannot follow this user because you have blocked them.");
-        }
-
-        if (settings.getProfileVisibility().equals(ProfileVisibility.PRIVATE)) {
-            if (settings.getFollowPermission().equals(FollowPermission.APPROVAL_REQUIRED)) {
-                UserFollow userFollow = UserFollowMapper.toInvite(user, followedUser);
-                userFollowRepository.save(userFollow);
-                notificationService.createNotification(
-                        CreateNotificationRequest.builder()
-                                .recipient(followedUser)
-                                .actor(user)
-                                .type(NotificationType.FOLLOW_REQUEST_RECEIVED)
-                                .title("Solicitação para seguir recebida.")
-                                .message(user.getUsername() + " solicitou seguir você.")
-                                .targetType(NotificationTargetType.FOLLOW)
-                                .targetId(followedUser.getId())
-                                .metadata(Map.of(
-                                        "Solicitação para seguir de: ", followedUser.getUsername()
-                                ))
-                                .build()
-                );
-                return UserFollowMapper.toResponse(userFollow);
-            }
-        }
+        followPermissionService.validateSendFollow(user, followedUser);
 
         UserFollow userFollow = UserFollowMapper.toFollow(user, followedUser);
         userFollowRepository.save(userFollow);
@@ -105,29 +78,13 @@ public class UserFollowService {
     public Page<UserFollowResponse> showFollowers(UUID userId, UUID userIdFollowers, Pageable pageable) {
         User user = userFinder.findProfileByUserId(userId);
         User followedUser = userFinder.findProfileByUserId(userIdFollowers);
-        UserPrivacySettings settings = userPrivacySettingsRepository.findByUser(followedUser);
 
         userChecker.checkActive(user);
         userChecker.checkActive(followedUser);
 
-        if (userBlockRepository.existsByBlockerAndBlocked(followedUser, user)) {
-            throw new ForbiddenException("You cannot view this user's followers because they have blocked you.");
-        }
+        profilePermissionService.validateViewFollowers(user, followedUser);
 
-        if (userBlockRepository.existsByBlockerAndBlocked(user, followedUser)) {
-            throw new ForbiddenException("You cannot view this user's followers because you have blocked them.");
-        }
-
-        if (settings.getProfileVisibility().equals(ProfileVisibility.PRIVATE)) {
-            if (settings.getFollowersVisibility().equals(ProfileVisibility.PRIVATE)) {
-                throw new ForbiddenException("You cannot view this user's followers because their profile is private.");
-            } else if (settings.getFollowersVisibility().equals(ProfileVisibility.PUBLIC)) {
-                Page<UserFollow> userFollows = userFollowRepository.findAllByFollowed(user, pageable);
-                return userFollows.map(UserFollowMapper::toResponse);
-            }
-        }
-
-        Page<UserFollow> userFollow = userFollowRepository.findAllByFollowed(user, pageable);
+        Page<UserFollow> userFollow = userFollowRepository.findAllByFollowed(followedUser, pageable);
         return userFollow.map(UserFollowMapper::toResponse);
     }
 
@@ -148,22 +105,10 @@ public class UserFollowService {
         userChecker.checkActive(user);
         userChecker.checkActive(followedUser);
 
-        if (userBlockRepository.existsByBlockerAndBlocked(followedUser, user)) {
-            throw new ForbiddenException("You cannot unfollow this user because they have blocked you.");
-        }
-
-        if (userBlockRepository.existsByBlockerAndBlocked(user, followedUser)) {
-            throw new ForbiddenException("You cannot unfollow this user because you have blocked them.");
-        }
-
-        if (!userFollowRepository.existsByFollowerAndFollowed(user, followedUser)) {
-            throw new NotFoundException("You are not following this user.");
-        }
+        followPermissionService.validateUnfollow(user, followedUser);
 
         UserFollow userFollow = userFollowRepository.findByFollowerAndFollowed(user, followedUser);
-        if (!userFollow.getFollower().getId().equals(userId)) {
-            throw new ForbiddenException("You do not have permission to unfollow this user.");
-        }
+
         userFollowRepository.delete(userFollow);
     }
 
@@ -180,60 +125,74 @@ public class UserFollowService {
     public Page<UserFollowResponse> showFollowings(UUID userId, UUID userIdFollowing, Pageable pageable) {
         User user = userFinder.findProfileByUserId(userId);
         User followedUser = userFinder.findProfileByUserId(userIdFollowing);
-        UserPrivacySettings settings = userPrivacySettingsRepository.findByUser(followedUser);
 
         userChecker.checkActive(user);
         userChecker.checkActive(followedUser);
 
-        if (userBlockRepository.existsByBlockerAndBlocked(followedUser, user)) {
-            throw new ForbiddenException("You cannot view this user's followings because they have blocked you.");
-        }
+        profilePermissionService.validateViewFollowing(user, followedUser);
 
-        if (userBlockRepository.existsByBlockerAndBlocked(user, followedUser)) {
-            throw new ForbiddenException("You cannot view this user's followings because you have blocked them.");
-        }
-
-        if (settings.getProfileVisibility().equals(ProfileVisibility.PRIVATE)) {
-            if (settings.getFollowingVisibility().equals(ProfileVisibility.PRIVATE)) {
-                throw new ForbiddenException("You cannot view this user's followings because their profile is private.");
-            } else if (settings.getFollowingVisibility().equals(ProfileVisibility.PUBLIC)) {
-                Page<UserFollow> userFollows = userFollowRepository.findAllByFollower(user, pageable);
-                return userFollows.map(UserFollowMapper::toResponse);
-            }
-        }
-
-        Page<UserFollow> userFollows = userFollowRepository.findAllByFollower(user, pageable);
+        Page<UserFollow> userFollows = userFollowRepository.findAllByFollowed(user, pageable);
         return userFollows.map(UserFollowMapper::toResponse);
     }
 
     @Transactional
-    public Page<UserFollowResponse> deleteFollowing(UUID userId, UUID userIdFollowing) {
+    public void removeFollower(UUID userId, UUID userIdFollowing) {
         User user = userFinder.findProfileByUserId(userId);
         User followedUser = userFinder.findProfileByUserId(userIdFollowing);
 
         userChecker.checkActive(user);
         userChecker.checkActive(followedUser);
 
-        if (userBlockRepository.existsByBlockerAndBlocked(followedUser, user)) {
-            throw new ForbiddenException("You cannot delete this following because they have blocked you.");
-        }
-
-        if (userBlockRepository.existsByBlockerAndBlocked(user, followedUser)) {
-            throw new ForbiddenException("You cannot delete this following because you have blocked them.");
-        }
-
-        if (!userFollowRepository.existsByFollowerAndFollowed(user, followedUser)) {
-            throw new NotFoundException("You are not following this user.");
-        }
+        followPermissionService.validateRemoveFollower(user, followedUser);
 
         UserFollow userFollow = userFollowRepository.findByFollowerAndFollowed(user, followedUser);
 
-        if (!userFollow.getFollowed().getId().equals(userId)) {
-            throw new ForbiddenException("You do not have permission to delete this following.");
-        }
         userFollowRepository.delete(userFollow);
+    }
 
-        Page<UserFollow> userFollows = userFollowRepository.findAllByFollower(user, Pageable.unpaged());
-        return userFollows.map(UserFollowMapper::toResponse);
+    @Transactional
+    public void rejectFollowRequest(UUID userId, UUID requestId) {
+        User user = userFinder.findProfileByUserId(userId);
+        User sender = userFinder.findProfileByUserId(requestId);
+
+        userChecker.checkActive(user);
+        userChecker.checkActive(sender);
+
+        followPermissionService.validateRejectFollow(user, sender);
+
+        UserFollow request = userFollowRepository.findByFollowerAndFollowedAndStatus(sender, user, FollowStatus.PENDING);
+        userFollowRepository.delete(request);
+    }
+
+    @Transactional
+    public UserFollowResponse acceptFollowRequest(UUID userId, UUID requestId) {
+        User user = userFinder.findProfileByUserId(userId);
+        User sender = userFinder.findProfileByUserId(requestId);
+
+        userChecker.checkActive(user);
+        userChecker.checkActive(sender);
+
+        followPermissionService.validateAcceptFollow(user, sender);
+
+        UserFollow request = userFollowRepository.findByFollowerAndFollowedAndStatus(sender, user, FollowStatus.PENDING);
+        request.setStatus(FollowStatus.ACTIVE);
+        userFollowRepository.save(request);
+
+        notificationService.createNotification(
+                CreateNotificationRequest.builder()
+                        .recipient(sender)
+                        .actor(user)
+                        .type(NotificationType.FOLLOW_REQUEST_ACCEPTED)
+                        .title("Solicitação de seguimento aceita.")
+                        .message(user.getUsername() + " aceitou sua solicitação de seguimento.")
+                        .targetType(NotificationTargetType.FOLLOW)
+                        .targetId(sender.getId())
+                        .metadata(Map.of(
+                                "Accepted by: ", user.getUsername()
+                        ))
+                        .build()
+        );
+
+        return UserFollowMapper.toResponse(request);
     }
 }

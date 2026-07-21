@@ -53,10 +53,6 @@ public class UserPrivacySettingsService {
 
     @Transactional
     public void createDefault(User user) {
-        if (userPrivacySettingsRepository.existsByUser(user)) {
-            throw new ForbiddenException("User already has privacy settings.");
-        }
-
         UserPrivacySettings settings = UserPrivacySettingsMapper.createDefault(user);
         userPrivacySettingsRepository.save(settings);
     }

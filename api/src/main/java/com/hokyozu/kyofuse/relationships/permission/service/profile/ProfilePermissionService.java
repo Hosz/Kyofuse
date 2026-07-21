@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ProfilePermissionService {
 
-    private final UserBlockRepository userBlockRepository;
     private final UserPrivacySettingsRepository userPrivacySettingsRepository;
     private final UserFriendshipRepository userFriendshipRepository;
     private final UserFollowRepository userFollowRepository;
@@ -23,28 +22,37 @@ public class ProfilePermissionService {
 
     public void validateViewProfile(User viewer, User owner) {
 
-        validatePrivateProfileAccess(viewer, owner);
-
-        throw new ForbiddenException("User does not have permission to view this profile.");
+        try {
+            validatePrivateProfileAccess(viewer, owner);
+        } catch (ForbiddenException e) {
+            throw new ForbiddenException("User does not have permission to view this profile.");
+        }
     }
 
     public void validateViewPosts(User viewer, User owner) {
 
-        validatePrivateProfileAccess(viewer, owner);
+        try {
+            validatePrivateProfileAccess(viewer, owner);
+        } catch (ForbiddenException e) {
+            throw new ForbiddenException("User does not have permission to view this user's posts.");
+        }
 
-        throw new ForbiddenException("User does not have permission to view this user's posts.");
     }
 
     public void validateViewFollowers(User viewer, User owner) {
 
-        validatePrivateProfileAccess(viewer, owner);
+        try {
+            validatePrivateProfileAccess(viewer, owner);
 
-        if (userPrivacySettingsRepository.findByUser(owner).getFollowersVisibility().equals(ProfileVisibility.PUBLIC)) {
-            return;
+            if (userPrivacySettingsRepository.findByUser(owner).getFollowersVisibility().equals(ProfileVisibility.PUBLIC)) {
+                return;
+            }
+
+        } catch (ForbiddenException e) {
+            throw new ForbiddenException("User does not have permission to view this user's followers.");
         }
 
-        throw new ForbiddenException("User does not have permission to view this user's followers.");
-    }
+     }
 
     public void validateViewFollowing(User viewer, User owner) {
 
@@ -59,9 +67,16 @@ public class ProfilePermissionService {
 
     public void validateViewFriends(User viewer, User owner) {
 
-        validatePrivateProfileAccess(viewer, owner);
+        try {
+            validatePrivateProfileAccess(viewer, owner);
 
-        throw new ForbiddenException("User does not have permission to view this user's friends.");
+            if (userPrivacySettingsRepository.findByUser(owner).getFriendsVisibility().equals(ProfileVisibility.PUBLIC)) {
+                return;
+            }
+
+        } catch (ForbiddenException e) {
+            throw new ForbiddenException("User does not have permission to view this user's friends.");
+        }
     }
 
     private boolean isFollower(User viewer, User owner) {
@@ -77,6 +92,7 @@ public class ProfilePermissionService {
     }
 
     private void validatePrivateProfileAccess(User viewer, User owner) {
+
         blockValidator.validate(viewer, owner);
 
         if (!isPrivate(owner)) {
@@ -90,5 +106,7 @@ public class ProfilePermissionService {
         if (isFollower(viewer, owner)) {
             return;
         }
+
+        throw new ForbiddenException("User does not have permission to view this profile.");
     }
 }

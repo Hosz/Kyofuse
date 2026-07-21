@@ -7,6 +7,8 @@ import com.hokyozu.kyofuse.relationships.friendship.entity.UserFriendship;
 import com.hokyozu.kyofuse.relationships.friendship.mapper.UserFriendshipMapper;
 import com.hokyozu.kyofuse.relationships.friendship.repository.UserFriendRequestRepository;
 import com.hokyozu.kyofuse.relationships.friendship.repository.UserFriendshipRepository;
+import com.hokyozu.kyofuse.relationships.permission.service.friendship.FriendshipPermissionService;
+import com.hokyozu.kyofuse.relationships.permission.service.profile.ProfilePermissionService;
 import com.hokyozu.kyofuse.relationships.privacy.entity.UserPrivacySettings;
 import com.hokyozu.kyofuse.relationships.privacy.enums.ProfileVisibility;
 import com.hokyozu.kyofuse.relationships.privacy.repository.UserPrivacySettingsRepository;
@@ -29,10 +31,13 @@ public class UserFriendshipService {
 
     private final UserFinder userFinder;
     private final UserChecker userChecker;
+
+    private final ProfilePermissionService profilePermissionService;
+
     private final UserFriendRequestRepository userFriendRequestRepository;
     private final UserFriendshipRepository userFriendshipRepository;
-    private final UserPrivacySettingsRepository userPrivacySettingsRepository;
     private final UserBlockRepository userBlockRepository;
+    private final FriendshipPermissionService friendshipPermissionService;
 
     @Transactional
     public UserFriendshipResponse acceptRequest(UUID userId, UUID requestId) {
@@ -46,14 +51,11 @@ public class UserFriendshipService {
         userChecker.checkActive(userOne);
         userChecker.checkActive(userTwo);
 
-        if (userBlockRepository.existsByBlockerAndBlocked(userOne, userTwo) ||
-                userBlockRepository.existsByBlockerAndBlocked(userTwo, userOne)) {
-            throw new ForbiddenException("Cannot accept friend request due to blocking.");
+        if (!userTwo.equals(user)) {
+            throw new ForbiddenException("User does not have permission to accept this friend request.");
         }
 
-        if (!user.equals(friendRequest.getReceiver()) || !user.equals(friendRequest.getSender())) {
-            throw new IllegalArgumentException("User is not authorized to accept this friend request");
-        }
+        friendshipPermissionService.validateAcceptFriendRequest(userOne, userTwo);
 
         UserFriendship friendship = UserFriendshipMapper.toEntity(userOne, userTwo);
         userFriendshipRepository.save(friendship);
@@ -69,24 +71,7 @@ public class UserFriendshipService {
 
         userChecker.checkActive(user);
 
-        if (!user.equals(friendRequest.getReceiver())) {
-            throw new ForbiddenException("User is not authorized to decline this friend request");
-        }
-
-        userFriendRequestRepository.delete(friendRequest);
-    }
-
-    @Transactional
-    public void cancelRequest(UUID userId, UUID requestId) {
-        User user = userFinder.findProfileByUserId(userId);
-        UserFriendRequest friendRequest = userFriendRequestRepository.findById(requestId)
-                .orElseThrow(() -> new NotFoundException("Friend request not found"));
-
-        userChecker.checkActive(user);
-
-        if (!user.equals(friendRequest.getSender())) {
-            throw new ForbiddenException("User is not authorized to cancel this friend request");
-        }
+        friendshipPermissionService.validateRejectFriendRequest(user, friendRequest.getSender());
 
         userFriendRequestRepository.delete(friendRequest);
     }
@@ -104,22 +89,26 @@ public class UserFriendshipService {
     public Page<UserFriendshipResponse> showUserFriends(UUID userAuthId, UUID userId, Pageable pageable) {
         User userAuth = userFinder.findProfileByUserId(userAuthId);
         User user = userFinder.findProfileByUserId(userId);
-        UserPrivacySettings settings = userPrivacySettingsRepository.findByUser(user);
         userChecker.checkActive(userAuth);
         userChecker.checkActive(user);
 
-        if (userBlockRepository.existsByBlockerAndBlocked(user, userAuth)) {
-            throw new ForbiddenException("User is blocked by the target user.");
-        }
-        if (userBlockRepository.existsByBlockerAndBlocked(userAuth, user)) {
-            throw new ForbiddenException("Target user is blocked by the authenticated user.");
-        }
-
-        if (settings.getProfileVisibility().equals(ProfileVisibility.PRIVATE)) {
-            throw new ForbiddenException("User's friends list is private.");
-        }
+        profilePermissionService.validateViewFriends(userAuth, user);
 
         Page<UserFriendship> friends = userFriendshipRepository.findAllByUserOneOrUserTwo(user, user, pageable);
         return friends.map(UserFriendshipMapper::toResponse);
+    }
+
+    @Transactional
+    public void removeFriendship(UUID userId, UUID friendId) {
+        User user = userFinder.findProfileByUserId(userId);
+        User friend = userFinder.findProfileByUserId(friendId);
+
+        userChecker.checkActive(user);
+        userChecker.checkActive(friend);
+
+        friendshipPermissionService.validateRemoveFriendship(user, friend);
+        UserFriendship friendship = userFriendshipRepository.findByUserOneAndUserTwo(user, friend);
+
+        userFriendshipRepository.delete(friendship);
     }
 }

@@ -17,6 +17,15 @@ public class UserPrivacySettingsMapper {
         if (request.postVisibility() != null) {
             settings.setPostsVisibility(request.postVisibility());
         }
+        if (request.likesVisibility() != null) {
+            settings.setLikesVisibility(request.likesVisibility());
+        }
+        if (request.repostsVisibility() != null) {
+            settings.setRepostsVisibility(request.repostsVisibility());
+        }
+        if (request.friendsVisibility() != null) {
+            settings.setFriendsVisibility(request.friendsVisibility());
+        }
         if (request.followersVisibility() != null) {
             settings.setFollowersVisibility(request.followersVisibility());
         }
@@ -44,6 +53,9 @@ public class UserPrivacySettingsMapper {
         return new UserPrivacySettingsResponse(
                 settings.getProfileVisibility(),
                 settings.getPostsVisibility(),
+                settings.getLikesVisibility(),
+                settings.getRepostsVisibility(),
+                settings.getFriendsVisibility(),
                 settings.getFollowersVisibility(),
                 settings.getFollowingVisibility(),
                 settings.getMessagePermission(),
@@ -59,6 +71,9 @@ public class UserPrivacySettingsMapper {
                 .user(user)
                 .profileVisibility(ProfileVisibility.PUBLIC)
                 .postsVisibility(ProfileVisibility.PUBLIC)
+                .likesVisibility(ProfileVisibility.PUBLIC)
+                .repostsVisibility(ProfileVisibility.PUBLIC)
+                .friendsVisibility(ProfileVisibility.PUBLIC)
                 .followersVisibility(ProfileVisibility.PUBLIC)
                 .followingVisibility(ProfileVisibility.PUBLIC)
                 .messagePermission(MessagePermission.EVERYONE)

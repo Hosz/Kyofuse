@@ -31,7 +31,7 @@ class CommentMapperTest {
         Post post = Post.builder().id(postId).build();
         CreateCommentRequest request = new CreateCommentRequest("content");
 
-        Comment comment = CommentMapper.toEntity(profile, request, post);
+        Comment comment = CommentMapper.toEntity(user, request, post);
         comment.setId(commentId);
         comment.setReactionCount(3);
         comment.setLikeCount(2);

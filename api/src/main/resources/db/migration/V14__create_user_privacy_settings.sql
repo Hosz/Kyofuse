@@ -1,8 +1,6 @@
 CREATE TABLE user_privacy_settings
 (
-    id UUID PRIMARY KEY,
-
-    user_id UUID NOT NULL UNIQUE,
+    user_id UUID PRIMARY KEY,
 
     profile_visibility VARCHAR(40) NOT NULL,
     posts_visibility VARCHAR(40) NOT NULL,

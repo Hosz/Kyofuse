@@ -16,14 +16,15 @@ import com.hokyozu.kyofuse.posts.enums.PostStatus;
 import com.hokyozu.kyofuse.posts.enums.PostVisibility;
 import com.hokyozu.kyofuse.posts.finder.PostFinder;
 import com.hokyozu.kyofuse.posts.repository.PostRepository;
-import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
-import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
+import com.hokyozu.kyofuse.relationships.permission.service.comment.CommentPermissionService;
+import com.hokyozu.kyofuse.relationships.permission.service.post.PostPermissionService;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.shared.exception.ForbiddenException;
 import com.hokyozu.kyofuse.shared.exception.NotFoundException;
 import com.hokyozu.kyofuse.shared.exception.UnauthorizedException;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.finder.UserFinder;
+import com.hokyozu.kyofuse.users.service.UserChecker;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -42,19 +43,24 @@ public class CommentService {
     private final PostRepository postRepository;
 
     private final PostFinder postFinder;
-    private final GamerProfileFinder gamerProfileFinder;
     private final CommentFinder commentFinder;
     private final UserFinder userFinder;
     private final NotificationService notificationService;
+    private final UserChecker userChecker;
+    private final CommentPermissionService commentPermissionService;
+    private final PostPermissionService postPermissionService;
 
     @Transactional
     public CommentResponse postComment(UUID userId, UUID postId, CreateCommentRequest request) {
-        GamerProfile profile = gamerProfileFinder.findProfileByUserId(userId);
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
 
         Post post = postFinder.findVisiblePostForUser(postId, userId, PostStatus.ACTIVE, PostVisibility.PUBLIC);
 
-        Comment comment = CommentMapper.toEntity(profile, request, post);
+        Comment comment = CommentMapper.toEntity(user, request, post);
         Comment savedComment = commentRepository.save(comment);
+
+        postPermissionService.validateComment(user, post);
 
         post.setCommentCount(post.getCommentCount() + 1);
         postRepository.save(post);
@@ -62,10 +68,10 @@ public class CommentService {
         notificationService.createNotification(
                 CreateNotificationRequest.builder()
                         .recipient(post.getAuthor())
-                        .actor(profile.getUser())
+                        .actor(user)
                         .type(NotificationType.POST_COMMENT)
                         .title("Novo comentário.")
-                        .message(profile.getNickname() + " comentou no seu post.")
+                        .message(user.getUsername() + " comentou no seu post.")
                         .targetType(NotificationTargetType.COMMENT)
                         .targetId(comment.getId())
                         .metadata(Map.of(
@@ -78,8 +84,10 @@ public class CommentService {
         return CommentMapper.toResponse(savedComment);
     }
 
-    public CommentResponse getComment(UUID commentId) {
-
+    @Transactional(readOnly = true)
+    public CommentResponse getComment(UUID commentId, UUID userId) {
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
         Comment comment = commentFinder.findById(commentId);
 
         if (comment.getStatus() == CommentStatus.DELETED) {
@@ -90,16 +98,25 @@ public class CommentService {
             throw new UnauthorizedException("Comentário em análise");
         }
 
+        commentPermissionService.validateViewComment(user, comment);
+
         return CommentMapper.toResponse(comment);
     }
 
-    public Page<CommentResponse> listComments(UUID postId, Pageable pageable) {
-
+    @Transactional(readOnly = true)
+    public Page<CommentResponse> listComments(UUID postId, Pageable pageable, UUID userId) {
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
         postFinder.findPostByIdAndStatus(postId, PostStatus.ACTIVE);
 
-        return commentRepository
-                .findByPostIdAndStatus(postId, CommentStatus.ACTIVE, pageable)
-                .map(CommentMapper::toResponse);
+        Page<Comment> comments = commentRepository
+                .findByPostIdAndStatus(postId, CommentStatus.ACTIVE, pageable);
+
+        for (Comment comment : comments) {
+            commentPermissionService.validateViewComment(user, comment);
+        }
+
+        return comments.map(CommentMapper::toResponse);
     }
 
     @Transactional

@@ -5,11 +5,13 @@ import com.hokyozu.kyofuse.relationships.friendship.dto.response.UserFriendReque
 import com.hokyozu.kyofuse.relationships.friendship.entity.UserFriendRequest;
 import com.hokyozu.kyofuse.relationships.friendship.mapper.UserFriendRequestMapper;
 import com.hokyozu.kyofuse.relationships.friendship.repository.UserFriendRequestRepository;
+import com.hokyozu.kyofuse.relationships.permission.service.friendship.FriendshipPermissionService;
 import com.hokyozu.kyofuse.relationships.privacy.entity.UserPrivacySettings;
 import com.hokyozu.kyofuse.relationships.privacy.enums.FriendRequestPermission;
 import com.hokyozu.kyofuse.relationships.privacy.enums.ProfileVisibility;
 import com.hokyozu.kyofuse.relationships.privacy.repository.UserPrivacySettingsRepository;
 import com.hokyozu.kyofuse.shared.exception.ForbiddenException;
+import com.hokyozu.kyofuse.shared.exception.NotFoundException;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.finder.UserFinder;
 import com.hokyozu.kyofuse.users.service.UserChecker;
@@ -27,36 +29,18 @@ public class UserFriendRequestService {
 
     private final UserFinder userFinder;
     private final UserChecker userChecker;
-    private final UserBlockRepository userBlockRepository;
-    private final UserPrivacySettingsRepository userPrivacySettingsRepository;
     private final UserFriendRequestRepository userFriendRequestRepository;
+    private final FriendshipPermissionService friendshipPermissionService;
 
     @Transactional
     public UserFriendRequestResponse sendRequest(UUID userId, UUID userFriendRequestId) {
         User user = userFinder.findProfileByUserId(userId);
         User userFriendRequest = userFinder.findProfileByUserId(userFriendRequestId);
-        UserPrivacySettings settings = userPrivacySettingsRepository.findByUser(userFriendRequest);
 
         userChecker.checkActive(user);
         userChecker.checkActive(userFriendRequest);
 
-        if (userBlockRepository.existsByBlockerAndBlocked(user, userFriendRequest) || userBlockRepository.existsByBlockerAndBlocked(userFriendRequest, user)) {
-            throw new IllegalArgumentException("Cannot send friend request to a blocked user.");
-        }
-
-        if (settings.getProfileVisibility().equals(ProfileVisibility.PRIVATE)) {
-            if (settings.getFriendRequestPermission().equals(FriendRequestPermission.EVERYONE)) {
-                if (userFriendRequestRepository.existsBySenderAndReceiver(user, userFriendRequest) ||
-                    userFriendRequestRepository.existsBySenderAndReceiver(userFriendRequest, user)) {
-                    throw new IllegalArgumentException("Friend request already sent.");
-                }
-                UserFriendRequest friendRequest = UserFriendRequestMapper.sendRequest(user, userFriendRequest);
-                userFriendRequestRepository.save(friendRequest);
-                return UserFriendRequestMapper.toResponse(friendRequest);
-            } else if (settings.getFriendRequestPermission().equals(FriendRequestPermission.NOBODY)) {
-                throw new ForbiddenException("User does not accept friend requests.");
-            }
-        }
+       friendshipPermissionService.validateSendFriendRequest(user, userFriendRequest);
 
         UserFriendRequest friendRequest = UserFriendRequestMapper.sendRequest(user, userFriendRequest);
         userFriendRequestRepository.save(friendRequest);
@@ -84,12 +68,11 @@ public class UserFriendRequestService {
     @Transactional
     public void removeRequest(UUID userId, UUID requestId) {
         User user = userFinder.findProfileByUserId(userId);
-        UserFriendRequest friendRequest = userFriendRequestRepository.findById(requestId).orElseThrow(() -> new IllegalArgumentException("Friend request not found."));
+        UserFriendRequest friendRequest = userFriendRequestRepository.findById(requestId)
+                .orElseThrow(() -> new NotFoundException("Friend request not found."));
         userChecker.checkActive(user);
 
-        if (!friendRequest.getSender().equals(user) && !friendRequest.getReceiver().equals(user)) {
-            throw new ForbiddenException("You are not the owner of this friend request.");
-        }
+        friendshipPermissionService.validateCancelFriendRequest(user, friendRequest.getReceiver());
 
         userFriendRequestRepository.delete(friendRequest);
     }

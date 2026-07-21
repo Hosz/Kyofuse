@@ -1,6 +1,7 @@
 package com.hokyozu.kyofuse.relationships.permission.service.comment;
 
 import com.hokyozu.kyofuse.comments.entity.Comment;
+import com.hokyozu.kyofuse.comments.enums.CommentStatus;
 import com.hokyozu.kyofuse.posts.entity.Post;
 import com.hokyozu.kyofuse.posts.enums.PostVisibility;
 import com.hokyozu.kyofuse.relationships.privacy.enums.ProfileVisibility;
@@ -33,9 +34,12 @@ public class CommentPermissionService {
 
     public void validateReact(User user, Comment comment) {
 
-        validatePrivateProfileAccess(user, comment.getPost());
+        try {
+            validatePrivateProfileAccess(user, comment.getPost());
+        } catch (ForbiddenException e) {
+            throw new ForbiddenException("User does not have permission to react to this comment.");
+        }
 
-        throw new ForbiddenException("User does not have permission to react to this comment.");
     }
 
     private boolean areTeammates(User first, User second) {
@@ -57,5 +61,7 @@ public class CommentPermissionService {
         if (userPrivacySettingsRepository.findByUser(post.getAuthor()).getProfileVisibility().equals(ProfileVisibility.PUBLIC)) {
             return;
         }
+
+        throw new ForbiddenException("User does not have permission to access this post.");
     }
 }

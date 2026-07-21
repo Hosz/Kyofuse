@@ -11,6 +11,7 @@ import java.util.UUID;
 public interface UserFriendshipRepository extends JpaRepository<UserFriendship, UUID> {
     Page<UserFriendship> findAllByUserOneOrUserTwo(User user, User user1, Pageable pageable);
 
-
     boolean existsByUserOneAndUserTwo(User owner, User view);
+
+    UserFriendship findByUserOneAndUserTwo(User user, User friend);
 }

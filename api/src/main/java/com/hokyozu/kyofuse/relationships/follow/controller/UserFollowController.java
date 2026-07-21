@@ -43,7 +43,7 @@ public class UserFollowController {
         return userFollowService.showMyFollowers(userId, pageable);
     }
 
-    @DeleteMapping("{followingId}/delete")
+    @DeleteMapping("{followingId}/unfollow")
     public void unfollowUser(@PathVariable UUID followingId,
                              @AuthenticationPrincipal Jwt jwt) {
 
@@ -68,11 +68,27 @@ public class UserFollowController {
         return userFollowService.showFollowings(userId, userIdFollowing, pageable);
     }
 
-    @DeleteMapping("/{userIdFollowing}/delete")
-    public Page<UserFollowResponse> deleteFollowing(@PathVariable UUID userIdFollowing,
+    @DeleteMapping("/{userIdFollower}/delete")
+    public void removeFollower(@PathVariable UUID userIdFollower,
                                                     @AuthenticationPrincipal Jwt jwt) {
 
         UUID userId = UUID.fromString(jwt.getSubject());
-        return userFollowService.deleteFollowing(userId, userIdFollowing);
+        userFollowService.removeFollower(userId, userIdFollower);
+    }
+
+    @DeleteMapping("/{requestId}/reject")
+    public void rejectFollowRequest(@PathVariable UUID requestId,
+                              @AuthenticationPrincipal Jwt jwt) {
+
+        UUID userId = UUID.fromString(jwt.getSubject());
+        userFollowService.rejectFollowRequest(userId, requestId);
+    }
+
+    @PatchMapping("/{requestId}/accept")
+    public UserFollowResponse acceptFollowRequest(@PathVariable UUID requestId,
+                              @AuthenticationPrincipal Jwt jwt) {
+
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return userFollowService.acceptFollowRequest(userId, requestId);
     }
 }

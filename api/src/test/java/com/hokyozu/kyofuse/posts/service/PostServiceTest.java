@@ -202,6 +202,7 @@ class PostServiceTest {
     @Test
     void getFeedReturnsOnlyPublicActivePostsAndMapsResponses() {
         Pageable pageable = PageRequest.of(0, 20);
+        UUID userId = UUID.randomUUID();
         Post firstPost = post(UUID.randomUUID(), UUID.randomUUID(), PostVisibility.PUBLIC, PostStatus.ACTIVE);
         Post secondPost = post(UUID.randomUUID(), UUID.randomUUID(), PostVisibility.PUBLIC, PostStatus.ACTIVE);
         when(postRepository.findByVisibilityAndStatus(PostVisibility.PUBLIC, PostStatus.ACTIVE, pageable))
@@ -209,7 +210,7 @@ class PostServiceTest {
         when(postMapRepository.findByPostId(firstPost.getId())).thenReturn(List.of(postMap(firstPost, "MIRAGE")));
         when(postMapRepository.findByPostId(secondPost.getId())).thenReturn(List.of(postMap(secondPost, "INFERNO")));
 
-        Page<PostResponse> response = postService.getFeed(pageable);
+        Page<PostResponse> response = postService.getFeed(pageable, userId);
 
         verify(postRepository).findByVisibilityAndStatus(PostVisibility.PUBLIC, PostStatus.ACTIVE, pageable);
         assertThat(response.getTotalElements()).isEqualTo(2);
@@ -222,6 +223,7 @@ class PostServiceTest {
     @Test
     void getProfilePostsReturnsOnlyPublicActivePostsForAuthor() {
         UUID authorId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
         Pageable pageable = PageRequest.of(1, 10);
         Post post = post(UUID.randomUUID(), authorId, PostVisibility.PUBLIC, PostStatus.ACTIVE);
         when(postRepository.findByAuthorIdAndVisibilityInAndStatus(
@@ -232,7 +234,7 @@ class PostServiceTest {
         )).thenReturn(new PageImpl<>(List.of(post), pageable, 1));
         when(postMapRepository.findByPostId(post.getId())).thenReturn(List.of(postMap(post, "NUKE")));
 
-        Page<PostResponse> response = postService.getProfilePosts(authorId, pageable);
+        Page<PostResponse> response = postService.getProfilePosts(authorId, pageable, userId);
 
         verify(postRepository).findByAuthorIdAndVisibilityInAndStatus(
                 authorId,

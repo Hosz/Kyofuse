@@ -20,6 +20,7 @@ public class UserFollowMapper {
 
     public static UserFollowResponse toResponse(UserFollow userFollow) {
         return new UserFollowResponse(
+                userFollow.getId(),
                 userFollow.getFollower().getId(),
                 userFollow.getFollower().getUsername(),
                 userFollow.getFollowed().getId(),

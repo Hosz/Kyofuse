@@ -29,36 +29,40 @@ public class PostController {
 
     @PostMapping("/post")
     @ResponseStatus(HttpStatus.CREATED)
-    public PostResponse post(@AuthenticationPrincipal Jwt jwt, @RequestBody @Valid CreatePostRequest request) {
+    public PostResponse post(@AuthenticationPrincipal Jwt jwt,
+                             @RequestBody @Valid CreatePostRequest request) {
         UUID userId = UUID.fromString(jwt.getSubject());
 
         return postService.post(userId, request);
     }
 
     @GetMapping("/post/{postId}")
-    public PostResponse getPost(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID postId) {
+    public PostResponse getPost(@AuthenticationPrincipal Jwt jwt,
+                                @PathVariable UUID postId) {
         UUID userId = UUID.fromString(jwt.getSubject());
 
         return postService.getPost(userId, postId);
     }
 
     @GetMapping("/posts")
-    public Page<PostResponse> getFeed(
-            @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size
-    ) {
-        Pageable pageable = defaultPageable(page, size);
+    public Page<PostResponse> getFeed(@AuthenticationPrincipal Jwt jwt,
+                                      @RequestParam(defaultValue = "0") @Min(0) int page,
+                                      @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
 
-        return postService.getFeed(pageable);
+        UUID userId = UUID.fromString(jwt.getSubject());
+        Pageable pageable = defaultPageable(page, size);
+        return postService.getFeed(pageable, userId);
     }
 
     @GetMapping("/profile/{profileId}/posts")
-    public Page<PostResponse> getProfilePosts(@PathVariable UUID profileId,
+    public Page<PostResponse> getProfilePosts(@AuthenticationPrincipal Jwt jwt,
+                                              @PathVariable UUID profileId,
                                               @RequestParam(defaultValue = "0") @Min(0) int page,
                                               @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
         Pageable pageable = defaultPageable(page, size);
+        UUID userId = UUID.fromString(jwt.getSubject());
 
-        return postService.getProfilePosts(profileId, pageable);
+        return postService.getProfilePosts(profileId, pageable, userId);
     }
 
     @GetMapping("/posts/me")

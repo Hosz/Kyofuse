@@ -15,6 +15,11 @@ import com.hokyozu.kyofuse.posts.validator.PostMapsValidator;
 import com.hokyozu.kyofuse.posts.validator.PostValidator;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
+import com.hokyozu.kyofuse.relationships.permission.service.post.PostPermissionService;
+import com.hokyozu.kyofuse.relationships.permission.service.profile.ProfilePermissionService;
+import com.hokyozu.kyofuse.users.entity.User;
+import com.hokyozu.kyofuse.users.finder.UserFinder;
+import com.hokyozu.kyofuse.users.service.UserChecker;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -35,17 +40,22 @@ public class PostService {
     private final PostMapsValidator postMapsValidator;
     private final DeletePostValidator deletePostValidator;
 
-    private final GamerProfileFinder gamerProfileFinder;
+    private final ProfilePermissionService profilePermissionService;
+
     private final PostFinder postFinder;
+    private final UserFinder userFinder;
+    private final UserChecker userChecker;
+    private final PostPermissionService postPermissionService;
 
     @Transactional
     public PostResponse post(UUID userId, CreatePostRequest request) {
-        GamerProfile profile = gamerProfileFinder.findProfileByUserId(userId);
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
 
         postValidator.validate(request);
         postMapsValidator.validate(request);
 
-        Post post = PostMapper.toEntity(profile, request);
+        Post post = PostMapper.toEntity(user, request);
         Post savedPost = postRepository.save(post);
 
         List<PostMap> postMaps = PostMapper.toPostMap(post, request.maps());
@@ -58,14 +68,21 @@ public class PostService {
     }
 
     public PostResponse getPost(UUID userId, UUID postId) {
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
+
         Post post = postFinder.findVisiblePostForUser(postId, userId, PostStatus.ACTIVE, PostVisibility.PUBLIC);
+        postPermissionService.validateViewPost(user, post);
 
         List<PostMap> postMaps = postMapRepository.findByPostId(postId);
 
         return PostMapper.toResponse(post, postMaps);
     }
 
-    public Page<PostResponse> getFeed(Pageable pageable) {
+    public Page<PostResponse> getFeed(Pageable pageable, UUID userId) {
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
+
         Page<Post> postsPage = postRepository.findByVisibilityAndStatus(
                 PostVisibility.PUBLIC,
                 PostStatus.ACTIVE,
@@ -78,9 +95,14 @@ public class PostService {
         });
     }
 
-    public Page<PostResponse> getProfilePosts(UUID profileId, Pageable pageable) {
+    public Page<PostResponse> getProfilePosts(UUID profileId, Pageable pageable, UUID userId) {
+        User user = userFinder.findProfileByUserId(userId);
+        User profileOwner = userFinder.findProfileByUserId(profileId);
+
+        profilePermissionService.validateViewPosts(user, profileOwner);
+
         Page<Post> postsPage = postRepository.findByAuthorIdAndVisibilityInAndStatus(
-                profileId,
+                profileOwner.getId(),
                 List.of(PostVisibility.PUBLIC),
                 PostStatus.ACTIVE,
                 pageable
@@ -93,6 +115,9 @@ public class PostService {
     }
 
     public Page<PostResponse> getMyPosts(UUID authorId, Pageable pageable) {
+        User user = userFinder.findProfileByUserId(authorId);
+        userChecker.checkActive(user);
+
         Page<Post> postsPage = postRepository.findByAuthorIdAndVisibilityInAndStatusIn(
                 authorId,
                 List.of(PostVisibility.PUBLIC, PostVisibility.PRIVATE),
@@ -108,6 +133,9 @@ public class PostService {
 
     @Transactional
     public void deletePost(UUID userId, UUID postId) {
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
+
         Post post = postFinder.findById(postId);
 
         deletePostValidator.validate(post, userId);

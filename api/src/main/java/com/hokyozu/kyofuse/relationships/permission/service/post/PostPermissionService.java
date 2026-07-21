@@ -20,34 +20,33 @@ public class PostPermissionService {
     private final UserPrivacySettingsRepository userPrivacySettingsRepository;
     private final TeamMemberRepository teamMemberRepository;
 
-    public void validateCreatePost(User author) {
-
-        if (author.getStatus().equals(UserStatus.ACTIVE)) {
-            return;
-        }
-
-        throw new ForbiddenException("User does not have permission to create a post.");
-    }
-
     public void validateViewPost(User viewer, Post post) {
 
-        validatePrivateProfileAccess(viewer, post);
-
-        throw new ForbiddenException("User does not have permission to view this post.");
+        try {
+            validatePrivateProfileAccess(viewer, post);
+        } catch (ForbiddenException e) {
+            throw new ForbiddenException("User does not have permission to view this post..");
+        }
     }
 
     public void validateComment(User viewer, Post post) {
 
-        validatePrivateProfileAccess(viewer, post);
+        try {
+            validatePrivateProfileAccess(viewer, post);
+        } catch (ForbiddenException e) {
+            throw new ForbiddenException("User does not have permission to comment on this post.");
+        }
 
-        throw new ForbiddenException("User does not have permission to comment on this post.");
     }
 
     public void validateReact(User viewer, Post post) {
 
-        validatePrivateProfileAccess(viewer, post);
+        try {
+            validatePrivateProfileAccess(viewer, post);
+        } catch (ForbiddenException e) {
+            throw new ForbiddenException("User does not have permission to react to this post.");
+        }
 
-        throw new ForbiddenException("User does not have permission to react to this post.");
     }
 
     private boolean areTeammates(User first, User second) {
@@ -69,5 +68,7 @@ public class PostPermissionService {
         if (userPrivacySettingsRepository.findByUser(post.getAuthor()).getProfileVisibility().equals(ProfileVisibility.PUBLIC)) {
             return;
         }
+
+        throw new ForbiddenException("User does not have permission to view this post..");
     }
 }

@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record UserFriendRequestResponse(
+        UUID id,
         UUID senderId,
         String senderUsername,
         UUID receiverId,

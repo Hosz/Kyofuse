@@ -35,14 +35,6 @@ public class UserFriendshipController {
         userFriendshipService.declineRequest(userId, requestId);
     }
 
-    @DeleteMapping("/{requestId}/cancel-request")
-    public void cancelRequest(@AuthenticationPrincipal Jwt jwt,
-                            @PathVariable UUID requestId) {
-
-        UUID userId = UUID.fromString(jwt.getSubject());
-        userFriendshipService.cancelRequest(userId, requestId);
-    }
-
     @GetMapping("/me/friends")
     public Page<UserFriendshipResponse> showMyFriends(@AuthenticationPrincipal Jwt jwt,
                                               Pageable pageable) {
@@ -58,5 +50,13 @@ public class UserFriendshipController {
 
         UUID userAuthId = UUID.fromString(jwt.getSubject());
         return userFriendshipService.showUserFriends(userAuthId, userId, pageable);
+    }
+
+    @DeleteMapping("/{friendId}/remove")
+    public void removeFriendship(@AuthenticationPrincipal Jwt jwt,
+                                 @PathVariable UUID friendId) {
+
+        UUID userId = UUID.fromString(jwt.getSubject());
+        userFriendshipService.removeFriendship(userId, friendId);
     }
 }
