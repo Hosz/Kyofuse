@@ -66,13 +66,13 @@ public class TeamMapper {
 
         if (updateTeamRequest.description() != null) {
             team.setDescription(updateTeamRequest.description());
-        } else {
+        } else if (updateTeamRequest.description() == null && team.getDescription() == null) {
             team.setDescription(null);
         }
 
         if (updateTeamRequest.region() != null) {
             team.setRegion(updateTeamRequest.region());
-        } else {
+        } else if (updateTeamRequest.region() == null && team.getRegion() == null) {
             team.setRegion(null);
         }
 

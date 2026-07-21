@@ -130,19 +130,19 @@ public class TeamService {
 
         if (updateTeamRequest.name() != null && updateTeamRequest.name().strip().isBlank()) {
             throw new BadRequestException("O nome do time não pode ser vazio.");
-        } else if (team.getName().equals(updateTeamRequest.name())) {
+        } else if (Objects.equals(team.getName(), updateTeamRequest.name())) {
             throw new BadRequestException("O nome do time não foi alterado.");
         }
 
         if (updateTeamRequest.description() != null && updateTeamRequest.description().strip().isBlank()) {
             throw new BadRequestException("A descrição do time não pode ser vazio.");
-        } else if (team.getDescription().equals(updateTeamRequest.description())) {
+        } else if (Objects.equals(team.getDescription(), updateTeamRequest.description())) {
             throw new BadRequestException("A descrição do time não foi alterada.");
         }
 
         if (updateTeamRequest.region() != null && updateTeamRequest.region().strip().isBlank()) {
             throw new BadRequestException("A região do time não pode ser vazio.");
-        } else if (team.getRegion().equals(updateTeamRequest.region())) {
+        } else if (Objects.equals(team.getRegion(), updateTeamRequest.region()) && updateTeamRequest.region() != null ) {
             throw new BadRequestException("A região do time não foi alterada.");
         }
 

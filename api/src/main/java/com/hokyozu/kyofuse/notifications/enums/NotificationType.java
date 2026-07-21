@@ -1,6 +1,12 @@
 package com.hokyozu.kyofuse.notifications.enums;
 
 public enum NotificationType {
+    FOLLOW_REQUEST_RECEIVED,
+    FOLLOW_REQUEST_ACCEPTED,
+    FOLLOW_REQUEST_DECLINED,
+
+    FOLLOW_STARTED,
+
     TEAM_INVITE_RECEIVED,
     TEAM_INVITE_ACCEPTED,
     TEAM_INVITE_DECLINED,

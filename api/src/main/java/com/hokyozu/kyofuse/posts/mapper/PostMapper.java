@@ -7,6 +7,7 @@ import com.hokyozu.kyofuse.posts.entity.PostMap;
 import com.hokyozu.kyofuse.posts.enums.PostStatus;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.profiles.enums.Cs2Map;
+import com.hokyozu.kyofuse.users.entity.User;
 
 import java.time.Instant;
 import java.util.List;
@@ -15,9 +16,9 @@ import static java.util.stream.Collectors.toList;
 
 public class PostMapper {
 
-    public static Post toEntity(GamerProfile profile, CreatePostRequest request) {
+    public static Post toEntity(User user, CreatePostRequest request) {
         return Post.builder()
-                .author(profile.getUser())
+                .author(user)
                 .content(request.content())
                 .postType(request.postType())
                 .visibility(request.visibility())

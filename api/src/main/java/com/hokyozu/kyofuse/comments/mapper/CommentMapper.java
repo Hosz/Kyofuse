@@ -6,15 +6,16 @@ import com.hokyozu.kyofuse.comments.entity.Comment;
 import com.hokyozu.kyofuse.comments.enums.CommentStatus;
 import com.hokyozu.kyofuse.posts.entity.Post;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
+import com.hokyozu.kyofuse.users.entity.User;
 
 import java.time.Instant;
 
 public class CommentMapper {
 
-    public static Comment toEntity(GamerProfile profile, CreateCommentRequest request, Post postId) {
+    public static Comment toEntity(User user, CreateCommentRequest request, Post postId) {
         return Comment.builder()
                 .post(postId)
-                .author(profile.getUser())
+                .author(user)
                 .content(request.content())
                 .status(CommentStatus.ACTIVE)
                 .createdAt(Instant.now())

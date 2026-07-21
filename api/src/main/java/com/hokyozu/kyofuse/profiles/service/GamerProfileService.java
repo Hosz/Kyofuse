@@ -8,8 +8,10 @@ import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import com.hokyozu.kyofuse.profiles.mapper.GamerProfileMapper;
 import com.hokyozu.kyofuse.profiles.repository.GamerProfileFavoriteMapRepository;
 import com.hokyozu.kyofuse.profiles.repository.GamerProfileRepository;
+import com.hokyozu.kyofuse.relationships.permission.service.profile.ProfilePermissionService;
 import com.hokyozu.kyofuse.shared.exception.UnauthorizedException;
 import com.hokyozu.kyofuse.users.entity.User;
+import com.hokyozu.kyofuse.users.finder.UserFinder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,8 +28,10 @@ public class GamerProfileService {
 
     private final GamerProfileSetupStatusResolverService setupStatusResolverService;
     private final UpdateFavoriteMapsService updateFavoriteMapsService;
+    private final ProfilePermissionService profilePermissionService;
 
     private final GamerProfileFinder gamerProfileFinder;
+    private final UserFinder userFinder;
 
     @Transactional
     public void createGamerProfileMin(User user) {
@@ -63,12 +67,16 @@ public class GamerProfileService {
         return GamerProfileMapper.toResponse(gamerProfile, favoriteMaps);
     }
 
-    public GamerProfileResponse viewUserProfile(UUID profileId) {
-        GamerProfile gamerProfile = gamerProfileFinder.findProfileById(profileId);
+    public GamerProfileResponse viewUserProfile(UUID profileId, UUID userId) {
+        User requestingUser = userFinder.findProfileByUserId(profileId);
+        GamerProfile userRequestedProfile = gamerProfileFinder.findProfileByUserId(profileId);
+        User user = userFinder.findProfileByUserId(userId);
+
+        profilePermissionService.validateViewProfile(user, requestingUser);
 
         List<GamerProfileFavoriteMap> favoriteMaps =
-                gamerProfileFavoriteMapRepository.findByProfile_Id(gamerProfile.getId());
+                gamerProfileFavoriteMapRepository.findByProfile_Id(userRequestedProfile.getId());
 
-        return GamerProfileMapper.toResponse(gamerProfile, favoriteMaps);
+        return GamerProfileMapper.toResponse(userRequestedProfile, favoriteMaps);
     }
 }

@@ -196,7 +196,7 @@ class GamerProfileServiceTest {
         when(gamerProfileFinder.findProfileById(profileId)).thenReturn(profile);
         when(favoriteMapRepository.findByProfile_Id(profileId)).thenReturn(List.of());
 
-        GamerProfileResponse response = service.viewUserProfile(profileId);
+        GamerProfileResponse response = service.viewUserProfile(profileId, userId);
 
         assertThat(response.id()).isEqualTo(profileId);
         assertThat(response.userId()).isEqualTo(userId);
@@ -205,10 +205,11 @@ class GamerProfileServiceTest {
     @Test
     void viewUserProfileThrowsWhenProfileDoesNotExist() {
         UUID profileId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
         when(gamerProfileFinder.findProfileById(profileId))
                 .thenThrow(new RuntimeException("Gamer profile not found for profile ID: " + profileId));
 
-        assertThatThrownBy(() -> service.viewUserProfile(profileId))
+        assertThatThrownBy(() -> service.viewUserProfile(profileId, userId))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("Gamer profile not found for profile ID: " + profileId);
     }

@@ -80,14 +80,15 @@ class PostControllerTest {
 
     @Test
     void getFeedBuildsDefaultSortedPageable() {
+        UUID userId = UUID.randomUUID();
         Page<PostResponse> expected = new PageImpl<>(List.of(response(UUID.randomUUID(), UUID.randomUUID())));
-        when(postService.getFeed(any(Pageable.class))).thenReturn(expected);
+        when(postService.getFeed(any(Pageable.class), userId)).thenReturn(expected);
 
-        Page<PostResponse> result = controller.getFeed(2, 30);
+        Page<PostResponse> result = controller.getFeed(jwt(userId), 2, 30);
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         assertThat(result).isSameAs(expected);
-        verify(postService).getFeed(pageableCaptor.capture());
+        verify(postService).getFeed(pageableCaptor.capture(), userId);
         assertThat(pageableCaptor.getValue().getPageNumber()).isEqualTo(2);
         assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(30);
         assertThat(pageableCaptor.getValue().getSort().getOrderFor("createdAt"))
@@ -98,14 +99,15 @@ class PostControllerTest {
     @Test
     void getProfilePostsUsesPathProfileIdAndPageable() {
         UUID profileId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
         Page<PostResponse> expected = new PageImpl<>(List.of(response(UUID.randomUUID(), UUID.randomUUID())));
-        when(postService.getProfilePosts(eq(profileId), any(Pageable.class))).thenReturn(expected);
+        when(postService.getProfilePosts(eq(profileId), any(Pageable.class), userId)).thenReturn(expected);
 
-        Page<PostResponse> result = controller.getProfilePosts(profileId, 1, 10);
+        Page<PostResponse> result = controller.getProfilePosts(jwt(userId), profileId, 1, 10);
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         assertThat(result).isSameAs(expected);
-        verify(postService).getProfilePosts(eq(profileId), pageableCaptor.capture());
+        verify(postService).getProfilePosts(eq(profileId), pageableCaptor.capture(), userId);
         assertThat(pageableCaptor.getValue().getPageNumber()).isEqualTo(1);
         assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(10);
     }

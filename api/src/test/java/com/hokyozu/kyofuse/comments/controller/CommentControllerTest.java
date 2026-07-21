@@ -52,29 +52,30 @@ class CommentControllerTest {
         UUID postId = UUID.randomUUID();
         UUID authorId = UUID.randomUUID();
         CommentResponse expected = response(commentId, postId, authorId);
-        when(commentService.getComment(commentId)).thenReturn(expected);
+        when(commentService.getComment(commentId, authorId)).thenReturn(expected);
 
-        CommentResponse result = controller.getComment(commentId);
+        CommentResponse result = controller.getComment(jwt(authorId), commentId);
 
         assertThat(result).isSameAs(expected);
-        verify(commentService).getComment(commentId);
+        verify(commentService).getComment(commentId, authorId);
     }
 
     @Test
     void listCommentsUsesPathPostIdAndPageable() {
         UUID postId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
         Pageable pageable = PageRequest.of(1, 10);
         Page<CommentResponse> expected = new PageImpl<>(
                 List.of(response(UUID.randomUUID(), postId, UUID.randomUUID())),
                 pageable,
                 1
         );
-        when(commentService.listComments(postId, pageable)).thenReturn(expected);
+        when(commentService.listComments(postId, pageable, userId)).thenReturn(expected);
 
-        Page<CommentResponse> result = controller.listComments(postId, pageable);
+        Page<CommentResponse> result = controller.listComments(jwt(userId), postId, pageable);
 
         assertThat(result).isSameAs(expected);
-        verify(commentService).listComments(postId, pageable);
+        verify(commentService).listComments(postId, pageable, userId);
     }
 
     @Test

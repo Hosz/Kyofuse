@@ -21,6 +21,8 @@ public class UserFollow {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    // The follower is the user who initiates the follow action,
+    // while the followed is the user being followed.
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "follower_id", nullable = false)
     private User follower;

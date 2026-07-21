@@ -240,7 +240,7 @@ class CommentServiceTest {
         Comment comment = comment(commentId, postId, authorId, CommentStatus.ACTIVE, now);
         when(commentFinder.findById(commentId)).thenReturn(comment);
 
-        CommentResponse response = commentService.getComment(commentId);
+        CommentResponse response = commentService.getComment(commentId, authorId);
 
         verify(commentFinder).findById(commentId);
         assertThat(response.id()).isEqualTo(commentId);
@@ -257,10 +257,11 @@ class CommentServiceTest {
     @Test
     void getCommentPropagatesBadRequestWhenCommentDoesNotExist() {
         UUID commentId = UUID.randomUUID();
+        UUID authorId = UUID.randomUUID();
         when(commentFinder.findById(commentId))
                 .thenThrow(new BadRequestException("Comment not found for ID: " + commentId));
 
-        assertThatThrownBy(() -> commentService.getComment(commentId))
+        assertThatThrownBy(() -> commentService.getComment(commentId, authorId))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("Comment not found for ID: " + commentId);
     }
@@ -268,16 +269,17 @@ class CommentServiceTest {
     @Test
     void getCommentRejectsDeletedComment() {
         UUID commentId = UUID.randomUUID();
+        UUID authorId = UUID.randomUUID();
         Comment deletedComment = comment(
                 commentId,
                 UUID.randomUUID(),
-                UUID.randomUUID(),
+                authorId,
                 CommentStatus.DELETED,
                 Instant.now()
         );
         when(commentFinder.findById(commentId)).thenReturn(deletedComment);
 
-        assertThatThrownBy(() -> commentService.getComment(commentId))
+        assertThatThrownBy(() -> commentService.getComment(commentId, authorId))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Comentário não encontrado.");
     }
@@ -285,6 +287,7 @@ class CommentServiceTest {
     @Test
     void getCommentRejectsHiddenComment() {
         UUID commentId = UUID.randomUUID();
+        UUID authorId = UUID.randomUUID();
         Comment hiddenComment = comment(
                 commentId,
                 UUID.randomUUID(),
@@ -294,7 +297,7 @@ class CommentServiceTest {
         );
         when(commentFinder.findById(commentId)).thenReturn(hiddenComment);
 
-        assertThatThrownBy(() -> commentService.getComment(commentId))
+        assertThatThrownBy(() -> commentService.getComment(commentId, authorId))
                 .isInstanceOf(UnauthorizedException.class)
                 .hasMessage("Comentário em análise");
     }
@@ -312,7 +315,7 @@ class CommentServiceTest {
         when(commentRepository.findByPostIdAndStatus(postId, CommentStatus.ACTIVE, pageable))
                 .thenReturn(new PageImpl<>(List.of(firstComment, secondComment), pageable, 2));
 
-        Page<CommentResponse> response = commentService.listComments(postId, pageable);
+        Page<CommentResponse> response = commentService.listComments(postId, pageable, authorId);
 
         verify(postFinder).findPostByIdAndStatus(postId, PostStatus.ACTIVE);
         verify(commentRepository).findByPostIdAndStatus(postId, CommentStatus.ACTIVE, pageable);
@@ -328,11 +331,12 @@ class CommentServiceTest {
     @Test
     void listCommentsDoesNotQueryCommentsWhenPostIsNotActive() {
         UUID postId = UUID.randomUUID();
+        UUID authorId = UUID.randomUUID();
         Pageable pageable = PageRequest.of(0, 20);
         when(postFinder.findPostByIdAndStatus(postId, PostStatus.ACTIVE))
                 .thenThrow(new BadRequestException("Post not found for ID: " + postId));
 
-        assertThatThrownBy(() -> commentService.listComments(postId, pageable))
+        assertThatThrownBy(() -> commentService.listComments(postId, pageable, authorId))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("Post not found for ID: " + postId);
 

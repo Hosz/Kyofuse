@@ -5,6 +5,9 @@ import com.hokyozu.kyofuse.relationships.privacy.enums.*;
 public record UserPrivacySettingsResponse(
         ProfileVisibility profileVisibility,
         ProfileVisibility postVisibility,
+        ProfileVisibility likesVisibility,
+        ProfileVisibility repostsVisibility,
+        ProfileVisibility friendsVisibility,
         ProfileVisibility followersVisibility,
         ProfileVisibility followingVisibility,
         MessagePermission messagePermission,

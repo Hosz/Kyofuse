@@ -14,6 +14,7 @@ import com.hokyozu.kyofuse.reactions.enums.ReactionType;
 import com.hokyozu.kyofuse.reactions.mapper.CommentReactionMapper;
 import com.hokyozu.kyofuse.reactions.mapper.PostReactionMapper;
 import com.hokyozu.kyofuse.reactions.repository.CommentReactionRepository;
+import com.hokyozu.kyofuse.relationships.permission.service.comment.CommentPermissionService;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.shared.exception.NotFoundException;
 import com.hokyozu.kyofuse.users.entity.User;
@@ -37,6 +38,7 @@ public class CommentReactionService {
 
     private final CommentReactionRepository commentReactionRepository;
     private final CommentRepository commentRepository;
+    private final CommentPermissionService commentPermissionService;
 
     @Transactional
     public CommentReactionResponse upsertReaction(UUID postId, UUID commentId, @Valid CommentReactionRequest request, UUID userId) {
@@ -44,6 +46,7 @@ public class CommentReactionService {
         postFinder.findVisibleActivePost(postId, userId);
         Comment comment = commentFinder.findById(commentId);
         Optional<CommentReaction> commentReactionExist = commentReactionRepository.findByComment_Post_IdAndComment_IdAndUserId(postId, commentId, userId);
+        commentPermissionService.validateReact(user, comment);
 
         if (commentReactionExist.isEmpty()) {
             CommentReaction commentReactionCreate = CommentReactionMapper.toEntity(comment, user, request);

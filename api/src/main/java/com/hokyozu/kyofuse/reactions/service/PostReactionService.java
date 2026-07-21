@@ -11,6 +11,7 @@ import com.hokyozu.kyofuse.reactions.entity.PostReaction;
 import com.hokyozu.kyofuse.reactions.enums.ReactionType;
 import com.hokyozu.kyofuse.reactions.mapper.PostReactionMapper;
 import com.hokyozu.kyofuse.reactions.repository.PostReactionRepository;
+import com.hokyozu.kyofuse.relationships.permission.service.post.PostPermissionService;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.shared.exception.NotFoundException;
 import com.hokyozu.kyofuse.users.entity.User;
@@ -33,12 +34,15 @@ public class PostReactionService {
 
     private final PostFinder postFinder;
     private final UserFinder userFinder;
+    private final PostPermissionService postPermissionService;
 
     @Transactional
     public PostReactionResponse upsertReaction(UUID userId, UUID postId, @Valid PostReactionRequest request) {
         Post post = postFinder.findVisiblePostForUser(postId, userId, PostStatus.ACTIVE, PostVisibility.PUBLIC);
         User user = userFinder.findProfileByUserId(userId);
         Optional<PostReaction> postReactionExist = postReactionRepository.findByPostIdAndUserId(postId, userId);
+
+        postPermissionService.validateReact(user, post);
 
         if (post.getStatus() != PostStatus.ACTIVE) {
             throw new BadRequestException("Post não existente");

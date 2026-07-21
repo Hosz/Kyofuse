@@ -35,7 +35,10 @@ public class GamerProfileController {
     }
 
     @GetMapping("/{profileId}")
-    public GamerProfileResponse userProfile(@PathVariable UUID profileId) {
-        return gamerProfileService.viewUserProfile(profileId);
+    public GamerProfileResponse userProfile(@AuthenticationPrincipal Jwt jwt,
+                                            @PathVariable UUID profileId) {
+
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return gamerProfileService.viewUserProfile(profileId, userId);
     }
 }

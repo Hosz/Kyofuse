@@ -1,6 +1,7 @@
 package com.hokyozu.kyofuse.profiles.repository;
 
 import com.hokyozu.kyofuse.profiles.entity.GamerProfileFavoriteMap;
+import com.hokyozu.kyofuse.users.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
