@@ -40,10 +40,15 @@ class DomainEnumTest {
                 NotificationStatus.ARCHIVED
         );
         assertThat(NotificationType.values()).containsExactly(
-                NotificationType.PENDING,
-                NotificationType.ACCEPTED,
-                NotificationType.DECLINED,
-                NotificationType.CANCELED
+                NotificationType.TEAM_INVITE_ACCEPTED,
+                NotificationType.TEAM_INVITE_RECEIVED,
+                NotificationType.TEAM_INVITE_DECLINED,
+                NotificationType.TEAM_INVITE_CANCELED,
+                NotificationType.NEW_POST,
+                NotificationType.POST_COMMENT,
+                NotificationType.POST_REACTION,
+                NotificationType.COMMENT_REACTION,
+                NotificationType.SYSTEM
         );
         assertThat(NotificationTargetType.values()).containsExactly(
                 NotificationTargetType.POST,

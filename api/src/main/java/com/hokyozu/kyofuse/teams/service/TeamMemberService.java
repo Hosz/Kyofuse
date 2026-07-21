@@ -4,6 +4,10 @@ import com.hokyozu.kyofuse.auth.repository.UserRepository;
 import com.hokyozu.kyofuse.invites.entity.TeamInvite;
 import com.hokyozu.kyofuse.invites.enums.TeamInviteStatus;
 import com.hokyozu.kyofuse.invites.repository.TeamInviteRepository;
+import com.hokyozu.kyofuse.notifications.dto.request.CreateNotificationRequest;
+import com.hokyozu.kyofuse.notifications.enums.NotificationTargetType;
+import com.hokyozu.kyofuse.notifications.enums.NotificationType;
+import com.hokyozu.kyofuse.notifications.service.NotificationService;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.teams.dto.request.TeamMemberEditRequest;
 import com.hokyozu.kyofuse.teams.dto.response.TeamMemberResponse;
@@ -23,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -36,6 +41,7 @@ public class TeamMemberService {
     private final TeamMemberRepository teamMemberRepository;
     private final TeamChecker teamChecker;
     private final TeamInviteRepository teamInviteRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public TeamMemberResponse addMember(UUID teamId, UUID userId, UUID userInvitedId) {
@@ -68,6 +74,21 @@ public class TeamMemberService {
         TeamMember teamMember = TeamMemberMapper.toEntity(userInvited, team);
         TeamMember savedTeamMember = teamMemberRepository.save(teamMember);
 
+        notificationService.createNotification(
+                CreateNotificationRequest.builder()
+                        .recipient(userInvited)
+                        .actor(user)
+                        .type(NotificationType.TEAM_MEMBER_ADDED)
+                        .title("Novo membro do time.")
+                        .message(user.getUsername() + " adicionou você ao time.")
+                        .targetType(NotificationTargetType.TEAM)
+                        .targetId(teamMember.getId())
+                        .metadata(Map.of(
+                                "TeamName", team.getName()
+                        ))
+                        .build()
+        );
+
         return TeamMemberMapper.toResponse(savedTeamMember);
     }
 
@@ -99,6 +120,21 @@ public class TeamMemberService {
         }
 
         teamMemberRepository.save(teamMember);
+
+        notificationService.createNotification(
+                CreateNotificationRequest.builder()
+                        .recipient(userEdited)
+                        .actor(user)
+                        .type(NotificationType.TEAM_MEMBER_EDITED)
+                        .title("Membro do time atualizado.")
+                        .message(user.getUsername() + " atualizou seu status no time.")
+                        .targetType(NotificationTargetType.TEAM)
+                        .targetId(teamMember.getId())
+                        .metadata(Map.of(
+                                "TeamName", team.getName()
+                        ))
+                        .build()
+        );
         return TeamMemberMapper.toResponse(teamMember);
     }
 
@@ -137,6 +173,21 @@ public class TeamMemberService {
             throw new BadRequestException("Member does not exist in this team.");
         }
 
+        notificationService.createNotification(
+                CreateNotificationRequest.builder()
+                        .recipient(userRemoved)
+                        .actor(user)
+                        .type(NotificationType.TEAM_MEMBER_REMOVED)
+                        .title("Membro removido do time.")
+                        .message(user.getUsername() + " removeu você do time.")
+                        .targetType(NotificationTargetType.TEAM)
+                        .targetId(team.getId())
+                        .metadata(Map.of(
+                                "TeamName", team.getName()
+                        ))
+                        .build()
+        );
+
         teamMemberRepository.delete(teamMember);
     }
 
@@ -159,6 +210,21 @@ public class TeamMemberService {
         if (teamMember == null) {
             throw new BadRequestException("Member does not exist in this team.");
         }
+
+        notificationService.createNotification(
+                CreateNotificationRequest.builder()
+                        .recipient(team.getOwner())
+                        .actor(user)
+                        .type(NotificationType.TEAM_MEMBER_LEFT)
+                        .title("Membro saiu do time.")
+                        .message(user.getUsername() + " saiu do time.")
+                        .targetType(NotificationTargetType.TEAM)
+                        .targetId(team.getId())
+                        .metadata(Map.of(
+                                "TeamName", team.getName()
+                        ))
+                        .build()
+        );
 
         teamMemberRepository.delete(teamMember);
     }
