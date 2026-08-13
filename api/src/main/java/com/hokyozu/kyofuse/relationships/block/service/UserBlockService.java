@@ -33,6 +33,16 @@ public class UserBlockService {
         userChecker.checkActive(user);
         userChecker.checkActive(userBlocked);
 
+        if (userBlocked.equals(user)) {
+            throw new BadRequestException("You cannot block yourself.");
+        }
+
+        if (userBlockRepository.existsByBlockerAndBlocked(user, userBlocked)) {
+            throw new BadRequestException("User is already blocked.");
+        } else if (userBlockRepository.existsByBlockedAndBlocker(user, userBlocked)) {
+            throw new BadRequestException("User is already blocking you.");
+        }
+
         UserBlock block = UserBlockMapper.toEntity(user, userBlocked);
         userBlockRepository.save(block);
 

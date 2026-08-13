@@ -6,9 +6,11 @@ import lombok.Builder;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.UUID;
 
 @Builder
 public record NotificationResponse(
+        UUID id,
         NotificationType type,
         String title,
         String message,

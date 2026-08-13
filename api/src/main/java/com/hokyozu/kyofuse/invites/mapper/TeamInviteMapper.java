@@ -39,6 +39,7 @@ public class TeamInviteMapper {
 
     public static TeamInviteResponse toResponse(TeamInvite teamInvite) {
         return new TeamInviteResponse(
+                teamInvite.getId(),
                 teamInvite.getTeam().getId(),
                 teamInvite.getTeam().getName(),
                 teamInvite.getSender().getId(),

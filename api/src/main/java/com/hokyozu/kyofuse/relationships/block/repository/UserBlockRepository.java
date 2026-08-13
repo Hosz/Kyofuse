@@ -14,4 +14,6 @@ public interface UserBlockRepository extends JpaRepository<UserBlock, UUID> {
     UserBlock findByBlockerAndBlocked(User user, User blocked);
 
     boolean existsByBlockerAndBlocked(User user, User blocked);
+
+    boolean existsByBlockedAndBlocker(User blocked, User blocker);
 }

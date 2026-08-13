@@ -1,0 +1,26 @@
+<div class="tactical-grid flex h-screen w-full overflow-hidden bg-surface">
+  <div class="shell-container flex h-screen">
+    <app-sidebar />
+
+    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto border-r border-outline-variant bg-surface">
+      <div class="feed-container mx-auto flex w-full flex-col">
+        <app-feed-tabs />
+        <app-post-composer />
+        <app-feed-list [posts]="posts()" (authorBlocked)="onAuthorBlocked($event)" />
+
+        @if (hasMoreToLoad()) {
+          <button
+            type="button"
+            (click)="loadMore()"
+            [disabled]="loadingMore()"
+            class="mx-lg my-md cursor-pointer rounded-full border border-outline-variant py-2.5 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {{ loadingMore() ? 'Carregando...' : 'Carregar mais' }}
+          </button>
+        }
+      </div>
+    </main>
+
+    <app-discovery-sidebar />
+  </div>
+</div>

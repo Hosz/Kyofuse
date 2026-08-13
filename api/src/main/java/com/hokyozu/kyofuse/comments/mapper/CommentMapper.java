@@ -5,7 +5,6 @@ import com.hokyozu.kyofuse.comments.dto.response.CommentResponse;
 import com.hokyozu.kyofuse.comments.entity.Comment;
 import com.hokyozu.kyofuse.comments.enums.CommentStatus;
 import com.hokyozu.kyofuse.posts.entity.Post;
-import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.users.entity.User;
 
 import java.time.Instant;
@@ -23,11 +22,14 @@ public class CommentMapper {
                 .build();
     }
 
-    public static CommentResponse toResponse(Comment savedComment) {
+    public static CommentResponse toResponse(Comment savedComment, String profileImage, String nickname) {
         return new CommentResponse(
                 savedComment.getId(),
                 savedComment.getPost().getId(),
+                profileImage,
                 savedComment.getAuthor().getId(),
+                nickname,
+                savedComment.getAuthor().getUsername(),
                 savedComment.getContent(),
                 savedComment.getStatus(),
                 savedComment.getReactionCount(),

@@ -100,6 +100,7 @@ class GamerProfileDtoTest {
                 profileId,
                 userId,
                 "player",
+                "player",
                 "bio",
                 "avatar",
                 "BR",

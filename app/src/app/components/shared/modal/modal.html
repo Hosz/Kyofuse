@@ -1,0 +1,32 @@
+@if (open()) {
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-surface-dim/80 px-4 py-8 backdrop-blur-sm"
+    (click)="onBackdropClick()"
+  >
+    <div
+      #panel
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-labelledby]="titleId"
+      tabindex="-1"
+      (click)="$event.stopPropagation()"
+      class="scrollbar-minimal flex max-h-[80vh] w-full max-w-[28rem] flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container-low shadow-2xl focus:outline-none"
+    >
+      <div class="flex shrink-0 items-center justify-between border-b border-outline-variant px-lg py-4">
+        <h2 [id]="titleId" class="text-body-md font-bold text-on-surface">{{ title() }}</h2>
+        <button
+          type="button"
+          (click)="closed.emit()"
+          aria-label="Fechar"
+          class="cursor-pointer rounded-full p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
+        >
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+
+      <div class="scrollbar-minimal overflow-y-auto px-lg py-lg">
+        <ng-content></ng-content>
+      </div>
+    </div>
+  </div>
+}

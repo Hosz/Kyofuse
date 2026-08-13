@@ -1,0 +1,338 @@
+<div class="tactical-grid flex h-screen w-full overflow-hidden bg-surface">
+  <div class="shell-container flex h-screen">
+    <app-sidebar />
+
+    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto bg-surface">
+      <div class="mx-auto flex w-full max-w-6xl gap-lg px-lg py-lg">
+        <nav class="sticky top-lg hidden w-56 shrink-0 flex-col gap-1 self-start lg:flex">
+          <p class="px-3 pb-2 text-label-sm font-semibold uppercase tracking-[0.06em] text-on-surface-variant">
+            Editar perfil
+          </p>
+          @for (section of sections; track section.id) {
+            <button
+              type="button"
+              (click)="scrollToSection(section.id)"
+              class="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left text-body-sm font-semibold transition-colors"
+              [class]="
+                activeSection() === section.id
+                  ? 'bg-surface-container-high text-primary'
+                  : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
+              "
+            >
+              <span class="material-symbols-outlined text-[18px]">{{ section.icon }}</span>
+              {{ section.label }}
+            </button>
+          }
+        </nav>
+
+        <div class="flex min-w-0 flex-1 flex-col gap-lg pb-32">
+          <div class="flex items-center gap-2 text-body-sm text-on-surface-variant">
+            <a routerLink="/perfil" class="rounded hover:text-on-surface hover:underline">Perfil</a>
+            <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+            <span class="font-semibold text-on-surface">Editar perfil</span>
+          </div>
+
+          @if (loading()) {
+            <p class="py-16 text-center text-body-sm text-on-surface-variant">Carregando perfil...</p>
+          } @else {
+            <section
+              id="identidade"
+              class="flex flex-col gap-lg rounded-xl border border-outline-variant bg-surface-container-low p-lg"
+            >
+              <div class="flex items-center justify-between border-b border-outline-variant pb-3">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-primary">palette</span>
+                  <h2 class="text-title-md font-bold text-on-surface">Identidade Visual</h2>
+                </div>
+                <span class="rounded-md border border-outline-variant px-2 py-1 text-label-sm text-on-surface-variant">
+                  Módulo 01
+                </span>
+              </div>
+
+              <div class="flex flex-col items-center gap-4 sm:flex-row">
+                <img
+                  [src]="avatarUrl() || fallbackAvatar"
+                  alt="Avatar"
+                  class="h-24 w-24 shrink-0 rounded-xl border-4 border-surface-container object-cover"
+                />
+                <label class="flex w-full flex-1 flex-col gap-1.5">
+                  <span class="text-label-sm font-semibold text-on-surface-variant">URL do avatar</span>
+                  <input
+                    type="text"
+                    maxlength="500"
+                    placeholder="https://..."
+                    [value]="avatarUrl()"
+                    (input)="avatarUrl.set($any($event.target).value)"
+                    class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                  />
+                  <span class="text-label-sm text-on-surface-variant">Cole o link de uma imagem para usar como avatar.</span>
+                </label>
+              </div>
+            </section>
+
+            <section
+              id="pessoal"
+              class="flex flex-col gap-lg rounded-xl border border-outline-variant bg-surface-container-low p-lg"
+            >
+              <div class="flex items-center justify-between border-b border-outline-variant pb-3">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-primary">badge</span>
+                  <h2 class="text-title-md font-bold text-on-surface">Informações Pessoais</h2>
+                </div>
+                <span class="rounded-md border border-outline-variant px-2 py-1 text-label-sm text-on-surface-variant">
+                  Módulo 02
+                </span>
+              </div>
+
+              <label class="flex flex-col gap-1.5">
+                <span class="text-label-sm font-semibold text-on-surface-variant">Nickname</span>
+                <input
+                  type="text"
+                  maxlength="40"
+                  [value]="nickname()"
+                  (input)="nickname.set($any($event.target).value)"
+                  class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                />
+              </label>
+
+              <label class="flex flex-col gap-1.5">
+                <span class="text-label-sm font-semibold text-on-surface-variant">Bio</span>
+                <textarea
+                  rows="3"
+                  maxlength="500"
+                  [value]="bio()"
+                  (input)="bio.set($any($event.target).value)"
+                  class="resize-none rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                ></textarea>
+              </label>
+
+              <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-label-sm font-semibold text-on-surface-variant">País</span>
+                  <input
+                    type="text"
+                    maxlength="80"
+                    [value]="country()"
+                    (input)="country.set($any($event.target).value)"
+                    class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                  />
+                </label>
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-label-sm font-semibold text-on-surface-variant">Cidade</span>
+                  <input
+                    type="text"
+                    maxlength="80"
+                    [value]="city()"
+                    (input)="city.set($any($event.target).value)"
+                    class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                  />
+                </label>
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-label-sm font-semibold text-on-surface-variant">Estado</span>
+                  <input
+                    type="text"
+                    maxlength="80"
+                    [value]="state()"
+                    (input)="state.set($any($event.target).value)"
+                    class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                  />
+                </label>
+              </div>
+            </section>
+
+            <section
+              id="competitivo"
+              class="flex flex-col gap-lg rounded-xl border border-outline-variant bg-surface-container-low p-lg"
+            >
+              <div class="flex items-center justify-between border-b border-outline-variant pb-3">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-primary">military_tech</span>
+                  <h2 class="text-title-md font-bold text-on-surface">Informações Competitivas</h2>
+                </div>
+                <span class="rounded-md border border-outline-variant px-2 py-1 text-label-sm text-on-surface-variant">
+                  Módulo 03
+                </span>
+              </div>
+
+              <div class="flex flex-col gap-2">
+                <span class="text-label-sm font-semibold uppercase tracking-[0.06em] text-on-surface-variant">
+                  Papel principal
+                </span>
+                <div class="flex flex-wrap gap-2">
+                  @for (option of roleOptions; track option.value) {
+                    <button
+                      type="button"
+                      (click)="selectMainRole(option.value)"
+                      class="cursor-pointer rounded-full border px-3 py-1.5 text-label-sm font-semibold transition-colors"
+                      [class]="
+                        mainRole() === option.value
+                          ? 'border-primary text-primary'
+                          : 'border-outline-variant text-on-surface-variant hover:text-on-surface'
+                      "
+                    >
+                      {{ option.label }}
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <div class="flex flex-col gap-2">
+                <span class="text-label-sm font-semibold uppercase tracking-[0.06em] text-on-surface-variant">
+                  Papel secundário
+                </span>
+                <div class="flex flex-wrap gap-2">
+                  @for (option of roleOptions; track option.value) {
+                    <button
+                      type="button"
+                      (click)="selectSecondaryRole(option.value)"
+                      class="cursor-pointer rounded-full border px-3 py-1.5 text-label-sm font-semibold transition-colors"
+                      [class]="
+                        secondaryRole() === option.value
+                          ? 'border-primary text-primary'
+                          : 'border-outline-variant text-on-surface-variant hover:text-on-surface'
+                      "
+                    >
+                      {{ option.label }}
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <div class="grid grid-cols-3 gap-3">
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-label-sm font-semibold text-on-surface-variant">Premier</span>
+                  <input
+                    type="number"
+                    min="1000"
+                    max="40000"
+                    [value]="premierRating()"
+                    (input)="premierRating.set($any($event.target).value ? +$any($event.target).value : null)"
+                    class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                  />
+                </label>
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-label-sm font-semibold text-on-surface-variant">Faceit</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="10"
+                    [value]="faceitLevel()"
+                    (input)="faceitLevel.set($any($event.target).value ? +$any($event.target).value : null)"
+                    class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                  />
+                </label>
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-label-sm font-semibold text-on-surface-variant">GC Rank</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="21"
+                    [value]="gcRank()"
+                    (input)="gcRank.set($any($event.target).value ? +$any($event.target).value : null)"
+                    class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                  />
+                </label>
+              </div>
+
+              <div class="flex flex-col gap-2">
+                <span class="text-label-sm font-semibold uppercase tracking-[0.06em] text-on-surface-variant">
+                  Estilo de jogo
+                </span>
+                <div class="flex flex-wrap gap-2">
+                  @for (option of playstyleOptions; track option.value) {
+                    <button
+                      type="button"
+                      (click)="selectPlaystyle(option.value)"
+                      class="cursor-pointer rounded-full border px-3 py-1.5 text-label-sm font-semibold transition-colors"
+                      [class]="
+                        playstyle() === option.value
+                          ? 'border-primary text-primary'
+                          : 'border-outline-variant text-on-surface-variant hover:text-on-surface'
+                      "
+                    >
+                      {{ option.label }}
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <div class="flex flex-wrap gap-4">
+                <label class="flex cursor-pointer items-center gap-2">
+                  <input
+                    type="checkbox"
+                    [checked]="lookingForTeam()"
+                    (change)="lookingForTeam.set($any($event.target).checked)"
+                    class="h-4 w-4 accent-primary"
+                  />
+                  <span class="text-body-sm text-on-surface">Procurando time</span>
+                </label>
+                <label class="flex cursor-pointer items-center gap-2">
+                  <input
+                    type="checkbox"
+                    [checked]="lookingForDuo()"
+                    (change)="lookingForDuo.set($any($event.target).checked)"
+                    class="h-4 w-4 accent-primary"
+                  />
+                  <span class="text-body-sm text-on-surface">Procurando duo</span>
+                </label>
+              </div>
+
+              <div class="flex flex-col gap-2">
+                <span class="text-label-sm font-semibold uppercase tracking-[0.06em] text-on-surface-variant">
+                  Mapas favoritos ({{ favoriteMaps().length }}/3)
+                </span>
+                <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  @for (option of mapOptions; track option.value) {
+                    <button
+                      type="button"
+                      (click)="toggleMap(option.value)"
+                      [style.background-color]="mapColor(option.value)"
+                      class="tactical-grid relative flex aspect-video cursor-pointer items-center justify-center overflow-hidden rounded-lg border-2 transition-colors"
+                      [class]="favoriteMaps().includes(option.value) ? 'border-primary' : 'border-outline-variant hover:border-outline'"
+                    >
+                      <span class="absolute inset-0 bg-surface-dim/30"></span>
+                      <span class="relative text-label-md font-bold uppercase tracking-[0.08em] text-on-surface">
+                        {{ option.label }}
+                      </span>
+                      @if (favoriteMaps().includes(option.value)) {
+                        <span class="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-on-primary">
+                          <span class="material-symbols-outlined text-[16px]">check</span>
+                        </span>
+                      }
+                    </button>
+                  }
+                </div>
+              </div>
+            </section>
+          }
+        </div>
+      </div>
+
+      @if (!loading()) {
+        <div class="sticky bottom-0 mt-auto border-t border-outline-variant bg-surface-container-low/95 backdrop-blur">
+          <div class="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-lg py-3">
+            <p class="text-label-sm" [class]="error() ? 'text-error' : 'text-on-surface-variant'">
+              {{ error() || 'As alterações são salvas ao clicar em "Salvar alterações".' }}
+            </p>
+            <div class="flex shrink-0 gap-2">
+              <a
+                routerLink="/perfil"
+                class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high"
+              >
+                Cancelar
+              </a>
+              <button
+                type="button"
+                (click)="submit()"
+                [disabled]="saving()"
+                class="cursor-pointer rounded-full bg-secondary-fixed px-4 py-2 text-label-md font-bold text-on-secondary transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {{ saving() ? 'Salvando...' : 'Salvar alterações' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </main>
+  </div>
+</div>

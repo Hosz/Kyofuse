@@ -1,0 +1,42 @@
+<div
+  class="flex gap-3 border-b border-outline-variant px-lg py-md transition-colors last:border-b-0"
+  [class.bg-primary-container/10]="highlighted()"
+>
+  <a
+    [routerLink]="['/perfil', comment().author.id]"
+    (click)="$event.stopPropagation()"
+    class="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+  >
+    <img
+      [src]="comment().author.avatarUrl"
+      [alt]="comment().author.name"
+      class="h-9 w-9 shrink-0 rounded-full object-cover transition-opacity hover:opacity-90"
+    />
+  </a>
+
+  <div class="flex flex-1 flex-col gap-1">
+    <div class="flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2 text-body-sm">
+        <a
+          [routerLink]="['/perfil', comment().author.id]"
+          (click)="$event.stopPropagation()"
+          class="rounded font-bold text-on-surface hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+          >{{ comment().author.name }}</a
+        >
+        <span class="text-on-surface-variant">&#64;{{ comment().author.handle }} · {{ comment().timeAgo }}</span>
+      </div>
+      <app-user-options-menu [userId]="comment().authorId" (blocked)="authorBlocked.emit(comment().authorId)" />
+    </div>
+
+    <p class="text-body-sm text-on-surface">{{ comment().content }}</p>
+
+    <div class="flex items-center pt-1 text-on-surface-variant">
+      <app-reaction-button
+        [postId]="comment().postId"
+        [commentId]="comment().id"
+        [likeCount]="comment().stats.likes"
+        [reactionCount]="comment().stats.reactions"
+      />
+    </div>
+  </div>
+</div>

@@ -1,0 +1,138 @@
+<div class="tactical-grid flex h-screen w-full overflow-hidden bg-surface">
+  <div class="shell-container flex h-screen">
+    <app-sidebar />
+
+    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto bg-surface">
+      <div class="mx-auto flex w-full max-w-6xl flex-col gap-lg px-lg py-lg">
+        @if (viewMode() === 'restricted') {
+          <app-profile-locked />
+        } @else {
+          <app-profile-header
+            [profile]="profile()"
+            [bannerUrl]="''"
+            [verified]="false"
+            [stats]="rankStats()"
+            [handle]="profile().username"
+            [viewMode]="viewMode()"
+            [followersCount]="followersCount()"
+            [followingCount]="followingCount()"
+            [friendsCount]="friendsCount()"
+            [postsCount]="postsCount()"
+            [viewerIsFollowing]="viewerIsFollowing()"
+            [friendRequestSent]="friendRequestSent()"
+            [friendRequestPending]="friendRequestPending()"
+            (followersClick)="openModal('followers')"
+            (followingClick)="openModal('following')"
+            (friendsClick)="openModal('friends')"
+            (toggleFollow)="onToggleFollow()"
+            (toggleFriendRequest)="onToggleFriendRequest()"
+            (inviteClick)="openModal('invite')"
+            (blocked)="onProfileBlocked()"
+          />
+
+          <app-profile-highlights />
+
+          <div class="flex flex-col gap-lg lg:flex-row lg:items-start">
+            <div class="flex min-w-0 flex-1 flex-col">
+              <app-feed-tabs [tabs]="profileTabs()" (tabSelected)="onTabSelected($event)" />
+
+              @if (activeTabId() === 'posts') {
+                <app-feed-list [posts]="posts()" (authorBlocked)="onAuthorBlocked($event)" />
+
+                @if (hasMorePostsToLoad()) {
+                  <button
+                    type="button"
+                    (click)="loadMorePosts()"
+                    [disabled]="postsLoadingMore()"
+                    class="mx-lg my-md cursor-pointer rounded-full border border-outline-variant py-2.5 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {{ postsLoadingMore() ? 'Carregando...' : 'Carregar mais' }}
+                  </button>
+                }
+              } @else if (activeTabId() === 'replies') {
+                @if (repliesLoading()) {
+                  <p class="px-lg py-16 text-center text-body-sm text-on-surface-variant">Carregando respostas...</p>
+                } @else {
+                  <div class="flex flex-col">
+                    @for (reply of replies(); track reply.comment.id) {
+                      <div
+                        (click)="goToReply(reply)"
+                        class="flex cursor-pointer flex-col border-b border-outline-variant transition-colors hover:bg-surface-container/40"
+                      >
+                        @if (reply.post; as replyPost) {
+                          <div (click)="$event.stopPropagation()">
+                            <app-post-card [post]="replyPost" (authorBlocked)="onAuthorBlocked($event)" />
+                          </div>
+                        }
+                        <span class="flex items-center gap-1 px-lg pt-2 text-label-sm text-on-surface-variant">
+                          <span class="material-symbols-outlined text-[16px]">subdirectory_arrow_right</span>
+                          Respondendo
+                        </span>
+                        <app-comment-card [comment]="reply.comment" (authorBlocked)="onAuthorBlocked($event)" />
+                      </div>
+                    } @empty {
+                      <p class="px-lg py-16 text-center text-body-sm text-on-surface-variant">Nenhuma resposta ainda.</p>
+                    }
+                  </div>
+
+                  @if (hasMoreRepliesToLoad()) {
+                    <button
+                      type="button"
+                      (click)="loadMoreReplies()"
+                      [disabled]="repliesLoadingMore()"
+                      class="mx-lg my-md cursor-pointer rounded-full border border-outline-variant py-2.5 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {{ repliesLoadingMore() ? 'Carregando...' : 'Carregar mais' }}
+                    </button>
+                  }
+                }
+              } @else {
+                <p class="px-lg py-16 text-center text-body-sm text-on-surface-variant">
+                  @if (activeTabId() === 'reposts') {
+                    Nenhum repost ainda.
+                  } @else {
+                    Nenhuma mídia publicada ainda.
+                  }
+                </p>
+              }
+            </div>
+
+            <aside class="flex w-full shrink-0 flex-col gap-lg lg:w-80">
+              <app-entity-summary-card title="Comunidades" (viewAll)="openModal('communities')" />
+              <app-entity-summary-card title="Times" (viewAll)="openModal('teams')" />
+            </aside>
+          </div>
+        }
+      </div>
+    </main>
+  </div>
+</div>
+
+<app-user-list-modal
+  title="Seguidores"
+  type="followers"
+  [profileUserId]="userId()"
+  [open]="activeModal() === 'followers'"
+  (closed)="closeModal()"
+/>
+<app-user-list-modal
+  title="Seguindo"
+  type="following"
+  [profileUserId]="userId()"
+  [open]="activeModal() === 'following'"
+  (closed)="closeModal()"
+/>
+<app-user-list-modal
+  title="Amigos"
+  type="friends"
+  [profileUserId]="userId()"
+  [open]="activeModal() === 'friends'"
+  (closed)="closeModal()"
+/>
+<app-entity-list-modal title="Comunidades" [open]="activeModal() === 'communities'" (closed)="closeModal()" />
+<app-entity-list-modal title="Times" [open]="activeModal() === 'teams'" (closed)="closeModal()" />
+<app-invite-modal
+  [open]="activeModal() === 'invite'"
+  [targetName]="profile().nickname"
+  (closed)="closeModal()"
+/>

@@ -1,0 +1,37 @@
+<div class="flex items-center gap-3">
+  @if (userId()) {
+    <a
+      [routerLink]="['/perfil', userId()]"
+      class="flex flex-1 items-center gap-3 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"
+    >
+      <img [src]="avatarUrl()" [alt]="name()" class="h-11 w-11 rounded-full object-cover" />
+      <div class="flex flex-1 flex-col">
+        <span class="text-body-sm font-semibold text-on-surface hover:underline">{{ name() }}</span>
+        <span class="text-label-sm text-on-surface-variant">&#64;{{ handle() }}</span>
+      </div>
+    </a>
+  } @else {
+    <div class="flex flex-1 items-center gap-3 rounded-lg">
+      <img [src]="avatarUrl()" [alt]="name()" class="h-11 w-11 rounded-full object-cover" />
+      <div class="flex flex-1 flex-col">
+        <span class="text-body-sm font-semibold text-on-surface">{{ name() }}</span>
+        <span class="text-label-sm text-on-surface-variant">&#64;{{ handle() }}</span>
+      </div>
+    </div>
+  }
+
+  @if (isFollowing() !== null) {
+    <button
+      type="button"
+      (click)="actionClick.emit()"
+      class="shrink-0 cursor-pointer rounded-full px-4 py-1.5 text-label-md font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"
+      [class]="
+        isFollowing()
+          ? 'border border-outline-variant text-on-surface hover:border-error hover:text-error'
+          : 'bg-secondary-fixed text-on-secondary hover:brightness-110'
+      "
+    >
+      {{ isFollowing() ? 'Seguindo' : 'Seguir' }}
+    </button>
+  }
+</div>

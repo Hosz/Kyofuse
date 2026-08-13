@@ -114,9 +114,11 @@ class TeamMemberControllerTest {
 
     private TeamMemberResponse response() {
         Instant now = Instant.now();
+        UUID teamId = UUID.randomUUID();
         return new TeamMemberResponse(
+                "",
+                teamId,
                 "Kyofuse",
-                "player",
                 PlayerRole.AWPER,
                 TeamMemberType.PLAYER,
                 TeamMemberStatus.ACTIVE,

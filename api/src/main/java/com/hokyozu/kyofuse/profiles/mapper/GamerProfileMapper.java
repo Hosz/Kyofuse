@@ -84,6 +84,7 @@ public class GamerProfileMapper {
         return new GamerProfileResponse(
                 savedProfile.getId(),
                 savedProfile.getUser().getId(),
+                savedProfile.getUser().getUsername(),
                 savedProfile.getNickname(),
                 savedProfile.getBio(),
                 savedProfile.getAvatarUrl(),

@@ -1,0 +1,112 @@
+<div class="tactical-grid flex h-screen w-full overflow-hidden bg-surface">
+  <div class="shell-container flex h-screen">
+    <app-sidebar />
+
+    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto bg-surface">
+      <div class="mx-auto flex w-full max-w-5xl flex-col gap-lg px-lg py-lg">
+        <div class="flex flex-col gap-1">
+          <h1 class="text-headline-lg-mobile font-headline-lg text-on-surface">Times</h1>
+          <span class="text-body-sm text-on-surface-variant">Encontre e acompanhe times competitivos</span>
+        </div>
+
+        <div class="flex items-center gap-2 border-b border-outline-variant">
+          <button
+            type="button"
+            (click)="setTab('mine')"
+            class="cursor-pointer whitespace-nowrap border-b-2 px-2 pb-3 text-label-md font-bold transition-colors"
+            [class]="activeTab() === 'mine' ? 'border-primary text-on-surface' : 'border-transparent text-on-surface-variant hover:text-on-surface'"
+          >
+            Times que você é membro
+          </button>
+          <button
+            type="button"
+            (click)="setTab('discover')"
+            class="cursor-pointer whitespace-nowrap border-b-2 px-2 pb-3 text-label-md font-bold transition-colors"
+            [class]="activeTab() === 'discover' ? 'border-primary text-on-surface' : 'border-transparent text-on-surface-variant hover:text-on-surface'"
+          >
+            Times que existem
+          </button>
+        </div>
+
+        @if (activeTab() === 'mine') {
+          @if (myTeamsLoading()) {
+            <p class="py-8 text-center text-body-sm text-on-surface-variant">Carregando times...</p>
+          } @else if (myTeamsError()) {
+            <p class="py-8 text-center text-body-sm text-error">{{ myTeamsError() }}</p>
+          } @else {
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              @for (team of myTeams(); track team.id) {
+                <a
+                  [routerLink]="['/times', team.id]"
+                  class="flex flex-col gap-2 rounded-xl border border-outline-variant bg-surface-container p-lg transition-colors hover:border-primary"
+                >
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-body-md font-bold text-on-surface">{{ team.name }}</span>
+                    <span class="shrink-0 rounded-md border border-outline-variant px-2 py-0.5 text-label-sm text-on-surface-variant">
+                      {{ statusLabel(team.status) }}
+                    </span>
+                  </div>
+                  @if (team.region) {
+                    <span class="flex items-center gap-1 text-label-sm text-on-surface-variant">
+                      <span class="material-symbols-outlined text-[14px]">location_on</span>
+                      {{ team.region }}
+                    </span>
+                  }
+                  <p class="line-clamp-2 text-label-sm text-on-surface-variant">{{ team.description || 'Sem descrição.' }}</p>
+                </a>
+              } @empty {
+                <p class="col-span-full py-8 text-center text-body-sm text-on-surface-variant">
+                  Você ainda não faz parte de nenhum time.
+                </p>
+              }
+            </div>
+          }
+        } @else {
+          <label class="flex items-center gap-2 rounded-full border border-outline-variant bg-surface-container px-4 py-2.5 focus-within:border-primary">
+            <span class="material-symbols-outlined text-[18px] text-on-surface-variant">search</span>
+            <input
+              type="text"
+              placeholder="Buscar times pelo nome..."
+              [value]="searchQuery()"
+              (input)="onSearchInput($any($event.target).value)"
+              class="w-full bg-transparent text-body-sm text-on-surface outline-none placeholder:text-on-surface-variant"
+            />
+          </label>
+
+          @if (loading()) {
+            <p class="py-8 text-center text-body-sm text-on-surface-variant">Carregando times...</p>
+          } @else if (error()) {
+            <p class="py-8 text-center text-body-sm text-error">{{ error() }}</p>
+          } @else {
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              @for (team of teams(); track team.id) {
+                <a
+                  [routerLink]="['/times', team.id]"
+                  class="flex flex-col gap-2 rounded-xl border border-outline-variant bg-surface-container p-lg transition-colors hover:border-primary"
+                >
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-body-md font-bold text-on-surface">{{ team.name }}</span>
+                    <span class="shrink-0 rounded-md border border-outline-variant px-2 py-0.5 text-label-sm text-on-surface-variant">
+                      {{ statusLabel(team.status) }}
+                    </span>
+                  </div>
+                  @if (team.region) {
+                    <span class="flex items-center gap-1 text-label-sm text-on-surface-variant">
+                      <span class="material-symbols-outlined text-[14px]">location_on</span>
+                      {{ team.region }}
+                    </span>
+                  }
+                  <p class="line-clamp-2 text-label-sm text-on-surface-variant">{{ team.description || 'Sem descrição.' }}</p>
+                </a>
+              } @empty {
+                <p class="col-span-full py-8 text-center text-body-sm text-on-surface-variant">
+                  {{ searchQuery() ? 'Nenhum time encontrado para essa busca.' : 'Nenhum time encontrado.' }}
+                </p>
+              }
+            </div>
+          }
+        }
+      </div>
+    </main>
+  </div>
+</div>

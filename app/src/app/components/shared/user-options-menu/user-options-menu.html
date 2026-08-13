@@ -1,0 +1,73 @@
+<div class="relative" (click)="$event.stopPropagation()">
+  <button
+    type="button"
+    (click)="toggleMenu()"
+    aria-label="Mais opções"
+    class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
+  >
+    <span class="material-symbols-outlined text-[20px]">more_horiz</span>
+  </button>
+
+  @if (menuOpen()) {
+    <button
+      type="button"
+      class="fixed inset-0 z-10 cursor-default"
+      aria-label="Fechar menu"
+      (click)="closeMenu()"
+    ></button>
+
+    <div
+      class="absolute right-0 top-full z-20 mt-1 flex w-48 flex-col overflow-hidden rounded-lg border border-outline-variant bg-surface-container-low py-1 shadow-2xl"
+    >
+      <button
+        type="button"
+        (click)="openBlockConfirm()"
+        class="flex cursor-pointer items-center gap-2 px-4 py-2.5 text-left text-body-sm text-error transition-colors hover:bg-error-container hover:text-on-error-container"
+      >
+        <span class="material-symbols-outlined text-[18px]">block</span>
+        Bloquear
+      </button>
+      <button
+        type="button"
+        disabled
+        title="Denunciar ainda não está disponível"
+        class="flex cursor-not-allowed items-center gap-2 px-4 py-2.5 text-left text-body-sm text-on-surface-variant opacity-60"
+      >
+        <span class="material-symbols-outlined text-[18px]">flag</span>
+        Denunciar
+      </button>
+    </div>
+  }
+</div>
+
+<app-modal [open]="confirmOpen()" title="Bloquear usuário" (closed)="closeBlockConfirm()" (click)="$event.stopPropagation()">
+  <div class="flex flex-col gap-lg">
+    <p class="text-body-sm text-on-surface">
+      Depois de bloqueado, esse usuário não vai poder ver seu perfil nem interagir com você, e você deixa de ver o
+      conteúdo dele.
+    </p>
+
+    @if (error()) {
+      <p class="text-label-sm text-error">{{ error() }}</p>
+    }
+
+    <div class="flex justify-end gap-2">
+      <button
+        type="button"
+        (click)="closeBlockConfirm()"
+        [disabled]="blocking()"
+        class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        (click)="confirmBlock()"
+        [disabled]="blocking()"
+        class="cursor-pointer rounded-full bg-error px-4 py-2 text-label-md font-bold text-on-error transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {{ blocking() ? 'Bloqueando...' : 'Bloquear' }}
+      </button>
+    </div>
+  </div>
+</app-modal>

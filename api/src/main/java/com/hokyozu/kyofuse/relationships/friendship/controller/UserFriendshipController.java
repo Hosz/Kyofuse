@@ -59,4 +59,17 @@ public class UserFriendshipController {
         UUID userId = UUID.fromString(jwt.getSubject());
         userFriendshipService.removeFriendship(userId, friendId);
     }
+
+    @GetMapping("/me/friends/quantity")
+    public long showMyFriendsQuantity(@AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return userFriendshipService.showMyFriendsQuantity(userId);
+    }
+
+    @GetMapping("/{userId}/friends/quantity")
+    public long showUserFriendsQuantity(@AuthenticationPrincipal Jwt jwt,
+                                        @PathVariable UUID userId) {
+        UUID userAuthId = UUID.fromString(jwt.getSubject());
+        return userFriendshipService.showUserFriendsQuantity(userAuthId, userId);
+    }
 }

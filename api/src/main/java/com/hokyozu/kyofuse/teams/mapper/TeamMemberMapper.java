@@ -30,6 +30,7 @@ public class TeamMemberMapper {
     public static TeamMemberResponse toResponse(TeamMember savedTeamMember) {
         return new TeamMemberResponse(
                 savedTeamMember.getTeam().getName(),
+                savedTeamMember.getUser().getId(),
                 savedTeamMember.getUser().getUsername(),
                 savedTeamMember.getRoleInTeam(),
                 savedTeamMember.getMemberType(),

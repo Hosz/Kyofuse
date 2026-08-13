@@ -7,6 +7,8 @@ import java.util.UUID;
 public record PostReactionResponse(
         UUID postId,
         String username,
+        String nickname,
+        String profileImage,
         ReactionType reactionType
 ) {
 }

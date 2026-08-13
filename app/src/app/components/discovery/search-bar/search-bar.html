@@ -1,0 +1,65 @@
+<div class="relative">
+  <label
+    class="flex items-center gap-3 rounded-full border border-outline-variant bg-surface-container px-4 py-3 transition-colors focus-within:border-primary-container focus-within:ring-2 focus-within:ring-primary-container/40"
+  >
+    <span class="material-symbols-outlined text-[20px] text-on-surface-variant">search</span>
+    <input
+      type="text"
+      [placeholder]="placeholder()"
+      [attr.aria-label]="placeholder()"
+      [value]="query()"
+      (input)="onInput($any($event.target).value)"
+      (focus)="onFocus()"
+      (keydown.enter)="goToResults()"
+      class="w-full border-0 bg-transparent text-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-0"
+    />
+  </label>
+
+  @if (dropdownOpen()) {
+    <div
+      class="absolute left-0 right-0 top-full z-30 mt-2 flex flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container-low shadow-2xl"
+    >
+      <div class="flex flex-col gap-1 p-3">
+        <span class="text-label-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant">Perfis</span>
+        <p class="px-1 py-2 text-label-sm text-on-surface-variant">A busca de perfis ainda não está disponível.</p>
+      </div>
+
+      <div class="h-px w-full bg-outline-variant"></div>
+
+      <div class="flex flex-col gap-1 p-3">
+        <span class="text-label-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant">Times</span>
+
+        @if (teamsLoading()) {
+          <p class="px-1 py-2 text-label-sm text-on-surface-variant">Buscando...</p>
+        } @else if (teams().length === 0) {
+          <p class="px-1 py-2 text-label-sm text-on-surface-variant">Nenhum time encontrado.</p>
+        } @else {
+          @for (team of teams(); track team.id) {
+            <button
+              type="button"
+              (click)="goToTeam(team)"
+              class="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-surface-container-high"
+            >
+              <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-container/20 text-primary-container">
+                <span class="material-symbols-outlined text-[18px]">shield</span>
+              </div>
+              <div class="flex min-w-0 flex-col">
+                <span class="truncate text-body-sm font-semibold text-on-surface">{{ team.name }}</span>
+                <span class="truncate text-label-sm text-on-surface-variant">&#64;{{ team.slug }}</span>
+              </div>
+            </button>
+          }
+        }
+      </div>
+
+      <button
+        type="button"
+        (click)="goToResults()"
+        class="flex cursor-pointer items-center justify-center gap-1.5 border-t border-outline-variant py-2.5 text-label-sm font-bold text-primary transition-colors hover:bg-surface-container-high"
+      >
+        Ver mais resultados
+        <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+      </button>
+    </div>
+  }
+</div>

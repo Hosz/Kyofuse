@@ -1,0 +1,23 @@
+<section class="flex w-full flex-col gap-3 rounded-xl border border-outline-variant bg-surface-container p-md">
+  <h2 class="flex items-center justify-center gap-2 text-label-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant">
+    <span class="material-symbols-outlined text-primary text-[18px]">monitoring</span>
+    Rankings Atuais
+  </h2>
+
+  <div class="h-px w-full bg-outline-variant"></div>
+
+  <dl class="flex items-stretch divide-x divide-outline-variant">
+    <div class="flex flex-1 flex-col items-center gap-1 px-2 text-center">
+      <dd class="text-body-md font-bold text-on-surface">{{ stats().premier }}</dd>
+      <dt class="text-label-sm text-on-surface-variant">Premier</dt>
+    </div>
+    <div class="flex flex-1 flex-col items-center gap-1 px-2 text-center">
+      <dd class="text-body-md font-bold text-on-surface">{{ stats().faceit }}</dd>
+      <dt class="text-label-sm text-on-surface-variant">Faceit</dt>
+    </div>
+    <div class="flex flex-1 flex-col items-center gap-1 px-2 text-center">
+      <dd class="text-body-md font-bold text-on-surface">{{ stats().gc }}</dd>
+      <dt class="text-label-sm text-on-surface-variant">GC</dt>
+    </div>
+  </dl>
+</section>

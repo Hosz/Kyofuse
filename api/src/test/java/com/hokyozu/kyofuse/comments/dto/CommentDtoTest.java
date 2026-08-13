@@ -55,6 +55,7 @@ class CommentDtoTest {
         CommentResponse response = new CommentResponse(
                 commentId,
                 postId,
+                "",
                 authorId,
                 "content",
                 CommentStatus.ACTIVE,

@@ -16,8 +16,11 @@ import com.hokyozu.kyofuse.posts.enums.PostStatus;
 import com.hokyozu.kyofuse.posts.enums.PostVisibility;
 import com.hokyozu.kyofuse.posts.finder.PostFinder;
 import com.hokyozu.kyofuse.posts.repository.PostRepository;
+import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
+import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import com.hokyozu.kyofuse.relationships.permission.service.comment.CommentPermissionService;
 import com.hokyozu.kyofuse.relationships.permission.service.post.PostPermissionService;
+import com.hokyozu.kyofuse.relationships.permission.service.profile.ProfilePermissionService;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.shared.exception.ForbiddenException;
 import com.hokyozu.kyofuse.shared.exception.NotFoundException;
@@ -49,6 +52,8 @@ public class CommentService {
     private final UserChecker userChecker;
     private final CommentPermissionService commentPermissionService;
     private final PostPermissionService postPermissionService;
+    private final ProfilePermissionService profilePermissionService;
+    private final GamerProfileFinder gamerProfileFinder;
 
     @Transactional
     public CommentResponse postComment(UUID userId, UUID postId, CreateCommentRequest request) {
@@ -81,7 +86,8 @@ public class CommentService {
                         .build()
         );
 
-        return CommentMapper.toResponse(savedComment);
+        GamerProfile authorProfile = gamerProfileFinder.findProfileByUserId(user.getId());
+        return CommentMapper.toResponse(savedComment, authorProfile.getAvatarUrl(), authorProfile.getNickname());
     }
 
     @Transactional(readOnly = true)
@@ -100,7 +106,8 @@ public class CommentService {
 
         commentPermissionService.validateViewComment(user, comment);
 
-        return CommentMapper.toResponse(comment);
+        GamerProfile authorProfile = gamerProfileFinder.findProfileByUserId(comment.getAuthor().getId());
+        return CommentMapper.toResponse(comment, authorProfile.getAvatarUrl(), authorProfile.getNickname());
     }
 
     @Transactional(readOnly = true)
@@ -116,7 +123,27 @@ public class CommentService {
             commentPermissionService.validateViewComment(user, comment);
         }
 
-        return comments.map(CommentMapper::toResponse);
+        return comments.map(comment -> {
+            GamerProfile authorProfile = gamerProfileFinder.findProfileByUserId(comment.getAuthor().getId());
+            return CommentMapper.toResponse(comment, authorProfile.getAvatarUrl(), authorProfile.getNickname());
+        });
+    }
+
+    @Transactional(readOnly = true)
+    public Page<CommentResponse> listUserComments(UUID viewerId, UUID targetUserId, Pageable pageable) {
+        User viewer = userFinder.findProfileByUserId(viewerId);
+        User target = userFinder.findProfileByUserId(targetUserId);
+        userChecker.checkActive(viewer);
+        userChecker.checkActive(target);
+
+        if (!viewerId.equals(targetUserId)) {
+            profilePermissionService.validateViewPosts(viewer, target);
+        }
+
+        Page<Comment> comments = commentRepository.findByAuthorIdAndStatus(targetUserId, CommentStatus.ACTIVE, pageable);
+
+        GamerProfile targetProfile = gamerProfileFinder.findProfileByUserId(targetUserId);
+        return comments.map(comment -> CommentMapper.toResponse(comment, targetProfile.getAvatarUrl(), targetProfile.getNickname()));
     }
 
     @Transactional

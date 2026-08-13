@@ -1,0 +1,26 @@
+<div class="flex flex-col gap-lg">
+  <div class="flex items-center gap-3">
+    <span class="h-px flex-1 bg-outline-variant"></span>
+    <span class="text-label-sm font-semibold uppercase tracking-[0.08em] text-on-surface-variant">Ou utilize</span>
+    <span class="h-px flex-1 bg-outline-variant"></span>
+  </div>
+
+  <div class="grid grid-cols-2 gap-3">
+    <button
+      type="button"
+      (click)="googleClick.emit()"
+      class="flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-secondary-fixed px-4 py-2.5 text-label-md font-bold text-on-secondary transition-all hover:brightness-95 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"
+    >
+      <span class="flex h-5 w-5 items-center justify-center rounded-full bg-on-secondary text-[11px] font-bold text-secondary-fixed">G</span>
+      Google
+    </button>
+    <button
+      type="button"
+      (click)="steamClick.emit()"
+      class="flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#171a21] px-4 py-2.5 text-label-md font-bold text-white transition-all hover:brightness-125 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"
+    >
+      <span class="material-symbols-outlined text-[18px]">sports_esports</span>
+      Steam
+    </button>
+  </div>
+</div>

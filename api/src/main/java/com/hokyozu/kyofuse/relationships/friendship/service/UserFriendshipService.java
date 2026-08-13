@@ -1,5 +1,7 @@
 package com.hokyozu.kyofuse.relationships.friendship.service;
 
+import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
+import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import com.hokyozu.kyofuse.relationships.block.repository.UserBlockRepository;
 import com.hokyozu.kyofuse.relationships.friendship.dto.response.UserFriendshipResponse;
 import com.hokyozu.kyofuse.relationships.friendship.entity.UserFriendRequest;
@@ -36,8 +38,8 @@ public class UserFriendshipService {
 
     private final UserFriendRequestRepository userFriendRequestRepository;
     private final UserFriendshipRepository userFriendshipRepository;
-    private final UserBlockRepository userBlockRepository;
     private final FriendshipPermissionService friendshipPermissionService;
+    private final GamerProfileFinder gamerProfileFinder;
 
     @Transactional
     public UserFriendshipResponse acceptRequest(UUID userId, UUID requestId) {
@@ -60,7 +62,9 @@ public class UserFriendshipService {
         UserFriendship friendship = UserFriendshipMapper.toEntity(userOne, userTwo);
         userFriendshipRepository.save(friendship);
         userFriendRequestRepository.delete(friendRequest);
-        return UserFriendshipResponse.toResponse(friendship);
+        User friend = UserFriendshipMapper.resolveFriend(friendship, userId);
+        GamerProfile gamerProfile = gamerProfileFinder.findProfileByUserId(friend.getId());
+        return UserFriendshipMapper.toResponse(friendship, userId, gamerProfile);
     }
 
     @Transactional
@@ -82,7 +86,11 @@ public class UserFriendshipService {
         userChecker.checkActive(user);
 
         Page<UserFriendship> friends = userFriendshipRepository.findAllByUserOneOrUserTwo(user, user, pageable);
-        return friends.map(UserFriendshipMapper::toResponse);
+        return friends.map(friendship -> {
+            User friend = UserFriendshipMapper.resolveFriend(friendship, userId);
+            GamerProfile gamerProfile = gamerProfileFinder.findProfileByUserId(friend.getId());
+            return UserFriendshipMapper.toResponse(friendship, userId, gamerProfile);
+        });
     }
 
     @Transactional
@@ -95,7 +103,11 @@ public class UserFriendshipService {
         profilePermissionService.validateViewFriends(userAuth, user);
 
         Page<UserFriendship> friends = userFriendshipRepository.findAllByUserOneOrUserTwo(user, user, pageable);
-        return friends.map(UserFriendshipMapper::toResponse);
+        return friends.map(friendship -> {
+            User friend = UserFriendshipMapper.resolveFriend(friendship, userId);
+            GamerProfile gamerProfile = gamerProfileFinder.findProfileByUserId(friend.getId());
+            return UserFriendshipMapper.toResponse(friendship, userId, gamerProfile);
+        });
     }
 
     @Transactional
@@ -110,5 +122,18 @@ public class UserFriendshipService {
         UserFriendship friendship = userFriendshipRepository.findByUserOneAndUserTwo(user, friend);
 
         userFriendshipRepository.delete(friendship);
+    }
+
+    @Transactional(readOnly = true)
+    public long showMyFriendsQuantity(UUID userId) {
+        User user = userFinder.findProfileByUserId(userId);
+        return userFriendshipRepository.countUserFriendshipByUserOne(user);
+    }
+
+    @Transactional(readOnly = true)
+    public long showUserFriendsQuantity(UUID userAuthId, UUID userId) {
+        //User userAuth = userFinder.findProfileByUserId(userAuthId);
+        User user = userFinder.findProfileByUserId(userId);
+        return userFriendshipRepository.countUserFriendshipByUserOne(user);
     }
 }

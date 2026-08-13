@@ -58,6 +58,7 @@ public class GamerProfileService {
         return GamerProfileMapper.toResponse(savedProfile, favoriteMaps);
     }
 
+    @Transactional(readOnly = true)
     public GamerProfileResponse viewMyProfile(UUID userId) {
         GamerProfile gamerProfile = gamerProfileFinder.findProfileByUserId(userId);
 
@@ -67,6 +68,7 @@ public class GamerProfileService {
         return GamerProfileMapper.toResponse(gamerProfile, favoriteMaps);
     }
 
+    @Transactional(readOnly = true)
     public GamerProfileResponse viewUserProfile(UUID profileId, UUID userId) {
         User requestingUser = userFinder.findProfileByUserId(profileId);
         GamerProfile userRequestedProfile = gamerProfileFinder.findProfileByUserId(profileId);

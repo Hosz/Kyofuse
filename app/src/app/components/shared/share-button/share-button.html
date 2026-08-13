@@ -1,0 +1,18 @@
+<button
+  type="button"
+  (click)="share($event)"
+  class="flex cursor-pointer items-center gap-2 rounded-full transition-colors hover:text-primary active:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+  aria-label="Compartilhar"
+>
+  <span class="material-symbols-outlined text-[20px]">share</span>
+</button>
+
+@if (toastVisible()) {
+  <div
+    class="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full rounded-lg bg-surface-container-highest px-3 py-1.5 text-label-sm font-semibold text-on-surface shadow-2xl"
+    [style.left.px]="toastPosition().x"
+    [style.top.px]="toastPosition().y - 12"
+  >
+    Link copiado!
+  </div>
+}

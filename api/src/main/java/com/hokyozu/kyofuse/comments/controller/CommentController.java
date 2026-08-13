@@ -48,6 +48,14 @@ public class CommentController {
         return commentService.listComments(postId, pageable, userId);
     }
 
+    @GetMapping("/user/{userId}/comments")
+    public Page<CommentResponse> listUserComments(@AuthenticationPrincipal Jwt jwt,
+                                                   @PathVariable UUID userId,
+                                                   Pageable pageable) {
+        UUID viewerId = UUID.fromString(jwt.getSubject());
+        return commentService.listUserComments(viewerId, userId, pageable);
+    }
+
     @PatchMapping("/{postId}/{commentId}/delete")
     public void deleteComment(@PathVariable UUID commentId, @PathVariable UUID postId, @AuthenticationPrincipal Jwt jwt) {
         UUID user = UUID.fromString(jwt.getSubject());

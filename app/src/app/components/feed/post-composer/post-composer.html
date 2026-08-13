@@ -1,0 +1,42 @@
+<div class="flex flex-col gap-md border-b border-outline-variant px-lg py-md">
+  <div class="flex gap-md">
+    <img
+      [src]="currentUserAvatar()"
+      alt="Seu avatar"
+      class="h-12 w-12 shrink-0 rounded-full object-cover"
+    />
+    <textarea
+      rows="2"
+      placeholder="O que está acontecendo no server?"
+      aria-label="O que está acontecendo no server?"
+      [value]="content()"
+      (input)="onContentChange($any($event.target).value)"
+      class="w-full resize-none border-0 bg-transparent text-body-md text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-0"
+    ></textarea>
+  </div>
+
+  <div class="flex items-center justify-between pl-16">
+    <div class="flex items-center gap-1 text-primary">
+      <button type="button" class="cursor-pointer rounded-full p-2 transition-colors hover:bg-surface-container-high active:bg-surface-container-highest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface" aria-label="Adicionar imagem">
+        <span class="material-symbols-outlined text-[22px]">image</span>
+      </button>
+      <button type="button" class="cursor-pointer rounded-full p-2 transition-colors hover:bg-surface-container-high active:bg-surface-container-highest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface" aria-label="Adicionar GIF">
+        <span class="material-symbols-outlined text-[22px]">gif_box</span>
+      </button>
+      <button type="button" class="cursor-pointer rounded-full p-2 transition-colors hover:bg-surface-container-high active:bg-surface-container-highest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface" aria-label="Criar enquete">
+        <span class="material-symbols-outlined text-[22px]">poll</span>
+      </button>
+      <button type="button" class="cursor-pointer rounded-full p-2 transition-colors hover:bg-surface-container-high active:bg-surface-container-highest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface" aria-label="Adicionar emoji">
+        <span class="material-symbols-outlined text-[22px]">mood</span>
+      </button>
+    </div>
+
+    <button
+      type="button"
+      (click)="onPublish()"
+      class="ignite-glow cursor-pointer rounded-full bg-primary-container px-6 py-2.5 text-label-md font-bold text-on-primary-container transition-all hover:brightness-110 active:scale-[0.97] active:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+    >
+      Publicar
+    </button>
+  </div>
+</div>

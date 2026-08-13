@@ -180,7 +180,10 @@ class PostControllerTest {
         return new PostResponse(
                 postId,
                 authorId,
+                "A",
                 "content",
+                "",
+                "",
                 PostType.TEXT,
                 PostVisibility.PUBLIC,
                 PostStatus.ACTIVE,

@@ -1,0 +1,78 @@
+<aside class="scrollbar-minimal flex h-screen w-96 shrink-0 flex-col overflow-y-auto border-r border-outline-variant bg-surface">
+  <div class="sticky top-0 z-10 flex flex-col gap-md border-b border-outline-variant bg-surface/90 px-lg py-lg backdrop-blur-md supports-[backdrop-filter]:bg-surface/70">
+    <app-search-bar placeholder="Buscar conversas..." />
+
+    <div class="flex items-center justify-between">
+      <h2 class="text-label-md font-bold uppercase tracking-[0.05em] text-on-surface">Mensagens Diretas</h2>
+      <button
+        type="button"
+        aria-label="Nova conversa"
+        class="cursor-pointer rounded-full p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+      >
+        <span class="material-symbols-outlined text-[22px]">chat_add_on</span>
+      </button>
+    </div>
+
+    @if (requestsCount() > 0) {
+      <button
+        type="button"
+        (click)="toggleRequestsFilter()"
+        [attr.aria-pressed]="showRequestsOnly()"
+        class="flex cursor-pointer items-center justify-between rounded-lg px-4 py-2.5 text-label-md font-bold text-on-primary-container transition-colors hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+        [class]="showRequestsOnly() ? 'bg-primary-container' : 'bg-primary-container/80'"
+      >
+        <span class="flex items-center gap-2">
+          <span class="h-2 w-2 rounded-full bg-on-primary-container"></span>
+          {{ requestsCount() }} {{ requestsCount() === 1 ? 'SOLICITAÇÃO' : 'SOLICITAÇÕES' }}
+        </span>
+        <span class="material-symbols-outlined text-[18px]">{{ showRequestsOnly() ? 'close' : 'arrow_forward' }}</span>
+      </button>
+    }
+  </div>
+
+  <div class="flex flex-col">
+    @for (conversation of visibleConversations(); track conversation.id) {
+      <button
+        type="button"
+        (click)="select.emit(conversation)"
+        [attr.aria-current]="conversation.id === selectedId() ? 'true' : null"
+        class="flex cursor-pointer items-center gap-3 border-b border-outline-variant px-lg py-md text-left transition-colors hover:bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-container"
+        [class]="conversation.id === selectedId() ? 'bg-surface-container-high' : ''"
+      >
+        <div class="relative shrink-0">
+          <img
+            [src]="conversation.participant.avatarUrl"
+            [alt]="conversation.participant.name"
+            class="h-12 w-12 rounded-full object-cover"
+          />
+          @if (conversation.participant.online) {
+            <span class="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-surface bg-tertiary"></span>
+          }
+        </div>
+
+        <div class="flex min-w-0 flex-1 flex-col gap-0.5">
+          <div class="flex items-center justify-between gap-2">
+            <span class="truncate text-body-sm font-semibold text-on-surface">{{ conversation.participant.name }}</span>
+            <span class="shrink-0 text-label-sm text-on-surface-variant">{{ conversation.lastMessageAt }}</span>
+          </div>
+          <div class="flex items-center justify-between gap-2">
+            <span class="truncate text-label-md text-on-surface-variant" [class.font-semibold]="conversation.unread" [class.text-on-surface]="conversation.unread">
+              @if (conversation.relationship === 'request-received') {
+                Quer trocar mensagens com você
+              } @else if (conversation.messages.length === 0) {
+                Solicitação enviada
+              } @else {
+                {{ lastMessage(conversation).content }}
+              }
+            </span>
+            @if (conversation.unread) {
+              <span class="h-2 w-2 shrink-0 rounded-full bg-primary-container"></span>
+            }
+          </div>
+        </div>
+      </button>
+    } @empty {
+      <p class="px-lg py-10 text-center text-body-sm text-on-surface-variant">Nenhuma conversa por aqui.</p>
+    }
+  </div>
+</aside>

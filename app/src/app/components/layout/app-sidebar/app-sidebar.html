@@ -1,0 +1,26 @@
+<aside class="scrollbar-minimal flex h-screen w-80 shrink-0 flex-col justify-between overflow-y-auto border-r border-outline-variant bg-surface">
+  <div class="flex flex-col gap-8 pt-lg">
+    <a
+      routerLink="/home"
+      class="px-lg flex items-center gap-3 rounded-lg transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+    >
+      <img src="/assets/images/logo.svg" alt="Kyofuse Logo" class="h-16 w-16" />
+      <h1 class="text-headline-lg-mobile font-headline-lg text-primary">Kyofuse</h1>
+    </a>
+    <app-sidebar-nav />
+  </div>
+
+  <div class="flex flex-col gap-sm pb-lg">
+    <div class="px-md">
+      <button
+        type="button"
+        (click)="logout()"
+        class="flex cursor-pointer items-center gap-3 rounded-xl px-4 py-3 text-body-md font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high active:bg-surface-container-highest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+      >
+        <span class="material-symbols-outlined text-[22px]">logout</span>
+        <span>Sair</span>
+      </button>
+    </div>
+    <app-user-profile-card />
+  </div>
+</aside>

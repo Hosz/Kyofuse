@@ -1,5 +1,6 @@
 package com.hokyozu.kyofuse.relationships.follow.mapper;
 
+import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.relationships.follow.dto.response.UserFollowResponse;
 import com.hokyozu.kyofuse.relationships.follow.entity.UserFollow;
 import com.hokyozu.kyofuse.relationships.follow.enums.FollowStatus;
@@ -18,7 +19,7 @@ public class UserFollowMapper {
                 .build();
     }
 
-    public static UserFollowResponse toResponse(UserFollow userFollow) {
+    public static UserFollowResponse toResponse(UserFollow userFollow, GamerProfile otherProfile) {
         return new UserFollowResponse(
                 userFollow.getId(),
                 userFollow.getFollower().getId(),
@@ -26,6 +27,7 @@ public class UserFollowMapper {
                 userFollow.getFollowed().getId(),
                 userFollow.getFollowed().getUsername(),
                 userFollow.getStatus().name(),
+                otherProfile.getAvatarUrl(),
                 userFollow.getCreatedAt()
         );
     }

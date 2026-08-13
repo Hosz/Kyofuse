@@ -1,0 +1,29 @@
+<div
+  class="flex items-center justify-between gap-3 rounded-lg border border-outline-variant bg-surface-container px-4 py-3"
+>
+  <button
+    type="button"
+    role="checkbox"
+    [attr.aria-checked]="verified()"
+    [disabled]="checking()"
+    (click)="onToggle()"
+    class="flex cursor-pointer items-center gap-3 rounded-md text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container disabled:cursor-wait"
+  >
+    <span
+      class="flex h-6 w-6 shrink-0 items-center justify-center rounded border-2 transition-colors"
+      [class]="verified() ? 'border-primary-container bg-primary-container' : 'border-outline-variant bg-transparent'"
+    >
+      @if (checking()) {
+        <span class="h-3 w-3 animate-spin rounded-full border-2 border-on-surface-variant border-t-transparent"></span>
+      } @else if (verified()) {
+        <span class="material-symbols-outlined text-[16px] font-bold text-on-primary-container">check</span>
+      }
+    </span>
+    <span class="text-body-sm text-on-surface">Não sou um robô</span>
+  </button>
+
+  <div class="flex flex-col items-center text-on-surface-variant">
+    <span class="material-symbols-outlined text-[22px]">shield</span>
+    <span class="text-[9px] font-semibold uppercase tracking-[0.08em]">Kyofuse Security</span>
+  </div>
+</div>

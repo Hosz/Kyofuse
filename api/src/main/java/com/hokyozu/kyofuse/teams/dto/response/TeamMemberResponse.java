@@ -5,9 +5,11 @@ import com.hokyozu.kyofuse.teams.enums.TeamMemberStatus;
 import com.hokyozu.kyofuse.teams.enums.TeamMemberType;
 
 import java.time.Instant;
+import java.util.UUID;
 
 public record TeamMemberResponse(
         String teamName,
+        UUID userId,
         String userName,
         PlayerRole roleInTeam,
         TeamMemberType memberType,

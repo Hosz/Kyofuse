@@ -1,0 +1,19 @@
+<div role="tablist" aria-label="Acesso à conta" class="flex border-b border-outline-variant">
+  @for (tab of tabs(); track tab.id) {
+    <button
+      type="button"
+      role="tab"
+      [attr.aria-selected]="tab.id === active()"
+      (click)="onSelect(tab)"
+      class="flex flex-1 cursor-pointer flex-col items-center gap-2 py-4 text-body-sm font-bold uppercase tracking-[0.05em] transition-colors hover:bg-surface-container-high/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-container"
+    >
+      @if (tab.id === active()) {
+        <span class="text-primary">{{ tab.label }}</span>
+        <span class="active-tab-indicator w-10"></span>
+      } @else {
+        <span class="text-on-surface-variant">{{ tab.label }}</span>
+        <span class="h-1 w-10"></span>
+      }
+    </button>
+  }
+</div>

@@ -1,0 +1,49 @@
+<section class="flex flex-col gap-lg rounded-xl border border-outline-variant bg-surface-container-low p-lg">
+  <div class="flex items-center justify-between border-b border-outline-variant pb-3">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-primary">visibility</span>
+      <h2 class="text-title-md font-bold text-on-surface">Visibilidade do Perfil</h2>
+    </div>
+    <span class="rounded-md border border-outline-variant px-2 py-1 text-label-sm text-on-surface-variant">Módulo 01</span>
+  </div>
+
+  <label class="flex w-full flex-col gap-1.5 sm:w-72">
+    <span class="text-label-sm font-semibold text-on-surface-variant">Quem pode ver seu perfil</span>
+    <select
+      [value]="store.profileVisibility()"
+      (change)="store.profileVisibility.set($any($event.target).value)"
+      class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+    >
+      @for (option of options; track option.value) {
+        <option [value]="option.value">{{ option.label }}</option>
+      }
+    </select>
+  </label>
+
+  @if (store.error()) {
+    <p class="text-label-sm text-error">{{ store.error() }}</p>
+  }
+
+  <div class="flex items-center gap-3 border-t border-outline-variant pt-lg">
+    <a
+      routerLink="/perfil"
+      class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high"
+    >
+      Voltar
+    </a>
+    <button
+      type="button"
+      (click)="save()"
+      [disabled]="store.saving()"
+      class="cursor-pointer rounded-full bg-secondary-fixed px-4 py-2 text-label-md font-bold text-on-secondary transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {{ store.saving() ? 'Salvando...' : 'Salvar' }}
+    </button>
+    @if (saved()) {
+      <span class="flex items-center gap-1 text-label-sm font-semibold text-tertiary">
+        <span class="material-symbols-outlined text-[16px]">check_circle</span>
+        Salvo
+      </span>
+    }
+  </div>
+</section>

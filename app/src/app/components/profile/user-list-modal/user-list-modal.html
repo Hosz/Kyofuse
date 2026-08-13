@@ -1,0 +1,27 @@
+<app-modal [open]="open()" [title]="title()" (closed)="closed.emit()">
+  <div class="flex flex-col gap-md">
+    @for (user of users(); track user.id) {
+      <app-user-row
+        [userId]="user.id"
+        [name]="user.name"
+        [handle]="user.handle"
+        [avatarUrl]="user.avatarUrl"
+        [isFollowing]="user.isFollowing ?? null"
+        (actionClick)="toggleFollow.emit(user)"
+      />
+    } @empty {
+      <p class="py-6 text-center text-body-sm text-on-surface-variant">Ninguém por aqui ainda.</p>
+    }
+
+    @if (hasMoreToLoad()) {
+      <button
+        type="button"
+        (click)="loadMore()"
+        [disabled]="loadingMore()"
+        class="mx-auto cursor-pointer whitespace-nowrap rounded-full border border-outline-variant px-5 py-2 text-label-sm font-bold text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {{ loadingMore() ? 'Carregando...' : 'Carregar mais' }}
+      </button>
+    }
+  </div>
+</app-modal>

@@ -1,6 +1,7 @@
 package com.hokyozu.kyofuse.reactions.mapper;
 
 import com.hokyozu.kyofuse.comments.entity.Comment;
+import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.reactions.dto.request.CommentReactionRequest;
 import com.hokyozu.kyofuse.reactions.dto.response.CommentReactionResponse;
 import com.hokyozu.kyofuse.reactions.entity.CommentReaction;
@@ -20,11 +21,13 @@ public class CommentReactionMapper {
                 .build();
     }
 
-    public static CommentReactionResponse toResponse(CommentReaction commentReactionSaved) {
+    public static CommentReactionResponse toResponse(CommentReaction commentReactionSaved, GamerProfile profile) {
         return new CommentReactionResponse(
                 commentReactionSaved.getComment().getPost().getId(),
                 commentReactionSaved.getComment().getId(),
                 commentReactionSaved.getUser().getUsername(),
+                profile.getNickname(),
+                profile.getAvatarUrl(),
                 commentReactionSaved.getReactionType()
         );
     }

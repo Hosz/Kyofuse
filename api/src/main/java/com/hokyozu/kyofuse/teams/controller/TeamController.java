@@ -42,6 +42,13 @@ public class TeamController {
         return teamService.listingTeams(filter, pageable);
     }
 
+    @GetMapping("/my-teams")
+    public Page<TeamResponse> listingMyTeams(@AuthenticationPrincipal Jwt jwt, Pageable pageable) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+
+        return teamService.listingMyTeams(userId, pageable);
+    }
+
     @PatchMapping("/edit/{teamId}")
     public TeamResponse editTeam(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID teamId, @RequestBody @Valid UpdateTeamRequest updateTeamRequest) {
         UUID userId = UUID.fromString(jwt.getSubject());

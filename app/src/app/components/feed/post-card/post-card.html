@@ -1,0 +1,92 @@
+<article
+  [routerLink]="['/post', post().id]"
+  class="flex cursor-pointer flex-col gap-3 border-b border-outline-variant px-lg py-md transition-colors hover:bg-surface-container/40"
+>
+  <div class="flex items-start gap-3">
+    <a
+      [routerLink]="['/perfil', post().author.id]"
+      (click)="$event.stopPropagation()"
+      class="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+    >
+      <img
+        [src]="post().author.avatarUrl"
+        [alt]="post().author.name"
+        class="h-11 w-11 rounded-full object-cover transition-opacity hover:opacity-90"
+      />
+    </a>
+
+    <div class="flex flex-1 flex-col gap-3">
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-2 text-body-md">
+          <a
+            [routerLink]="['/perfil', post().author.id]"
+            (click)="$event.stopPropagation()"
+            class="rounded font-bold text-on-surface hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+            >{{ post().author.name }}</a
+          >
+          <span class="text-on-surface-variant">&#64;{{ post().author.handle }} · {{ post().timeAgo }}</span>
+        </div>
+
+        <div class="flex shrink-0 items-center gap-1">
+          @if (post().author.badge) {
+            @if (post().author.badgeTone === 'primary') {
+              <span class="rounded-md border border-primary-container px-2 py-1 text-label-sm font-semibold text-primary-container">
+                {{ post().author.badge }}
+              </span>
+            } @else {
+              <span class="rounded-md border border-tertiary px-2 py-1 text-label-sm font-semibold text-tertiary">
+                {{ post().author.badge }}
+              </span>
+            }
+          }
+
+          <app-user-options-menu [userId]="post().author.id" (blocked)="authorBlocked.emit(post().author.id)" />
+        </div>
+      </div>
+
+      <p class="text-body-md text-on-surface">{{ post().content }}</p>
+
+      @if (post().media; as media) {
+        <div class="relative overflow-hidden rounded-xl">
+          @if (media.tag) {
+            <span class="absolute left-3 top-3 rounded-md bg-surface-dim/80 px-2 py-1 text-label-sm font-semibold text-on-surface">
+              {{ media.tag }}
+            </span>
+          }
+
+          <img [src]="media.imageUrl" alt="Mídia da publicação" class="h-auto w-full object-cover" />
+
+          <div class="absolute inset-x-0 bottom-0 flex items-center justify-between bg-surface-dim/70 px-3 py-2">
+            <div class="flex items-center gap-2">
+              <span class="flex h-5 w-5 items-center justify-center rounded bg-primary-container text-[11px] font-bold text-on-primary-container">
+                K
+              </span>
+              <span class="text-label-sm text-on-surface">Kyofuse - Feed Principal</span>
+            </div>
+            <div class="flex items-center gap-1 text-on-surface">
+              <span class="material-symbols-outlined text-[18px]">ios_share</span>
+              <span class="material-symbols-outlined text-[18px]">expand_more</span>
+            </div>
+          </div>
+        </div>
+      }
+
+      <div class="flex items-center gap-10 pt-1 text-on-surface-variant">
+        <button type="button" class="flex cursor-pointer items-center gap-2 rounded-full transition-colors hover:text-primary active:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface" aria-label="Comentar">
+          <span class="material-symbols-outlined text-[20px]">chat_bubble</span>
+          <span class="text-label-md">{{ post().stats.comments }}</span>
+        </button>
+        <button type="button" (click)="$event.stopPropagation()" class="flex cursor-pointer items-center gap-2 rounded-full transition-colors hover:text-primary active:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface" aria-label="Repostar">
+          <span class="material-symbols-outlined text-[20px]">repeat</span>
+          <span class="text-label-md">{{ post().stats.reposts }}</span>
+        </button>
+        <app-reaction-button
+          [postId]="post().id"
+          [likeCount]="post().stats.likes"
+          [reactionCount]="post().stats.reactions"
+        />
+        <app-share-button [path]="'/post/' + post().id" (click)="$event.stopPropagation()" />
+      </div>
+    </div>
+  </div>
+</article>

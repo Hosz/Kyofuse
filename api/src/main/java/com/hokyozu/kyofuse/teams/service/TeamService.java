@@ -10,11 +10,13 @@ import com.hokyozu.kyofuse.teams.dto.request.UpdateTeamRequest;
 import com.hokyozu.kyofuse.teams.dto.request.UpdateTeamRequiredRolesRequest;
 import com.hokyozu.kyofuse.teams.dto.response.TeamResponse;
 import com.hokyozu.kyofuse.teams.entity.Team;
+import com.hokyozu.kyofuse.teams.entity.TeamMember;
 import com.hokyozu.kyofuse.teams.entity.TeamRequiredRole;
 import com.hokyozu.kyofuse.teams.enums.TeamStatus;
 import com.hokyozu.kyofuse.teams.finder.TeamFinder;
 import com.hokyozu.kyofuse.teams.mapper.TeamMapper;
 import com.hokyozu.kyofuse.teams.mapper.TeamRequiredRoleMapper;
+import com.hokyozu.kyofuse.teams.repository.TeamMemberRepository;
 import com.hokyozu.kyofuse.teams.repository.TeamRepository;
 import com.hokyozu.kyofuse.teams.repository.TeamRequiredRoleRepository;
 import com.hokyozu.kyofuse.teams.specification.TeamSpecification;
@@ -48,6 +50,7 @@ public class TeamService {
 
     private final TeamRepository teamRepository;
     private final TeamRequiredRoleRepository teamRequiredRoleRepository;
+    private final TeamMemberRepository teamMemberRepository;
 
     @Transactional
     public TeamResponse createTeams(@Valid TeamRequest request, UUID userId) {
@@ -263,5 +266,23 @@ public class TeamService {
         if (requiredRoles.stream().distinct().count() != requiredRoles.size()) {
             throw new BadRequestException("requiredRoles não pode conter roles duplicadas.");
         }
+    }
+
+    @Transactional(readOnly = true)
+    public Page<TeamResponse> listingMyTeams(UUID userId, Pageable pageable) {
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
+
+        List<TeamMember> membro = teamMemberRepository.findByUser(user);
+
+        List<UUID> teamIds = membro.stream()
+                .map(tm -> tm.getTeam().getId())
+                .toList();
+
+        Page<Team> teams = teamRepository.findByIdIn(teamIds, pageable);
+        return teams.map(team -> {
+            List<TeamRequiredRole> requiredRoles = teamRequiredRoleRepository.findByTeamId(team.getId());
+            return TeamMapper.toResponse(team, requiredRoles);
+        });
     }
 }

@@ -1,0 +1,30 @@
+<nav class="flex flex-col gap-sm px-md" aria-label="Navegação principal">
+  @for (item of navItems(); track item.label) {
+    <a
+      [routerLink]="item.route"
+      routerLinkActive
+      #rla="routerLinkActive"
+      [routerLinkActiveOptions]="{ exact: item.route === '/' }"
+      [attr.aria-current]="rla.isActive ? 'page' : null"
+      class="flex cursor-pointer items-center gap-3 rounded-xl px-4 py-3 text-body-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+      [class.bg-primary-container]="rla.isActive"
+      [class.text-on-primary-container]="rla.isActive"
+      [class.active:brightness-95]="rla.isActive"
+      [class.text-on-surface]="!rla.isActive"
+      [class.hover:bg-surface-container-high]="!rla.isActive"
+      [class.active:bg-surface-container-highest]="!rla.isActive"
+    >
+      <span class="relative flex">
+        <span class="material-symbols-outlined text-[22px]">{{ item.icon }}</span>
+        @if (item.route === '/notificacoes' && unreadNotificationsCount() > 0) {
+          <span
+            class="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-on-primary"
+          >
+            {{ unreadNotificationsCount() > 99 ? '99+' : unreadNotificationsCount() }}
+          </span>
+        }
+      </span>
+      <span>{{ item.label }}</span>
+    </a>
+  }
+</nav>
