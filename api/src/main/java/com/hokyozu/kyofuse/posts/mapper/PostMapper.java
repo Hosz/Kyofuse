@@ -28,7 +28,7 @@ public class PostMapper {
                 .build();
     }
 
-    public static PostResponse toResponse(Post savedPost, List<PostMap> postMaps) {
+    public static PostResponse toResponse(Post savedPost, List<PostMap> postMaps, GamerProfile profile) {
 
         List<String> maps = postMaps == null
                 ? List.of()
@@ -39,6 +39,9 @@ public class PostMapper {
         return new PostResponse(
                 savedPost.getId(),
                 savedPost.getAuthor().getId(),
+                profile.getNickname(),
+                savedPost.getAuthor().getUsername(),
+                profile.getAvatarUrl(),
                 savedPost.getContent(),
                 savedPost.getPostType(),
                 savedPost.getVisibility(),

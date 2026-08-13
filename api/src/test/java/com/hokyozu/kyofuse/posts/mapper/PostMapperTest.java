@@ -50,7 +50,7 @@ class PostMapperTest {
                 PostMap.builder().post(post).mapName("INFERNO").createdAt(Instant.now()).build()
         );
 
-        PostResponse response = PostMapper.toResponse(post, postMaps);
+        PostResponse response = PostMapper.toResponse(post, postMaps, profile);
 
         assertThat(post.getAuthor()).isSameAs(user);
         assertThat(post.getStatus()).isEqualTo(PostStatus.ACTIVE);
@@ -65,6 +65,7 @@ class PostMapperTest {
     @Test
     void toResponseUsesEmptyMapsWhenPostMapsIsNull() {
         UUID userId = UUID.randomUUID();
+        GamerProfile profile = GamerProfile.builder().id(userId).build();
         Post post = Post.builder()
                 .id(UUID.randomUUID())
                 .author(User.builder().id(userId).build())
@@ -79,7 +80,7 @@ class PostMapperTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        PostResponse response = PostMapper.toResponse(post, null);
+        PostResponse response = PostMapper.toResponse(post, null, profile);
 
         assertThat(response.maps()).isEmpty();
     }

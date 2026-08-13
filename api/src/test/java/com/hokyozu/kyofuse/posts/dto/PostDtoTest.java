@@ -83,7 +83,10 @@ class PostDtoTest {
         PostResponse response = new PostResponse(
                 postId,
                 authorId,
+                "sla",
                 "content",
+                "",
+                "",
                 PostType.TEXT,
                 PostVisibility.PUBLIC,
                 PostStatus.ACTIVE,

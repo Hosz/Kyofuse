@@ -14,4 +14,6 @@ public interface UserFriendshipRepository extends JpaRepository<UserFriendship, 
     boolean existsByUserOneAndUserTwo(User owner, User view);
 
     UserFriendship findByUserOneAndUserTwo(User user, User friend);
+
+    long countUserFriendshipByUserOne(User userOne);
 }

@@ -102,8 +102,11 @@ class CommentControllerTest {
         return new CommentResponse(
                 commentId,
                 postId,
+                "",
                 authorId,
                 "content",
+                "",
+                "",
                 CommentStatus.ACTIVE,
                 0,
                 0,

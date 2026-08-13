@@ -46,10 +46,12 @@ public class PostService {
     private final UserFinder userFinder;
     private final UserChecker userChecker;
     private final PostPermissionService postPermissionService;
+    private final GamerProfileFinder gamerProfileFinder;
 
     @Transactional
     public PostResponse post(UUID userId, CreatePostRequest request) {
         User user = userFinder.findProfileByUserId(userId);
+        GamerProfile gamerProfile = gamerProfileFinder.findProfileByUserId(user.getId());
         userChecker.checkActive(user);
 
         postValidator.validate(request);
@@ -64,9 +66,10 @@ public class PostService {
             postMapRepository.saveAll(postMaps);
         }
 
-        return PostMapper.toResponse(savedPost, postMaps);
+        return PostMapper.toResponse(savedPost, postMaps, gamerProfile);
     }
 
+    @Transactional(readOnly = true)
     public PostResponse getPost(UUID userId, UUID postId) {
         User user = userFinder.findProfileByUserId(userId);
         userChecker.checkActive(user);
@@ -76,9 +79,11 @@ public class PostService {
 
         List<PostMap> postMaps = postMapRepository.findByPostId(postId);
 
-        return PostMapper.toResponse(post, postMaps);
+        GamerProfile gamerProfile = gamerProfileFinder.findProfileByUserId(post.getAuthor().getId());
+        return PostMapper.toResponse(post, postMaps, gamerProfile);
     }
 
+    @Transactional(readOnly = true)
     public Page<PostResponse> getFeed(Pageable pageable, UUID userId) {
         User user = userFinder.findProfileByUserId(userId);
         userChecker.checkActive(user);
@@ -91,10 +96,12 @@ public class PostService {
 
         return postsPage.map(post -> {
             List<PostMap> postMaps = postMapRepository.findByPostId(post.getId());
-            return PostMapper.toResponse(post, postMaps);
+            GamerProfile gamerProfile = gamerProfileFinder.findProfileByUserId(post.getAuthor().getId());
+            return PostMapper.toResponse(post, postMaps, gamerProfile);
         });
     }
 
+    @Transactional(readOnly = true)
     public Page<PostResponse> getProfilePosts(UUID profileId, Pageable pageable, UUID userId) {
         User user = userFinder.findProfileByUserId(userId);
         User profileOwner = userFinder.findProfileByUserId(profileId);
@@ -110,10 +117,12 @@ public class PostService {
 
         return postsPage.map(post -> {
             List<PostMap> postMaps = postMapRepository.findByPostId(post.getId());
-            return PostMapper.toResponse(post, postMaps);
+            GamerProfile gamerProfile = gamerProfileFinder.findProfileByUserId(post.getAuthor().getId());
+            return PostMapper.toResponse(post, postMaps, gamerProfile);
         });
     }
 
+    @Transactional(readOnly = true)
     public Page<PostResponse> getMyPosts(UUID authorId, Pageable pageable) {
         User user = userFinder.findProfileByUserId(authorId);
         userChecker.checkActive(user);
@@ -127,7 +136,8 @@ public class PostService {
 
         return postsPage.map(post -> {
             List<PostMap> postMaps = postMapRepository.findByPostId(post.getId());
-            return PostMapper.toResponse(post, postMaps);
+            GamerProfile gamerProfile = gamerProfileFinder.findProfileByUserId(post.getAuthor().getId());
+            return PostMapper.toResponse(post, postMaps, gamerProfile);
         });
     }
 

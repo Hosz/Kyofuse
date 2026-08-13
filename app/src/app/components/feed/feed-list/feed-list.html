@@ -1,0 +1,5 @@
+<div class="flex flex-col">
+  @for (post of posts(); track post.id) {
+    <app-post-card [post]="post" (authorBlocked)="authorBlocked.emit($event)" />
+  }
+</div>

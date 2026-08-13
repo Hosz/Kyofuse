@@ -1,0 +1,67 @@
+<app-modal [open]="open()" [title]="'Convidar ' + targetName()" (closed)="closed.emit()">
+  <div class="flex flex-col gap-lg">
+    @if (teams().length > 0) {
+      <div class="flex flex-col gap-md">
+        <h3 class="text-label-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant">Times</h3>
+        @for (team of teams(); track team.id) {
+          <div class="flex items-center gap-3">
+            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-tertiary-container/20 text-tertiary">
+              <span class="material-symbols-outlined text-[22px]">{{ team.icon }}</span>
+            </div>
+            <div class="flex flex-1 flex-col">
+              <span class="text-body-sm font-semibold text-on-surface">{{ team.name }}</span>
+              <span class="text-label-sm uppercase text-on-surface-variant">{{ team.meta }}</span>
+            </div>
+            <button
+              type="button"
+              (click)="toggleInvite(team.id)"
+              class="shrink-0 cursor-pointer rounded-full px-4 py-1.5 text-label-md font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
+              [class]="
+                isSent(team.id)
+                  ? 'border border-outline-variant text-on-surface-variant'
+                  : 'bg-primary-container text-on-primary-container hover:brightness-110'
+              "
+            >
+              {{ isSent(team.id) ? 'Convite enviado' : 'Convidar' }}
+            </button>
+          </div>
+        }
+      </div>
+    }
+
+    @if (communities().length > 0) {
+      <div class="flex flex-col gap-md">
+        <h3 class="text-label-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant">Comunidades</h3>
+        @for (community of communities(); track community.id) {
+          <div class="flex items-center gap-3">
+            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-tertiary-container/20 text-tertiary">
+              <span class="material-symbols-outlined text-[22px]">{{ community.icon }}</span>
+            </div>
+            <div class="flex flex-1 flex-col">
+              <span class="text-body-sm font-semibold text-on-surface">{{ community.name }}</span>
+              <span class="text-label-sm uppercase text-on-surface-variant">{{ community.meta }}</span>
+            </div>
+            <button
+              type="button"
+              (click)="toggleInvite(community.id)"
+              class="shrink-0 cursor-pointer rounded-full px-4 py-1.5 text-label-md font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
+              [class]="
+                isSent(community.id)
+                  ? 'border border-outline-variant text-on-surface-variant'
+                  : 'bg-primary-container text-on-primary-container hover:brightness-110'
+              "
+            >
+              {{ isSent(community.id) ? 'Convite enviado' : 'Convidar' }}
+            </button>
+          </div>
+        }
+      </div>
+    }
+
+    @if (teams().length === 0 && communities().length === 0) {
+      <p class="py-6 text-center text-body-sm text-on-surface-variant">
+        Você ainda não faz parte de nenhum time ou comunidade.
+      </p>
+    }
+  </div>
+</app-modal>

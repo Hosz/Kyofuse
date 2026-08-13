@@ -1,0 +1,31 @@
+# Build output — rebuilt inside the image, never copied from the host.
+target/
+
+# Secrets — must never be baked into an image layer.
+.env
+.env.*
+!.env.example
+
+# IDE / editor metadata
+.idea/
+*.iml
+.vscode/
+
+# Version control
+.git/
+.gitignore
+.gitattributes
+
+# Maven wrapper — unused in the image (the build stage uses the official
+# Maven image instead of ./mvnw), kept out of the build context.
+.mvn/
+mvnw
+mvnw.cmd
+
+# Docker files themselves — no need to send them as build context
+Dockerfile
+.dockerignore
+
+# Misc
+*.log
+README.md

@@ -35,4 +35,6 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, UUID> {
           AND tm2.status = ACTIVE
     """)
     boolean areTeammates(User first, User second);
+
+    List<TeamMember> findByUser(User user);
 }

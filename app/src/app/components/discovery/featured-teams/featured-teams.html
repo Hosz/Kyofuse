@@ -1,0 +1,21 @@
+<section class="flex flex-col gap-md rounded-xl bg-surface-container p-md">
+  <h2 class="border-l-4 border-primary-container pl-3 text-label-md font-bold uppercase tracking-[0.05em] text-on-surface">
+    Times em destaque
+  </h2>
+
+  <div class="flex flex-col gap-md">
+    @for (team of teams(); track team.name) {
+      <div class="flex items-center gap-3">
+        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-tertiary-container/20 text-tertiary">
+          <span class="material-symbols-outlined text-[22px]">shield</span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-body-sm font-semibold text-on-surface">{{ team.name }}</span>
+          <span class="text-label-sm uppercase text-on-surface-variant">{{ team.playersCount }} · {{ team.status }}</span>
+        </div>
+      </div>
+    }
+  </div>
+
+  <a href="#" class="rounded text-label-md font-semibold text-primary-container transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface">Explorar times</a>
+</section>

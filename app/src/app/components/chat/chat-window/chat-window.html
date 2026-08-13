@@ -1,0 +1,190 @@
+@if (conversation(); as conv) {
+  <section class="flex h-screen flex-1 flex-col bg-surface">
+    <div class="flex shrink-0 items-center justify-between gap-3 border-b border-outline-variant px-lg py-4">
+      <div class="flex items-center gap-3">
+        <img [src]="conv.participant.avatarUrl" [alt]="conv.participant.name" class="h-11 w-11 rounded-full object-cover" />
+        <div class="flex flex-col">
+          <div class="flex items-center gap-2">
+            <span class="text-body-md font-bold text-on-surface">{{ conv.participant.name }}</span>
+            @if (conv.participant.badge) {
+              @if (conv.participant.badgeTone === 'primary') {
+                <span class="rounded-md border border-primary-container px-2 py-0.5 text-label-sm font-semibold text-primary-container">{{ conv.participant.badge }}</span>
+              } @else {
+                <span class="rounded-md border border-tertiary px-2 py-0.5 text-label-sm font-semibold text-tertiary">{{ conv.participant.badge }}</span>
+              }
+            }
+          </div>
+          <span class="flex items-center gap-1.5 text-label-sm text-on-surface-variant">
+            @if (conv.participant.online) {
+              <span class="h-2 w-2 rounded-full bg-tertiary"></span>
+              Online
+            }
+            @if (conv.participant.statusLabel) {
+              <span>&middot; {{ conv.participant.statusLabel }}</span>
+            }
+          </span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1 text-on-surface-variant">
+        <button type="button" aria-label="Chamada de vídeo" class="cursor-pointer rounded-full p-2 transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface">
+          <span class="material-symbols-outlined text-[22px]">videocam</span>
+        </button>
+        <button type="button" aria-label="Ligar" class="cursor-pointer rounded-full p-2 transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface">
+          <span class="material-symbols-outlined text-[22px]">call</span>
+        </button>
+        <button type="button" aria-label="Mais opções" class="cursor-pointer rounded-full p-2 transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface">
+          <span class="material-symbols-outlined text-[22px]">more_vert</span>
+        </button>
+      </div>
+    </div>
+
+    @if (conv.relationship === 'request-received') {
+      <div class="flex shrink-0 flex-col gap-3 border-b border-outline-variant bg-surface-container px-lg py-4 sm:flex-row sm:items-start sm:justify-between">
+        <div class="flex items-start gap-3">
+          <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-container/20 text-primary-container">
+            <span class="material-symbols-outlined text-[22px]">shield</span>
+          </span>
+          <div class="flex flex-col gap-1">
+            <span class="text-body-sm font-bold text-on-surface">Política de solicitação de mensagem</span>
+            <p class="max-w-[28rem] text-label-md text-on-surface-variant">
+              Vocês ainda não têm uma relação mútua. {{ conv.participant.name }} só pode te enviar mensagens até você aceitar o contato. Mídia e links ficam restritos até lá.
+            </p>
+          </div>
+        </div>
+        <div class="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            (click)="accept.emit()"
+            class="cursor-pointer whitespace-nowrap rounded-lg bg-primary-container px-4 py-2 text-label-md font-bold text-on-primary-container transition-all hover:brightness-110 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"
+          >
+            Aceitar
+          </button>
+          <button
+            type="button"
+            (click)="decline.emit()"
+            class="cursor-pointer whitespace-nowrap rounded-lg border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:border-error hover:text-error active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"
+          >
+            Recusar
+          </button>
+        </div>
+      </div>
+    } @else if (conv.relationship === 'request-sent') {
+      <div class="flex shrink-0 items-start gap-3 border-b border-outline-variant bg-surface-container px-lg py-4">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-tertiary-container/20 text-tertiary">
+          <span class="material-symbols-outlined text-[22px]">info</span>
+        </span>
+        <p class="text-label-md text-on-surface-variant">
+          Vocês ainda não se seguem mutuamente. Você pode enviar <strong class="text-on-surface">uma mensagem</strong> como solicitação —
+          {{ conv.participant.name }} vai precisar aceitar pra liberar a conversa.
+        </p>
+      </div>
+    } @else if (conv.relationship === 'declined') {
+      <div class="flex shrink-0 items-center gap-3 border-b border-outline-variant bg-surface-container px-lg py-4">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-error/10 text-error">
+          <span class="material-symbols-outlined text-[22px]">block</span>
+        </span>
+        <p class="text-label-md text-on-surface-variant">Você recusou essa solicitação de contato. Vocês não podem mais trocar mensagens.</p>
+      </div>
+    }
+
+    <div class="scrollbar-minimal flex flex-1 flex-col gap-4 overflow-y-auto px-lg py-lg">
+      <div class="flex items-center justify-center">
+        <span class="rounded-full bg-surface-container px-3 py-1 text-label-sm text-on-surface-variant">Hoje</span>
+      </div>
+
+      @for (message of conv.messages; track message.id) {
+        @if (message.author === 'them') {
+          <div class="flex items-end gap-2">
+            <img [src]="conv.participant.avatarUrl" [alt]="conv.participant.name" class="h-7 w-7 shrink-0 rounded-full object-cover" />
+            <div class="max-w-[22rem] rounded-2xl rounded-bl-sm bg-surface-container-high px-4 py-2.5 text-body-sm text-on-surface">
+              {{ message.content }}
+            </div>
+          </div>
+        } @else {
+          <div class="flex flex-col items-end gap-1">
+            <div class="max-w-[22rem] rounded-2xl rounded-br-sm border border-outline-variant bg-surface-container px-4 py-2.5 text-body-sm text-on-surface">
+              {{ message.content }}
+            </div>
+            <span class="text-label-sm text-on-surface-variant">{{ message.timestamp }}{{ message.read ? ' · Lida' : '' }}</span>
+          </div>
+        }
+      }
+
+      @if (conv.isTyping) {
+        <div class="flex items-end gap-2">
+          <img [src]="conv.participant.avatarUrl" [alt]="conv.participant.name" class="h-7 w-7 shrink-0 rounded-full object-cover" />
+          <div class="flex items-center gap-1 rounded-2xl rounded-bl-sm bg-surface-container-high px-4 py-3">
+            <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-on-surface-variant"></span>
+            <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-on-surface-variant [animation-delay:150ms]"></span>
+            <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-on-surface-variant [animation-delay:300ms]"></span>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="flex shrink-0 flex-col gap-1.5 border-t border-outline-variant px-lg py-md">
+      @if (canType()) {
+        <div class="flex items-center gap-2 rounded-full border border-outline-variant bg-surface-container px-3 py-2">
+          <button
+            type="button"
+            aria-label="Anexar"
+            class="cursor-pointer rounded-full p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
+          >
+            <span class="material-symbols-outlined text-[20px]">add_circle</span>
+          </button>
+          <input
+            type="text"
+            [attr.aria-label]="'Mensagem para ' + conv.participant.name"
+            [placeholder]="'Mensagem para ' + conv.participant.name.split(' ')[0] + '...'"
+            [value]="draft()"
+            (input)="onDraftChange($any($event.target).value)"
+            (keydown.enter)="onSend()"
+            class="w-full border-0 bg-transparent text-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-0"
+          />
+          <button
+            type="button"
+            aria-label="Emoji"
+            class="cursor-pointer rounded-full p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
+          >
+            <span class="material-symbols-outlined text-[20px]">mood</span>
+          </button>
+          <button
+            type="button"
+            aria-label="GIF"
+            class="cursor-pointer rounded-full p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
+          >
+            <span class="material-symbols-outlined text-[20px]">gif_box</span>
+          </button>
+          <button
+            type="button"
+            (click)="onSend()"
+            [disabled]="!draft().trim()"
+            aria-label="Enviar mensagem"
+            class="cursor-pointer rounded-full bg-primary-container p-2 text-on-primary-container transition-all hover:brightness-110 active:scale-[0.95] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+          >
+            <span class="material-symbols-outlined text-[20px]">send</span>
+          </button>
+        </div>
+        <div class="flex items-center justify-between px-1 text-label-sm text-on-surface-variant">
+          <span>&#8984; + Enter para enviar</span>
+          <span>Kyofuse Tactical Messenger v2.4</span>
+        </div>
+      } @else {
+        <div class="flex items-center gap-2 rounded-lg bg-surface-container px-4 py-3 text-label-md text-on-surface-variant">
+          <span class="material-symbols-outlined text-[18px]">lock</span>
+          @if (conv.relationship === 'declined') {
+            Essa conversa foi encerrada.
+          } @else {
+            Solicitação enviada. Aguardando {{ conv.participant.name }} aceitar para continuar.
+          }
+        </div>
+      }
+    </div>
+  </section>
+} @else {
+  <section class="flex h-screen flex-1 flex-col items-center justify-center gap-3 bg-surface text-center">
+    <span class="material-symbols-outlined text-[40px] text-on-surface-variant">forum</span>
+    <p class="text-body-sm text-on-surface-variant">Selecione uma conversa para começar.</p>
+  </section>
+}

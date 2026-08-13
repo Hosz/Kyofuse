@@ -10,6 +10,8 @@ public record UserFollowResponse(
         UUID followedId,
         String followedUsername,
         String status,
+        /** Avatar of whichever side isn't the caller (follower when listing followers, followed when listing following). */
+        String avatarUrl,
         Instant createdAt
 ) {
 }

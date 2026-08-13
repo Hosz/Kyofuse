@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
+import java.util.Collection;
 import java.util.UUID;
 
 public interface TeamRepository extends JpaRepository<Team, UUID>, JpaSpecificationExecutor<Team> {
@@ -17,4 +18,6 @@ public interface TeamRepository extends JpaRepository<Team, UUID>, JpaSpecificat
     @Override
     @EntityGraph(attributePaths = "owner")
     Page<Team> findAll(Specification<Team> specification, Pageable pageable);
+
+    Page<Team> findByIdIn(Collection<UUID> ids, Pageable pageable);
 }

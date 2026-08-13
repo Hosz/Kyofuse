@@ -1,0 +1,22 @@
+<app-modal [open]="open()" [title]="title()" (closed)="closed.emit()">
+  <div class="flex flex-col gap-md">
+    @for (item of items(); track item.id) {
+      <a
+        [routerLink]="item.route"
+        (click)="itemClick.emit(item)"
+        class="flex items-center gap-3 rounded-lg transition-colors hover:bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
+      >
+        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-tertiary-container/20 text-tertiary">
+          <span class="material-symbols-outlined text-[22px]">{{ item.icon }}</span>
+        </div>
+        <div class="flex flex-1 flex-col">
+          <span class="text-body-sm font-semibold text-on-surface">{{ item.name }}</span>
+          <span class="text-label-sm uppercase text-on-surface-variant">{{ item.meta }}</span>
+        </div>
+        <span class="material-symbols-outlined text-[20px] text-on-surface-variant">chevron_right</span>
+      </a>
+    } @empty {
+      <p class="py-6 text-center text-body-sm text-on-surface-variant">Nada por aqui ainda.</p>
+    }
+  </div>
+</app-modal>

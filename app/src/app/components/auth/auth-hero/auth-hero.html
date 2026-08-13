@@ -1,0 +1,26 @@
+<div class="flex flex-col items-center gap-8 text-center lg:items-start lg:text-left">
+  <div class="flex flex-col items-center gap-3 lg:items-start">
+    <img src="/assets/images/logo.svg" alt="Kyofuse" class="h-16 w-16 rounded-xl object-contain" />
+    <span class="text-label-md font-bold uppercase tracking-[0.25em] text-on-surface">Kyofuse</span>
+  </div>
+
+  <div class="flex flex-col gap-4">
+    <h1 class="text-headline-xl font-headline-xl text-on-surface">
+      Domine o <span class="text-primary">Campo</span>.
+    </h1>
+    <p class="max-w-[28rem] text-body-md text-on-surface-variant">
+      A rede social definitiva para jogadores táticos de CS2.
+    </p>
+  </div>
+
+  <div class="flex flex-wrap items-center justify-center gap-3 lg:justify-start">
+    @for (feature of features(); track feature.label) {
+      <span
+        class="flex items-center gap-2 rounded-full border border-outline-variant bg-surface-container px-4 py-2 text-label-sm font-semibold uppercase tracking-[0.04em] text-on-surface-variant"
+      >
+        <span class="material-symbols-outlined text-primary text-[18px]">{{ feature.icon }}</span>
+        {{ feature.label }}
+      </span>
+    }
+  </div>
+</div>

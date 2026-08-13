@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record TeamInviteResponse(
+        UUID id,
         UUID teamId,
         String teamName,
         UUID senderId,

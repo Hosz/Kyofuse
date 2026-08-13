@@ -1,0 +1,22 @@
+@if (items().length) {
+  <div class="flex flex-wrap items-center gap-1.5">
+    @for (item of items(); track item.key) {
+      <a
+        [href]="item.url"
+        target="_blank"
+        rel="noopener noreferrer"
+        [attr.aria-label]="item.label"
+        [title]="item.label"
+        class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-outline-variant text-on-surface-variant transition-all hover:border-primary hover:text-primary hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
+      >
+        @if (item.path) {
+          <svg viewBox="0 0 24 24" class="h-[15px] w-[15px]" fill="currentColor" aria-hidden="true">
+            <path [attr.d]="item.path" />
+          </svg>
+        } @else {
+          <span class="text-[9px] font-black tracking-tight" aria-hidden="true">GC</span>
+        }
+      </a>
+    }
+  </div>
+}

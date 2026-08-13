@@ -4,6 +4,8 @@ import com.hokyozu.kyofuse.notifications.dto.request.CreateNotificationRequest;
 import com.hokyozu.kyofuse.notifications.enums.NotificationTargetType;
 import com.hokyozu.kyofuse.notifications.enums.NotificationType;
 import com.hokyozu.kyofuse.notifications.service.NotificationService;
+import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
+import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import com.hokyozu.kyofuse.relationships.block.repository.UserBlockRepository;
 import com.hokyozu.kyofuse.relationships.follow.dto.response.UserFollowResponse;
 import com.hokyozu.kyofuse.relationships.follow.entity.UserFollow;
@@ -43,6 +45,7 @@ public class UserFollowService {
     private final UserBlockRepository userBlockRepository;
     private final UserFollowRepository userFollowRepository;
     private final FollowPermissionService followPermissionService;
+    private final GamerProfileFinder gamerProfileFinder;
 
     @Transactional
     public UserFollowResponse followUser(UUID userId, UUID userFollowId) {
@@ -71,7 +74,8 @@ public class UserFollowService {
                         ))
                         .build()
         );
-        return UserFollowMapper.toResponse(userFollow);
+        GamerProfile followedProfile = gamerProfileFinder.findProfileByUserId(followedUser.getId());
+        return UserFollowMapper.toResponse(userFollow, followedProfile);
     }
 
     @Transactional(readOnly = true)
@@ -85,7 +89,10 @@ public class UserFollowService {
         profilePermissionService.validateViewFollowers(user, followedUser);
 
         Page<UserFollow> userFollow = userFollowRepository.findAllByFollowed(followedUser, pageable);
-        return userFollow.map(UserFollowMapper::toResponse);
+        return userFollow.map(follow -> {
+            GamerProfile followerProfile = gamerProfileFinder.findProfileByUserId(follow.getFollower().getId());
+            return UserFollowMapper.toResponse(follow, followerProfile);
+        });
     }
 
     @Transactional(readOnly = true)
@@ -94,7 +101,10 @@ public class UserFollowService {
         userChecker.checkActive(user);
 
         Page<UserFollow> userFollows = userFollowRepository.findAllByFollowed(user, pageable);
-        return userFollows.map(UserFollowMapper::toResponse);
+        return userFollows.map(follow -> {
+            GamerProfile followerProfile = gamerProfileFinder.findProfileByUserId(follow.getFollower().getId());
+            return UserFollowMapper.toResponse(follow, followerProfile);
+        });
     }
 
     @Transactional
@@ -118,7 +128,10 @@ public class UserFollowService {
         userChecker.checkActive(user);
 
         Page<UserFollow> userFollows = userFollowRepository.findAllByFollower(user, pageable);
-        return userFollows.map(UserFollowMapper::toResponse);
+        return userFollows.map(follow -> {
+            GamerProfile followedProfile = gamerProfileFinder.findProfileByUserId(follow.getFollowed().getId());
+            return UserFollowMapper.toResponse(follow, followedProfile);
+        });
     }
 
     @Transactional(readOnly = true)
@@ -131,8 +144,11 @@ public class UserFollowService {
 
         profilePermissionService.validateViewFollowing(user, followedUser);
 
-        Page<UserFollow> userFollows = userFollowRepository.findAllByFollowed(user, pageable);
-        return userFollows.map(UserFollowMapper::toResponse);
+        Page<UserFollow> userFollows = userFollowRepository.findAllByFollower(followedUser, pageable);
+        return userFollows.map(follow -> {
+            GamerProfile followedProfile = gamerProfileFinder.findProfileByUserId(follow.getFollowed().getId());
+            return UserFollowMapper.toResponse(follow, followedProfile);
+        });
     }
 
     @Transactional
@@ -193,6 +209,31 @@ public class UserFollowService {
                         .build()
         );
 
-        return UserFollowMapper.toResponse(request);
+        GamerProfile senderProfile = gamerProfileFinder.findProfileByUserId(sender.getId());
+        return UserFollowMapper.toResponse(request, senderProfile);
+    }
+
+    @Transactional(readOnly = true)
+    public Long showFollowersQuantity(UUID userIdFollowers) {
+        User followedUser = userFinder.findProfileByUserId(userIdFollowers);
+        return userFollowRepository.countByFollowed(followedUser);
+    }
+
+    @Transactional(readOnly = true)
+    public Long showMyFollowersQuantity(UUID userId) {
+        User user = userFinder.findProfileByUserId(userId);
+        return userFollowRepository.countByFollowed(user);
+    }
+
+    @Transactional(readOnly = true)
+    public Long showMyFollowingsQuantity(UUID userId) {
+        User user = userFinder.findProfileByUserId(userId);
+        return userFollowRepository.countByFollower(user);
+    }
+
+    @Transactional(readOnly = true)
+    public Long showFollowingQuantity(UUID userIdFollowing) {
+        User user = userFinder.findProfileByUserId(userIdFollowing);
+        return userFollowRepository.countByFollower(user);
     }
 }

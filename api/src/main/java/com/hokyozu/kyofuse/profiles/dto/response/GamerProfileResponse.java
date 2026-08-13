@@ -12,6 +12,7 @@ import java.util.UUID;
 public record GamerProfileResponse(
         UUID id,
         UUID userId,
+        String username,
         String nickname,
         String bio,
         String avatarUrl,

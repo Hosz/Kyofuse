@@ -1,0 +1,89 @@
+<div class="tactical-grid flex h-screen w-full overflow-hidden bg-surface">
+  <div class="shell-container flex h-screen">
+    <app-sidebar />
+
+    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto bg-surface">
+      <div class="mx-auto flex w-full max-w-5xl flex-col gap-lg px-lg py-lg">
+        <div class="flex flex-col gap-1">
+          <h1 class="text-headline-lg-mobile font-headline-lg text-on-surface">Busca</h1>
+          <span class="text-body-sm text-on-surface-variant">
+            @if (query()) {
+              Resultados para "{{ query() }}"
+            } @else {
+              Digite algo na busca para ver resultados.
+            }
+          </span>
+        </div>
+
+        <app-feed-tabs [tabs]="tabs()" (tabSelected)="onTabSelected($event)" />
+
+        @if (activeTab() === 'profiles') {
+          <div class="flex flex-col items-center gap-2 rounded-xl border border-outline-variant bg-surface-container-low py-16 text-center">
+            <span class="material-symbols-outlined text-[28px] text-on-surface-variant">hourglass_top</span>
+            <p class="text-body-sm font-semibold text-on-surface">Em breve</p>
+            <p class="max-w-[24rem] text-label-sm text-on-surface-variant">
+              A busca de perfis por nome ainda está em desenvolvimento.
+            </p>
+          </div>
+        } @else {
+          @if (teamsLoading()) {
+            <p class="py-8 text-center text-body-sm text-on-surface-variant">Buscando times...</p>
+          } @else if (teams().length === 0) {
+            <p class="py-8 text-center text-body-sm text-on-surface-variant">
+              {{ query() ? 'Nenhum time encontrado para essa busca.' : 'Nenhum resultado para mostrar.' }}
+            </p>
+          } @else {
+            <p class="text-label-sm text-on-surface-variant">{{ teamsTotal() }} time(s) encontrado(s)</p>
+
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              @for (team of teams(); track team.id) {
+                <a
+                  [routerLink]="['/times', team.id]"
+                  class="flex flex-col gap-2 rounded-xl border border-outline-variant bg-surface-container p-lg transition-colors hover:border-primary"
+                >
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-body-md font-bold text-on-surface">{{ team.name }}</span>
+                    <span class="shrink-0 rounded-md border border-outline-variant px-2 py-0.5 text-label-sm text-on-surface-variant">
+                      {{ statusLabel(team.status) }}
+                    </span>
+                  </div>
+                  @if (team.region) {
+                    <span class="flex items-center gap-1 text-label-sm text-on-surface-variant">
+                      <span class="material-symbols-outlined text-[14px]">location_on</span>
+                      {{ team.region }}
+                    </span>
+                  }
+                  <p class="line-clamp-2 text-label-sm text-on-surface-variant">{{ team.description || 'Sem descrição.' }}</p>
+                </a>
+              }
+            </div>
+
+            @if (teamsTotalPages() > 1) {
+              <div class="flex items-center justify-center gap-2 pt-2">
+                <button
+                  type="button"
+                  (click)="goToPage(teamsPage() - 1)"
+                  [disabled]="teamsPage() === 0"
+                  class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-outline-variant text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+                </button>
+                <span class="text-label-sm text-on-surface-variant">
+                  Página {{ teamsPage() + 1 }} de {{ teamsTotalPages() }}
+                </span>
+                <button
+                  type="button"
+                  (click)="goToPage(teamsPage() + 1)"
+                  [disabled]="teamsPage() + 1 >= teamsTotalPages()"
+                  class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-outline-variant text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+                </button>
+              </div>
+            }
+          }
+        }
+      </div>
+    </main>
+  </div>
+</div>

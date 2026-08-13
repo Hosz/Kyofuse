@@ -35,12 +35,24 @@ public class UserFollowController {
         return userFollowService.showFollowers(userId, userIdFollowers, pageable);
     }
 
+    @GetMapping("/{userIdFollowers}/followers/quantity")
+    public Long showFollowersQuantity(@PathVariable UUID userIdFollowers) {
+        return userFollowService.showFollowersQuantity(userIdFollowers);
+    }
+
     @GetMapping("/me/followers")
     public Page<UserFollowResponse> showMyFollowers(@AuthenticationPrincipal Jwt jwt,
                                                     Pageable pageable) {
 
         UUID userId = UUID.fromString(jwt.getSubject());
         return userFollowService.showMyFollowers(userId, pageable);
+    }
+
+    @GetMapping("/me/followers/quantity")
+    public Long showMyFollowersQuantity(@AuthenticationPrincipal Jwt jwt) {
+
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return userFollowService.showMyFollowersQuantity(userId);
     }
 
     @DeleteMapping("{followingId}/unfollow")
@@ -59,6 +71,12 @@ public class UserFollowController {
         return userFollowService.showMyFollowings(userId, pageable);
     }
 
+    @GetMapping("/me/following/quantity")
+    public Long showMyFollowingsQuantity(@AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return userFollowService.showMyFollowingsQuantity(userId);
+    }
+
     @GetMapping("/{userIdFollowing}/following")
     public Page<UserFollowResponse> showFollowings(@PathVariable UUID userIdFollowing,
                                                @AuthenticationPrincipal Jwt jwt,
@@ -66,6 +84,11 @@ public class UserFollowController {
 
         UUID userId = UUID.fromString(jwt.getSubject());
         return userFollowService.showFollowings(userId, userIdFollowing, pageable);
+    }
+
+    @GetMapping("/{userIdFollowing}/following/quantity")
+    public Long showFollowingQuantity(@PathVariable UUID userIdFollowing) {
+        return userFollowService.showFollowingQuantity(userIdFollowing);
     }
 
     @DeleteMapping("/{userIdFollower}/delete")

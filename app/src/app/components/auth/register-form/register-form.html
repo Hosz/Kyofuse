@@ -1,0 +1,149 @@
+<form class="flex flex-col gap-lg" (submit)="$event.preventDefault(); onSubmit()" novalidate>
+  <app-auth-field
+    label="Nome"
+    icon="badge"
+    [hasError]="showFirstNameError()"
+    [errorMessage]="firstNameError()"
+  >
+    <input
+      type="text"
+      autocomplete="name"
+      placeholder="João"
+      [value]="firstName()"
+      (input)="onFirstNameChange($any($event.target).value)"
+      (blur)="firstNameTouched.set(true)"
+      class="w-full border-0 bg-transparent text-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-0"
+    />
+  </app-auth-field>
+
+  <app-auth-field
+    label="Sobrenome"
+    icon="badge"
+    [hasError]="showLastNameError()"
+    [errorMessage]="lastNameError()"
+  >
+    <input
+      type="text"
+      autocomplete="lastname"
+      placeholder="Silva"
+      [value]="lastName()"
+      (input)="onLastNameChange($any($event.target).value)"
+      (blur)="lastNameTouched.set(true)"
+      class="w-full border-0 bg-transparent text-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-0"
+    />
+  </app-auth-field>
+
+  <app-auth-field
+    label="E-mail de contato"
+    icon="mail"
+    [hasError]="showEmailError()"
+    [errorMessage]="emailError()"
+  >
+    <input
+      type="email"
+      autocomplete="email"
+      placeholder="nome@agencia.com"
+      [value]="email()"
+      (input)="onEmailChange($any($event.target).value)"
+      (blur)="emailTouched.set(true)"
+      class="w-full border-0 bg-transparent text-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-0"
+    />
+  </app-auth-field>
+
+  <app-auth-field
+    label="Username"
+    icon="badge"
+    [hasError]="showUsernameError()"
+    [errorMessage]="usernameError()"
+  >
+    <input
+      type="text"
+      autocomplete="username"
+      placeholder="Rival_01"
+      [value]="username()"
+      (input)="onUsernameChange($any($event.target).value)"
+      (blur)="usernameTouched.set(true)"
+      class="w-full border-0 bg-transparent text-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-0"
+    />
+  </app-auth-field>
+
+
+  <div class="flex flex-col gap-2.5">
+    <app-auth-field
+      label="Senha de acesso"
+      icon="lock"
+      [hasError]="showPasswordError()"
+      [errorMessage]="passwordError()"
+    >
+      <input
+        [type]="showPassword() ? 'text' : 'password'"
+        autocomplete="new-password"
+        placeholder="Mínimo 8 caracteres"
+        [value]="password()"
+        (input)="onPasswordChange($any($event.target).value)"
+        (blur)="passwordTouched.set(true)"
+        class="w-full border-0 bg-transparent text-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-0"
+      />
+      <button
+        type="button"
+        (click)="toggleShowPassword()"
+        [attr.aria-label]="showPassword() ? 'Ocultar senha' : 'Mostrar senha'"
+        class="shrink-0 cursor-pointer rounded p-0.5 text-on-surface-variant transition-colors hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
+      >
+        <span class="material-symbols-outlined text-[18px]">{{ showPassword() ? 'visibility_off' : 'visibility' }}</span>
+      </button>
+    </app-auth-field>
+
+    @if (password().length > 0) {
+      <app-password-strength-meter [score]="passwordStrengthScore()" />
+    }
+  </div>
+
+  <app-auth-field
+    label="Confirmar senha"
+    icon="lock_reset"
+    [hasError]="showConfirmPasswordError()"
+    [errorMessage]="confirmPasswordError()"
+  >
+    <input
+      [type]="showConfirmPassword() ? 'text' : 'password'"
+      autocomplete="new-password"
+      placeholder="Repita sua senha"
+      [value]="confirmPassword()"
+      (input)="onConfirmPasswordChange($any($event.target).value)"
+      (blur)="confirmPasswordTouched.set(true)"
+      class="w-full border-0 bg-transparent text-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-0"
+    />
+    <button
+      type="button"
+      (click)="toggleShowConfirmPassword()"
+      [attr.aria-label]="showConfirmPassword() ? 'Ocultar senha' : 'Mostrar senha'"
+      class="shrink-0 cursor-pointer rounded p-0.5 text-on-surface-variant transition-colors hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
+    >
+      <span class="material-symbols-outlined text-[18px]">{{ showConfirmPassword() ? 'visibility_off' : 'visibility' }}</span>
+    </button>
+  </app-auth-field>
+
+  <div class="flex flex-col gap-1.5">
+    <app-robot-check (verifiedChange)="onRobotVerifiedChange($event)" />
+    @if (showRobotError()) {
+      <span class="text-label-sm text-error">{{ robotError() }}</span>
+    }
+  </div>
+
+  <p class="text-label-sm text-on-surface-variant">
+    Ao se registrar, você aceita as
+    <a href="#" class="font-semibold text-primary-container hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container">Regras de Engajamento</a>
+    e a
+    <a href="#" class="font-semibold text-primary-container hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container">Política de Privacidade</a>
+    do Kyofuse.
+  </p>
+
+  <button
+    type="submit"
+    class="ignite-glow flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary-container px-6 py-3 text-label-md font-bold uppercase tracking-[0.04em] text-on-primary-container transition-all hover:brightness-110 active:scale-[0.98] active:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"
+  >
+    <span class="material-symbols-outlined text-[20px]">shield</span>
+    finalizar registro
+  </button>
+</form>

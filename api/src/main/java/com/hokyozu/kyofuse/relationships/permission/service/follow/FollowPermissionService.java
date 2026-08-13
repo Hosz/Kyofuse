@@ -83,11 +83,6 @@ public class FollowPermissionService {
                 userFollowRepository.existsByFollowerAndFollowedAndStatus(followed, follower, FollowStatus.ACTIVE);
     }
 
-    private boolean isFollowing(User follower, User followed) {
-        return userFollowRepository.existsByFollowerAndFollowedAndStatus(follower, followed, FollowStatus.ACTIVE) &&
-                userFollowRepository.existsByFollowerAndFollowedAndStatus(followed, follower, FollowStatus.ACTIVE);
-    }
-
     private boolean existRequest(User receiver, User sender) {
         return userFollowRepository.existsByFollowerAndFollowedAndStatus(sender, receiver, FollowStatus.PENDING)||
                 userFollowRepository.existsByFollowerAndFollowedAndStatus(receiver, sender, FollowStatus.PENDING);

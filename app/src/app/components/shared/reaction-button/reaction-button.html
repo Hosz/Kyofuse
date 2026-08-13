@@ -1,0 +1,65 @@
+<div
+  class="relative flex items-center gap-0.5"
+  (click)="$event.stopPropagation()"
+  (mouseenter)="openPicker()"
+  (mouseleave)="scheduleClosePicker()"
+>
+  <button
+    type="button"
+    (click)="quickToggle()"
+    [disabled]="pending()"
+    [class.text-primary]="!!myReaction()"
+    class="flex cursor-pointer items-center rounded-full transition-colors hover:text-primary active:text-primary disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+    [attr.aria-label]="activeOption() ? 'Remover reação (' + activeOption()!.label + ')' : 'Curtir'"
+  >
+    <span class="material-symbols-outlined text-[20px]" [class.reaction-icon-active]="!!myReaction()">
+      {{ activeOption()?.icon ?? 'favorite' }}
+    </span>
+  </button>
+
+  <button
+    type="button"
+    (click)="openList('likes')"
+    class="cursor-pointer rounded-full text-label-md transition-colors hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+    [attr.aria-label]="'Ver quem reagiu (' + totalCount() + ')'"
+  >
+    {{ totalCount() }}
+  </button>
+
+  <button
+    type="button"
+    (click)="togglePicker()"
+    class="flex h-5 w-5 cursor-pointer items-center justify-center rounded-full text-on-surface-variant transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
+    aria-label="Escolher tipo de reação"
+  >
+    <span class="material-symbols-outlined text-[14px]">expand_more</span>
+  </button>
+
+  @if (pickerOpen()) {
+    <div
+      class="absolute bottom-full left-0 z-10 mb-2 flex items-center gap-1 rounded-full border border-outline-variant bg-surface-container px-2 py-1.5 shadow-lg"
+    >
+      @for (option of options; track option.type) {
+        <button
+          type="button"
+          (click)="select(option.type)"
+          [class.text-primary]="myReaction() === option.type"
+          class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-on-surface transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
+          [attr.aria-label]="option.label"
+          [title]="option.label"
+        >
+          <span class="material-symbols-outlined text-[20px]">{{ option.icon }}</span>
+        </button>
+      }
+    </div>
+  }
+</div>
+
+<app-reaction-list-modal
+  [open]="listModalOpen()"
+  [initialTab]="listModalTab()"
+  [postId]="postId()"
+  [commentId]="commentId()"
+  (closed)="closeList()"
+/>
+

@@ -1,16 +1,141 @@
+# =============================================================================
+# Kyofuse — local development infrastructure
+#
+# Services
+#   postgres   Database. Sole source of truth for persisted data. Reachable
+#              from the host (DBeaver) via the published port, but only the
+#              `api` service can reach it over the network.
+#   api        Spring Boot backend, built locally from ./api/Dockerfile
+#              (no prebuilt image is pulled for it).
+#
+# Adding services later (Angular dev server, Redis, Nginx, ...) means adding
+# a new service block below plus attaching it to `kyofuse-internal` and/or
+# `kyofuse-public` (see the networks section) — no restructuring needed.
+# =============================================================================
+
 services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL — owns all persisted data. No other service is allowed to
+  # read/write it directly; everything goes through the API.
+  # ---------------------------------------------------------------------------
   postgres:
-    image: postgres:16
+    image: postgres:16-alpine
     container_name: kyofuse-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: kyofuse
-      POSTGRES_USER: kyofuse
-      POSTGRES_PASSWORD: kyofuse
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "5432:5432"
+      # Published only so local tools (DBeaver) can connect from the host.
+      # Other containers never use this published port — they reach Postgres
+      # through kyofuse-internal on the default 5432, and only if they're
+      # attached to that network (api is; nothing else is).
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - kyofuse_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - kyofuse-internal
 
+  # ---------------------------------------------------------------------------
+  # Spring Boot API — the only service with credentials/network access to
+  # Postgres. Built locally from source; waits for Postgres to be healthy
+  # before starting so Flyway migrations never race a not-yet-ready database.
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: kyofuse-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      SERVER_PORT: ${SERVER_PORT}
+
+      # Database access — this is the only service that ever receives these.
+      DB_URL: ${DB_URL}
+      DB_APP_USERNAME: ${DB_APP_USERNAME}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD}
+      DB_MIGRATION_USERNAME: ${DB_MIGRATION_USERNAME}
+      DB_MIGRATION_PASSWORD: ${DB_MIGRATION_PASSWORD}
+      FLYWAY_ENABLED: ${FLYWAY_ENABLED}
+
+      # Auth
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES}
+
+      # JVM memory/GC tuning, read automatically by the `java` launcher.
+      # Balanced for a small monolith on a dev machine with limited RAM
+      # (Docker Desktop + WSL + IDE + browser + DBeaver all running at once):
+      #   -Xms128m                     low initial heap — no upfront over-commit
+      #   -Xmx512m                     comfortable for Hibernate/Flyway/MVC
+      #                                 under light local/dev traffic
+      #   -XX:+UseSerialGC              single-threaded GC; lower memory and
+      #                                 CPU overhead than G1 on small heaps —
+      #                                 G1's region bookkeeping only pays off
+      #                                 in the multi-GB range
+      #   -XX:MaxMetaspaceSize=256m    caps class-metadata growth, otherwise
+      #                                 unbounded and often the real culprit
+      #                                 behind "small -Xmx, huge RSS" surprises
+      #                                 in Spring apps (proxies, reflection)
+      #   -XX:+ExitOnOutOfMemoryError  fail fast on OOM instead of limping in
+      #                                 a corrupted state; `restart:
+      #                                 unless-stopped` brings it back cleanly
+      JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS}
+    ports:
+      - "${API_PORT:-8080}:8080"
+    networks:
+      - kyofuse-internal # to reach postgres
+      - kyofuse-public # to be reachable by future Nginx/Angular services
+    # Hard ceiling above the JVM's own soft budget (~512m heap + ~256m
+    # metaspace + thread stacks/JIT/native overhead). This is a safety net,
+    # not the primary control: if the JVM ever needs more than this, Docker
+    # kills the container instead of it pressuring the host indefinitely.
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+
+# =============================================================================
+# Networks
+#
+# Split in two on purpose so the database is architecturally unreachable by
+# anything that doesn't need it — not just "nothing else has the password":
+#   kyofuse-internal   Data-tier only. postgres lives here; api joins it to
+#                      reach postgres. Future backend-only infra (e.g. Redis
+#                      used by the API for caching/sessions) also joins here.
+#   kyofuse-public     Front-of-house only. api joins it to be reachable;
+#                      postgres never does. Future Nginx/Angular services
+#                      join only this one.
+# =============================================================================
+networks:
+  kyofuse-internal:
+    name: kyofuse-internal
+    driver: bridge
+  kyofuse-public:
+    name: kyofuse-public
+    driver: bridge
+
+# =============================================================================
+# Volumes
+# =============================================================================
 volumes:
+  # Deliberately left without an explicit `name:` override. This project
+  # already has a running kyofuse-postgres container whose data lives in the
+  # Compose-prefixed volume `kyofuse_kyofuse_postgres_data`. Pinning a bare
+  # `kyofuse_postgres_data` name here would make Compose create a brand-new
+  # empty volume on next `up`, silently orphaning that existing data.
+  # To adopt the shorter name later, migrate deliberately:
+  #   docker volume create kyofuse_postgres_data
+  #   docker run --rm -v kyofuse_kyofuse_postgres_data:/from \
+  #     -v kyofuse_postgres_data:/to alpine cp -a /from/. /to/
   kyofuse_postgres_data:

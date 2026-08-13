@@ -5,6 +5,8 @@ import com.hokyozu.kyofuse.reactions.dto.response.PostReactionResponse;
 import com.hokyozu.kyofuse.reactions.service.PostReactionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -30,5 +32,19 @@ public class PostReactionController {
         UUID userId = UUID.fromString(jwt.getSubject());
 
         postReactionService.removeReaction(userId, postId);
+    }
+
+    @GetMapping("/{postId}/reactions")
+    public Page<PostReactionResponse> getReactions(@PathVariable UUID postId, @AuthenticationPrincipal Jwt jwt, Pageable pageable) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+
+        return postReactionService.getReactions(userId, postId, pageable);
+    }
+
+    @GetMapping("/{postId}/likes")
+    public Page<PostReactionResponse> getLikes(@PathVariable UUID postId, @AuthenticationPrincipal Jwt jwt, Pageable pageable) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+
+        return postReactionService.getLikes(userId, postId, pageable);
     }
 }

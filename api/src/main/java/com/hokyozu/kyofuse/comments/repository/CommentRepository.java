@@ -11,5 +11,7 @@ import java.util.UUID;
 public interface CommentRepository extends JpaRepository<Comment, UUID> {
     Page<Comment> findByPostIdAndStatus(UUID postId, CommentStatus commentStatus, Pageable pageable);
 
+    Page<Comment> findByAuthorIdAndStatus(UUID authorId, CommentStatus commentStatus, Pageable pageable);
+
     Boolean existsByIdAndPostId(UUID commentId, UUID postId);
 }

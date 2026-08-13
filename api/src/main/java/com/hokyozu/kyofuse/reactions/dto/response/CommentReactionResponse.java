@@ -8,6 +8,8 @@ public record CommentReactionResponse(
         UUID postId,
         UUID commentId,
         String username,
+        String nickname,
+        String profileImage,
         ReactionType reactionType
 ) {
 }

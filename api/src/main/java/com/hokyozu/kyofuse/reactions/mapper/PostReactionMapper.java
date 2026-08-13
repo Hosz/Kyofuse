@@ -1,6 +1,7 @@
 package com.hokyozu.kyofuse.reactions.mapper;
 
 import com.hokyozu.kyofuse.posts.entity.Post;
+import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.reactions.dto.request.PostReactionRequest;
 import com.hokyozu.kyofuse.reactions.dto.response.PostReactionResponse;
 import com.hokyozu.kyofuse.reactions.entity.PostReaction;
@@ -10,10 +11,12 @@ import jakarta.validation.Valid;
 import java.time.Instant;
 
 public class PostReactionMapper {
-    public static PostReactionResponse toResponse(PostReaction postReactionSaved) {
+    public static PostReactionResponse toResponse(PostReaction postReactionSaved, GamerProfile profile) {
         return new PostReactionResponse(
                 postReactionSaved.getPost().getId(),
                 postReactionSaved.getUser().getUsername(),
+                profile.getNickname(),
+                profile.getAvatarUrl(),
                 postReactionSaved.getReactionType()
         );
     }

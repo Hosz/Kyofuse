@@ -111,6 +111,7 @@ class GamerProfileControllerTest {
                 null,
                 null,
                 null,
+                null,
                 false,
                 false,
                 GamerProfileSetupStatus.PENDING,

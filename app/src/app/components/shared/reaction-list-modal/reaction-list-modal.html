@@ -1,0 +1,57 @@
+<app-modal [open]="open()" title="Reações" (closed)="closed.emit()">
+  <div class="flex flex-col gap-md">
+    <div class="flex gap-2 border-b border-outline-variant pb-3">
+      <button
+        type="button"
+        (click)="setTab('likes')"
+        class="cursor-pointer rounded-full px-3 py-1.5 text-label-md font-semibold transition-colors"
+        [class]="activeTab() === 'likes' ? 'bg-secondary-fixed text-on-secondary' : 'text-on-surface-variant hover:text-on-surface'"
+      >
+        Curtiram
+      </button>
+      <button
+        type="button"
+        (click)="setTab('reactions')"
+        class="cursor-pointer rounded-full px-3 py-1.5 text-label-md font-semibold transition-colors"
+        [class]="activeTab() === 'reactions' ? 'bg-secondary-fixed text-on-secondary' : 'text-on-surface-variant hover:text-on-surface'"
+      >
+        Reagiram
+      </button>
+    </div>
+
+    @if (loading()) {
+      <p class="py-8 text-center text-body-sm text-on-surface-variant">Carregando...</p>
+    } @else if (error()) {
+      <p class="py-8 text-center text-body-sm text-error">{{ error() }}</p>
+    } @else {
+      @for (entry of entries(); track entry.username) {
+        <div class="flex items-center gap-2">
+          <app-user-row class="flex-1" [name]="entry.nickname" [handle]="entry.username" [avatarUrl]="entry.avatarUrl" />
+          @if (activeTab() === 'reactions') {
+            <span
+              class="material-symbols-outlined shrink-0 text-[18px] text-on-surface-variant"
+              [title]="reactionLabel(entry.reactionType)"
+            >
+              {{ reactionIcon(entry.reactionType) }}
+            </span>
+          }
+        </div>
+      } @empty {
+        <p class="py-6 text-center text-body-sm text-on-surface-variant">
+          {{ activeTab() === 'likes' ? 'Ninguém curtiu ainda.' : 'Ninguém reagiu ainda.' }}
+        </p>
+      }
+
+      @if (hasMoreToLoad()) {
+        <button
+          type="button"
+          (click)="loadMore()"
+          [disabled]="loadingMore()"
+          class="mx-auto cursor-pointer whitespace-nowrap rounded-full border border-outline-variant px-5 py-2 text-label-sm font-bold text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {{ loadingMore() ? 'Carregando...' : 'Carregar mais' }}
+        </button>
+      }
+    }
+  </div>
+</app-modal>

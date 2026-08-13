@@ -1,0 +1,18 @@
+<div class="tactical-grid flex h-screen w-full overflow-hidden bg-surface">
+  <div class="shell-container flex h-screen">
+    <app-sidebar />
+
+    <app-conversation-list
+      [conversations]="allConversations()"
+      [selectedId]="selectedId()"
+      (select)="onSelectConversation($event)"
+    />
+
+    <app-chat-window
+      [conversation]="selectedConversation()"
+      (accept)="onAccept()"
+      (decline)="onDecline()"
+      (sendMessage)="onSendMessage($event)"
+    />
+  </div>
+</div>

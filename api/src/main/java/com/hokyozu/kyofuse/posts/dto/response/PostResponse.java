@@ -11,6 +11,9 @@ import java.util.UUID;
 public record PostResponse(
         UUID id,
         UUID authorId,
+        String authorNickname,
+        String authorUsername,
+        String authorAvatarUrl,
         String content,
         PostType postType,
         PostVisibility postVisibility,

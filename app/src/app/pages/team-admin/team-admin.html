@@ -1,0 +1,426 @@
+<div class="tactical-grid flex h-screen w-full overflow-hidden bg-surface">
+  <div class="shell-container flex h-screen">
+    <app-sidebar />
+
+    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto bg-surface">
+      <div class="mx-auto flex w-full max-w-6xl gap-lg px-lg py-lg">
+        <nav class="sticky top-lg hidden w-56 shrink-0 flex-col gap-1 self-start lg:flex">
+          <p class="px-3 pb-2 text-label-sm font-semibold uppercase tracking-[0.06em] text-on-surface-variant">
+            Administrar time
+          </p>
+          @for (section of sections; track section.id) {
+            <button
+              type="button"
+              (click)="scrollToSection(section.id)"
+              class="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left text-body-sm font-semibold transition-colors"
+              [class]="
+                activeSection() === section.id
+                  ? 'bg-surface-container-high text-primary'
+                  : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
+              "
+            >
+              <span class="material-symbols-outlined text-[18px]">{{ section.icon }}</span>
+              {{ section.label }}
+            </button>
+          }
+        </nav>
+
+        <div class="flex min-w-0 flex-1 flex-col gap-lg pb-32">
+          <div class="flex items-center gap-2 text-body-sm text-on-surface-variant">
+            <a [routerLink]="['/times', teamId()]" class="rounded hover:text-on-surface hover:underline">{{ name() || 'Time' }}</a>
+            <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+            <span class="font-semibold text-on-surface">Administrar time</span>
+          </div>
+
+          @if (loading()) {
+            <p class="py-16 text-center text-body-sm text-on-surface-variant">Carregando time...</p>
+          } @else if (notFound()) {
+            <section class="flex flex-col items-center gap-3 rounded-xl border border-outline-variant bg-surface-container-low p-16 text-center">
+              <span class="material-symbols-outlined text-[40px] text-on-surface-variant">search_off</span>
+              <p class="text-body-md font-semibold text-on-surface">Time não encontrado.</p>
+              <a
+                routerLink="/times"
+                class="cursor-pointer rounded-full bg-primary-container px-4 py-2 text-label-sm font-bold text-on-primary-container transition-all hover:brightness-110"
+              >
+                Voltar para times
+              </a>
+            </section>
+          } @else {
+            <section
+              id="geral"
+              class="flex flex-col gap-lg rounded-xl border border-outline-variant bg-surface-container-low p-lg"
+            >
+              <div class="flex items-center justify-between border-b border-outline-variant pb-3">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-primary">info</span>
+                  <h2 class="text-title-md font-bold text-on-surface">Informações Gerais</h2>
+                </div>
+                <span class="rounded-md border border-outline-variant px-2 py-1 text-label-sm text-on-surface-variant">
+                  Módulo 01
+                </span>
+              </div>
+
+              <label class="flex flex-col gap-1.5">
+                <span class="text-label-sm font-semibold text-on-surface-variant">Nome</span>
+                <input
+                  type="text"
+                  maxlength="80"
+                  [value]="name()"
+                  (input)="name.set($any($event.target).value)"
+                  class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                />
+              </label>
+
+              <label class="flex flex-col gap-1.5">
+                <span class="text-label-sm font-semibold text-on-surface-variant">Região</span>
+                <input
+                  type="text"
+                  maxlength="80"
+                  [value]="region()"
+                  (input)="region.set($any($event.target).value)"
+                  class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                />
+              </label>
+
+              <label class="flex flex-col gap-1.5">
+                <span class="text-label-sm font-semibold text-on-surface-variant">Descrição</span>
+                <textarea
+                  rows="4"
+                  maxlength="500"
+                  [value]="description()"
+                  (input)="description.set($any($event.target).value)"
+                  class="resize-none rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                ></textarea>
+              </label>
+
+              <label class="flex flex-col gap-1.5">
+                <span class="text-label-sm font-semibold text-on-surface-variant">Status</span>
+                <select
+                  [value]="status()"
+                  (change)="status.set($any($event.target).value)"
+                  class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary sm:w-72"
+                >
+                  <option value="">Não informado</option>
+                  @for (option of statusOptions; track option.value) {
+                    <option [value]="option.value">{{ option.label }}</option>
+                  }
+                </select>
+              </label>
+            </section>
+
+            <section
+              id="requisitos"
+              class="flex flex-col gap-lg rounded-xl border border-outline-variant bg-surface-container-low p-lg"
+            >
+              <div class="flex items-center justify-between border-b border-outline-variant pb-3">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-primary">military_tech</span>
+                  <h2 class="text-title-md font-bold text-on-surface">Requisitos Competitivos</h2>
+                </div>
+                <span class="rounded-md border border-outline-variant px-2 py-1 text-label-sm text-on-surface-variant">
+                  Módulo 02
+                </span>
+              </div>
+              <p class="text-label-sm text-on-surface-variant">
+                Faixas de ranking exigidas para quem quiser entrar no time.
+              </p>
+
+              <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-label-sm font-semibold text-on-surface-variant">Premier mín.</span>
+                  <input
+                    type="number"
+                    min="1000"
+                    max="40000"
+                    [value]="minPremierRating()"
+                    (input)="minPremierRating.set($any($event.target).value ? +$any($event.target).value : null)"
+                    class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                  />
+                </label>
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-label-sm font-semibold text-on-surface-variant">Premier máx.</span>
+                  <input
+                    type="number"
+                    min="1000"
+                    max="40000"
+                    [value]="maxPremierRating()"
+                    (input)="maxPremierRating.set($any($event.target).value ? +$any($event.target).value : null)"
+                    class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                  />
+                </label>
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-label-sm font-semibold text-on-surface-variant">Faceit mín.</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    [value]="minFaceitLevel()"
+                    (input)="minFaceitLevel.set($any($event.target).value ? +$any($event.target).value : null)"
+                    class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                  />
+                </label>
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-label-sm font-semibold text-on-surface-variant">Faceit máx.</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    [value]="maxFaceitLevel()"
+                    (input)="maxFaceitLevel.set($any($event.target).value ? +$any($event.target).value : null)"
+                    class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                  />
+                </label>
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-label-sm font-semibold text-on-surface-variant">GC mín.</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="21"
+                    [value]="minGcRank()"
+                    (input)="minGcRank.set($any($event.target).value ? +$any($event.target).value : null)"
+                    class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                  />
+                </label>
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-label-sm font-semibold text-on-surface-variant">GC máx.</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="21"
+                    [value]="maxGcRank()"
+                    (input)="maxGcRank.set($any($event.target).value ? +$any($event.target).value : null)"
+                    class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                  />
+                </label>
+              </div>
+            </section>
+
+            <section
+              id="papeis"
+              class="flex flex-col gap-lg rounded-xl border border-outline-variant bg-surface-container-low p-lg"
+            >
+              <div class="flex items-center justify-between border-b border-outline-variant pb-3">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-primary">groups</span>
+                  <h2 class="text-title-md font-bold text-on-surface">Papéis Necessários</h2>
+                </div>
+                <span class="rounded-md border border-outline-variant px-2 py-1 text-label-sm text-on-surface-variant">
+                  Módulo 03
+                </span>
+              </div>
+              <p class="text-label-sm text-on-surface-variant">Selecione os papéis que o time está buscando.</p>
+
+              <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                @for (option of roleOptions; track option.value) {
+                  <button
+                    type="button"
+                    (click)="toggleRequiredRole(option.value)"
+                    [style.background-color]="roleAccent(option.value)"
+                    class="tactical-grid relative flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 overflow-hidden rounded-lg border-2 p-2 transition-colors"
+                    [class]="requiredRoles().includes(option.value) ? 'border-primary' : 'border-outline-variant hover:border-outline'"
+                  >
+                    <span class="absolute inset-0 bg-surface-dim/20"></span>
+                    <span class="relative text-center text-label-sm font-bold uppercase tracking-[0.04em] text-on-surface">
+                      {{ option.label }}
+                    </span>
+                    @if (requiredRoles().includes(option.value)) {
+                      <span class="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-on-primary">
+                        <span class="material-symbols-outlined text-[14px]">check</span>
+                      </span>
+                    }
+                  </button>
+                }
+              </div>
+            </section>
+
+            <section
+              id="membros"
+              class="flex flex-col gap-lg rounded-xl border border-outline-variant bg-surface-container-low p-lg"
+            >
+              <div class="flex items-center justify-between border-b border-outline-variant pb-3">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-primary">group</span>
+                  <h2 class="text-title-md font-bold text-on-surface">Membros</h2>
+                </div>
+                <span class="rounded-md border border-outline-variant px-2 py-1 text-label-sm text-on-surface-variant">
+                  Módulo 04
+                </span>
+              </div>
+
+              <div class="flex flex-col gap-2">
+                <input
+                  type="text"
+                  placeholder="ID do usuário a convidar"
+                  [value]="inviteUserId()"
+                  (input)="inviteUserId.set($any($event.target).value)"
+                  class="min-w-0 rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                />
+                <textarea
+                  rows="2"
+                  placeholder="Mensagem do convite (opcional)"
+                  [value]="inviteMessage()"
+                  (input)="inviteMessage.set($any($event.target).value)"
+                  class="min-w-0 resize-none rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                ></textarea>
+                <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <select
+                    [value]="inviteMemberType()"
+                    (change)="inviteMemberType.set($any($event.target).value)"
+                    class="min-w-0 rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                  >
+                    <option value="">Função no time (opcional)</option>
+                    @for (option of memberTypeOptions; track option.value) {
+                      <option [value]="option.value">{{ option.label }}</option>
+                    }
+                  </select>
+                  <select
+                    [value]="inviteRoleInTeam()"
+                    (change)="inviteRoleInTeam.set($any($event.target).value)"
+                    class="min-w-0 rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                  >
+                    <option value="">Papel em jogo (opcional)</option>
+                    @for (option of roleOptions; track option.value) {
+                      <option [value]="option.value">{{ option.label }}</option>
+                    }
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  (click)="inviteMember()"
+                  [disabled]="inviting() || !inviteUserId().trim()"
+                  class="flex shrink-0 cursor-pointer items-center justify-center gap-1.5 self-start whitespace-nowrap rounded-full bg-secondary-fixed px-4 py-2.5 text-label-sm font-bold text-on-secondary transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <span class="material-symbols-outlined text-[16px]">send</span>
+                  {{ inviting() ? 'Enviando...' : 'Enviar convite' }}
+                </button>
+              </div>
+              @if (inviteError()) {
+                <p class="text-label-sm text-error">{{ inviteError() }}</p>
+              }
+              @if (inviteSuccess()) {
+                <p class="text-label-sm text-primary">Convite enviado com sucesso.</p>
+              }
+              <p class="text-label-sm text-on-surface-variant">
+                O convite por &#64;usuário ainda não está disponível — é necessário o ID do usuário. Ele precisa aceitar
+                o convite em Notificações para entrar no time.
+              </p>
+
+              <div class="h-px w-full bg-outline-variant"></div>
+
+              @if (membersLoading()) {
+                <p class="py-6 text-center text-body-sm text-on-surface-variant">Carregando membros...</p>
+              } @else if (members().length === 0) {
+                <p class="py-6 text-center text-body-sm text-on-surface-variant">Nenhum membro ainda.</p>
+              } @else {
+                <div class="flex flex-col gap-1">
+                  @for (member of members(); track member.userId) {
+                    <div class="flex items-center justify-between gap-3 rounded-lg px-2 py-2.5 hover:bg-surface-container-high">
+                      <div class="flex flex-col">
+                        <span class="text-body-sm font-semibold text-on-surface">&#64;{{ member.userName }}</span>
+                        <span class="text-label-sm text-on-surface-variant">
+                          {{ member.roleInTeam || 'Sem papel' }} · {{ memberStatusLabel[member.status] }}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        (click)="openRemoveConfirm(member)"
+                        class="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-error/40 px-3 py-1.5 text-label-sm font-bold text-error transition-colors hover:bg-error-container hover:text-on-error-container"
+                      >
+                        <span class="material-symbols-outlined text-[16px]">person_remove</span>
+                        Remover
+                      </button>
+                    </div>
+                  }
+                </div>
+
+                @if (hasMoreMembersToLoad()) {
+                  <button
+                    type="button"
+                    (click)="loadMoreMembers()"
+                    [disabled]="membersLoadingMore()"
+                    class="mx-auto cursor-pointer whitespace-nowrap rounded-full border border-outline-variant px-5 py-2 text-label-sm font-bold text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {{ membersLoadingMore() ? 'Carregando...' : 'Carregar mais' }}
+                  </button>
+                }
+              }
+
+              <div class="flex justify-end border-t border-outline-variant pt-3">
+                <button
+                  type="button"
+                  (click)="leaveTeam()"
+                  class="cursor-pointer rounded-full border border-error/40 px-4 py-2 text-label-sm font-bold text-error transition-colors hover:bg-error-container hover:text-on-error-container"
+                >
+                  Sair do time
+                </button>
+              </div>
+            </section>
+          }
+        </div>
+      </div>
+
+      @if (!loading() && !notFound()) {
+        <div class="sticky bottom-0 mt-auto border-t border-outline-variant bg-surface-container-low/95 backdrop-blur">
+          <div class="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-lg py-3">
+            <p class="text-label-sm" [class]="error() ? 'text-error' : 'text-on-surface-variant'">
+              {{ error() || 'As alterações são salvas ao clicar em "Salvar alterações".' }}
+            </p>
+            <div class="flex shrink-0 gap-2">
+              <a
+                [routerLink]="['/times', teamId()]"
+                class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high"
+              >
+                Cancelar
+              </a>
+              <button
+                type="button"
+                (click)="submit()"
+                [disabled]="saving()"
+                class="cursor-pointer rounded-full bg-secondary-fixed px-4 py-2 text-label-md font-bold text-on-secondary transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {{ saving() ? 'Salvando...' : 'Salvar alterações' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </main>
+  </div>
+</div>
+
+<app-modal
+  [open]="removeConfirmMember() !== null"
+  title="Remover membro"
+  (closed)="closeRemoveConfirm()"
+>
+  <div class="flex flex-col gap-lg">
+    <p class="text-body-sm text-on-surface">
+      Tem certeza que deseja remover
+      <span class="font-semibold text-on-surface">&#64;{{ removeConfirmMember()?.userName }}</span>
+      do time? Essa ação não pode ser desfeita.
+    </p>
+
+    @if (removeError()) {
+      <p class="text-label-sm text-error">{{ removeError() }}</p>
+    }
+
+    <div class="flex justify-end gap-2">
+      <button
+        type="button"
+        (click)="closeRemoveConfirm()"
+        [disabled]="removing()"
+        class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        (click)="confirmRemoveMember()"
+        [disabled]="removing()"
+        class="cursor-pointer rounded-full bg-error px-4 py-2 text-label-md font-bold text-on-error transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {{ removing() ? 'Removendo...' : 'Remover' }}
+      </button>
+    </div>
+  </div>
+</app-modal>

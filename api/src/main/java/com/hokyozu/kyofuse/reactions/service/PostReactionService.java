@@ -5,6 +5,8 @@ import com.hokyozu.kyofuse.posts.enums.PostStatus;
 import com.hokyozu.kyofuse.posts.enums.PostVisibility;
 import com.hokyozu.kyofuse.posts.finder.PostFinder;
 import com.hokyozu.kyofuse.posts.repository.PostRepository;
+import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
+import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import com.hokyozu.kyofuse.reactions.dto.request.PostReactionRequest;
 import com.hokyozu.kyofuse.reactions.dto.response.PostReactionResponse;
 import com.hokyozu.kyofuse.reactions.entity.PostReaction;
@@ -16,8 +18,11 @@ import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.shared.exception.NotFoundException;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.finder.UserFinder;
+import com.hokyozu.kyofuse.users.service.UserChecker;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +40,8 @@ public class PostReactionService {
     private final PostFinder postFinder;
     private final UserFinder userFinder;
     private final PostPermissionService postPermissionService;
+    private final GamerProfileFinder gamerProfileFinder;
+    private final UserChecker userChecker;
 
     @Transactional
     public PostReactionResponse upsertReaction(UUID userId, UUID postId, @Valid PostReactionRequest request) {
@@ -58,8 +65,9 @@ public class PostReactionService {
                 post.setReactionCount(post.getReactionCount() + 1);
             }
             postRepository.save(post);
+            GamerProfile profile = gamerProfileFinder.findProfileByUserId(user.getId());
 
-            return PostReactionMapper.toResponse(postReactionSaved);
+            return PostReactionMapper.toResponse(postReactionSaved, profile);
         } else {
             PostReaction postReaction = postReactionExist.get();
 
@@ -76,8 +84,9 @@ public class PostReactionService {
             postReaction.setUpdatedAt(Instant.now());
 
             PostReaction postReactionSaved = postReactionRepository.save(postReaction);
+            GamerProfile profile = gamerProfileFinder.findProfileByUserId(user.getId());
 
-            return PostReactionMapper.toResponse(postReactionSaved);
+            return PostReactionMapper.toResponse(postReactionSaved, profile);
         }
     }
 
@@ -97,5 +106,36 @@ public class PostReactionService {
         postRepository.save(post);
 
         postReactionRepository.delete(postReaction);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PostReactionResponse> getReactions(UUID userId, UUID postId, Pageable pageable) {
+        User user = userFinder.findProfileByUserId(userId);
+        postFinder.findVisibleActivePost(postId, userId);
+
+        userChecker.checkActive(user);
+
+        Page<PostReaction> postReactionExist = postReactionRepository.findByPostIdAndReactionTypeNot(postId, ReactionType.LIKE, pageable);
+
+        return postReactionExist.map(postReaction -> {
+            GamerProfile profile = gamerProfileFinder.findProfileByUserId(postReaction.getUser().getId());
+            return PostReactionMapper.toResponse(postReaction, profile);
+        });
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PostReactionResponse> getLikes(UUID userId, UUID postId, Pageable pageable) {
+        User user = userFinder.findProfileByUserId(userId);
+        postFinder.findVisibleActivePost(postId, userId);
+
+        userChecker.checkActive(user);
+
+        Page<PostReaction> postReactionExist = postReactionRepository.findByPostIdAndReactionType(postId, ReactionType.LIKE, pageable);
+
+        return postReactionExist.map(postReaction -> {
+            GamerProfile profile = gamerProfileFinder.findProfileByUserId(postReaction.getUser().getId());
+            return PostReactionMapper.toResponse(postReaction, profile);
+        });
+
     }
 }

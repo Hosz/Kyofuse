@@ -1,0 +1,51 @@
+<form class="flex flex-col gap-lg" (submit)="$event.preventDefault(); onSubmit()" novalidate>
+  <app-auth-field
+    label="Login"
+    icon="person"
+    [hasError]="showLoginError()"
+    [errorMessage]="loginError()"
+  >
+    <input
+      type="text"
+      autocomplete="login"
+      placeholder="nome@agencia.com / nome de usuário"
+      [value]="login()"
+      (input)="onLoginChange($any($event.target).value)"
+      (blur)="loginTouched.set(true)"
+      class="w-full border-0 bg-transparent text-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-0"
+    />
+  </app-auth-field>
+
+  <app-auth-field
+    label="Senha de acesso"
+    icon="lock"
+    [hasError]="showPasswordError()"
+    [errorMessage]="passwordError()"
+  >
+    <input
+      [type]="showPassword() ? 'text' : 'password'"
+      autocomplete="current-password"
+      placeholder="Sua senha"
+      [value]="password()"
+      (input)="onPasswordChange($any($event.target).value)"
+      (blur)="passwordTouched.set(true)"
+      class="w-full border-0 bg-transparent text-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-0"
+    />
+    <button
+      type="button"
+      (click)="toggleShowPassword()"
+      [attr.aria-label]="showPassword() ? 'Ocultar senha' : 'Mostrar senha'"
+      class="shrink-0 cursor-pointer rounded p-0.5 text-on-surface-variant transition-colors hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
+    >
+      <span class="material-symbols-outlined text-[18px]">{{ showPassword() ? 'visibility_off' : 'visibility' }}</span>
+    </button>
+  </app-auth-field>
+
+  <button
+    type="submit"
+    class="ignite-glow flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary-container px-6 py-3 text-label-md font-bold uppercase tracking-[0.04em] text-on-primary-container transition-all hover:brightness-110 active:scale-[0.98] active:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"
+  >
+    <span class="material-symbols-outlined text-[20px]">login</span>
+    Entrar
+  </button>
+</form>

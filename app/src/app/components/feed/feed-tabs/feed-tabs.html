@@ -1,0 +1,23 @@
+<div
+  role="tablist"
+  aria-label="Filtros do feed"
+  class="sticky top-0 z-10 flex border-b border-outline-variant bg-surface/75 backdrop-blur-md supports-[backdrop-filter]:bg-surface/60"
+>
+  @for (tab of tabs(); track tab.label) {
+    <button
+      type="button"
+      role="tab"
+      [attr.aria-selected]="tab.active"
+      (click)="onSelect(tab)"
+      class="flex flex-1 cursor-pointer flex-col items-center gap-3 py-4 text-body-md font-bold transition-colors hover:bg-surface-container-high/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-container"
+    >
+      @if (tab.active) {
+        <span class="text-primary">{{ tab.label }}</span>
+        <span class="active-tab-indicator w-16"></span>
+      } @else {
+        <span class="text-on-surface-variant">{{ tab.label }}</span>
+        <span class="h-1 w-16"></span>
+      }
+    </button>
+  }
+</div>
