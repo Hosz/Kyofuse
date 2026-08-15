@@ -9,6 +9,7 @@ import com.hokyozu.kyofuse.auth.validator.LoginFinderValidator;
 import com.hokyozu.kyofuse.auth.validator.LoginValidator;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.JwtService;
 import com.hokyozu.kyofuse.profiles.service.GamerProfileService;
+import com.hokyozu.kyofuse.relationships.privacy.service.UserPrivacySettingsService;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.enums.UserRole;
 import com.hokyozu.kyofuse.users.enums.UserStatus;
@@ -42,6 +43,9 @@ class AuthServiceTest {
 
     @Mock
     private GamerProfileService gamerProfileService;
+
+    @Mock
+    private UserPrivacySettingsService userPrivacySettingsService;
 
     @Mock
     private EmailAndUsernameAvailabilityValidator emailAndUsernameAvailabilityValidator;
@@ -80,6 +84,7 @@ class AuthServiceTest {
         verify(emailAndUsernameAvailabilityValidator).validate(" hideo@example.com ", " hideo ");
         verify(userRepository).save(userCaptor.capture());
         verify(gamerProfileService).createGamerProfileMin(userCaptor.getValue());
+        verify(userPrivacySettingsService).createDefault(userCaptor.getValue());
 
         User savedUser = userCaptor.getValue();
         assertThat(savedUser.getFirstName()).isEqualTo("Hideo");

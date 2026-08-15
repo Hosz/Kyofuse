@@ -1,5 +1,7 @@
 package com.hokyozu.kyofuse.teams.service;
 
+import com.hokyozu.kyofuse.invites.repository.TeamInviteRepository;
+import com.hokyozu.kyofuse.notifications.service.NotificationService;
 import com.hokyozu.kyofuse.profiles.enums.PlayerRole;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.teams.dto.request.TeamMemberEditRequest;
@@ -48,6 +50,12 @@ class TeamMemberServiceTest {
 
     @Mock
     private TeamMemberRepository teamMemberRepository;
+
+    @Mock
+    private TeamInviteRepository teamInviteRepository;
+
+    @Mock
+    private NotificationService notificationService;
 
     @Spy
     private UserChecker userChecker = new UserChecker();

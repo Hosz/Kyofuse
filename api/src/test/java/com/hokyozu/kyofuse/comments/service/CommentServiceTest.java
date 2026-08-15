@@ -6,6 +6,7 @@ import com.hokyozu.kyofuse.comments.entity.Comment;
 import com.hokyozu.kyofuse.comments.enums.CommentStatus;
 import com.hokyozu.kyofuse.comments.finder.CommentFinder;
 import com.hokyozu.kyofuse.comments.repository.CommentRepository;
+import com.hokyozu.kyofuse.notifications.service.NotificationService;
 import com.hokyozu.kyofuse.posts.entity.Post;
 import com.hokyozu.kyofuse.posts.enums.PostStatus;
 import com.hokyozu.kyofuse.posts.enums.PostVisibility;
@@ -13,12 +14,16 @@ import com.hokyozu.kyofuse.posts.finder.PostFinder;
 import com.hokyozu.kyofuse.posts.repository.PostRepository;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
+import com.hokyozu.kyofuse.relationships.permission.service.comment.CommentPermissionService;
+import com.hokyozu.kyofuse.relationships.permission.service.post.PostPermissionService;
+import com.hokyozu.kyofuse.relationships.permission.service.profile.ProfilePermissionService;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.shared.exception.ForbiddenException;
 import com.hokyozu.kyofuse.shared.exception.NotFoundException;
 import com.hokyozu.kyofuse.shared.exception.UnauthorizedException;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.finder.UserFinder;
+import com.hokyozu.kyofuse.users.service.UserChecker;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -63,8 +68,27 @@ class CommentServiceTest {
     @Mock
     private UserFinder userFinder;
 
+    @Mock
+    private NotificationService notificationService;
+
+    @Mock
+    private UserChecker userChecker;
+
+    @Mock
+    private CommentPermissionService commentPermissionService;
+
+    @Mock
+    private PostPermissionService postPermissionService;
+
+    @Mock
+    private ProfilePermissionService profilePermissionService;
+
     @InjectMocks
     private CommentService commentService;
+
+    private static GamerProfile profileOf(User user) {
+        return GamerProfile.builder().user(user).nickname("nickname").avatarUrl("avatar.png").build();
+    }
 
     @Test
     void postCommentCreatesActiveCommentAndIncrementsPostCommentCount() {
@@ -78,10 +102,12 @@ class CommentServiceTest {
                 .build();
         Post post = Post.builder()
                 .id(postId)
+                .content("post content")
                 .commentCount(2)
                 .build();
         CreateCommentRequest request = new CreateCommentRequest("content");
 
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
         when(gamerProfileFinder.findProfileByUserId(userId)).thenReturn(profile);
         when(postFinder.findVisiblePostForUser(
                 postId, userId, PostStatus.ACTIVE, PostVisibility.PUBLIC
@@ -118,7 +144,7 @@ class CommentServiceTest {
         UUID userId = UUID.randomUUID();
         UUID postId = UUID.randomUUID();
         CreateCommentRequest request = new CreateCommentRequest("content");
-        when(gamerProfileFinder.findProfileByUserId(userId))
+        when(userFinder.findProfileByUserId(userId))
                 .thenThrow(new RuntimeException("Gamer profile not found for user ID: " + userId));
 
         assertThatThrownBy(() -> commentService.postComment(userId, postId, request))
@@ -135,9 +161,8 @@ class CommentServiceTest {
         UUID userId = UUID.randomUUID();
         UUID postId = UUID.randomUUID();
         User user = User.builder().id(userId).build();
-        GamerProfile profile = GamerProfile.builder().user(user).build();
         CreateCommentRequest request = new CreateCommentRequest("content");
-        when(gamerProfileFinder.findProfileByUserId(userId)).thenReturn(profile);
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
         when(postFinder.findVisiblePostForUser(
                 postId, userId, PostStatus.ACTIVE, PostVisibility.PUBLIC
         ))
@@ -155,11 +180,9 @@ class CommentServiceTest {
     void postCommentDoesNotSaveWhenPostDoesNotExist() {
         UUID userId = UUID.randomUUID();
         UUID postId = UUID.randomUUID();
-        GamerProfile profile = GamerProfile.builder()
-                .user(User.builder().id(userId).build())
-                .build();
+        User user = User.builder().id(userId).build();
         CreateCommentRequest request = new CreateCommentRequest("content");
-        when(gamerProfileFinder.findProfileByUserId(userId)).thenReturn(profile);
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
         when(postFinder.findVisiblePostForUser(
                 postId, userId, PostStatus.ACTIVE, PostVisibility.PUBLIC
         ))
@@ -177,11 +200,9 @@ class CommentServiceTest {
     void postCommentDoesNotSaveWhenPostIsDeleted() {
         UUID userId = UUID.randomUUID();
         UUID postId = UUID.randomUUID();
-        GamerProfile profile = GamerProfile.builder()
-                .user(User.builder().id(userId).build())
-                .build();
+        User user = User.builder().id(userId).build();
         CreateCommentRequest request = new CreateCommentRequest("content");
-        when(gamerProfileFinder.findProfileByUserId(userId)).thenReturn(profile);
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
         when(postFinder.findVisiblePostForUser(
                 postId, userId, PostStatus.ACTIVE, PostVisibility.PUBLIC
         ))
@@ -203,10 +224,11 @@ class CommentServiceTest {
         UUID postId = UUID.randomUUID();
         UUID commentId = UUID.randomUUID();
         User user = User.builder().id(userId).build();
-        GamerProfile profile = GamerProfile.builder().user(user).build();
-        Post post = Post.builder().id(postId).commentCount(0).build();
+        GamerProfile profile = profileOf(user);
+        Post post = Post.builder().id(postId).content("post content").commentCount(0).build();
         CreateCommentRequest request = new CreateCommentRequest("content");
         Instant now = Instant.now();
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
         when(gamerProfileFinder.findProfileByUserId(userId)).thenReturn(profile);
         when(postFinder.findVisiblePostForUser(
                 postId, userId, PostStatus.ACTIVE, PostVisibility.PUBLIC
@@ -238,7 +260,10 @@ class CommentServiceTest {
         UUID authorId = UUID.randomUUID();
         Instant now = Instant.now();
         Comment comment = comment(commentId, postId, authorId, CommentStatus.ACTIVE, now);
+        User author = User.builder().id(authorId).build();
+        when(userFinder.findProfileByUserId(authorId)).thenReturn(author);
         when(commentFinder.findById(commentId)).thenReturn(comment);
+        when(gamerProfileFinder.findProfileByUserId(authorId)).thenReturn(profileOf(author));
 
         CommentResponse response = commentService.getComment(commentId, authorId);
 
@@ -258,6 +283,7 @@ class CommentServiceTest {
     void getCommentPropagatesBadRequestWhenCommentDoesNotExist() {
         UUID commentId = UUID.randomUUID();
         UUID authorId = UUID.randomUUID();
+        when(userFinder.findProfileByUserId(authorId)).thenReturn(User.builder().id(authorId).build());
         when(commentFinder.findById(commentId))
                 .thenThrow(new BadRequestException("Comment not found for ID: " + commentId));
 
@@ -277,6 +303,7 @@ class CommentServiceTest {
                 CommentStatus.DELETED,
                 Instant.now()
         );
+        when(userFinder.findProfileByUserId(authorId)).thenReturn(User.builder().id(authorId).build());
         when(commentFinder.findById(commentId)).thenReturn(deletedComment);
 
         assertThatThrownBy(() -> commentService.getComment(commentId, authorId))
@@ -295,6 +322,7 @@ class CommentServiceTest {
                 CommentStatus.HIDDEN,
                 Instant.now()
         );
+        when(userFinder.findProfileByUserId(authorId)).thenReturn(User.builder().id(authorId).build());
         when(commentFinder.findById(commentId)).thenReturn(hiddenComment);
 
         assertThatThrownBy(() -> commentService.getComment(commentId, authorId))
@@ -311,9 +339,12 @@ class CommentServiceTest {
         Comment firstComment = comment(UUID.randomUUID(), postId, authorId, CommentStatus.ACTIVE, now);
         Comment secondComment = comment(UUID.randomUUID(), postId, authorId, CommentStatus.ACTIVE, now);
         Post post = Post.builder().id(postId).status(PostStatus.ACTIVE).build();
+        User author = User.builder().id(authorId).build();
+        when(userFinder.findProfileByUserId(authorId)).thenReturn(author);
         when(postFinder.findPostByIdAndStatus(postId, PostStatus.ACTIVE)).thenReturn(post);
         when(commentRepository.findByPostIdAndStatus(postId, CommentStatus.ACTIVE, pageable))
                 .thenReturn(new PageImpl<>(List.of(firstComment, secondComment), pageable, 2));
+        when(gamerProfileFinder.findProfileByUserId(authorId)).thenReturn(profileOf(author));
 
         Page<CommentResponse> response = commentService.listComments(postId, pageable, authorId);
 
@@ -333,6 +364,7 @@ class CommentServiceTest {
         UUID postId = UUID.randomUUID();
         UUID authorId = UUID.randomUUID();
         Pageable pageable = PageRequest.of(0, 20);
+        when(userFinder.findProfileByUserId(authorId)).thenReturn(User.builder().id(authorId).build());
         when(postFinder.findPostByIdAndStatus(postId, PostStatus.ACTIVE))
                 .thenThrow(new BadRequestException("Post not found for ID: " + postId));
 
@@ -341,6 +373,41 @@ class CommentServiceTest {
                 .hasMessage("Post not found for ID: " + postId);
 
         verify(commentRepository, never()).findByPostIdAndStatus(any(), any(), any());
+    }
+
+    @Test
+    void listUserCommentsReturnsOwnCommentsWithoutPermissionCheck() {
+        UUID userId = UUID.randomUUID();
+        Pageable pageable = PageRequest.of(0, 20);
+        User user = User.builder().id(userId).build();
+        Comment comment = comment(UUID.randomUUID(), UUID.randomUUID(), userId, CommentStatus.ACTIVE, Instant.now());
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
+        when(commentRepository.findByAuthorIdAndStatus(userId, CommentStatus.ACTIVE, pageable))
+                .thenReturn(new PageImpl<>(List.of(comment), pageable, 1));
+        when(gamerProfileFinder.findProfileByUserId(userId)).thenReturn(profileOf(user));
+
+        Page<CommentResponse> response = commentService.listUserComments(userId, userId, pageable);
+
+        assertThat(response.getContent()).extracting(CommentResponse::id).containsExactly(comment.getId());
+        verify(profilePermissionService, never()).validateViewPosts(any(), any());
+    }
+
+    @Test
+    void listUserCommentsValidatesViewPermissionForOtherViewer() {
+        UUID viewerId = UUID.randomUUID();
+        UUID targetId = UUID.randomUUID();
+        Pageable pageable = PageRequest.of(0, 20);
+        User viewer = User.builder().id(viewerId).build();
+        User target = User.builder().id(targetId).build();
+        when(userFinder.findProfileByUserId(viewerId)).thenReturn(viewer);
+        when(userFinder.findProfileByUserId(targetId)).thenReturn(target);
+        when(commentRepository.findByAuthorIdAndStatus(targetId, CommentStatus.ACTIVE, pageable))
+                .thenReturn(new PageImpl<>(List.of(), pageable, 0));
+        when(gamerProfileFinder.findProfileByUserId(targetId)).thenReturn(profileOf(target));
+
+        commentService.listUserComments(viewerId, targetId, pageable);
+
+        verify(profilePermissionService).validateViewPosts(viewer, target);
     }
 
     @Test

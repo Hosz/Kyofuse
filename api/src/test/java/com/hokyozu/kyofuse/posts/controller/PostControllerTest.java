@@ -82,13 +82,13 @@ class PostControllerTest {
     void getFeedBuildsDefaultSortedPageable() {
         UUID userId = UUID.randomUUID();
         Page<PostResponse> expected = new PageImpl<>(List.of(response(UUID.randomUUID(), UUID.randomUUID())));
-        when(postService.getFeed(any(Pageable.class), userId)).thenReturn(expected);
+        when(postService.getFeed(any(Pageable.class), eq(userId))).thenReturn(expected);
 
         Page<PostResponse> result = controller.getFeed(jwt(userId), 2, 30);
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         assertThat(result).isSameAs(expected);
-        verify(postService).getFeed(pageableCaptor.capture(), userId);
+        verify(postService).getFeed(pageableCaptor.capture(), eq(userId));
         assertThat(pageableCaptor.getValue().getPageNumber()).isEqualTo(2);
         assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(30);
         assertThat(pageableCaptor.getValue().getSort().getOrderFor("createdAt"))
@@ -101,13 +101,13 @@ class PostControllerTest {
         UUID profileId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         Page<PostResponse> expected = new PageImpl<>(List.of(response(UUID.randomUUID(), UUID.randomUUID())));
-        when(postService.getProfilePosts(eq(profileId), any(Pageable.class), userId)).thenReturn(expected);
+        when(postService.getProfilePosts(eq(profileId), any(Pageable.class), eq(userId))).thenReturn(expected);
 
         Page<PostResponse> result = controller.getProfilePosts(jwt(userId), profileId, 1, 10);
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         assertThat(result).isSameAs(expected);
-        verify(postService).getProfilePosts(eq(profileId), pageableCaptor.capture(), userId);
+        verify(postService).getProfilePosts(eq(profileId), pageableCaptor.capture(), eq(userId));
         assertThat(pageableCaptor.getValue().getPageNumber()).isEqualTo(1);
         assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(10);
     }
@@ -139,12 +139,12 @@ class PostControllerTest {
 
     @Test
     void paginationRejectsNegativePageAndOutOfRangeSize() throws NoSuchMethodException {
-        Method method = PostController.class.getMethod("getFeed", int.class, int.class);
+        Method method = PostController.class.getMethod("getFeed", Jwt.class, int.class, int.class);
 
         Set<ConstraintViolation<PostController>> violations = executableValidator.validateParameters(
                 controller,
                 method,
-                new Object[]{-1, 101}
+                new Object[]{jwt(UUID.randomUUID()), -1, 101}
         );
 
         assertThat(violations)
@@ -154,12 +154,12 @@ class PostControllerTest {
 
     @Test
     void paginationRejectsZeroSize() throws NoSuchMethodException {
-        Method method = PostController.class.getMethod("getFeed", int.class, int.class);
+        Method method = PostController.class.getMethod("getFeed", Jwt.class, int.class, int.class);
 
         Set<ConstraintViolation<PostController>> violations = executableValidator.validateParameters(
                 controller,
                 method,
-                new Object[]{0, 0}
+                new Object[]{jwt(UUID.randomUUID()), 0, 0}
         );
 
         assertThat(violations)

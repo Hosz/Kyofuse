@@ -2,6 +2,7 @@ package com.hokyozu.kyofuse.reactions.mapper;
 
 import com.hokyozu.kyofuse.comments.entity.Comment;
 import com.hokyozu.kyofuse.posts.entity.Post;
+import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.reactions.dto.request.CommentReactionRequest;
 import com.hokyozu.kyofuse.reactions.dto.response.CommentReactionResponse;
 import com.hokyozu.kyofuse.reactions.entity.CommentReaction;
@@ -45,11 +46,16 @@ class CommentReactionMapperTest {
                 .user(User.builder().username("player").build())
                 .reactionType(ReactionType.FIRE)
                 .build();
+        GamerProfile profile = GamerProfile.builder()
+                .nickname("PlayerNick")
+                .avatarUrl("https://example.com/avatar.png")
+                .build();
 
-        CommentReactionResponse result = CommentReactionMapper.toResponse(reaction);
+        CommentReactionResponse result = CommentReactionMapper.toResponse(reaction, profile);
 
         assertThat(result).isEqualTo(
-                new CommentReactionResponse(postId, commentId, "player", ReactionType.FIRE));
+                new CommentReactionResponse(postId, commentId, "player", "PlayerNick",
+                        "https://example.com/avatar.png", ReactionType.FIRE));
     }
 
     @Test

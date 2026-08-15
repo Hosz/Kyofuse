@@ -16,8 +16,12 @@ import com.hokyozu.kyofuse.posts.validator.PostValidator;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.profiles.enums.Cs2Map;
 import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
+import com.hokyozu.kyofuse.relationships.permission.service.post.PostPermissionService;
+import com.hokyozu.kyofuse.relationships.permission.service.profile.ProfilePermissionService;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.users.entity.User;
+import com.hokyozu.kyofuse.users.finder.UserFinder;
+import com.hokyozu.kyofuse.users.service.UserChecker;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -66,8 +70,24 @@ class PostServiceTest {
     @Mock
     private PostFinder postFinder;
 
+    @Mock
+    private UserFinder userFinder;
+
+    @Mock
+    private UserChecker userChecker;
+
+    @Mock
+    private PostPermissionService postPermissionService;
+
+    @Mock
+    private ProfilePermissionService profilePermissionService;
+
     @InjectMocks
     private PostService postService;
+
+    private static GamerProfile profileOf(User user) {
+        return GamerProfile.builder().user(user).nickname("nickname").avatarUrl("avatar.png").build();
+    }
 
     @Test
     void postCreatesActivePostForAuthenticatedUserProfile() {
@@ -85,6 +105,7 @@ class PostServiceTest {
                 List.of(Cs2Map.MIRAGE, Cs2Map.INFERNO)
         );
 
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
         when(gamerProfileFinder.findProfileByUserId(userId)).thenReturn(profile);
         when(postRepository.save(any(Post.class))).thenAnswer(invocation -> {
             Post post = invocation.getArgument(0);
@@ -138,6 +159,7 @@ class PostServiceTest {
                 null
         );
 
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
         when(gamerProfileFinder.findProfileByUserId(userId)).thenReturn(profile);
         when(postRepository.save(any(Post.class))).thenAnswer(invocation -> {
             Post post = invocation.getArgument(0);
@@ -156,7 +178,7 @@ class PostServiceTest {
     @Test
     void postThrowsWhenUserProfileDoesNotExist() {
         UUID userId = UUID.randomUUID();
-        when(gamerProfileFinder.findProfileByUserId(userId))
+        when(userFinder.findProfileByUserId(userId))
                 .thenThrow(new RuntimeException("Gamer profile not found for user ID: " + userId));
 
         assertThatThrownBy(() -> postService.post(
@@ -173,9 +195,11 @@ class PostServiceTest {
         UUID postId = UUID.randomUUID();
         Post post = post(postId, requesterId, PostVisibility.PRIVATE, PostStatus.ACTIVE);
         List<PostMap> postMaps = List.of(postMap(post, "MIRAGE"));
+        when(userFinder.findProfileByUserId(requesterId)).thenReturn(post.getAuthor());
         when(postFinder.findVisiblePostForUser(postId, requesterId, PostStatus.ACTIVE, PostVisibility.PUBLIC))
                 .thenReturn(post);
         when(postMapRepository.findByPostId(postId)).thenReturn(postMaps);
+        when(gamerProfileFinder.findProfileByUserId(requesterId)).thenReturn(profileOf(post.getAuthor()));
 
         PostResponse response = postService.getPost(requesterId, postId);
 
@@ -190,6 +214,7 @@ class PostServiceTest {
     void getPostThrowsBadRequestWhenPostIsNotVisibleForRequester() {
         UUID requesterId = UUID.randomUUID();
         UUID postId = UUID.randomUUID();
+        when(userFinder.findProfileByUserId(requesterId)).thenReturn(User.builder().id(requesterId).build());
         when(postFinder.findVisiblePostForUser(postId, requesterId, PostStatus.ACTIVE, PostVisibility.PUBLIC))
                 .thenThrow(new BadRequestException("Post not found for ID: " + postId));
 
@@ -205,10 +230,13 @@ class PostServiceTest {
         UUID userId = UUID.randomUUID();
         Post firstPost = post(UUID.randomUUID(), UUID.randomUUID(), PostVisibility.PUBLIC, PostStatus.ACTIVE);
         Post secondPost = post(UUID.randomUUID(), UUID.randomUUID(), PostVisibility.PUBLIC, PostStatus.ACTIVE);
+        when(userFinder.findProfileByUserId(userId)).thenReturn(User.builder().id(userId).build());
         when(postRepository.findByVisibilityAndStatus(PostVisibility.PUBLIC, PostStatus.ACTIVE, pageable))
                 .thenReturn(new PageImpl<>(List.of(firstPost, secondPost), pageable, 2));
         when(postMapRepository.findByPostId(firstPost.getId())).thenReturn(List.of(postMap(firstPost, "MIRAGE")));
         when(postMapRepository.findByPostId(secondPost.getId())).thenReturn(List.of(postMap(secondPost, "INFERNO")));
+        when(gamerProfileFinder.findProfileByUserId(firstPost.getAuthor().getId())).thenReturn(profileOf(firstPost.getAuthor()));
+        when(gamerProfileFinder.findProfileByUserId(secondPost.getAuthor().getId())).thenReturn(profileOf(secondPost.getAuthor()));
 
         Page<PostResponse> response = postService.getFeed(pageable, userId);
 
@@ -226,6 +254,8 @@ class PostServiceTest {
         UUID userId = UUID.randomUUID();
         Pageable pageable = PageRequest.of(1, 10);
         Post post = post(UUID.randomUUID(), authorId, PostVisibility.PUBLIC, PostStatus.ACTIVE);
+        when(userFinder.findProfileByUserId(userId)).thenReturn(User.builder().id(userId).build());
+        when(userFinder.findProfileByUserId(authorId)).thenReturn(post.getAuthor());
         when(postRepository.findByAuthorIdAndVisibilityInAndStatus(
                 authorId,
                 List.of(PostVisibility.PUBLIC),
@@ -233,6 +263,7 @@ class PostServiceTest {
                 pageable
         )).thenReturn(new PageImpl<>(List.of(post), pageable, 1));
         when(postMapRepository.findByPostId(post.getId())).thenReturn(List.of(postMap(post, "NUKE")));
+        when(gamerProfileFinder.findProfileByUserId(authorId)).thenReturn(profileOf(post.getAuthor()));
 
         Page<PostResponse> response = postService.getProfilePosts(authorId, pageable, userId);
 
@@ -254,6 +285,7 @@ class PostServiceTest {
         UUID authorId = UUID.randomUUID();
         Pageable pageable = PageRequest.of(0, 5);
         Post hiddenPost = post(UUID.randomUUID(), authorId, PostVisibility.PRIVATE, PostStatus.HIDDEN);
+        when(userFinder.findProfileByUserId(authorId)).thenReturn(hiddenPost.getAuthor());
         when(postRepository.findByAuthorIdAndVisibilityInAndStatusIn(
                 eq(authorId),
                 anyList(),
@@ -261,6 +293,7 @@ class PostServiceTest {
                 eq(pageable)
         )).thenReturn(new PageImpl<>(List.of(hiddenPost), pageable, 1));
         when(postMapRepository.findByPostId(hiddenPost.getId())).thenReturn(List.of());
+        when(gamerProfileFinder.findProfileByUserId(authorId)).thenReturn(profileOf(hiddenPost.getAuthor()));
 
         Page<PostResponse> response = postService.getMyPosts(authorId, pageable);
 
@@ -284,6 +317,7 @@ class PostServiceTest {
         UUID userId = UUID.randomUUID();
         UUID postId = UUID.randomUUID();
         Post post = post(postId, userId, PostVisibility.PUBLIC, PostStatus.ACTIVE);
+        when(userFinder.findProfileByUserId(userId)).thenReturn(post.getAuthor());
         when(postFinder.findById(postId)).thenReturn(post);
 
         postService.deletePost(userId, postId);
@@ -299,6 +333,7 @@ class PostServiceTest {
     void deletePostThrowsBadRequestWhenPostDoesNotExist() {
         UUID userId = UUID.randomUUID();
         UUID postId = UUID.randomUUID();
+        when(userFinder.findProfileByUserId(userId)).thenReturn(User.builder().id(userId).build());
         when(postFinder.findById(postId))
                 .thenThrow(new BadRequestException("Post not found for ID: " + postId));
 

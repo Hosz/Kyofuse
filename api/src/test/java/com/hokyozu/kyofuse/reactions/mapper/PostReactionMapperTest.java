@@ -1,6 +1,7 @@
 package com.hokyozu.kyofuse.reactions.mapper;
 
 import com.hokyozu.kyofuse.posts.entity.Post;
+import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.reactions.dto.request.PostReactionRequest;
 import com.hokyozu.kyofuse.reactions.dto.response.PostReactionResponse;
 import com.hokyozu.kyofuse.reactions.entity.PostReaction;
@@ -42,10 +43,15 @@ class PostReactionMapperTest {
                 .user(User.builder().username("player").build())
                 .reactionType(ReactionType.FIRE)
                 .build();
+        GamerProfile profile = GamerProfile.builder()
+                .nickname("PlayerNick")
+                .avatarUrl("https://example.com/avatar.png")
+                .build();
 
-        PostReactionResponse result = PostReactionMapper.toResponse(reaction);
+        PostReactionResponse result = PostReactionMapper.toResponse(reaction, profile);
 
-        assertThat(result).isEqualTo(new PostReactionResponse(postId, "player", ReactionType.FIRE));
+        assertThat(result).isEqualTo(new PostReactionResponse(
+                postId, "player", "PlayerNick", "https://example.com/avatar.png", ReactionType.FIRE));
     }
 
     @Test

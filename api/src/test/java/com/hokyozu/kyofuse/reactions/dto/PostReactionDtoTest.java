@@ -29,10 +29,12 @@ class PostReactionDtoTest {
     @Test
     void responseExposesValues() {
         UUID postId = UUID.randomUUID();
-        PostReactionResponse response = new PostReactionResponse(postId, "player", ReactionType.LOL);
+        PostReactionResponse response = new PostReactionResponse(postId, "player", "PlayerNick", "avatar.png", ReactionType.LOL);
 
         assertThat(response.postId()).isEqualTo(postId);
         assertThat(response.username()).isEqualTo("player");
+        assertThat(response.nickname()).isEqualTo("PlayerNick");
+        assertThat(response.profileImage()).isEqualTo("avatar.png");
         assertThat(response.reactionType()).isEqualTo(ReactionType.LOL);
     }
 }
