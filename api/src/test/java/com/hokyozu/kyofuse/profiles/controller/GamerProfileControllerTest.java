@@ -91,6 +91,7 @@ class GamerProfileControllerTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
     }
@@ -100,6 +101,7 @@ class GamerProfileControllerTest {
                 UUID.randomUUID(),
                 userId,
                 "player",
+                null,
                 null,
                 null,
                 null,

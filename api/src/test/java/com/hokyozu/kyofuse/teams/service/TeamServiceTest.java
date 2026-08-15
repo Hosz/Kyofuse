@@ -367,18 +367,7 @@ class TeamServiceTest {
                 .status(UserStatus.ACTIVE)
                 .build();
         Team team = activeTeam(teamId, owner);
-        UpdateTeamRequest request = new UpdateTeamRequest(
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                TeamStatus.INACTIVE
-        );
+        UpdateTeamRequest request = new UpdateTeamRequest(null, null, null, null, null, null, null, null, null, null, null, TeamStatus.INACTIVE);
 
         when(userFinder.findProfileByUserId(userId)).thenReturn(owner);
         when(teamFinder.findTeamById(teamId)).thenReturn(team);
@@ -401,18 +390,7 @@ class TeamServiceTest {
                 .build();
         Team team = activeTeam(teamId, owner);
         team.setMaxPremierRating(15000);
-        UpdateTeamRequest request = new UpdateTeamRequest(
-                null,
-                null,
-                null,
-                20000,
-                19000,
-                null,
-                null,
-                null,
-                null,
-                null
-        );
+        UpdateTeamRequest request = new UpdateTeamRequest(null, null, null, null, null, 20000, 19000, null, null, null, null, null);
 
         when(userFinder.findProfileByUserId(userId)).thenReturn(owner);
         when(teamFinder.findTeamById(teamId)).thenReturn(team);
@@ -428,15 +406,15 @@ class TeamServiceTest {
     @Test
     void editTeamRejectsBlankNameDescriptionAndRegion() {
         assertEditValidationThrows(
-                new UpdateTeamRequest(" ", null, null, null, null, null, null, null, null, null),
+                new UpdateTeamRequest(" ", null, null, null, null, null, null, null, null, null, null, null),
                 "O nome do time não pode ser vazio."
         );
         assertEditValidationThrows(
-                new UpdateTeamRequest("Updated", " ", null, null, null, null, null, null, null, null),
+                new UpdateTeamRequest("Updated", " ", null, null, null, null, null, null, null, null, null, null),
                 "A descrição do time não pode ser vazio."
         );
         assertEditValidationThrows(
-                new UpdateTeamRequest("Updated", "Updated description", " ", null, null, null, null, null, null, null),
+                new UpdateTeamRequest("Updated", "Updated description", null, null, " ", null, null, null, null, null, null, null),
                 "A região do time não pode ser vazio."
         );
     }
@@ -444,35 +422,35 @@ class TeamServiceTest {
     @Test
     void editTeamRejectsUnchangedFields() {
         assertEditValidationThrows(
-                new UpdateTeamRequest("Kyofuse Academy", null, null, null, null, null, null, null, null, null),
+                new UpdateTeamRequest("Kyofuse Academy", null, null, null, null, null, null, null, null, null, null, null),
                 "O nome do time não foi alterado."
         );
         assertEditValidationThrows(
-                new UpdateTeamRequest("Updated", "Development team", null, null, null, null, null, null, null, null),
+                new UpdateTeamRequest("Updated", "Development team", null, null, null, null, null, null, null, null, null, null),
                 "A descrição do time não foi alterada."
         );
         assertEditValidationThrows(
-                new UpdateTeamRequest("Updated", "Updated description", "BR", null, null, null, null, null, null, null),
+                new UpdateTeamRequest("Updated", "Updated description", null, null, "BR", null, null, null, null, null, null, null),
                 "A região do time não foi alterada."
         );
         assertEditValidationThrows(
-                new UpdateTeamRequest("Updated", "Updated description", "NA", null, null, null, null, null, null, TeamStatus.ACTIVE),
+                new UpdateTeamRequest("Updated", "Updated description", null, null, "NA", null, null, null, null, null, null, TeamStatus.ACTIVE),
                 "O status do time não foi alterado."
         );
         assertEditValidationThrows(
-                new UpdateTeamRequest("Updated", "Updated description", "NA", null, null, null, null, 1, null, null),
+                new UpdateTeamRequest("Updated", "Updated description", null, null, "NA", null, null, null, null, 1, null, null),
                 "O minGcRank do time não foi alterado."
         );
         assertEditValidationThrows(
-                new UpdateTeamRequest("Updated", "Updated description", "NA", null, null, null, null, null, 21, null),
+                new UpdateTeamRequest("Updated", "Updated description", null, null, "NA", null, null, null, null, null, 21, null),
                 "O maxGcRank do time não foi alterado."
         );
         assertEditValidationThrows(
-                new UpdateTeamRequest("Updated", "Updated description", "NA", null, null, 1, null, null, null, null),
+                new UpdateTeamRequest("Updated", "Updated description", null, null, "NA", null, null, 1, null, null, null, null),
                 "O minFaceitLevel do time não foi alterado."
         );
         assertEditValidationThrows(
-                new UpdateTeamRequest("Updated", "Updated description", "NA", null, null, null, 10, null, null, null),
+                new UpdateTeamRequest("Updated", "Updated description", null, null, "NA", null, null, null, 10, null, null, null),
                 "O maxFaceitLevel do time não foi alterado."
         );
     }
@@ -480,11 +458,11 @@ class TeamServiceTest {
     @Test
     void editTeamRejectsInvalidFaceitAndGcRanges() {
         assertEditValidationThrows(
-                new UpdateTeamRequest("Updated", "Updated description", "NA", null, null, 9, 4, null, null, null),
+                new UpdateTeamRequest("Updated", "Updated description", null, null, "NA", null, null, 9, 4, null, null, null),
                 "minFaceitLevel must be less than or equal to maxFaceitLevel"
         );
         assertEditValidationThrows(
-                new UpdateTeamRequest("Updated", "Updated description", "NA", null, null, null, null, 15, 3, null),
+                new UpdateTeamRequest("Updated", "Updated description", null, null, "NA", null, null, null, null, 15, 3, null),
                 "minGcRank must be less than or equal to maxGcRank"
         );
     }
@@ -495,18 +473,7 @@ class TeamServiceTest {
         UUID teamId = UUID.randomUUID();
         User owner = activeUser(userId, "owner");
         Team team = activeTeam(teamId, owner);
-        UpdateTeamRequest request = new UpdateTeamRequest(
-                "Updated Academy",
-                "Updated description",
-                "NA",
-                null,
-                null,
-                2,
-                null,
-                2,
-                null,
-                null
-        );
+        UpdateTeamRequest request = new UpdateTeamRequest("Updated Academy", "Updated description", null, null, "NA", null, null, 2, null, 2, null, null);
 
         when(userFinder.findProfileByUserId(userId)).thenReturn(owner);
         when(teamFinder.findTeamById(teamId)).thenReturn(team);
@@ -766,6 +733,8 @@ class TeamServiceTest {
     private TeamRequest validRequest(List<PlayerRole> requiredRoles) {
         return new TeamRequest(
                 "Kyofuse Academy",
+                null,
+                null,
                 "kyofuse-academy",
                 "Development team",
                 "BR",
@@ -780,18 +749,7 @@ class TeamServiceTest {
     }
 
     private UpdateTeamRequest validUpdateRequest() {
-        return new UpdateTeamRequest(
-                "Updated Academy",
-                "Updated description",
-                "NA",
-                12000,
-                25000,
-                4,
-                9,
-                5,
-                18,
-                TeamStatus.CLOSED
-        );
+        return new UpdateTeamRequest("Updated Academy", "Updated description", null, null, "NA", 12000, 25000, 4, 9, 5, 18, TeamStatus.CLOSED);
     }
 
     private Team activeTeam(UUID teamId, User owner) {

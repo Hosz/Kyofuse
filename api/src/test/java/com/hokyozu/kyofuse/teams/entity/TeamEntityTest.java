@@ -24,6 +24,8 @@ class TeamEntityTest {
                 .owner(owner)
                 .name("Competitive Team")
                 .slug("competitive-team")
+                .avatarUrl("https://example.com/avatar.png")
+                .bannerUrl("https://example.com/banner.png")
                 .description("A competitive esports team")
                 .region("NA")
                 .minPremierRating(1000)
@@ -41,6 +43,8 @@ class TeamEntityTest {
         assertThat(team.getOwner()).isEqualTo(owner);
         assertThat(team.getName()).isEqualTo("Competitive Team");
         assertThat(team.getSlug()).isEqualTo("competitive-team");
+        assertThat(team.getAvatarUrl()).isEqualTo("https://example.com/avatar.png");
+        assertThat(team.getBannerUrl()).isEqualTo("https://example.com/banner.png");
         assertThat(team.getDescription()).isEqualTo("A competitive esports team");
         assertThat(team.getRegion()).isEqualTo("NA");
         assertThat(team.getMinPremierRating()).isEqualTo(1000);

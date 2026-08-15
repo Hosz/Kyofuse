@@ -1,22 +1,23 @@
-package com.hokyozu.kyofuse.teams.entity;
+package com.hokyozu.kyofuse.communities.entity;
 
-import com.hokyozu.kyofuse.teams.enums.TeamStatus;
+import com.hokyozu.kyofuse.communities.enums.CommunityStatus;
+import com.hokyozu.kyofuse.communities.enums.CommunityVisibility;
+import com.hokyozu.kyofuse.teams.entity.Team;
 import com.hokyozu.kyofuse.users.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "teams")
+@Table(name = "communities")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Team {
+public class Community {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -25,6 +26,10 @@ public class Team {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "team_id")
+    private Team team;
 
     @Column(name = "name", length = 80, nullable = false)
     private String name;
@@ -41,30 +46,13 @@ public class Team {
     @Column(name = "banner_url", length = 500)
     private String bannerUrl;
 
-    @Column(name = "region", length = 80)
-    private String region;
-
-    @Column(name = "min_premier_rating")
-    private Integer minPremierRating;
-
-    @Column(name = "max_premier_rating")
-    private Integer maxPremierRating;
-
-    @Column(name = "min_faceit_level")
-    private Integer minFaceitLevel;
-
-    @Column(name = "max_faceit_level")
-    private Integer maxFaceitLevel;
-
-    @Column(name = "min_gc_rank")
-    private Integer minGcRank;
-
-    @Column(name = "max_gc_rank")
-    private Integer maxGcRank;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "visibility", length = 20, nullable = false)
+    private CommunityVisibility visibility;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", length = 40, nullable = false)
-    private TeamStatus status;
+    @Column(name = "status", length = 20, nullable = false)
+    private CommunityStatus status;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;

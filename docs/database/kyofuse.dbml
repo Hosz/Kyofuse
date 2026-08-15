@@ -32,6 +32,7 @@ Table gamer_profiles {
   nickname varchar(40) [not null]
   bio varchar(500)
   avatar_url varchar(500)
+  banner_url varchar(500)
 
   country varchar(80)
   state varchar(80)
@@ -192,6 +193,9 @@ Table teams {
   name varchar(80) [not null]
   slug varchar(100) [not null, unique]
   description varchar(500)
+
+  avatar_url varchar(500)
+  banner_url varchar(500)
 
   region varchar(80)
 
@@ -420,6 +424,160 @@ Table user_friendships {
 
     user_one_id
     user_two_id
+  }
+}
+
+// Toda Team possui obrigatoriamente uma Community, criada automaticamente na criação
+// do Team; uma Community, por outro lado, pode existir sem vínculo com nenhum Team.
+// team_id é unique para garantir no máximo uma Community por Team (por enquanto).
+Table communities {
+  id uuid [pk]
+
+  owner_id uuid [not null, ref: > users.id]
+  team_id uuid [unique, ref: > teams.id]
+
+  name varchar(80) [not null]
+  slug varchar(100) [not null, unique]
+  description varchar(500)
+
+  avatar_url varchar(500)
+  banner_url varchar(500)
+
+  visibility varchar(20) [not null]
+  status varchar(20) [not null]
+
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  indexes {
+    owner_id
+    team_id
+    visibility
+    status
+  }
+}
+
+// community_members nunca é removida fisicamente: o status é atualizado sobre o mesmo
+// registro (sem índice único parcial), para preservar histórico e sustentar BANNED.
+Table community_members {
+  id uuid [pk]
+
+  community_id uuid [not null, ref: > communities.id]
+  user_id uuid [not null, ref: > users.id]
+
+  role varchar(20) [not null]
+  status varchar(20) [not null]
+
+  joined_at timestamptz [not null]
+  left_at timestamptz
+
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  indexes {
+    (community_id, user_id) [unique]
+
+    community_id
+    user_id
+    role
+    status
+  }
+}
+
+// Espelha user_friend_requests: sem coluna de status, a existência da linha já é o PENDING.
+// Aceitar cria/atualiza a linha correspondente em community_members e remove esta; recusar apenas remove.
+Table community_join_requests {
+  id uuid [pk]
+
+  community_id uuid [not null, ref: > communities.id]
+  requester_id uuid [not null, ref: > users.id]
+
+  created_at timestamptz [not null]
+
+  indexes {
+    (community_id, requester_id) [unique]
+
+    community_id
+    requester_id
+  }
+}
+
+// direct_user_one_id sempre guarda o menor UUID (ordem lexicográfica) entre os dois participantes
+// de uma conversa DIRECT, e direct_user_two_id o maior (CHECK direct_user_one_id < direct_user_two_id
+// na migration). Isso garante no máximo uma conversa DIRECT por par de usuários, independentemente
+// de quem iniciou. Os três campos direct_* e community_id são mutuamente exclusivos conforme o type.
+Table conversations {
+  id uuid [pk]
+
+  type varchar(20) [not null]
+
+  name varchar(80)
+  created_by uuid [not null, ref: > users.id]
+
+  community_id uuid [unique, ref: > communities.id]
+
+  direct_user_one_id uuid [ref: > users.id]
+  direct_user_two_id uuid [ref: > users.id]
+  direct_message_status varchar(20)
+
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  indexes {
+    (direct_user_one_id, direct_user_two_id) [unique]
+
+    type
+    created_by
+    community_id
+    direct_user_one_id
+    direct_user_two_id
+    direct_message_status
+    created_at
+  }
+}
+
+// conversation_members nunca é removida fisicamente: o status é atualizado sobre o mesmo
+// registro (sem índice único parcial) — administração da participação feita pela própria FK.
+Table conversation_members {
+  id uuid [pk]
+
+  conversation_id uuid [not null, ref: > conversations.id]
+  user_id uuid [not null, ref: > users.id]
+
+  role varchar(20) [not null]
+  status varchar(20) [not null]
+
+  joined_at timestamptz [not null]
+  left_at timestamptz
+  last_read_at timestamptz
+
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  indexes {
+    (conversation_id, user_id) [unique]
+
+    conversation_id
+    user_id
+    status
+  }
+}
+
+Table messages {
+  id uuid [pk]
+
+  conversation_id uuid [not null, ref: > conversations.id]
+  sender_id uuid [not null, ref: > users.id]
+
+  content varchar(2000) [not null]
+
+  created_at timestamptz [not null]
+
+  indexes {
+    conversation_id
+    sender_id
+    created_at
+    (conversation_id, created_at)
   }
 }
 

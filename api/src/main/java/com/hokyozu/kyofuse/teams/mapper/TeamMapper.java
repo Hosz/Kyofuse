@@ -19,6 +19,8 @@ public class TeamMapper {
                 .owner(user)
                 .name(request.name())
                 .slug(request.slug())
+                .avatarUrl(request.avatarUrl())
+                .bannerUrl(request.bannerUrl())
                 .description(request.description())
                 .region(request.region())
                 .minPremierRating(request.minPremierRating())
@@ -43,6 +45,8 @@ public class TeamMapper {
                 teamSaved.getOwner().getUsername(),
                 teamSaved.getName(),
                 teamSaved.getSlug(),
+                teamSaved.getAvatarUrl(),
+                teamSaved.getBannerUrl(),
                 teamSaved.getDescription(),
                 teamSaved.getRegion(),
                 teamSaved.getMinPremierRating(),
@@ -68,6 +72,18 @@ public class TeamMapper {
             team.setDescription(updateTeamRequest.description());
         } else if (updateTeamRequest.description() == null && team.getDescription() == null) {
             team.setDescription(null);
+        }
+
+        if (updateTeamRequest.avatarUrl() != null) {
+            team.setAvatarUrl(updateTeamRequest.avatarUrl());
+        } else if (updateTeamRequest.avatarUrl() == null && team.getAvatarUrl() == null) {
+            team.setAvatarUrl(null);
+        }
+
+        if (updateTeamRequest.bannerUrl() != null) {
+            team.setBannerUrl(updateTeamRequest.bannerUrl());
+        } else if (updateTeamRequest.bannerUrl() == null && team.getBannerUrl() == null) {
+            team.setBannerUrl(null);
         }
 
         if (updateTeamRequest.region() != null) {

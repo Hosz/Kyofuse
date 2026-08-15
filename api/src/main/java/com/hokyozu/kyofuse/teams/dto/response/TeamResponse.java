@@ -12,6 +12,8 @@ public record TeamResponse(
         String ownerName,
         String name,
         String slug,
+        String avatarUrl,
+        String bannerUrl,
         String description,
         String region,
         Integer minPremierRating,
