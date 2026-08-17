@@ -20,23 +20,36 @@ public class MessagePermissionService {
     private final UserPrivacySettingsRepository userPrivacySettingsRepository;
     private final UserFollowRepository userFollowRepository;
 
-    public void validateSendFirstMessage(User sender, User receiver) {
+    /**
+     * Decide se a primeira mensagem de sender pra receiver pode ser enviada e, em caso
+     * positivo, se a conversa nasce liberada ou pendente de aprovação do receiver.
+     * <p>
+     * message_permission só controla QUEM pode tentar mandar a primeira mensagem
+     * (o "portão" de entrada); quem decide se a conversa nasce ACCEPTED ou PENDING é
+     * exclusivamente a relação entre os dois (amizade ou follow) — inclusive com
+     * message_permission = EVERYONE, um estranho ainda passa por aprovação.
+     *
+     * @return true se a conversa deve nascer PENDING (precisa de aprovação do receiver),
+     *         false se pode nascer ACCEPTED direto.
+     * @throws ForbiddenException se o envio nem for permitido (bloqueio, ou
+     *         message_permission não permite esse sender: FRIENDS sem amizade,
+     *         FOLLOWERS sem follow, ou NOBODY).
+     */
+    public boolean requiresApprovalForFirstMessage(User sender, User receiver) {
 
         blockValidator.validate(sender, receiver);
 
         if (areFriends(sender, receiver)) {
-            return;
-        }
-
-        if (userPrivacySettingsRepository.findByUser(receiver).getMessagePermission().equals(MessagePermission.EVERYONE)) {
-            return;
+            return false;
         }
 
         if (isFollower(sender, receiver)) {
-            return;
+            return false;
         }
 
-        //TODO: receiver deve aceitar mensagens; caso seja a primeira mensagem, cria solicitação;
+        if (userPrivacySettingsRepository.findByUser(receiver).getMessagePermission().equals(MessagePermission.EVERYONE)) {
+            return true;
+        }
 
         throw new ForbiddenException("You do not have permission to send a message to this user.");
     }
@@ -56,10 +69,6 @@ public class MessagePermissionService {
         //TODO falta: seguidores devem possuir autorização
 
         throw new ForbiddenException("You do not have permission to continue the conversation with this user.");
-    }
-
-    public void validateRevokeConversationPermission(User receiver, User sender) {
-        //TODO: deve existir autorização ativa
     }
 
     private boolean areFriends(User viewer, User owner) {

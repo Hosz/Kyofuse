@@ -88,4 +88,5 @@ class CommunityEditValidatorTest {
                 .updatedAt(Instant.now())
                 .build();
     }
+
 }

@@ -11,6 +11,8 @@ import com.hokyozu.kyofuse.communities.validator.CommunityCreationValidator;
 import com.hokyozu.kyofuse.communities.validator.CommunityEditValidator;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.shared.exception.NotFoundException;
+import com.hokyozu.kyofuse.teams.entity.Team;
+import com.hokyozu.kyofuse.teams.enums.TeamStatus;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.enums.UserStatus;
 import com.hokyozu.kyofuse.users.finder.UserFinder;
@@ -96,6 +98,66 @@ class CommunityServiceTest {
 
         verify(communityCreationValidator, never()).validate(any());
         verify(communityRepository, never()).save(any());
+    }
+
+    @Test
+    void autoCreateTeamCommunityUsesTeamSlugWhenAvailable() {
+        User owner = activeUser(UUID.randomUUID(), "owner");
+        Team team = team(owner, "Kyofuse Academy", "kyofuse-academy");
+
+        when(communityRepository.existsBySlug("kyofuse-academy")).thenReturn(false);
+        when(communityRepository.save(any(Community.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Community community = communityService.autoCreateTeamCommunity(owner, team);
+
+        assertThat(community.getSlug()).isEqualTo("kyofuse-academy");
+        assertThat(community.getTeam()).isEqualTo(team);
+        assertThat(community.getOwner()).isEqualTo(owner);
+    }
+
+    @Test
+    void autoCreateTeamCommunityAppendsSuffixWhenSlugAlreadyTakenByAStandaloneCommunity() {
+        User owner = activeUser(UUID.randomUUID(), "owner");
+        Team team = team(owner, "Kyofuse Academy", "kyofuse-academy");
+
+        when(communityRepository.existsBySlug("kyofuse-academy")).thenReturn(true);
+        when(communityRepository.existsBySlug("kyofuse-academy-2")).thenReturn(false);
+        when(communityRepository.save(any(Community.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Community community = communityService.autoCreateTeamCommunity(owner, team);
+
+        assertThat(community.getSlug()).isEqualTo("kyofuse-academy-2");
+    }
+
+    @Test
+    void autoCreateTeamCommunityTriesNextSuffixWhenFirstFallbackAlsoCollides() {
+        User owner = activeUser(UUID.randomUUID(), "owner");
+        Team team = team(owner, "Kyofuse Academy", "kyofuse-academy");
+
+        when(communityRepository.existsBySlug("kyofuse-academy")).thenReturn(true);
+        when(communityRepository.existsBySlug("kyofuse-academy-2")).thenReturn(true);
+        when(communityRepository.existsBySlug("kyofuse-academy-3")).thenReturn(false);
+        when(communityRepository.save(any(Community.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Community community = communityService.autoCreateTeamCommunity(owner, team);
+
+        assertThat(community.getSlug()).isEqualTo("kyofuse-academy-3");
+    }
+
+    @Test
+    void autoCreateTeamCommunityTruncatesBaseSlugWhenSuffixWouldExceedColumnLength() {
+        User owner = activeUser(UUID.randomUUID(), "owner");
+        String hundredCharSlug = "a".repeat(100);
+        Team team = team(owner, "Kyofuse Academy", hundredCharSlug);
+
+        when(communityRepository.existsBySlug(hundredCharSlug)).thenReturn(true);
+        when(communityRepository.existsBySlug("a".repeat(98) + "-2")).thenReturn(false);
+        when(communityRepository.save(any(Community.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Community community = communityService.autoCreateTeamCommunity(owner, team);
+
+        assertThat(community.getSlug()).hasSize(100);
+        assertThat(community.getSlug()).isEqualTo("a".repeat(98) + "-2");
     }
 
     @Test
@@ -263,6 +325,18 @@ class CommunityServiceTest {
                 .id(userId)
                 .username(username)
                 .status(UserStatus.ACTIVE)
+                .build();
+    }
+
+    private Team team(User owner, String name, String slug) {
+        return Team.builder()
+                .id(UUID.randomUUID())
+                .owner(owner)
+                .name(name)
+                .slug(slug)
+                .status(TeamStatus.ACTIVE)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
                 .build();
     }
 

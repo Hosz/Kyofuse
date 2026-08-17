@@ -50,6 +50,35 @@ class CommunityMapperTest {
     }
 
     @Test
+    void toEntityTeamCommunity_shouldUseGivenSlugInsteadOfTeamSlug() {
+        User owner = createUser();
+        Team team = Team.builder()
+                .id(UUID.randomUUID())
+                .owner(owner)
+                .name("Kyofuse Academy")
+                .slug("kyofuse-academy")
+                .description("Competitive team")
+                .avatarUrl("https://example.com/avatar.png")
+                .bannerUrl("https://example.com/banner.png")
+                .build();
+
+        // O slug resolvido pode ter sido ajustado com sufixo pelo CommunityService
+        // (colisão com uma comunidade avulsa) — o mapper precisa usar exatamente o
+        // valor recebido, não reler team.getSlug() por conta própria.
+        Community entity = CommunityMapper.toEntityTeamCommunity(owner, team, "kyofuse-academy-2");
+
+        assertThat(entity.getOwner()).isSameAs(owner);
+        assertThat(entity.getTeam()).isSameAs(team);
+        assertThat(entity.getName()).isEqualTo("Kyofuse Academy");
+        assertThat(entity.getSlug()).isEqualTo("kyofuse-academy-2");
+        assertThat(entity.getDescription()).isEqualTo("Competitive team");
+        assertThat(entity.getAvatarUrl()).isEqualTo("https://example.com/avatar.png");
+        assertThat(entity.getBannerUrl()).isEqualTo("https://example.com/banner.png");
+        assertThat(entity.getVisibility()).isEqualTo(CommunityVisibility.PUBLIC);
+        assertThat(entity.getStatus()).isEqualTo(CommunityStatus.ACTIVE);
+    }
+
+    @Test
     void toResponse_shouldMapEntityWithoutTeam() {
         Community community = createCommunity(createUser(), null);
 

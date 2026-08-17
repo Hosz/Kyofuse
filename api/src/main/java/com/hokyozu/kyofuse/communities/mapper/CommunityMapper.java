@@ -5,6 +5,8 @@ import com.hokyozu.kyofuse.communities.dto.request.UpdateCommunityRequest;
 import com.hokyozu.kyofuse.communities.dto.response.CommunityResponse;
 import com.hokyozu.kyofuse.communities.entity.Community;
 import com.hokyozu.kyofuse.communities.enums.CommunityStatus;
+import com.hokyozu.kyofuse.communities.enums.CommunityVisibility;
+import com.hokyozu.kyofuse.teams.entity.Team;
 import com.hokyozu.kyofuse.users.entity.User;
 import jakarta.validation.Valid;
 
@@ -14,6 +16,7 @@ public class CommunityMapper {
     public static Community toEntity(@Valid CommunityRequest request, User user) {
         return Community.builder()
                 .owner(user)
+                .team(null)
                 .name(request.communityName())
                 .slug(request.communitySlug())
                 .description(request.communityDescription())
@@ -73,5 +76,21 @@ public class CommunityMapper {
         }
 
         community.setUpdatedAt(Instant.now());
+    }
+
+    public static Community toEntityTeamCommunity(User user, Team team, String slug) {
+        return Community.builder()
+                .owner(user)
+                .team(team)
+                .name(team.getName())
+                .slug(slug)
+                .description(team.getDescription())
+                .avatarUrl(team.getAvatarUrl())
+                .bannerUrl(team.getBannerUrl())
+                .visibility(CommunityVisibility.PUBLIC)
+                .status(CommunityStatus.ACTIVE)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
     }
 }

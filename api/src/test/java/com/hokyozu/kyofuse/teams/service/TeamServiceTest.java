@@ -1,5 +1,8 @@
 package com.hokyozu.kyofuse.teams.service;
 
+import com.hokyozu.kyofuse.chat.service.ConversationService;
+import com.hokyozu.kyofuse.communities.entity.Community;
+import com.hokyozu.kyofuse.communities.service.CommunityService;
 import com.hokyozu.kyofuse.profiles.enums.PlayerRole;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.shared.exception.ConflictException;
@@ -60,6 +63,12 @@ class TeamServiceTest {
     @Mock
     private TeamRequiredRoleRepository teamRequiredRoleRepository;
 
+    @Mock
+    private CommunityService communityService;
+
+    @Mock
+    private ConversationService conversationService;
+
     @Spy
     private UserChecker userChecker = new UserChecker();
 
@@ -80,6 +89,8 @@ class TeamServiceTest {
                 .build();
         TeamRequest request = validRequest(List.of(PlayerRole.AWPER, PlayerRole.AWPER, PlayerRole.RIFLER));
 
+        Community community = Community.builder().id(UUID.randomUUID()).owner(user).build();
+
         when(userFinder.findProfileByUserId(userId)).thenReturn(user);
         when(teamRepository.existsBySlug("kyofuse-academy")).thenReturn(false);
         when(teamRepository.save(any(Team.class))).thenAnswer(invocation -> {
@@ -88,12 +99,15 @@ class TeamServiceTest {
             return team;
         });
         when(teamRequiredRoleRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(communityService.autoCreateTeamCommunity(eq(user), any(Team.class))).thenReturn(community);
 
         TeamResponse response = teamService.createTeams(request, userId);
 
         ArgumentCaptor<Team> teamCaptor = ArgumentCaptor.forClass(Team.class);
         verify(teamRepository).save(teamCaptor.capture());
         verify(teamRequiredRoleRepository).saveAll(anyList());
+        verify(communityService).autoCreateTeamCommunity(user, teamCaptor.getValue());
+        verify(conversationService).createCommunityConversation(community, user);
 
         Team savedTeam = teamCaptor.getValue();
         assertThat(savedTeam.getOwner()).isSameAs(user);
@@ -114,11 +128,13 @@ class TeamServiceTest {
                 .status(UserStatus.ACTIVE)
                 .build();
         TeamRequest request = validRequest(null);
+        Community community = Community.builder().id(UUID.randomUUID()).owner(user).build();
 
         when(userFinder.findProfileByUserId(userId)).thenReturn(user);
         when(teamRepository.existsBySlug("kyofuse-academy")).thenReturn(false);
         when(teamRepository.save(any(Team.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(teamRequiredRoleRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(communityService.autoCreateTeamCommunity(eq(user), any(Team.class))).thenReturn(community);
 
         TeamResponse response = teamService.createTeams(request, userId);
 

@@ -23,5 +23,7 @@ public enum NotificationType {
 
     COMMENT_REACTION,
 
+    NEW_MESSAGE,
+
     SYSTEM
 }

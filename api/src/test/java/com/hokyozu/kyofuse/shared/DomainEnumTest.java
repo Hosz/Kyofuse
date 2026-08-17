@@ -1,5 +1,9 @@
 package com.hokyozu.kyofuse.shared;
 
+import com.hokyozu.kyofuse.chat.enums.ConversationMemberRole;
+import com.hokyozu.kyofuse.chat.enums.ConversationMemberStatus;
+import com.hokyozu.kyofuse.chat.enums.ConversationType;
+import com.hokyozu.kyofuse.chat.enums.DirectConversationStatus;
 import com.hokyozu.kyofuse.comments.enums.CommentStatus;
 import com.hokyozu.kyofuse.communities.enums.CommunityMemberRole;
 import com.hokyozu.kyofuse.communities.enums.CommunityMemberStatus;
@@ -60,6 +64,7 @@ class DomainEnumTest {
                 NotificationType.POST_COMMENT,
                 NotificationType.POST_REACTION,
                 NotificationType.COMMENT_REACTION,
+                NotificationType.NEW_MESSAGE,
                 NotificationType.SYSTEM
         );
         assertThat(NotificationTargetType.values()).containsExactly(
@@ -68,6 +73,7 @@ class DomainEnumTest {
                 NotificationTargetType.TEAM,
                 NotificationTargetType.TEAM_INVITE,
                 NotificationTargetType.FOLLOW,
+                NotificationTargetType.CONVERSATION,
                 NotificationTargetType.SYSTEM
         );
     }
@@ -124,6 +130,30 @@ class DomainEnumTest {
                 CommunityMemberStatus.REMOVED,
                 CommunityMemberStatus.KICKED,
                 CommunityMemberStatus.BANNED
+        );
+    }
+
+    @Test
+    void chatValuesAreStable() {
+        assertThat(ConversationType.values()).containsExactly(
+                ConversationType.DIRECT,
+                ConversationType.GROUP,
+                ConversationType.COMMUNITY
+        );
+        assertThat(DirectConversationStatus.values()).containsExactly(
+                DirectConversationStatus.PENDING,
+                DirectConversationStatus.ACCEPTED,
+                DirectConversationStatus.DECLINED
+        );
+        assertThat(ConversationMemberRole.values()).containsExactly(
+                ConversationMemberRole.ADMIN,
+                ConversationMemberRole.MEMBER
+        );
+        assertThat(ConversationMemberStatus.values()).containsExactly(
+                ConversationMemberStatus.ACTIVE,
+                ConversationMemberStatus.LEFT,
+                ConversationMemberStatus.REMOVED,
+                ConversationMemberStatus.KICKED
         );
     }
 }

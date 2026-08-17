@@ -1,5 +1,8 @@
 package com.hokyozu.kyofuse.teams.service;
 
+import com.hokyozu.kyofuse.chat.service.ConversationService;
+import com.hokyozu.kyofuse.communities.entity.Community;
+import com.hokyozu.kyofuse.communities.service.CommunityService;
 import com.hokyozu.kyofuse.profiles.enums.PlayerRole;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.shared.exception.ConflictException;
@@ -48,6 +51,9 @@ public class TeamService {
     private final UserFinder userFinder;
     private final TeamFinder teamFinder;
 
+    private final CommunityService communityService;
+    private final ConversationService conversationService;
+
     private final TeamRepository teamRepository;
     private final TeamRequiredRoleRepository teamRequiredRoleRepository;
     private final TeamMemberRepository teamMemberRepository;
@@ -55,6 +61,7 @@ public class TeamService {
     @Transactional
     public TeamResponse createTeams(@Valid TeamRequest request, UUID userId) {
         User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
         validateCreateTeamRequest(request, user);
 
         Team team = TeamMapper.toEntity(request, user);
@@ -65,6 +72,9 @@ public class TeamService {
                         .map(role -> TeamRequiredRoleMapper.toEntity(team, role))
                         .toList();
         List<TeamRequiredRole> requiredRolesSaved = teamRequiredRoleRepository.saveAll(requiredRoles);
+
+        Community community = communityService.autoCreateTeamCommunity(user, teamSaved);
+        conversationService.createCommunityConversation(community, user);
 
         return TeamMapper.toResponse(teamSaved, requiredRolesSaved);
     }
