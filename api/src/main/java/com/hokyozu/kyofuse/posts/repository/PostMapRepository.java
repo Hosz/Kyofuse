@@ -8,4 +8,6 @@ import java.util.UUID;
 
 public interface PostMapRepository extends JpaRepository<PostMap, UUID> {
     List<PostMap> findByPostId(UUID postId);
+
+    List<PostMap> findByPostIdIn(List<UUID> postIds);
 }

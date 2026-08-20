@@ -23,6 +23,8 @@ export interface AppNotification {
   source: NotificationSource;
   title: string;
   timeAgo: string;
+  /** Data crua, pra ordenar junto com itens que não vêm de notificações. */
+  createdAt: string;
   body: NotificationBodySegment[];
   status: NotificationStatus;
   icon: string;
@@ -30,4 +32,6 @@ export interface AppNotification {
   action?: NotificationAction;
   /** Id do alvo (ex.: id da solicitação de follow) — usado pelas ações de aceitar/recusar. */
   targetId?: string;
+  /** Preenchido quando a notificação aponta pra uma conversa, pra poder abri-la. */
+  conversationId?: string;
 }

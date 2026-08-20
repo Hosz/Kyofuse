@@ -1,5 +1,8 @@
 package com.hokyozu.kyofuse.teams.service;
 
+import com.hokyozu.kyofuse.chat.service.ConversationService;
+import com.hokyozu.kyofuse.communities.entity.Community;
+import com.hokyozu.kyofuse.communities.service.CommunityService;
 import com.hokyozu.kyofuse.profiles.enums.PlayerRole;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.shared.exception.ConflictException;
@@ -19,6 +22,11 @@ import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.enums.UserStatus;
 import com.hokyozu.kyofuse.users.finder.UserFinder;
 import com.hokyozu.kyofuse.users.service.UserChecker;
+import com.hokyozu.kyofuse.teams.repository.TeamMemberRepository;
+import com.hokyozu.kyofuse.profiles.repository.GamerProfileRepository;
+import com.hokyozu.kyofuse.teams.entity.TeamMember;
+import com.hokyozu.kyofuse.teams.enums.TeamMemberStatus;
+import com.hokyozu.kyofuse.teams.enums.TeamMemberType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -28,6 +36,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -41,6 +50,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -60,14 +70,111 @@ class TeamServiceTest {
     @Mock
     private TeamRequiredRoleRepository teamRequiredRoleRepository;
 
+    @Mock
+    private CommunityService communityService;
+
+    @Mock
+    private ConversationService conversationService;
+
     @Spy
     private UserChecker userChecker = new UserChecker();
 
     @Spy
     private TeamChecker teamChecker = new TeamChecker();
 
+    @Mock
+    private TeamMemberRepository teamMemberRepository;
+
+    @Mock
+    private GamerProfileRepository gamerProfileRepository;
+
     @InjectMocks
     private TeamService teamService;
+
+    @Test
+    void listPlayersLookingForTeamExcludesWhoIsAlreadyInTheTeam() {
+        UUID userId = UUID.randomUUID();
+        UUID teamId = UUID.randomUUID();
+        UUID memberId = UUID.randomUUID();
+        User owner = User.builder().id(userId).username("owner").status(UserStatus.ACTIVE).build();
+        User member = User.builder().id(memberId).username("member").status(UserStatus.ACTIVE).build();
+        Team team = Team.builder().id(teamId).owner(owner).status(TeamStatus.ACTIVE).build();
+        Pageable pageable = PageRequest.of(0, 20);
+
+        when(userFinder.findProfileByUserId(userId)).thenReturn(owner);
+        when(teamFinder.findTeamById(teamId)).thenReturn(team);
+        when(teamMemberRepository.findByTeam(team))
+                .thenReturn(List.of(TeamMember.builder().team(team).user(member).build()));
+        when(gamerProfileRepository.findByLookingForTeamTrueAndUser_StatusAndUserIdNotIn(
+                eq(UserStatus.ACTIVE), anyList(), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(), pageable, 0));
+
+        teamService.listPlayersLookingForTeam(userId, teamId, pageable);
+
+        ArgumentCaptor<List<UUID>> excludedCaptor = uuidListCaptor();
+        verify(gamerProfileRepository).findByLookingForTeamTrueAndUser_StatusAndUserIdNotIn(
+                eq(UserStatus.ACTIVE), excludedCaptor.capture(), eq(pageable));
+        // Convidar quem já está no time seria recusado pelo backend do convite.
+        assertThat(excludedCaptor.getValue()).contains(memberId, userId);
+    }
+
+    @Test
+    void listPlayersLookingForTeamRejectsWhoIsNotTheOwner() {
+        UUID userId = UUID.randomUUID();
+        UUID teamId = UUID.randomUUID();
+        User stranger = User.builder().id(userId).username("stranger").status(UserStatus.ACTIVE).build();
+        Team team = Team.builder().id(teamId).owner(User.builder().id(UUID.randomUUID()).build()).status(TeamStatus.ACTIVE).build();
+
+        when(userFinder.findProfileByUserId(userId)).thenReturn(stranger);
+        when(teamFinder.findTeamById(teamId)).thenReturn(team);
+        doThrow(new BadRequestException("Usuário não é o dono do time."))
+                .when(teamChecker).checkUserIsOwner(team, stranger);
+
+        assertThatThrownBy(() -> teamService.listPlayersLookingForTeam(userId, teamId, PageRequest.of(0, 20)))
+                .isInstanceOf(BadRequestException.class);
+
+        verify(gamerProfileRepository, never())
+                .findByLookingForTeamTrueAndUser_StatusAndUserIdNotIn(any(), anyList(), any());
+    }
+
+    @SuppressWarnings("unchecked")
+    private static ArgumentCaptor<List<UUID>> uuidListCaptor() {
+        return ArgumentCaptor.forClass(List.class);
+    }
+
+    @Test
+    void createTeamsAddsTheOwnerAsAMemberSoTheTeamShowsUpInTheirList() {
+        // "Meus times" e a lista de membros saem de team_members: sem essa linha o dono
+        // não via o próprio time nem aparecia entre os membros.
+        UUID userId = UUID.randomUUID();
+        UUID teamId = UUID.randomUUID();
+        User user = User.builder().id(userId).username("owner").status(UserStatus.ACTIVE).build();
+        Community community = Community.builder().id(UUID.randomUUID()).owner(user).build();
+
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
+        when(teamRepository.existsBySlug("kyofuse-academy")).thenReturn(false);
+        when(teamRepository.save(any(Team.class))).thenAnswer(invocation -> {
+            Team team = invocation.getArgument(0);
+            team.setId(teamId);
+            return team;
+        });
+        when(teamRequiredRoleRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(communityService.autoCreateTeamCommunity(eq(user), any(Team.class))).thenReturn(community);
+
+        teamService.createTeams(validRequest(List.of(PlayerRole.AWPER)), userId);
+
+        ArgumentCaptor<TeamMember> memberCaptor = ArgumentCaptor.forClass(TeamMember.class);
+        verify(teamMemberRepository).save(memberCaptor.capture());
+
+        TeamMember member = memberCaptor.getValue();
+        assertThat(member.getUser()).isSameAs(user);
+        assertThat(member.getTeam().getId()).isEqualTo(teamId);
+        assertThat(member.getStatus()).isEqualTo(TeamMemberStatus.ACTIVE);
+        // MANAGER e sem prazo: UNASSIGNED com assignmentDueAt faria a rotina de limpeza
+        // remover o próprio dono do time depois de 14 dias.
+        assertThat(member.getMemberType()).isEqualTo(TeamMemberType.MANAGER);
+        assertThat(member.getAssignmentDueAt()).isNull();
+    }
 
     @Test
     void createTeamsCreatesActiveTeamAndDeduplicatesRequiredRoles() {
@@ -80,6 +187,8 @@ class TeamServiceTest {
                 .build();
         TeamRequest request = validRequest(List.of(PlayerRole.AWPER, PlayerRole.AWPER, PlayerRole.RIFLER));
 
+        Community community = Community.builder().id(UUID.randomUUID()).owner(user).build();
+
         when(userFinder.findProfileByUserId(userId)).thenReturn(user);
         when(teamRepository.existsBySlug("kyofuse-academy")).thenReturn(false);
         when(teamRepository.save(any(Team.class))).thenAnswer(invocation -> {
@@ -88,12 +197,15 @@ class TeamServiceTest {
             return team;
         });
         when(teamRequiredRoleRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(communityService.autoCreateTeamCommunity(eq(user), any(Team.class))).thenReturn(community);
 
         TeamResponse response = teamService.createTeams(request, userId);
 
         ArgumentCaptor<Team> teamCaptor = ArgumentCaptor.forClass(Team.class);
         verify(teamRepository).save(teamCaptor.capture());
         verify(teamRequiredRoleRepository).saveAll(anyList());
+        verify(communityService).autoCreateTeamCommunity(user, teamCaptor.getValue());
+        verify(conversationService).createCommunityConversation(community, user);
 
         Team savedTeam = teamCaptor.getValue();
         assertThat(savedTeam.getOwner()).isSameAs(user);
@@ -114,11 +226,13 @@ class TeamServiceTest {
                 .status(UserStatus.ACTIVE)
                 .build();
         TeamRequest request = validRequest(null);
+        Community community = Community.builder().id(UUID.randomUUID()).owner(user).build();
 
         when(userFinder.findProfileByUserId(userId)).thenReturn(user);
         when(teamRepository.existsBySlug("kyofuse-academy")).thenReturn(false);
         when(teamRepository.save(any(Team.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(teamRequiredRoleRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(communityService.autoCreateTeamCommunity(eq(user), any(Team.class))).thenReturn(community);
 
         TeamResponse response = teamService.createTeams(request, userId);
 
@@ -367,18 +481,7 @@ class TeamServiceTest {
                 .status(UserStatus.ACTIVE)
                 .build();
         Team team = activeTeam(teamId, owner);
-        UpdateTeamRequest request = new UpdateTeamRequest(
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                TeamStatus.INACTIVE
-        );
+        UpdateTeamRequest request = new UpdateTeamRequest(null, null, null, null, null, null, null, null, null, null, null, TeamStatus.INACTIVE);
 
         when(userFinder.findProfileByUserId(userId)).thenReturn(owner);
         when(teamFinder.findTeamById(teamId)).thenReturn(team);
@@ -401,18 +504,7 @@ class TeamServiceTest {
                 .build();
         Team team = activeTeam(teamId, owner);
         team.setMaxPremierRating(15000);
-        UpdateTeamRequest request = new UpdateTeamRequest(
-                null,
-                null,
-                null,
-                20000,
-                19000,
-                null,
-                null,
-                null,
-                null,
-                null
-        );
+        UpdateTeamRequest request = new UpdateTeamRequest(null, null, null, null, null, 20000, 19000, null, null, null, null, null);
 
         when(userFinder.findProfileByUserId(userId)).thenReturn(owner);
         when(teamFinder.findTeamById(teamId)).thenReturn(team);
@@ -428,15 +520,15 @@ class TeamServiceTest {
     @Test
     void editTeamRejectsBlankNameDescriptionAndRegion() {
         assertEditValidationThrows(
-                new UpdateTeamRequest(" ", null, null, null, null, null, null, null, null, null),
+                new UpdateTeamRequest(" ", null, null, null, null, null, null, null, null, null, null, null),
                 "O nome do time não pode ser vazio."
         );
         assertEditValidationThrows(
-                new UpdateTeamRequest("Updated", " ", null, null, null, null, null, null, null, null),
+                new UpdateTeamRequest("Updated", " ", null, null, null, null, null, null, null, null, null, null),
                 "A descrição do time não pode ser vazio."
         );
         assertEditValidationThrows(
-                new UpdateTeamRequest("Updated", "Updated description", " ", null, null, null, null, null, null, null),
+                new UpdateTeamRequest("Updated", "Updated description", null, null, " ", null, null, null, null, null, null, null),
                 "A região do time não pode ser vazio."
         );
     }
@@ -444,35 +536,35 @@ class TeamServiceTest {
     @Test
     void editTeamRejectsUnchangedFields() {
         assertEditValidationThrows(
-                new UpdateTeamRequest("Kyofuse Academy", null, null, null, null, null, null, null, null, null),
+                new UpdateTeamRequest("Kyofuse Academy", null, null, null, null, null, null, null, null, null, null, null),
                 "O nome do time não foi alterado."
         );
         assertEditValidationThrows(
-                new UpdateTeamRequest("Updated", "Development team", null, null, null, null, null, null, null, null),
+                new UpdateTeamRequest("Updated", "Development team", null, null, null, null, null, null, null, null, null, null),
                 "A descrição do time não foi alterada."
         );
         assertEditValidationThrows(
-                new UpdateTeamRequest("Updated", "Updated description", "BR", null, null, null, null, null, null, null),
+                new UpdateTeamRequest("Updated", "Updated description", null, null, "BR", null, null, null, null, null, null, null),
                 "A região do time não foi alterada."
         );
         assertEditValidationThrows(
-                new UpdateTeamRequest("Updated", "Updated description", "NA", null, null, null, null, null, null, TeamStatus.ACTIVE),
+                new UpdateTeamRequest("Updated", "Updated description", null, null, "NA", null, null, null, null, null, null, TeamStatus.ACTIVE),
                 "O status do time não foi alterado."
         );
         assertEditValidationThrows(
-                new UpdateTeamRequest("Updated", "Updated description", "NA", null, null, null, null, 1, null, null),
+                new UpdateTeamRequest("Updated", "Updated description", null, null, "NA", null, null, null, null, 1, null, null),
                 "O minGcRank do time não foi alterado."
         );
         assertEditValidationThrows(
-                new UpdateTeamRequest("Updated", "Updated description", "NA", null, null, null, null, null, 21, null),
+                new UpdateTeamRequest("Updated", "Updated description", null, null, "NA", null, null, null, null, null, 21, null),
                 "O maxGcRank do time não foi alterado."
         );
         assertEditValidationThrows(
-                new UpdateTeamRequest("Updated", "Updated description", "NA", null, null, 1, null, null, null, null),
+                new UpdateTeamRequest("Updated", "Updated description", null, null, "NA", null, null, 1, null, null, null, null),
                 "O minFaceitLevel do time não foi alterado."
         );
         assertEditValidationThrows(
-                new UpdateTeamRequest("Updated", "Updated description", "NA", null, null, null, 10, null, null, null),
+                new UpdateTeamRequest("Updated", "Updated description", null, null, "NA", null, null, null, 10, null, null, null),
                 "O maxFaceitLevel do time não foi alterado."
         );
     }
@@ -480,11 +572,11 @@ class TeamServiceTest {
     @Test
     void editTeamRejectsInvalidFaceitAndGcRanges() {
         assertEditValidationThrows(
-                new UpdateTeamRequest("Updated", "Updated description", "NA", null, null, 9, 4, null, null, null),
+                new UpdateTeamRequest("Updated", "Updated description", null, null, "NA", null, null, 9, 4, null, null, null),
                 "minFaceitLevel must be less than or equal to maxFaceitLevel"
         );
         assertEditValidationThrows(
-                new UpdateTeamRequest("Updated", "Updated description", "NA", null, null, null, null, 15, 3, null),
+                new UpdateTeamRequest("Updated", "Updated description", null, null, "NA", null, null, null, null, 15, 3, null),
                 "minGcRank must be less than or equal to maxGcRank"
         );
     }
@@ -495,18 +587,7 @@ class TeamServiceTest {
         UUID teamId = UUID.randomUUID();
         User owner = activeUser(userId, "owner");
         Team team = activeTeam(teamId, owner);
-        UpdateTeamRequest request = new UpdateTeamRequest(
-                "Updated Academy",
-                "Updated description",
-                "NA",
-                null,
-                null,
-                2,
-                null,
-                2,
-                null,
-                null
-        );
+        UpdateTeamRequest request = new UpdateTeamRequest("Updated Academy", "Updated description", null, null, "NA", null, null, 2, null, 2, null, null);
 
         when(userFinder.findProfileByUserId(userId)).thenReturn(owner);
         when(teamFinder.findTeamById(teamId)).thenReturn(team);
@@ -766,6 +847,8 @@ class TeamServiceTest {
     private TeamRequest validRequest(List<PlayerRole> requiredRoles) {
         return new TeamRequest(
                 "Kyofuse Academy",
+                null,
+                null,
                 "kyofuse-academy",
                 "Development team",
                 "BR",
@@ -780,18 +863,7 @@ class TeamServiceTest {
     }
 
     private UpdateTeamRequest validUpdateRequest() {
-        return new UpdateTeamRequest(
-                "Updated Academy",
-                "Updated description",
-                "NA",
-                12000,
-                25000,
-                4,
-                9,
-                5,
-                18,
-                TeamStatus.CLOSED
-        );
+        return new UpdateTeamRequest("Updated Academy", "Updated description", null, null, "NA", 12000, 25000, 4, 9, 5, 18, TeamStatus.CLOSED);
     }
 
     private Team activeTeam(UUID teamId, User owner) {

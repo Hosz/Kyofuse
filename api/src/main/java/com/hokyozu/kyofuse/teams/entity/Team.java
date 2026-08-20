@@ -35,6 +35,12 @@ public class Team {
     @Column(name = "description", length = 500)
     private String description;
 
+    @Column(name = "avatar_url", length = 500)
+    private String avatarUrl;
+
+    @Column(name = "banner_url", length = 500)
+    private String bannerUrl;
+
     @Column(name = "region", length = 80)
     private String region;
 

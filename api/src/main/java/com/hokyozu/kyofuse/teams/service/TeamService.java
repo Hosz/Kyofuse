@@ -1,5 +1,8 @@
 package com.hokyozu.kyofuse.teams.service;
 
+import com.hokyozu.kyofuse.chat.service.ConversationService;
+import com.hokyozu.kyofuse.communities.entity.Community;
+import com.hokyozu.kyofuse.communities.service.CommunityService;
 import com.hokyozu.kyofuse.profiles.enums.PlayerRole;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.shared.exception.ConflictException;
@@ -14,7 +17,12 @@ import com.hokyozu.kyofuse.teams.entity.TeamMember;
 import com.hokyozu.kyofuse.teams.entity.TeamRequiredRole;
 import com.hokyozu.kyofuse.teams.enums.TeamStatus;
 import com.hokyozu.kyofuse.teams.finder.TeamFinder;
+import com.hokyozu.kyofuse.profiles.dto.response.GamerProfileResponse;
+import com.hokyozu.kyofuse.profiles.mapper.GamerProfileMapper;
+import com.hokyozu.kyofuse.profiles.repository.GamerProfileRepository;
+import com.hokyozu.kyofuse.users.enums.UserStatus;
 import com.hokyozu.kyofuse.teams.mapper.TeamMapper;
+import com.hokyozu.kyofuse.teams.mapper.TeamMemberMapper;
 import com.hokyozu.kyofuse.teams.mapper.TeamRequiredRoleMapper;
 import com.hokyozu.kyofuse.teams.repository.TeamMemberRepository;
 import com.hokyozu.kyofuse.teams.repository.TeamRepository;
@@ -33,6 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -48,13 +57,18 @@ public class TeamService {
     private final UserFinder userFinder;
     private final TeamFinder teamFinder;
 
+    private final CommunityService communityService;
+    private final ConversationService conversationService;
+
     private final TeamRepository teamRepository;
     private final TeamRequiredRoleRepository teamRequiredRoleRepository;
     private final TeamMemberRepository teamMemberRepository;
+    private final GamerProfileRepository gamerProfileRepository;
 
     @Transactional
     public TeamResponse createTeams(@Valid TeamRequest request, UUID userId) {
         User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
         validateCreateTeamRequest(request, user);
 
         Team team = TeamMapper.toEntity(request, user);
@@ -65,6 +79,13 @@ public class TeamService {
                         .map(role -> TeamRequiredRoleMapper.toEntity(team, role))
                         .toList();
         List<TeamRequiredRole> requiredRolesSaved = teamRequiredRoleRepository.saveAll(requiredRoles);
+
+        // Sem isso o dono não aparecia entre os membros e o próprio time não entrava em
+        // "meus times", que é montado a partir de team_members.
+        teamMemberRepository.save(TeamMemberMapper.toOwnerEntity(user, teamSaved));
+
+        Community community = communityService.autoCreateTeamCommunity(user, teamSaved);
+        conversationService.createCommunityConversation(community, user);
 
         return TeamMapper.toResponse(teamSaved, requiredRolesSaved);
     }
@@ -268,11 +289,52 @@ public class TeamService {
         }
     }
 
+    /**
+     * Times de um usuário qualquer, para exibir no perfil dele. Participação em Team é
+     * informação pública (a própria listagem de membros de um Team já é), então não
+     * passa pela Política de Autorização Social.
+     */
+    @Transactional(readOnly = true)
+    public Page<TeamResponse> listingUserTeams(UUID viewerId, UUID userId, Pageable pageable) {
+        User viewer = userFinder.findProfileByUserId(viewerId);
+        userChecker.checkActive(viewer);
+
+        return teamsOf(userFinder.findProfileByUserId(userId), pageable);
+    }
+
+    /**
+     * Jogadores que marcaram "procurando time" no perfil, para o dono montar o elenco.
+     * Quem já está no time fica de fora — convidar essas pessoas seria recusado.
+     */
+    @Transactional(readOnly = true)
+    public Page<GamerProfileResponse> listPlayersLookingForTeam(UUID userId, UUID teamId, Pageable pageable) {
+        User user = userFinder.findProfileByUserId(userId);
+        Team team = teamFinder.findTeamById(teamId);
+
+        userChecker.checkActive(user);
+        teamChecker.checkInactive(team);
+        teamChecker.checkUserIsOwner(team, user);
+
+        List<UUID> alreadyInTeam = teamMemberRepository.findByTeam(team).stream()
+                .map(member -> member.getUser().getId())
+                .collect(Collectors.toCollection(ArrayList::new));
+        // A lista nunca pode ficar vazia: "not in ()" é inválido no banco.
+        alreadyInTeam.add(team.getOwner().getId());
+
+        return gamerProfileRepository
+                .findByLookingForTeamTrueAndUser_StatusAndUserIdNotIn(UserStatus.ACTIVE, alreadyInTeam, pageable)
+                .map(profile -> GamerProfileMapper.toResponse(profile, List.of()));
+    }
+
     @Transactional(readOnly = true)
     public Page<TeamResponse> listingMyTeams(UUID userId, Pageable pageable) {
         User user = userFinder.findProfileByUserId(userId);
         userChecker.checkActive(user);
 
+        return teamsOf(user, pageable);
+    }
+
+    private Page<TeamResponse> teamsOf(User user, Pageable pageable) {
         List<TeamMember> membro = teamMemberRepository.findByUser(user);
 
         List<UUID> teamIds = membro.stream()

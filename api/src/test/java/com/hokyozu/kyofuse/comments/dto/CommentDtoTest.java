@@ -57,6 +57,8 @@ class CommentDtoTest {
                 postId,
                 "",
                 authorId,
+                "nickname",
+                "author",
                 "content",
                 CommentStatus.ACTIVE,
                 1,
@@ -68,6 +70,8 @@ class CommentDtoTest {
         assertThat(response.id()).isEqualTo(commentId);
         assertThat(response.postId()).isEqualTo(postId);
         assertThat(response.authorId()).isEqualTo(authorId);
+        assertThat(response.authorNickname()).isEqualTo("nickname");
+        assertThat(response.authorUsername()).isEqualTo("author");
         assertThat(response.commentStatus()).isEqualTo(CommentStatus.ACTIVE);
         assertThat(response.reactionCount()).isEqualTo(1);
     }

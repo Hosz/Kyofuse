@@ -6,5 +6,6 @@ public enum NotificationTargetType {
     TEAM,
     TEAM_INVITE,
     FOLLOW,
+    CONVERSATION,
     SYSTEM
 }

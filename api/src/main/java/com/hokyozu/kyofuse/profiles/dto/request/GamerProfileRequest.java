@@ -21,6 +21,9 @@ public record GamerProfileRequest(
         @Size(max = 500)
         String avatarUrl,
 
+        @Size(max = 500)
+        String bannerUrl,
+
         @Size(max = 80)
         String country,
 

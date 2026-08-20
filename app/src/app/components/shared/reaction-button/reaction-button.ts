@@ -2,7 +2,7 @@ import { Component, computed, inject, input, signal } from '@angular/core';
 import { PostReactionService } from '../../../core/services/reactions/post-reaction.service';
 import { CommentReactionService } from '../../../core/services/reactions/comment-reaction.service';
 import { REACTION_OPTIONS, ReactionType } from '../../../shared/models/reaction.model';
-import { ReactionListModalComponent, ReactionListTab } from '../reaction-list-modal/reaction-list-modal';
+import { ReactionListModalComponent } from '../reaction-list-modal/reaction-list-modal';
 
 /**
  * O backend não informa a reação atual do usuário na listagem de posts/comentários
@@ -45,10 +45,8 @@ export class ReactionButtonComponent {
   totalCount = computed(() => this.displayLikeCount() + this.displayReactionCount());
 
   listModalOpen = signal(false);
-  listModalTab = signal<ReactionListTab>('likes');
 
-  openList(tab: ReactionListTab): void {
-    this.listModalTab.set(tab);
+  openList(): void {
     this.listModalOpen.set(true);
   }
 

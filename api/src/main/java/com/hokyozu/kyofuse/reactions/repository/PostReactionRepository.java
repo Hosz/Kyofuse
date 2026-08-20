@@ -18,4 +18,6 @@ public interface PostReactionRepository extends JpaRepository<PostReaction, UUID
     Page<PostReaction> findByPostIdAndReactionType(UUID postId, ReactionType reactionType, Pageable pageable);
 
     Page<PostReaction> findByPostIdAndReactionTypeNot(UUID postId, ReactionType reactionType, Pageable pageable);
+
+    Page<PostReaction> findByPostId(UUID postId, Pageable pageable);
 }

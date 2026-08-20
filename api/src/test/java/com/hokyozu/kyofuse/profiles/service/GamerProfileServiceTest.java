@@ -11,8 +11,10 @@ import com.hokyozu.kyofuse.profiles.enums.Playstyle;
 import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import com.hokyozu.kyofuse.profiles.repository.GamerProfileFavoriteMapRepository;
 import com.hokyozu.kyofuse.profiles.repository.GamerProfileRepository;
+import com.hokyozu.kyofuse.relationships.permission.service.profile.ProfilePermissionService;
 import com.hokyozu.kyofuse.shared.exception.UnauthorizedException;
 import com.hokyozu.kyofuse.users.entity.User;
+import com.hokyozu.kyofuse.users.finder.UserFinder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -46,6 +48,12 @@ class GamerProfileServiceTest {
 
     @Mock
     private GamerProfileFinder gamerProfileFinder;
+
+    @Mock
+    private UserFinder userFinder;
+
+    @Mock
+    private ProfilePermissionService profilePermissionService;
 
     @InjectMocks
     private GamerProfileService service;
@@ -88,6 +96,7 @@ class GamerProfileServiceTest {
                 " newNick ",
                 " new bio ",
                 " avatar ",
+                " banner ",
                 " BR ",
                 " Sao Paulo ",
                 " SP ",
@@ -126,6 +135,7 @@ class GamerProfileServiceTest {
     void editProfileThrowsWhenNicknameIsBlank() {
         GamerProfileRequest request = new GamerProfileRequest(
                 "   ",
+                null,
                 null,
                 null,
                 null,
@@ -189,33 +199,38 @@ class GamerProfileServiceTest {
 
     @Test
     void viewUserProfileReturnsProfileResponse() {
-        UUID profileId = UUID.randomUUID();
-        UUID userId = UUID.randomUUID();
-        GamerProfile profile = profile(userId);
-        profile.setId(profileId);
-        when(gamerProfileFinder.findProfileById(profileId)).thenReturn(profile);
-        when(favoriteMapRepository.findByProfile_Id(profileId)).thenReturn(List.of());
+        UUID targetUserId = UUID.randomUUID();
+        UUID viewerId = UUID.randomUUID();
+        User targetUser = User.builder().id(targetUserId).username("player").build();
+        User viewer = User.builder().id(viewerId).username("viewer").build();
+        GamerProfile profile = profile(targetUserId);
+        when(userFinder.findProfileByUserId(targetUserId)).thenReturn(targetUser);
+        when(userFinder.findProfileByUserId(viewerId)).thenReturn(viewer);
+        when(gamerProfileFinder.findProfileByUserId(targetUserId)).thenReturn(profile);
+        when(favoriteMapRepository.findByProfile_Id(profile.getId())).thenReturn(List.of());
 
-        GamerProfileResponse response = service.viewUserProfile(profileId, userId);
+        GamerProfileResponse response = service.viewUserProfile(targetUserId, viewerId);
 
-        assertThat(response.id()).isEqualTo(profileId);
-        assertThat(response.userId()).isEqualTo(userId);
+        verify(profilePermissionService).validateViewProfile(viewer, targetUser);
+        assertThat(response.id()).isEqualTo(profile.getId());
+        assertThat(response.userId()).isEqualTo(targetUserId);
     }
 
     @Test
     void viewUserProfileThrowsWhenProfileDoesNotExist() {
-        UUID profileId = UUID.randomUUID();
-        UUID userId = UUID.randomUUID();
-        when(gamerProfileFinder.findProfileById(profileId))
-                .thenThrow(new RuntimeException("Gamer profile not found for profile ID: " + profileId));
+        UUID targetUserId = UUID.randomUUID();
+        UUID viewerId = UUID.randomUUID();
+        when(userFinder.findProfileByUserId(targetUserId))
+                .thenThrow(new RuntimeException("Gamer profile not found for profile ID: " + targetUserId));
 
-        assertThatThrownBy(() -> service.viewUserProfile(profileId, userId))
+        assertThatThrownBy(() -> service.viewUserProfile(targetUserId, viewerId))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessage("Gamer profile not found for profile ID: " + profileId);
+                .hasMessage("Gamer profile not found for profile ID: " + targetUserId);
     }
 
     private static GamerProfileRequest emptyRequest() {
         return new GamerProfileRequest(
+                null,
                 null,
                 null,
                 null,

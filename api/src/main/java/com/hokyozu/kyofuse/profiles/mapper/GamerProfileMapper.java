@@ -29,6 +29,10 @@ public class GamerProfileMapper {
             profile.setAvatarUrl(request.avatarUrl().trim());
         }
 
+        if (request.bannerUrl() != null) {
+            profile.setBannerUrl(request.bannerUrl().trim());
+        }
+
         if (request.country() != null) {
             profile.setCountry(request.country().trim());
         }
@@ -88,6 +92,7 @@ public class GamerProfileMapper {
                 savedProfile.getNickname(),
                 savedProfile.getBio(),
                 savedProfile.getAvatarUrl(),
+                savedProfile.getBannerUrl(),
                 savedProfile.getCountry(),
                 savedProfile.getCity(),
                 savedProfile.getState(),

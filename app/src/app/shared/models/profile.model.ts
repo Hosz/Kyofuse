@@ -26,7 +26,9 @@ export interface ProfileEntity {
   id: string;
   name: string;
   meta: string;
+  /** Ícone exibido quando a entidade não tem imagem própria cadastrada. */
   icon: string;
+  imageUrl?: string | null;
   route: string;
 }
 

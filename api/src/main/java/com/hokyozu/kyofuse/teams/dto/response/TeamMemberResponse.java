@@ -11,6 +11,8 @@ public record TeamMemberResponse(
         String teamName,
         UUID userId,
         String userName,
+        String nickname,
+        String avatarUrl,
         PlayerRole roleInTeam,
         TeamMemberType memberType,
         TeamMemberStatus status,

@@ -7,6 +7,7 @@ export interface CommentReactionRequest {
 export interface CommentReactionResponse {
     postId: string;
     commentId: string;
+    userId: string;
     username: string;
     nickname: string;
     profileImage: string;

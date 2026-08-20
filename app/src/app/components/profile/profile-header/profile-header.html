@@ -100,20 +100,45 @@
               {{ friendRequestSent() ? 'Solicitação enviada' : 'Solicitar amizade' }}
             </button>
 
-            <button
-              type="button"
-              (click)="inviteClick.emit()"
-              class="flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-outline-variant px-4 py-2 text-label-sm font-bold text-on-surface transition-all hover:bg-surface-container-high active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
-            >
-              <span class="material-symbols-outlined text-[16px]">send</span>
-              Convidar
-            </button>
-
             <app-user-options-menu [userId]="profile().userId" (blocked)="blocked.emit()" />
           }
         </div>
       </div>
     </div>
+
+    @if (viewMode() !== 'owner') {
+      <!-- Ações de contato ficam numa faixa própria acima do ranking: no canto superior
+           sobram só as de relacionamento (seguir e amizade). -->
+      <div class="flex flex-col gap-2 sm:flex-row">
+        <button
+          type="button"
+          (click)="messageClick.emit()"
+          class="flex flex-1 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 text-label-md font-bold text-on-surface transition-all hover:bg-surface-container-high active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+        >
+          <span class="material-symbols-outlined text-[18px]">chat_bubble</span>
+          Mandar mensagem
+        </button>
+
+        <button
+          type="button"
+          (click)="inviteClick.emit()"
+          class="flex flex-1 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 text-label-md font-bold text-on-surface transition-all hover:bg-surface-container-high active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+        >
+          <span class="material-symbols-outlined text-[18px]">groups</span>
+          Convidar para time
+        </button>
+
+        <button
+          type="button"
+          disabled
+          title="Convite para comunidade ainda não está disponível"
+          class="flex flex-1 cursor-not-allowed items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-outline-variant px-4 py-3 text-label-md font-bold text-on-surface-variant opacity-60"
+        >
+          <span class="material-symbols-outlined text-[18px]">diversity_3</span>
+          Convidar para comunidade
+        </button>
+      </div>
+    }
 
     <app-live-stats-card [stats]="stats()" />
   </div>

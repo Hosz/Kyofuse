@@ -14,6 +14,12 @@ public record UpdateTeamRequest(
         @Size(max = 500)
         String description,
 
+        @Size(max = 500)
+        String avatarUrl,
+
+        @Size(max = 500)
+        String bannerUrl,
+
         @Size(max = 80)
         String region,
 

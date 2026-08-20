@@ -1,0 +1,30 @@
+<!-- aria-live: o leitor de tela anuncia o aviso sem roubar o foco de onde a pessoa está. -->
+<div
+  class="pointer-events-none fixed bottom-6 left-1/2 z-[60] flex w-full max-w-[24rem] -translate-x-1/2 flex-col gap-2 px-4"
+  role="status"
+  aria-live="polite"
+>
+  @for (toast of toasts(); track toast.id) {
+    <div
+      class="toast-item pointer-events-auto flex items-start gap-2 rounded-xl border px-4 py-3 shadow-2xl backdrop-blur-md"
+      [class]="
+        toast.kind === 'error'
+          ? 'border-error/40 bg-error-container/90 text-on-error-container'
+          : 'border-outline-variant/50 bg-surface-container-high/90 text-on-surface'
+      "
+    >
+      <span class="material-symbols-outlined shrink-0 text-[18px]">
+        {{ toast.kind === 'error' ? 'error' : 'check_circle' }}
+      </span>
+      <span class="flex-1 text-body-sm">{{ toast.message }}</span>
+      <button
+        type="button"
+        (click)="dismiss(toast.id)"
+        aria-label="Fechar aviso"
+        class="shrink-0 cursor-pointer opacity-70 transition-opacity hover:opacity-100"
+      >
+        <span class="material-symbols-outlined text-[16px]">close</span>
+      </button>
+    </div>
+  }
+</div>

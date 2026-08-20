@@ -34,6 +34,8 @@ class TeamMapperTest {
         
         TeamRequest request = new TeamRequest(
                 "Test Team",
+                "avatar.png",
+                "banner.png",
                 "test-team",
                 "Team description",
                 "NA",
@@ -64,7 +66,7 @@ class TeamMapperTest {
     @Test
     void toEntity_shouldSetDefaultStatus() {
         User owner = createUser();
-        TeamRequest request = new TeamRequest("Team", "team", null, null, null, null, null, null, null, null, new ArrayList<>());
+        TeamRequest request = new TeamRequest("Team", null, null, "team", null, null, null, null, null, null, null, null, new ArrayList<>());
 
         Team entity = TeamMapper.toEntity(request, owner);
 
@@ -74,7 +76,7 @@ class TeamMapperTest {
     @Test
     void toEntity_shouldSetCreatedAtAndUpdatedAt() {
         User owner = createUser();
-        TeamRequest request = new TeamRequest("Team", "team", null, null, null, null, null, null, null, null, new ArrayList<>());
+        TeamRequest request = new TeamRequest("Team", null, null, "team", null, null, null, null, null, null, null, null, new ArrayList<>());
 
         Instant beforeMapping = Instant.now();
         Team entity = TeamMapper.toEntity(request, owner);
@@ -127,6 +129,8 @@ class TeamMapperTest {
                 null,
                 null,
                 null,
+                null,
+                null,
                 null
         );
 
@@ -148,6 +152,8 @@ class TeamMapperTest {
                 null,
                 null,
                 null,
+                null,
+                null,
                 null
         );
 
@@ -157,9 +163,35 @@ class TeamMapperTest {
     }
 
     @Test
+    void toUpdate_shouldUpdateTeamAvatarAndBannerUrls() {
+        Team team = createTeam();
+        UpdateTeamRequest request = new UpdateTeamRequest(
+                null,
+                null,
+                "https://example.com/avatar.png",
+                "https://example.com/banner.png",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        TeamMapper.toUpdate(team, request);
+
+        assertThat(team.getAvatarUrl()).isEqualTo("https://example.com/avatar.png");
+        assertThat(team.getBannerUrl()).isEqualTo("https://example.com/banner.png");
+    }
+
+    @Test
     void toUpdate_shouldUpdateTeamRegion() {
         Team team = createTeam();
         UpdateTeamRequest request = new UpdateTeamRequest(
+                null,
+                null,
                 null,
                 null,
                 "EU",
@@ -181,6 +213,8 @@ class TeamMapperTest {
     void toUpdate_shouldNotUpdateTeamStatus() {
         Team team = createTeam();
         UpdateTeamRequest request = new UpdateTeamRequest(
+                null,
+                null,
                 null,
                 null,
                 null,

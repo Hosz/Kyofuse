@@ -1,5 +1,10 @@
 package com.hokyozu.kyofuse.posts.service;
 
+import com.hokyozu.kyofuse.communities.entity.Community;
+import com.hokyozu.kyofuse.communities.enums.CommunityMemberStatus;
+import com.hokyozu.kyofuse.communities.enums.CommunityStatus;
+import com.hokyozu.kyofuse.communities.repository.CommunityMemberRepository;
+import com.hokyozu.kyofuse.communities.repository.CommunityRepository;
 import com.hokyozu.kyofuse.posts.dto.request.CreatePostRequest;
 import com.hokyozu.kyofuse.posts.dto.response.PostResponse;
 import com.hokyozu.kyofuse.posts.entity.Post;
@@ -15,8 +20,12 @@ import com.hokyozu.kyofuse.posts.validator.PostMapsValidator;
 import com.hokyozu.kyofuse.posts.validator.PostValidator;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
+import com.hokyozu.kyofuse.relationships.follow.repository.UserFollowRepository;
 import com.hokyozu.kyofuse.relationships.permission.service.post.PostPermissionService;
 import com.hokyozu.kyofuse.relationships.permission.service.profile.ProfilePermissionService;
+import com.hokyozu.kyofuse.relationships.privacy.enums.ProfileVisibility;
+import com.hokyozu.kyofuse.shared.exception.ForbiddenException;
+import com.hokyozu.kyofuse.shared.exception.NotFoundException;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.finder.UserFinder;
 import com.hokyozu.kyofuse.users.service.UserChecker;
@@ -27,7 +36,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -47,6 +58,10 @@ public class PostService {
     private final UserChecker userChecker;
     private final PostPermissionService postPermissionService;
     private final GamerProfileFinder gamerProfileFinder;
+
+    private final CommunityRepository communityRepository;
+    private final CommunityMemberRepository communityMemberRepository;
+    private final UserFollowRepository userFollowRepository;
 
     @Transactional
     public PostResponse post(UUID userId, CreatePostRequest request) {
@@ -69,6 +84,102 @@ public class PostService {
         return PostMapper.toResponse(savedPost, postMaps, gamerProfile);
     }
 
+    /**
+     * Publica um post exclusivo de uma comunidade. Só membro ACTIVE pode publicar,
+     * independentemente da visibilidade escolhida — ver doc.md 10.5.
+     */
+    @Transactional
+    public PostResponse postInCommunity(UUID userId, UUID communityId, CreatePostRequest request) {
+        User user = userFinder.findProfileByUserId(userId);
+        GamerProfile gamerProfile = gamerProfileFinder.findProfileByUserId(user.getId());
+        userChecker.checkActive(user);
+
+        Community community = activeCommunity(communityId);
+
+        if (!isActiveMember(userId, communityId)) {
+            throw new ForbiddenException("Only active members can post in this community");
+        }
+
+        postValidator.validate(request);
+        postMapsValidator.validate(request);
+
+        Post savedPost = postRepository.save(PostMapper.toEntity(user, request, community));
+
+        List<PostMap> postMaps = PostMapper.toPostMap(savedPost, request.maps());
+        if (!postMaps.isEmpty()) {
+            postMapRepository.saveAll(postMaps);
+        }
+
+        return PostMapper.toResponse(savedPost, postMaps, gamerProfile);
+    }
+
+    /**
+     * Posts de uma comunidade. Membro ACTIVE enxerga PUBLIC e PRIVATE; quem não é membro
+     * enxerga apenas os PUBLIC.
+     */
+    @Transactional(readOnly = true)
+    public Page<PostResponse> getCommunityPosts(UUID userId, UUID communityId, Pageable pageable) {
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
+
+        activeCommunity(communityId);
+
+        List<PostVisibility> visibilities = isActiveMember(userId, communityId)
+                ? List.of(PostVisibility.PUBLIC, PostVisibility.PRIVATE)
+                : List.of(PostVisibility.PUBLIC);
+
+        return toResponsePage(postRepository
+                .findByCommunityIdAndVisibilityInAndStatus(communityId, visibilities, PostStatus.ACTIVE, pageable));
+    }
+
+    /**
+     * Monta as respostas de uma página inteira com duas consultas — os mapas de todos os
+     * posts e os perfis de todos os autores — em vez de duas por post. Sem isso, o custo
+     * de abrir o feed cresce junto com o tamanho da página.
+     */
+    private Page<PostResponse> toResponsePage(Page<Post> postsPage) {
+        List<Post> posts = postsPage.getContent();
+
+        List<UUID> postIds = posts.stream().map(Post::getId).toList();
+        List<UUID> authorIds = posts.stream().map(post -> post.getAuthor().getId()).distinct().toList();
+
+        Map<UUID, List<PostMap>> mapsByPost = postIds.isEmpty()
+                ? Map.of()
+                : postMapRepository.findByPostIdIn(postIds).stream()
+                        .collect(Collectors.groupingBy(postMap -> postMap.getPost().getId()));
+
+        Map<UUID, GamerProfile> profilesByAuthor = gamerProfileFinder.findAllByUserIds(authorIds).stream()
+                .collect(Collectors.toMap(profile -> profile.getUser().getId(), profile -> profile));
+
+        return postsPage.map(post -> PostMapper.toResponse(
+                post,
+                mapsByPost.getOrDefault(post.getId(), List.of()),
+                // Autor sem perfil no lote cai no finder unitário só pra continuar
+                // falhando do mesmo jeito de antes, em vez de estourar dentro do mapper.
+                profilesByAuthor.computeIfAbsent(
+                        post.getAuthor().getId(),
+                        gamerProfileFinder::findProfileByUserId
+                )
+        ));
+    }
+
+    private Community activeCommunity(UUID communityId) {
+        Community community = communityRepository.findById(communityId)
+                .orElseThrow(() -> new NotFoundException("Community not found"));
+
+        if (community.getStatus() == CommunityStatus.ARCHIVED) {
+            throw new NotFoundException("Community not found");
+        }
+
+        return community;
+    }
+
+    private boolean isActiveMember(UUID userId, UUID communityId) {
+        return communityMemberRepository.findByUserIdAndCommunityId(userId, communityId)
+                .filter(member -> member.getStatus() == CommunityMemberStatus.ACTIVE)
+                .isPresent();
+    }
+
     @Transactional(readOnly = true)
     public PostResponse getPost(UUID userId, UUID postId) {
         User user = userFinder.findProfileByUserId(userId);
@@ -83,22 +194,24 @@ public class PostService {
         return PostMapper.toResponse(post, postMaps, gamerProfile);
     }
 
+    /**
+     * Feed geral/anônimo. Só entra quem deixou postsVisibility PUBLIC — ver
+     * PostRepository.findGlobalFeed.
+     */
     @Transactional(readOnly = true)
     public Page<PostResponse> getFeed(Pageable pageable, UUID userId) {
         User user = userFinder.findProfileByUserId(userId);
         userChecker.checkActive(user);
 
-        Page<Post> postsPage = postRepository.findByVisibilityAndStatus(
+        Page<Post> postsPage = postRepository.findGlobalFeed(
                 PostVisibility.PUBLIC,
                 PostStatus.ACTIVE,
+                ProfileVisibility.PUBLIC,
+                user.getId(),
                 pageable
         );
 
-        return postsPage.map(post -> {
-            List<PostMap> postMaps = postMapRepository.findByPostId(post.getId());
-            GamerProfile gamerProfile = gamerProfileFinder.findProfileByUserId(post.getAuthor().getId());
-            return PostMapper.toResponse(post, postMaps, gamerProfile);
-        });
+        return toResponsePage(postsPage);
     }
 
     @Transactional(readOnly = true)
@@ -108,18 +221,18 @@ public class PostService {
 
         profilePermissionService.validateViewPosts(user, profileOwner);
 
-        Page<Post> postsPage = postRepository.findByAuthorIdAndVisibilityInAndStatus(
+        if (!postPermissionService.canViewAuthorPosts(user, profileOwner)) {
+            throw new ForbiddenException("User does not have permission to view this user's posts.");
+        }
+
+        Page<Post> postsPage = postRepository.findByAuthorIdAndVisibilityInAndStatusAndCommunityIsNull(
                 profileOwner.getId(),
                 List.of(PostVisibility.PUBLIC),
                 PostStatus.ACTIVE,
                 pageable
         );
 
-        return postsPage.map(post -> {
-            List<PostMap> postMaps = postMapRepository.findByPostId(post.getId());
-            GamerProfile gamerProfile = gamerProfileFinder.findProfileByUserId(post.getAuthor().getId());
-            return PostMapper.toResponse(post, postMaps, gamerProfile);
-        });
+        return toResponsePage(postsPage);
     }
 
     @Transactional(readOnly = true)
@@ -127,18 +240,14 @@ public class PostService {
         User user = userFinder.findProfileByUserId(authorId);
         userChecker.checkActive(user);
 
-        Page<Post> postsPage = postRepository.findByAuthorIdAndVisibilityInAndStatusIn(
+        Page<Post> postsPage = postRepository.findByAuthorIdAndVisibilityInAndStatusInAndCommunityIsNull(
                 authorId,
                 List.of(PostVisibility.PUBLIC, PostVisibility.PRIVATE),
                 List.of(PostStatus.ACTIVE, PostStatus.HIDDEN),
                 pageable
         );
 
-        return postsPage.map(post -> {
-            List<PostMap> postMaps = postMapRepository.findByPostId(post.getId());
-            GamerProfile gamerProfile = gamerProfileFinder.findProfileByUserId(post.getAuthor().getId());
-            return PostMapper.toResponse(post, postMaps, gamerProfile);
-        });
+        return toResponsePage(postsPage);
     }
 
     @Transactional
@@ -152,5 +261,43 @@ public class PostService {
 
         post.setStatus(PostStatus.DELETED);
         postRepository.save(post);
+    }
+
+    /**
+     * Posts de quem o usuário segue. Só PUBLIC entra aqui — PRIVATE é visível apenas
+     * para o próprio autor (mesma regra de getProfilePosts/getFeed), seguir alguém não
+     * dá acesso aos posts privados dela. Seguir também não basta se o autor restringiu
+     * postsVisibility para FRIENDS ou PRIVATE — só amizade mútua (ou ninguém) libera.
+     */
+    @Transactional(readOnly = true)
+    public Page<PostResponse> getFollowingPosts(UUID userId, Pageable pageable) {
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
+
+        List<UUID> followedIds = userFollowRepository.findFollowedIdsByFollower(user);
+        if (followedIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        // Busca e checagem em lote: um autor por consulta faria o número de queries
+        // crescer junto com a quantidade de gente que o usuário segue.
+        List<User> followedUsers = userFinder.findAllByIds(followedIds);
+        List<UUID> viewableAuthorIds = postPermissionService.filterViewableAuthors(user, followedUsers)
+                .stream()
+                .map(User::getId)
+                .toList();
+
+        if (viewableAuthorIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        Page<Post> postsPage = postRepository.findByAuthorIdInAndVisibilityAndStatusAndCommunityIsNull(
+                viewableAuthorIds,
+                PostVisibility.PUBLIC,
+                PostStatus.ACTIVE,
+                pageable
+        );
+
+        return toResponsePage(postsPage);
     }
 }

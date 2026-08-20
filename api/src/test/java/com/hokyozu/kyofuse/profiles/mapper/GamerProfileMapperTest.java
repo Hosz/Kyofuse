@@ -19,6 +19,7 @@ class GamerProfileMapperTest {
                 .nickname("player")
                 .bio("bio")
                 .avatarUrl("avatar")
+                .bannerUrl("banner")
                 .country("BR")
                 .state("SP")
                 .city("Sao Paulo")
@@ -48,12 +49,14 @@ class GamerProfileMapperTest {
                 null,
                 null,
                 null,
+                null,
                 null
         ));
 
         assertThat(profile.getNickname()).isEqualTo("player");
         assertThat(profile.getBio()).isEqualTo("bio");
         assertThat(profile.getAvatarUrl()).isEqualTo("avatar");
+        assertThat(profile.getBannerUrl()).isEqualTo("banner");
         assertThat(profile.getCountry()).isEqualTo("BR");
         assertThat(profile.getState()).isEqualTo("SP");
         assertThat(profile.getCity()).isEqualTo("Sao Paulo");

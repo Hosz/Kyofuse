@@ -3,9 +3,12 @@ import { TeamStatus } from '../../shared/models/team-options.model';
 
 export interface TeamResponse {
     id: string;
+    ownerId: string;
     ownerName: string;
     name: string;
     slug: string;
+    avatarUrl: string | null;
+    bannerUrl: string | null;
     description: string | null;
     region: string | null;
     minPremierRating: number | null;
@@ -23,6 +26,8 @@ export interface TeamResponse {
 export interface TeamRequest {
     name: string;
     slug: string;
+    avatarUrl?: string;
+    bannerUrl?: string;
     description: string;
     region: string;
     minPremierRating: number;
@@ -51,6 +56,8 @@ export interface TeamFilter {
 export interface UpdateTeamRequest {
     name?: string;
     description?: string;
+    avatarUrl?: string;
+    bannerUrl?: string;
     region?: string;
     minPremierRating?: number;
     maxPremierRating?: number;

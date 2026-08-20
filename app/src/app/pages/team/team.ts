@@ -5,18 +5,23 @@ import { FeedTabsComponent } from '../../components/feed/feed-tabs/feed-tabs';
 import { FeedTab } from '../../shared/models/social.model';
 import { TeamService } from '../../core/services/teams/team.service';
 import { TeamMemberService } from '../../core/services/teams/team-member.service';
+import { CommunityService } from '../../core/services/communities/community.service';
 import { ProfileService } from '../../core/services/profile/profile.service';
+import { CommunityResponse } from '../../models/communities/community.model';
 import { TeamResponse } from '../../models/teams/team.model';
-import { TeamMemberResponse } from '../../models/teams/team-member.model';
+import { TeamMemberEditRequest, TeamMemberResponse } from '../../models/teams/team-member.model';
 import { PLAYER_ROLE_OPTIONS } from '../../shared/models/profile-options.model';
 import { TEAM_MEMBER_STATUS_LABEL, TEAM_STATUS_OPTIONS } from '../../shared/models/team-options.model';
+import { ConfirmDialogComponent } from '../../components/shared/confirm-dialog/confirm-dialog';
+import { TeamMemberRowComponent } from '../../components/team/team-member-row/team-member-row';
+import { TeamMemberModalComponent } from '../../components/team/team-member-modal/team-member-modal';
 
 type ViewMode = 'visitor' | 'member' | 'admin';
 type InfoTab = 'description' | 'requisites' | 'members' | 'history';
 
 @Component({
   selector: 'app-team',
-  imports: [RouterLink, AppSidebarComponent, FeedTabsComponent],
+  imports: [RouterLink, AppSidebarComponent, FeedTabsComponent, ConfirmDialogComponent, TeamMemberRowComponent, TeamMemberModalComponent],
   templateUrl: './team.html',
   styleUrl: './team.css',
 })
@@ -26,6 +31,7 @@ export class TeamComponent {
 
   private teamService = inject(TeamService);
   private teamMemberService = inject(TeamMemberService);
+  private communityService = inject(CommunityService);
   private profileService = inject(ProfileService);
 
   readonly roleOptions = PLAYER_ROLE_OPTIONS;
@@ -49,6 +55,10 @@ export class TeamComponent {
   leaving = signal(false);
   leaveError = signal<string | null>(null);
 
+  /** Todo Team nasce com uma Community vinculada, mas um time antigo pode não ter —
+   * por isso o 404 aqui é um resultado esperado, não um erro. */
+  community = signal<CommunityResponse | null>(null);
+
   infoTabs = computed<FeedTab[]>(() => [
     { label: 'Descrição', active: this.activeInfoTab() === 'description' },
     { label: 'Requisitos', active: this.activeInfoTab() === 'requisites' },
@@ -69,6 +79,7 @@ export class TeamComponent {
         this.team.set(team);
         this.loading.set(false);
         this.loadMembers(id);
+        this.loadCommunity(id);
       },
       error: (error) => {
         console.error('Failed to fetch team:', error);
@@ -93,10 +104,95 @@ export class TeamComponent {
     return this.roleOptions.find((option) => option.value === role)?.label ?? role;
   }
 
+  selectedMember = signal<TeamMemberResponse | null>(null);
+  removingMember = signal(false);
+  memberActionError = signal<string | null>(null);
+
+  /** Só o dono gere o elenco — o backend valida checkUserIsOwner nessas ações. */
+  canManageMembers = computed(() => this.viewMode() === 'admin');
+
+  openMember(member: TeamMemberResponse): void {
+    this.memberActionError.set(null);
+    this.selectedMember.set(member);
+  }
+
+  closeMember(): void {
+    if (this.removingMember()) return;
+    this.selectedMember.set(null);
+  }
+
+  savingMember = signal(false);
+
+  /** Depois de salvar, os papéis necessários são recarregados: preencher um papel
+   * anunciado tira a vaga do anúncio no backend. */
+  editMember(request: TeamMemberEditRequest): void {
+    const id = this.teamId();
+    const member = this.selectedMember();
+    if (!id || !member || this.savingMember()) return;
+
+    this.savingMember.set(true);
+    this.memberActionError.set(null);
+
+    this.teamMemberService.editMember(id, member.userId, request).subscribe({
+      next: (updated) => {
+        this.savingMember.set(false);
+        this.selectedMember.set(null);
+        this.members.update((list) => list.map((m) => (m.userId === member.userId ? { ...m, ...updated } : m)));
+        this.reloadTeam(id);
+      },
+      error: (error) => {
+        console.error('Failed to edit member:', error);
+        this.savingMember.set(false);
+        this.memberActionError.set(error?.error?.message ?? 'Não foi possível salvar as alterações.');
+      },
+    });
+  }
+
+  private reloadTeam(teamId: string): void {
+    this.teamService.detailTeam(teamId).subscribe({
+      next: (team) => this.team.set(team),
+      error: (error) => console.error('Failed to refresh team:', error),
+    });
+  }
+
+  removeMember(member: TeamMemberResponse): void {
+    const id = this.teamId();
+    if (!id || this.removingMember()) return;
+
+    this.removingMember.set(true);
+    this.memberActionError.set(null);
+
+    this.teamMemberService.removeMember(id, member.userId).subscribe({
+      next: () => {
+        this.removingMember.set(false);
+        this.selectedMember.set(null);
+        this.members.update((list) => list.filter((m) => m.userId !== member.userId));
+      },
+      error: (error) => {
+        console.error('Failed to remove member:', error);
+        this.removingMember.set(false);
+        this.memberActionError.set(error?.error?.message ?? 'Não foi possível remover esse membro.');
+      },
+    });
+  }
+
+  leaveConfirmOpen = signal(false);
+
+  askLeaveTeam(): void {
+    this.leaveError.set(null);
+    this.leaveConfirmOpen.set(true);
+  }
+
+  cancelLeaveTeam(): void {
+    if (this.leaving()) return;
+    this.leaveConfirmOpen.set(false);
+  }
+
   leaveTeam(): void {
     const id = this.teamId();
     if (!id || this.leaving()) return;
 
+    this.leaveConfirmOpen.set(false);
     this.leaving.set(true);
     this.leaveError.set(null);
 
@@ -119,6 +215,13 @@ export class TeamComponent {
     if (!teamId || this.membersLoadingMore() || this.membersLastPage()) return;
     this.membersLoadingMore.set(true);
     this.loadMembers(teamId, this.membersPage() + 1);
+  }
+
+  private loadCommunity(teamId: string): void {
+    this.communityService.detailCommunityByTeam(teamId).subscribe({
+      next: (community) => this.community.set(community),
+      error: () => this.community.set(null),
+    });
   }
 
   private loadMembers(teamId: string, page: number = 0): void {

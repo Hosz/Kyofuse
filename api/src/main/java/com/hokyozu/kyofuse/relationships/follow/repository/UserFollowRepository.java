@@ -6,11 +6,19 @@ import com.hokyozu.kyofuse.users.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface UserFollowRepository extends JpaRepository<UserFollow, UUID> {
     boolean existsByFollowerAndFollowed(User user, User followedUser);
+
+    @Query("select f.followed.id from UserFollow f where f.follower = :follower")
+    List<UUID> findFollowedIdsByFollower(User follower);
+
+    @Query("select f.followed.id from UserFollow f where f.follower = :follower and f.followed in :followed")
+    List<UUID> findFollowedIdsByFollowerAndFollowedIn(User follower, List<User> followed);
 
     Page<UserFollow> findAllByFollower(User followedUser, Pageable pageable);
 

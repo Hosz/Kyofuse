@@ -1,5 +1,6 @@
 package com.hokyozu.kyofuse.posts.mapper;
 
+import com.hokyozu.kyofuse.communities.entity.Community;
 import com.hokyozu.kyofuse.posts.dto.request.CreatePostRequest;
 import com.hokyozu.kyofuse.posts.dto.response.PostResponse;
 import com.hokyozu.kyofuse.posts.entity.Post;
@@ -17,8 +18,14 @@ import static java.util.stream.Collectors.toList;
 public class PostMapper {
 
     public static Post toEntity(User user, CreatePostRequest request) {
+        return toEntity(user, request, null);
+    }
+
+    /** community null = post normal; preenchido = post exclusivo daquela comunidade. */
+    public static Post toEntity(User user, CreatePostRequest request, Community community) {
         return Post.builder()
                 .author(user)
+                .community(community)
                 .content(request.content())
                 .postType(request.postType())
                 .visibility(request.visibility())
@@ -42,6 +49,8 @@ public class PostMapper {
                 profile.getNickname(),
                 savedPost.getAuthor().getUsername(),
                 profile.getAvatarUrl(),
+                savedPost.getCommunity() != null ? savedPost.getCommunity().getId() : null,
+                savedPost.getCommunity() != null ? savedPost.getCommunity().getName() : null,
                 savedPost.getContent(),
                 savedPost.getPostType(),
                 savedPost.getVisibility(),

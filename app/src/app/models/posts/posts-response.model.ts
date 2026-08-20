@@ -4,6 +4,8 @@ export interface postResponse  {
     authorNickname: string;
     authorUsername: string;
     authorAvatarUrl: string;
+    communityId: string | null;
+    communityName: string | null;
     content: string;
     postType: string;
     postVisibility: string;

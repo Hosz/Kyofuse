@@ -24,6 +24,8 @@ class TeamDtoTest {
     void teamRequestAcceptsValidPayload() {
         TeamRequest request = new TeamRequest(
                 "Kyofuse Academy",
+                null,
+                null,
                 "kyofuse-academy",
                 "Development team",
                 "BR",
@@ -43,6 +45,8 @@ class TeamDtoTest {
     void teamRequestRejectsInvalidSlugAndRanges() {
         TeamRequest request = new TeamRequest(
                 "Kyofuse Academy",
+                null,
+                null,
                 "Kyofuse Academy!",
                 "Development team",
                 "BR",
@@ -70,6 +74,8 @@ class TeamDtoTest {
     void teamRequestRejectsNullRequiredRoleItem() {
         TeamRequest request = new TeamRequest(
                 "Kyofuse Academy",
+                null,
+                null,
                 "kyofuse-academy",
                 null,
                 null,
@@ -92,6 +98,8 @@ class TeamDtoTest {
     void teamRequestAcceptsOpenEndedRanges() {
         TeamRequest maxOnlyRequest = new TeamRequest(
                 "Kyofuse Academy",
+                null,
+                null,
                 "kyofuse-academy",
                 null,
                 null,
@@ -105,6 +113,8 @@ class TeamDtoTest {
         );
         TeamRequest minOnlyRequest = new TeamRequest(
                 "Kyofuse Academy",
+                null,
+                null,
                 "kyofuse-academy",
                 null,
                 null,
@@ -285,6 +295,8 @@ class TeamDtoTest {
         UpdateTeamRequest request = new UpdateTeamRequest(
                 "Kyofuse Academy",
                 null,
+                null,
+                null,
                 "BR",
                 null,
                 40000,
@@ -303,6 +315,8 @@ class TeamDtoTest {
         UpdateTeamRequest request = new UpdateTeamRequest(
                 "",
                 "a".repeat(501),
+                null,
+                null,
                 "",
                 40000,
                 1000,
@@ -331,6 +345,8 @@ class TeamDtoTest {
                 null,
                 null,
                 null,
+                null,
+                null,
                 40000,
                 null,
                 10,
@@ -339,6 +355,8 @@ class TeamDtoTest {
                 null
         );
         UpdateTeamRequest minOnlyRequest = new UpdateTeamRequest(
+                null,
+                null,
                 null,
                 null,
                 null,
@@ -364,6 +382,8 @@ class TeamDtoTest {
     @Test
     void updateTeamRequestAcceptsValidClosedRanges() {
         UpdateTeamRequest request = new UpdateTeamRequest(
+                null,
+                null,
                 null,
                 null,
                 null,

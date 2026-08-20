@@ -3,14 +3,33 @@
     <app-search-bar placeholder="Buscar conversas..." />
 
     <div class="flex items-center justify-between">
-      <h2 class="text-label-md font-bold uppercase tracking-[0.05em] text-on-surface">Mensagens Diretas</h2>
+      <h2 class="text-label-md font-bold uppercase tracking-[0.05em] text-on-surface">Conversas</h2>
       <button
         type="button"
+        (click)="newConversation.emit()"
         aria-label="Nova conversa"
         class="cursor-pointer rounded-full p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
       >
         <span class="material-symbols-outlined text-[22px]">chat_add_on</span>
       </button>
+    </div>
+
+    <div class="flex items-center gap-1 rounded-lg border border-outline-variant p-1">
+      @for (filter of filters; track filter.value) {
+        <button
+          type="button"
+          (click)="setFilter(filter.value)"
+          [attr.aria-pressed]="!showRequestsOnly() && activeFilter() === filter.value"
+          class="flex-1 cursor-pointer whitespace-nowrap rounded-md px-2 py-1.5 text-label-sm font-bold transition-colors"
+          [class]="
+            !showRequestsOnly() && activeFilter() === filter.value
+              ? 'bg-primary-container text-on-primary-container'
+              : 'text-on-surface-variant hover:text-on-surface'
+          "
+        >
+          {{ filter.label }}
+        </button>
+      }
     </div>
 
     @if (requestsCount() > 0) {
@@ -57,13 +76,7 @@
           </div>
           <div class="flex items-center justify-between gap-2">
             <span class="truncate text-label-md text-on-surface-variant" [class.font-semibold]="conversation.unread" [class.text-on-surface]="conversation.unread">
-              @if (conversation.relationship === 'request-received') {
-                Quer trocar mensagens com você
-              } @else if (conversation.messages.length === 0) {
-                Solicitação enviada
-              } @else {
-                {{ lastMessage(conversation).content }}
-              }
+              {{ previewLabel(conversation) }}
             </span>
             @if (conversation.unread) {
               <span class="h-2 w-2 shrink-0 rounded-full bg-primary-container"></span>

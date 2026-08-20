@@ -72,7 +72,7 @@
           </div>
 
           @if (loading()) {
-            <p class="py-16 text-center text-body-sm text-on-surface-variant">Carregando notificações...</p>
+            <app-skeleton variant="row" [count]="5" />
           } @else {
             <div class="flex flex-col gap-3">
               @for (notification of filteredNotifications(); track notification.id) {
@@ -89,14 +89,10 @@
             </div>
           }
 
-          @if (hasMoreToLoad()) {
-            <button
-              type="button"
-              (click)="loadPrevious()"
-              class="mx-auto cursor-pointer whitespace-nowrap rounded-full border border-outline-variant px-5 py-2.5 text-label-sm font-bold text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-            >
-              Carregar notificações anteriores
-            </button>
+          <div [appInfiniteScroll]="hasMoreToLoad() && !loadingMore()" (loadMore)="loadPrevious()"></div>
+
+          @if (loadingMore()) {
+            <app-skeleton variant="row" [count]="2" />
           }
         } @else {
           <div class="flex flex-wrap items-center gap-2">
@@ -116,91 +112,40 @@
             }
           </div>
 
-          @if (requestTab() === 'all' || requestTab() === 'friends') {
-            @if (requestTab() === 'all') {
-              <h2 class="text-label-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant">Amizade</h2>
-            }
+          @if (requestsLoading()) {
+            <app-skeleton variant="row" [count]="4" />
+          } @else {
             <div class="flex flex-col gap-3">
-              @if (friendRequestsLoading()) {
-                <p class="py-8 text-center text-body-sm text-on-surface-variant">Carregando solicitações...</p>
-              } @else {
-                @for (request of friendRequests(); track request.id) {
-                  <div class="flex items-center justify-between gap-3 rounded-xl border border-outline-variant bg-surface-container-low p-lg">
-                    <div class="flex flex-col">
-                      <span class="text-body-sm font-semibold text-on-surface">{{ request.senderUsername }}</span>
-                      <span class="text-label-sm text-on-surface-variant">&#64;{{ request.senderUsername }} quer ser seu amigo</span>
-                    </div>
-                    <div class="flex shrink-0 gap-2">
-                      <button
-                        type="button"
-                        (click)="declineFriendRequest(request)"
-                        [disabled]="isFriendRequestPending(request.id)"
-                        class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-sm font-bold text-on-surface transition-colors hover:border-error hover:text-error disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        Recusar
-                      </button>
-                      <button
-                        type="button"
-                        (click)="acceptFriendRequest(request)"
-                        [disabled]="isFriendRequestPending(request.id)"
-                        class="cursor-pointer rounded-full bg-primary-container px-4 py-2 text-label-sm font-bold text-on-primary-container transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        Aceitar
-                      </button>
-                    </div>
-                  </div>
-                } @empty {
-                  <p class="py-8 text-center text-body-sm text-on-surface-variant">Nenhuma solicitação de amizade pendente.</p>
-                }
-
-                @if (hasMoreFriendRequests()) {
-                  <button
-                    type="button"
-                    (click)="loadMoreFriendRequests()"
-                    [disabled]="friendRequestsLoadingMore()"
-                    class="mx-auto cursor-pointer whitespace-nowrap rounded-full border border-outline-variant px-5 py-2 text-label-sm font-bold text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {{ friendRequestsLoadingMore() ? 'Carregando...' : 'Carregar mais' }}
-                  </button>
-                }
-              }
-            </div>
-          }
-
-          @if (requestTab() === 'all' || requestTab() === 'follow') {
-            @if (requestTab() === 'all') {
-              <h2 class="text-label-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant">Seguir</h2>
-            }
-            <div class="flex flex-col gap-3">
-              @for (notification of followRequests(); track notification.id) {
-                <app-notification-card
-                  [notification]="notification"
-                  (toggleRead)="toggleRead(notification)"
-                  (toggleArchive)="toggleArchive(notification)"
-                  (accept)="accept(notification)"
-                  (decline)="decline(notification)"
-                />
+              @for (item of visibleRequests(); track item.key) {
+                <div
+                  (click)="openRequest(item)"
+                  [class.cursor-pointer]="item.tab === 'messages'"
+                  [class.opacity-60]="isRequestPending(item)"
+                  [class.pointer-events-none]="isRequestPending(item)"
+                  [title]="item.tab === 'messages' ? 'Abrir conversa' : ''"
+                >
+                  <app-notification-card
+                    [notification]="item.notification"
+                    [showStatusActions]="!item.friendRequest"
+                    (toggleRead)="toggleRead(item.notification)"
+                    (toggleArchive)="toggleArchive(item.notification)"
+                    (accept)="acceptRequest(item)"
+                    (decline)="declineRequest(item)"
+                  />
+                </div>
               } @empty {
-                <p class="py-8 text-center text-body-sm text-on-surface-variant">Nenhuma solicitação para seguir pendente.</p>
+                <p class="py-16 text-center text-body-sm text-on-surface-variant">{{ requestsEmptyMessage() }}</p>
               }
-            </div>
-          }
 
-          @if (requestTab() === 'all' || requestTab() === 'teams') {
-            @if (requestTab() === 'all') {
-              <h2 class="text-label-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant">Times</h2>
-            }
-            <div class="flex flex-col gap-3">
-              @for (notification of teamInviteRequests(); track notification.id) {
-                <app-notification-card
-                  [notification]="notification"
-                  (toggleRead)="toggleRead(notification)"
-                  (toggleArchive)="toggleArchive(notification)"
-                  (accept)="accept(notification)"
-                  (decline)="decline(notification)"
-                />
-              } @empty {
-                <p class="py-8 text-center text-body-sm text-on-surface-variant">Nenhum convite de time pendente.</p>
+              @if (showLoadMoreFriendRequests()) {
+                <button
+                  type="button"
+                  (click)="loadMoreFriendRequests()"
+                  [disabled]="friendRequestsLoadingMore()"
+                  class="mx-auto cursor-pointer whitespace-nowrap rounded-full border border-outline-variant px-5 py-2 text-label-sm font-bold text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {{ friendRequestsLoadingMore() ? 'Carregando...' : 'Carregar mais solicitações de amizade' }}
+                </button>
               }
             </div>
           }

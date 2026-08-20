@@ -16,4 +16,6 @@ public interface CommentReactionRepository extends JpaRepository<CommentReaction
     Page<CommentReaction> findByComment_Post_IdAndComment_IdAndReactionType(UUID commentPostId, UUID commentId, ReactionType reactionType, Pageable pageable);
 
     Page<CommentReaction> findByComment_Post_IdAndComment_IdAndReactionTypeNot(UUID commentPostId, UUID commentId, ReactionType reactionType, Pageable pageable);
+
+    Page<CommentReaction> findByComment_Post_IdAndComment_Id(UUID postId, UUID commentId, Pageable pageable);
 }

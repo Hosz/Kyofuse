@@ -40,7 +40,16 @@
             }
           }
 
-          <app-user-options-menu [userId]="post().author.id" (blocked)="authorBlocked.emit(post().author.id)" />
+          <app-user-options-menu
+            [userId]="post().author.id"
+            [canBlock]="!canDelete()"
+            [canEditContent]="canDelete()"
+            [canDeleteContent]="canDelete()"
+            contentLabel="publicação"
+            editDisabledReason="Editar publicação ainda não está disponível"
+            (deleteContent)="askDelete()"
+            (blocked)="authorBlocked.emit(post().author.id)"
+          />
         </div>
       </div>
 
@@ -71,6 +80,13 @@
         </div>
       }
 
+      <app-reaction-summary
+        [postId]="post().id"
+        [likeCount]="post().stats.likes"
+        [reactionCount]="post().stats.reactions"
+        (openList)="reactions.openList()"
+      />
+
       <div class="flex items-center gap-10 pt-1 text-on-surface-variant">
         <button type="button" class="flex cursor-pointer items-center gap-2 rounded-full transition-colors hover:text-primary active:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface" aria-label="Comentar">
           <span class="material-symbols-outlined text-[20px]">chat_bubble</span>
@@ -81,6 +97,7 @@
           <span class="text-label-md">{{ post().stats.reposts }}</span>
         </button>
         <app-reaction-button
+          #reactions
           [postId]="post().id"
           [likeCount]="post().stats.likes"
           [reactionCount]="post().stats.reactions"
@@ -90,3 +107,13 @@
     </div>
   </div>
 </article>
+
+<app-confirm-dialog
+  [open]="confirmDeleteOpen()"
+  title="Apagar publicação"
+  message="A publicação sai do feed e do seu perfil. Não dá para desfazer."
+  confirmLabel="Apagar"
+  [pending]="deleting()"
+  (confirmed)="confirmDelete()"
+  (cancelled)="cancelDelete()"
+/>

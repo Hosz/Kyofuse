@@ -19,6 +19,7 @@ import com.hokyozu.kyofuse.teams.finder.TeamFinder;
 import com.hokyozu.kyofuse.teams.mapper.TeamMemberMapper;
 import com.hokyozu.kyofuse.teams.repository.TeamMemberRepository;
 import com.hokyozu.kyofuse.teams.service.TeamChecker;
+import com.hokyozu.kyofuse.teams.service.TeamRequiredRoleFulfillment;
 import com.hokyozu.kyofuse.teams.service.TeamMemberService;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.finder.UserFinder;
@@ -47,6 +48,7 @@ public class TeamInviteService {
     private final TeamChecker teamChecker;
 
     private final TeamMemberService teamMemberService;
+    private final TeamRequiredRoleFulfillment teamRequiredRoleFulfillment;
     private final NotificationService notificationService;
 
     @Transactional
@@ -161,6 +163,9 @@ public class TeamInviteService {
         }
 
         teamMemberRepository.save(teamMember);
+
+        // Mesma regra da edição: vaga anunciada e agora preenchida sai do anúncio.
+        teamRequiredRoleFulfillment.fulfill(team, invite.getProposedRoleInTeam());
 
         notificationService.createNotification(
                 CreateNotificationRequest.builder()

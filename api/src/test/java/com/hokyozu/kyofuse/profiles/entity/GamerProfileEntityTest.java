@@ -26,6 +26,8 @@ class GamerProfileEntityTest {
                 .user(user)
                 .nickname("ProPlayer")
                 .bio("Competitive CS2 player")
+                .avatarUrl("https://example.com/avatar.png")
+                .bannerUrl("https://example.com/banner.png")
                 .country("USA")
                 .mainRole(PlayerRole.AWPER)
                 .secondaryRole(PlayerRole.RIFLER)
@@ -42,6 +44,8 @@ class GamerProfileEntityTest {
         assertThat(profile.getUser()).isEqualTo(user);
         assertThat(profile.getNickname()).isEqualTo("ProPlayer");
         assertThat(profile.getBio()).isEqualTo("Competitive CS2 player");
+        assertThat(profile.getAvatarUrl()).isEqualTo("https://example.com/avatar.png");
+        assertThat(profile.getBannerUrl()).isEqualTo("https://example.com/banner.png");
         assertThat(profile.getCountry()).isEqualTo("USA");
         assertThat(profile.getMainRole()).isEqualTo(PlayerRole.AWPER);
         assertThat(profile.getSecondaryRole()).isEqualTo(PlayerRole.RIFLER);

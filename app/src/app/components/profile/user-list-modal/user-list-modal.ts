@@ -1,6 +1,7 @@
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { ModalComponent } from '../../shared/modal/modal';
 import { UserRowComponent } from '../../shared/user-row/user-row';
+import { UserOptionsMenuComponent } from '../../shared/user-options-menu/user-options-menu';
 import { UserListEntry } from '../../../shared/models/profile.model';
 import { FriendshipService } from '../../../core/services/friendship/friendship.service';
 import { FollowService } from '../../../core/services/follow/follow.service';
@@ -12,7 +13,7 @@ export type UserListType = 'followers' | 'following' | 'friends';
 
 @Component({
   selector: 'app-user-list-modal',
-  imports: [ModalComponent, UserRowComponent],
+  imports: [ModalComponent, UserRowComponent, UserOptionsMenuComponent],
   templateUrl: './user-list-modal.html',
   styleUrl: './user-list-modal.css',
 })
@@ -25,8 +26,15 @@ export class UserListModalComponent {
    * mostra a lista desse outro usuário (perfil visitado). */
   profileUserId = input<string | null>(null);
 
+  /** Só na lista de seguidores do próprio dono: libera remover e bloquear. */
+  manageable = input(false);
+
   users = signal<UserListEntry[]>([]);
   loadingMore = signal(false);
+
+  /** 403 aqui é a resposta esperada num perfil privado de quem não segue — vira aviso
+   * na tela em vez de lista vazia sem explicação. */
+  restricted = signal(false);
 
   closed = output<void>();
   toggleFollow = output<UserListEntry>();
@@ -49,6 +57,16 @@ export class UserListModalComponent {
     });
   }
 
+  canManageFollowers = computed(() => this.manageable() && this.type() === 'followers');
+  canUnfollow = computed(() => this.manageable() && this.type() === 'following');
+  canRemoveFriend = computed(() => this.manageable() && this.type() === 'friends');
+  hasRowActions = computed(() => this.canManageFollowers() || this.canUnfollow() || this.canRemoveFriend());
+
+  /** Some da lista na hora — a pessoa deixou de ser seguidora. */
+  removeFromList(userId: string): void {
+    this.users.update((list) => list.filter((user) => user.id !== userId));
+  }
+
   loadMore(): void {
     if (this.loadingMore() || !this.hasMoreToLoad()) return;
     this.fetchUsers(this.page() + 1);
@@ -63,7 +81,11 @@ export class UserListModalComponent {
         (otherUserId ? this.followService.showFollowers(otherUserId, page) : this.followService.showMyFollowers(page)).subscribe({
           next: (response) => this.appendEntries(page, this.toFollowEntries(response, 'followers'), response),
           error: (error) => {
-            console.error('Failed to fetch followers list:', error);
+            if (error?.status === 403) {
+              this.restricted.set(true);
+            } else {
+              console.error('Failed to fetch followers list:', error);
+            }
             this.loadingMore.set(false);
           },
         });
@@ -72,7 +94,11 @@ export class UserListModalComponent {
         (otherUserId ? this.followService.showFollowing(otherUserId, page) : this.followService.showMyFollowing(page)).subscribe({
           next: (response) => this.appendEntries(page, this.toFollowEntries(response, 'following'), response),
           error: (error) => {
-            console.error('Failed to fetch following list:', error);
+            if (error?.status === 403) {
+              this.restricted.set(true);
+            } else {
+              console.error('Failed to fetch following list:', error);
+            }
             this.loadingMore.set(false);
           },
         });
@@ -81,7 +107,11 @@ export class UserListModalComponent {
         (otherUserId ? this.friendshipService.showUserFriends(otherUserId, page) : this.friendshipService.showMyFriends(page)).subscribe({
           next: (response) => this.appendEntries(page, this.toFriendEntries(response), response),
           error: (error) => {
-            console.error('Failed to fetch friends list:', error);
+            if (error?.status === 403) {
+              this.restricted.set(true);
+            } else {
+              console.error('Failed to fetch friends list:', error);
+            }
             this.loadingMore.set(false);
           },
         });

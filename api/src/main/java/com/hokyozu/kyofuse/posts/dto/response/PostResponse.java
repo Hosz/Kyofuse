@@ -14,6 +14,8 @@ public record PostResponse(
         String authorNickname,
         String authorUsername,
         String authorAvatarUrl,
+        UUID communityId,
+        String communityName,
         String content,
         PostType postType,
         PostVisibility postVisibility,

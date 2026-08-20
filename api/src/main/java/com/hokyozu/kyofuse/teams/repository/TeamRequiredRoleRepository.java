@@ -1,5 +1,6 @@
 package com.hokyozu.kyofuse.teams.repository;
 
+import com.hokyozu.kyofuse.profiles.enums.PlayerRole;
 import com.hokyozu.kyofuse.teams.entity.TeamRequiredRole;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -10,4 +11,6 @@ public interface TeamRequiredRoleRepository extends JpaRepository<TeamRequiredRo
     List<TeamRequiredRole> findByTeamId(UUID teamId);
 
     List<TeamRequiredRole> findByTeamIdIn(List<UUID> teamIds);
+
+    List<TeamRequiredRole> findByTeamIdAndRoleName(UUID teamId, PlayerRole roleName);
 }

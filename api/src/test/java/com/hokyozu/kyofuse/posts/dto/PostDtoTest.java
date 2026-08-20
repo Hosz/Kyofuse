@@ -86,6 +86,8 @@ class PostDtoTest {
                 "sla",
                 "content",
                 "",
+                null,
+                null,
                 "",
                 PostType.TEXT,
                 PostVisibility.PUBLIC,

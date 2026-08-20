@@ -5,23 +5,32 @@ import com.hokyozu.kyofuse.posts.enums.PostStatus;
 import com.hokyozu.kyofuse.posts.enums.PostVisibility;
 import com.hokyozu.kyofuse.posts.finder.PostFinder;
 import com.hokyozu.kyofuse.posts.repository.PostRepository;
+import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
+import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import com.hokyozu.kyofuse.reactions.dto.request.PostReactionRequest;
 import com.hokyozu.kyofuse.reactions.dto.response.PostReactionResponse;
 import com.hokyozu.kyofuse.reactions.entity.PostReaction;
 import com.hokyozu.kyofuse.reactions.enums.ReactionType;
 import com.hokyozu.kyofuse.reactions.repository.PostReactionRepository;
+import com.hokyozu.kyofuse.relationships.permission.service.post.PostPermissionService;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.shared.exception.NotFoundException;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.finder.UserFinder;
+import com.hokyozu.kyofuse.users.service.UserChecker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -44,6 +53,12 @@ class PostReactionServiceTest {
     private PostFinder postFinder;
     @Mock
     private UserFinder userFinder;
+    @Mock
+    private PostPermissionService postPermissionService;
+    @Mock
+    private GamerProfileFinder gamerProfileFinder;
+    @Mock
+    private UserChecker userChecker;
     @InjectMocks
     private PostReactionService service;
 
@@ -51,6 +66,7 @@ class PostReactionServiceTest {
     private UUID postId;
     private User user;
     private Post post;
+    private GamerProfile profile;
 
     @BeforeEach
     void setUp() {
@@ -63,10 +79,12 @@ class PostReactionServiceTest {
                 .reactionCount(4)
                 .likeCount(3)
                 .build();
+        profile = GamerProfile.builder().nickname("PlayerNick").avatarUrl("avatar.png").build();
         lenient().when(postFinder.findVisiblePostForUser(
                 postId, userId, PostStatus.ACTIVE, PostVisibility.PUBLIC
         )).thenReturn(post);
         when(userFinder.findProfileByUserId(userId)).thenReturn(user);
+        lenient().when(gamerProfileFinder.findProfileByUserId(userId)).thenReturn(profile);
     }
 
     @Test
@@ -92,7 +110,7 @@ class PostReactionServiceTest {
 
         assertThat(post.getLikeCount()).isEqualTo(4);
         assertThat(post.getReactionCount()).isEqualTo(4);
-        assertThat(response).isEqualTo(new PostReactionResponse(postId, "player", ReactionType.LIKE));
+        assertThat(response).isEqualTo(new PostReactionResponse(postId, userId, "player", "PlayerNick", "avatar.png", ReactionType.LIKE));
         verify(postRepository).save(post);
     }
 
@@ -198,6 +216,37 @@ class PostReactionServiceTest {
 
         verify(postRepository, never()).save(any());
         verify(postReactionRepository, never()).delete(any());
+    }
+
+    @Test
+    void getReactionsIncludesLikesSoTheFrontCanShowASingleList() {
+        // A listagem no front é uma só: o tipo aparece no ícone, não em abas separadas.
+        Pageable pageable = PageRequest.of(0, 10);
+        when(postFinder.findVisibleActivePost(postId, userId)).thenReturn(post);
+        when(postReactionRepository.findByPostId(postId, pageable))
+                .thenReturn(new PageImpl<>(List.of(reaction(ReactionType.FIRE), reaction(ReactionType.LIKE)), pageable, 2));
+
+        Page<PostReactionResponse> result = service.getReactions(userId, postId, pageable);
+
+        assertThat(result.getContent()).extracting(PostReactionResponse::reactionType)
+                .containsExactly(ReactionType.FIRE, ReactionType.LIKE);
+        verify(userChecker).checkActive(user);
+        verify(postReactionRepository, never()).findByPostIdAndReactionTypeNot(any(), any(), any());
+    }
+
+    @Test
+    void getLikesMapsLikeReactionsWithProfiles() {
+        Pageable pageable = PageRequest.of(0, 10);
+        PostReaction reaction = reaction(ReactionType.LIKE);
+        when(postFinder.findVisibleActivePost(postId, userId)).thenReturn(post);
+        when(postReactionRepository.findByPostIdAndReactionType(postId, ReactionType.LIKE, pageable))
+                .thenReturn(new PageImpl<>(List.of(reaction), pageable, 1));
+
+        Page<PostReactionResponse> result = service.getLikes(userId, postId, pageable);
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).reactionType()).isEqualTo(ReactionType.LIKE);
+        verify(userChecker).checkActive(user);
     }
 
     private void stubExisting(PostReaction reaction) {

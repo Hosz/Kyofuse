@@ -1,0 +1,191 @@
+<app-modal [open]="open()" title="Criar time" (closed)="onClose()">
+  <div class="flex flex-col gap-md">
+    <label class="flex flex-col gap-1.5">
+      <span class="text-label-sm font-semibold text-on-surface-variant">Nome</span>
+      <input
+        type="text"
+        maxlength="80"
+        placeholder="Kyofuse Academy"
+        [value]="name()"
+        (input)="onNameChange($any($event.target).value)"
+        class="rounded-lg border border-outline-variant bg-surface px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+      />
+    </label>
+
+    <label class="flex flex-col gap-1.5">
+      <span class="text-label-sm font-semibold text-on-surface-variant">Slug</span>
+      <input
+        type="text"
+        maxlength="100"
+        placeholder="kyofuse-academy"
+        [value]="slug()"
+        (input)="onSlugChange($any($event.target).value)"
+        class="rounded-lg border border-outline-variant bg-surface px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+      />
+      <span class="text-label-sm text-on-surface-variant">Só letras minúsculas, números e hífens.</span>
+    </label>
+
+    <label class="flex flex-col gap-1.5">
+      <span class="text-label-sm font-semibold text-on-surface-variant">Descrição</span>
+      <textarea
+        rows="3"
+        maxlength="500"
+        [value]="description()"
+        (input)="description.set($any($event.target).value)"
+        class="resize-none rounded-lg border border-outline-variant bg-surface px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+      ></textarea>
+    </label>
+
+    <label class="flex flex-col gap-1.5">
+      <span class="text-label-sm font-semibold text-on-surface-variant">Região</span>
+      <input
+        type="text"
+        maxlength="80"
+        placeholder="Brasil"
+        [value]="region()"
+        (input)="region.set($any($event.target).value)"
+        class="rounded-lg border border-outline-variant bg-surface px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+      />
+    </label>
+
+    <label class="flex flex-col gap-1.5">
+      <span class="text-label-sm font-semibold text-on-surface-variant">URL do escudo</span>
+      <input
+        type="text"
+        maxlength="500"
+        placeholder="https://..."
+        [value]="avatarUrl()"
+        (input)="avatarUrl.set($any($event.target).value)"
+        class="rounded-lg border border-outline-variant bg-surface px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+      />
+    </label>
+
+    <label class="flex flex-col gap-1.5">
+      <span class="text-label-sm font-semibold text-on-surface-variant">URL do banner</span>
+      <input
+        type="text"
+        maxlength="500"
+        placeholder="https://..."
+        [value]="bannerUrl()"
+        (input)="bannerUrl.set($any($event.target).value)"
+        class="rounded-lg border border-outline-variant bg-surface px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+      />
+    </label>
+
+    <div class="flex flex-col gap-2">
+      <span class="text-label-sm font-semibold text-on-surface-variant">Papéis necessários</span>
+      <div class="flex flex-wrap gap-2">
+        @for (role of roleOptions; track role.value) {
+          <button
+            type="button"
+            (click)="toggleRequiredRole(role.value)"
+            class="cursor-pointer rounded-full border px-3 py-1.5 text-label-sm font-bold transition-colors"
+            [class]="
+              isRoleSelected(role.value)
+                ? 'border-primary-container bg-primary-container text-on-primary-container'
+                : 'border-outline-variant text-on-surface-variant hover:text-on-surface'
+            "
+          >
+            {{ role.label }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-3 rounded-lg border border-outline-variant p-3">
+      <span class="text-label-sm font-semibold text-on-surface-variant">Requisitos competitivos (opcional)</span>
+
+      <div class="grid grid-cols-2 gap-2">
+        <label class="flex flex-col gap-1">
+          <span class="text-label-sm text-on-surface-variant">Premier mín.</span>
+          <input
+            type="number"
+            min="1000"
+            max="40000"
+            [value]="minPremierRating()"
+            (input)="minPremierRating.set($any($event.target).valueAsNumber || null)"
+            class="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-body-sm text-on-surface outline-none focus:border-primary"
+          />
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="text-label-sm text-on-surface-variant">Premier máx.</span>
+          <input
+            type="number"
+            min="1000"
+            max="40000"
+            [value]="maxPremierRating()"
+            (input)="maxPremierRating.set($any($event.target).valueAsNumber || null)"
+            class="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-body-sm text-on-surface outline-none focus:border-primary"
+          />
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="text-label-sm text-on-surface-variant">FACEIT mín.</span>
+          <input
+            type="number"
+            min="1"
+            max="10"
+            [value]="minFaceitLevel()"
+            (input)="minFaceitLevel.set($any($event.target).valueAsNumber || null)"
+            class="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-body-sm text-on-surface outline-none focus:border-primary"
+          />
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="text-label-sm text-on-surface-variant">FACEIT máx.</span>
+          <input
+            type="number"
+            min="1"
+            max="10"
+            [value]="maxFaceitLevel()"
+            (input)="maxFaceitLevel.set($any($event.target).valueAsNumber || null)"
+            class="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-body-sm text-on-surface outline-none focus:border-primary"
+          />
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="text-label-sm text-on-surface-variant">GC mín.</span>
+          <input
+            type="number"
+            min="1"
+            max="21"
+            [value]="minGcRank()"
+            (input)="minGcRank.set($any($event.target).valueAsNumber || null)"
+            class="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-body-sm text-on-surface outline-none focus:border-primary"
+          />
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="text-label-sm text-on-surface-variant">GC máx.</span>
+          <input
+            type="number"
+            min="1"
+            max="21"
+            [value]="maxGcRank()"
+            (input)="maxGcRank.set($any($event.target).valueAsNumber || null)"
+            class="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-body-sm text-on-surface outline-none focus:border-primary"
+          />
+        </label>
+      </div>
+    </div>
+
+    @if (error()) {
+      <p class="text-label-sm text-error">{{ error() }}</p>
+    }
+
+    <div class="flex justify-end gap-2">
+      <button
+        type="button"
+        (click)="onClose()"
+        [disabled]="saving()"
+        class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        (click)="submit()"
+        [disabled]="saving()"
+        class="cursor-pointer rounded-full bg-primary-container px-4 py-2 text-label-md font-bold text-on-primary-container transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {{ saving() ? 'Criando...' : 'Criar time' }}
+      </button>
+    </div>
+  </div>
+</app-modal>

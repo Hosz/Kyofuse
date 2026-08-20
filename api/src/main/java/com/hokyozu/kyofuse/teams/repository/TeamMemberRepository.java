@@ -22,6 +22,8 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, UUID> {
 
     Page<TeamMember> findByTeam(Team team, Pageable pageable);
 
+    List<TeamMember> findByTeam(Team team);
+
     Boolean existsByUser(User author);
 
     @Query("""

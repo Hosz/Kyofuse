@@ -65,6 +65,15 @@ export class PostDetailComponent {
     this.router.navigateByUrl('/home');
   }
 
+  /** O post apagado não existe mais — não faz sentido continuar na página dele. */
+  onPostDeleted(): void {
+    this.router.navigateByUrl('/home');
+  }
+
+  onCommentDeleted(commentId: string): void {
+    this.comments.update((list) => list.filter((comment) => comment.id !== commentId));
+  }
+
   onCommentAuthorBlocked(authorId: string): void {
     this.comments.update((list) => list.filter((comment) => comment.authorId !== authorId));
   }

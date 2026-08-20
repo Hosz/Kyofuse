@@ -78,7 +78,7 @@ class TeamControllerTest {
     void editTeamUsesAuthenticatedUserIdAndPathTeamId() {
         UUID userId = UUID.randomUUID();
         UUID teamId = UUID.randomUUID();
-        UpdateTeamRequest request = new UpdateTeamRequest("Updated", null, null, null, null, null, null, null, null, null);
+        UpdateTeamRequest request = new UpdateTeamRequest("Updated", null, null, null, null, null, null, null, null, null, null, null);
         TeamResponse expected = response();
         when(teamService.editTeam(userId, teamId, request)).thenReturn(expected);
 
@@ -118,6 +118,8 @@ class TeamControllerTest {
     private TeamRequest request() {
         return new TeamRequest(
                 "Kyofuse",
+                null,
+                null,
                 "kyofuse",
                 "Team",
                 "BR",
@@ -135,9 +137,12 @@ class TeamControllerTest {
         Instant now = Instant.now();
         return new TeamResponse(
                 UUID.randomUUID(),
+                UUID.randomUUID(),
                 "owner",
                 "Kyofuse",
                 "kyofuse",
+                null,
+                null,
                 "Team",
                 "BR",
                 null,

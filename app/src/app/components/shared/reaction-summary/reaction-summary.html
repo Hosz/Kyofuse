@@ -1,0 +1,11 @@
+<span #host>
+  @if (total() > 0) {
+    <button
+      type="button"
+      (click)="$event.stopPropagation(); openList.emit()"
+      class="cursor-pointer text-left text-label-md text-on-surface-variant transition-colors hover:text-on-surface hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
+    >
+      {{ label() }}
+    </button>
+  }
+</span>

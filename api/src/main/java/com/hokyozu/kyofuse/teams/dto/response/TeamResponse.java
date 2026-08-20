@@ -9,9 +9,12 @@ import java.util.UUID;
 
 public record TeamResponse(
         UUID id,
+        UUID ownerId,
         String ownerName,
         String name,
         String slug,
+        String avatarUrl,
+        String bannerUrl,
         String description,
         String region,
         Integer minPremierRating,

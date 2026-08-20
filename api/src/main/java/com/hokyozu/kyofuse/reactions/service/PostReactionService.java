@@ -109,13 +109,17 @@ public class PostReactionService {
     }
 
     @Transactional(readOnly = true)
+    /**
+     * Todas as reações do post, curtidas incluídas: a listagem no front é uma só, e o
+     * tipo aparece no ícone ao lado de cada pessoa em vez de virar aba separada.
+     */
     public Page<PostReactionResponse> getReactions(UUID userId, UUID postId, Pageable pageable) {
         User user = userFinder.findProfileByUserId(userId);
         postFinder.findVisibleActivePost(postId, userId);
 
         userChecker.checkActive(user);
 
-        Page<PostReaction> postReactionExist = postReactionRepository.findByPostIdAndReactionTypeNot(postId, ReactionType.LIKE, pageable);
+        Page<PostReaction> postReactionExist = postReactionRepository.findByPostId(postId, pageable);
 
         return postReactionExist.map(postReaction -> {
             GamerProfile profile = gamerProfileFinder.findProfileByUserId(postReaction.getUser().getId());

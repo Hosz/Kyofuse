@@ -119,6 +119,8 @@ class TeamMemberControllerTest {
                 "",
                 teamId,
                 "Kyofuse",
+                "KyofuseNick",
+                "avatar.png",
                 PlayerRole.AWPER,
                 TeamMemberType.PLAYER,
                 TeamMemberStatus.ACTIVE,

@@ -16,6 +16,7 @@ public record GamerProfileResponse(
         String nickname,
         String bio,
         String avatarUrl,
+        String bannerUrl,
         String country,
         String city,
         String state,

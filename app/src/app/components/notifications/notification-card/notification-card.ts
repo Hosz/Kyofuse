@@ -9,6 +9,9 @@ import { AppNotification } from '../../../shared/models/notification.model';
 })
 export class NotificationCardComponent {
   notification = input.required<AppNotification>();
+  /** Itens que não são notificações de verdade (ex.: pedido de amizade) não têm o que ler
+   * ou arquivar — só as ações de aceitar/recusar fazem sentido neles. */
+  showStatusActions = input(true);
 
   toggleRead = output<void>();
   toggleArchive = output<void>();

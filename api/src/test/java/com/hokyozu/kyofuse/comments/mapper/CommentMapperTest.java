@@ -26,8 +26,8 @@ class CommentMapperTest {
         UUID userId = UUID.randomUUID();
         UUID postId = UUID.randomUUID();
         UUID commentId = UUID.randomUUID();
-        User user = User.builder().id(userId).build();
-        GamerProfile profile = GamerProfile.builder().user(user).build();
+        User user = User.builder().id(userId).username("author").build();
+        GamerProfile profile = GamerProfile.builder().user(user).nickname("nickname").avatarUrl("avatar.png").build();
         Post post = Post.builder().id(postId).build();
         CreateCommentRequest request = new CreateCommentRequest("content");
 
@@ -38,7 +38,7 @@ class CommentMapperTest {
         comment.setCreatedAt(Instant.now());
         comment.setUpdatedAt(Instant.now());
 
-        CommentResponse response = CommentMapper.toResponse(comment);
+        CommentResponse response = CommentMapper.toResponse(comment, profile.getAvatarUrl(), profile.getNickname());
 
         assertThat(comment.getPost()).isSameAs(post);
         assertThat(comment.getAuthor()).isSameAs(user);
@@ -49,6 +49,9 @@ class CommentMapperTest {
         assertThat(response.id()).isEqualTo(commentId);
         assertThat(response.postId()).isEqualTo(postId);
         assertThat(response.authorId()).isEqualTo(userId);
+        assertThat(response.authorNickname()).isEqualTo("nickname");
+        assertThat(response.authorUsername()).isEqualTo("author");
+        assertThat(response.profileImage()).isEqualTo("avatar.png");
         assertThat(response.reactionCount()).isEqualTo(3);
         assertThat(response.likeCount()).isEqualTo(2);
     }

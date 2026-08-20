@@ -4,6 +4,7 @@ import com.hokyozu.kyofuse.teams.dto.request.TeamFilter;
 import com.hokyozu.kyofuse.teams.dto.request.TeamRequest;
 import com.hokyozu.kyofuse.teams.dto.request.UpdateTeamRequest;
 import com.hokyozu.kyofuse.teams.dto.request.UpdateTeamRequiredRolesRequest;
+import com.hokyozu.kyofuse.profiles.dto.response.GamerProfileResponse;
 import com.hokyozu.kyofuse.teams.dto.response.TeamResponse;
 import com.hokyozu.kyofuse.teams.service.TeamService;
 import jakarta.validation.Valid;
@@ -42,11 +43,27 @@ public class TeamController {
         return teamService.listingTeams(filter, pageable);
     }
 
+    @GetMapping("/{teamId}/looking-for-team")
+    public Page<GamerProfileResponse> listPlayersLookingForTeam(@AuthenticationPrincipal Jwt jwt,
+                                                                @PathVariable UUID teamId,
+                                                                @PageableDefault(size = 20) Pageable pageable) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+
+        return teamService.listPlayersLookingForTeam(userId, teamId, pageable);
+    }
+
     @GetMapping("/my-teams")
     public Page<TeamResponse> listingMyTeams(@AuthenticationPrincipal Jwt jwt, Pageable pageable) {
         UUID userId = UUID.fromString(jwt.getSubject());
 
         return teamService.listingMyTeams(userId, pageable);
+    }
+
+    @GetMapping("/user/{userId}")
+    public Page<TeamResponse> listingUserTeams(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID userId, Pageable pageable) {
+        UUID viewerId = UUID.fromString(jwt.getSubject());
+
+        return teamService.listingUserTeams(viewerId, userId, pageable);
     }
 
     @PatchMapping("/edit/{teamId}")

@@ -16,6 +16,12 @@ public record TeamRequest(
         @Size(max = 80)
         String name,
 
+        @Size(max = 500)
+        String avatarUrl,
+
+        @Size(max = 500)
+        String bannerUrl,
+
         @NotBlank
         @Size(max = 100)
         @Pattern(regexp = "^[a-z0-9]+(?:-[a-z0-9]+)*$", message = "Slug must contain only lowercase letters, numbers and single hyphens")

@@ -5,28 +5,38 @@ import com.hokyozu.kyofuse.comments.finder.CommentFinder;
 import com.hokyozu.kyofuse.comments.repository.CommentRepository;
 import com.hokyozu.kyofuse.posts.entity.Post;
 import com.hokyozu.kyofuse.posts.finder.PostFinder;
+import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
+import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import com.hokyozu.kyofuse.reactions.dto.request.CommentReactionRequest;
 import com.hokyozu.kyofuse.reactions.dto.response.CommentReactionResponse;
 import com.hokyozu.kyofuse.reactions.entity.CommentReaction;
 import com.hokyozu.kyofuse.reactions.enums.ReactionType;
 import com.hokyozu.kyofuse.reactions.repository.CommentReactionRepository;
+import com.hokyozu.kyofuse.relationships.permission.service.comment.CommentPermissionService;
 import com.hokyozu.kyofuse.shared.exception.NotFoundException;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.finder.UserFinder;
+import com.hokyozu.kyofuse.users.service.UserChecker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -39,6 +49,9 @@ class CommentReactionServiceTest {
     @Mock private CommentFinder commentFinder;
     @Mock private CommentReactionRepository reactionRepository;
     @Mock private CommentRepository commentRepository;
+    @Mock private CommentPermissionService commentPermissionService;
+    @Mock private GamerProfileFinder gamerProfileFinder;
+    @Mock private UserChecker userChecker;
     @InjectMocks private CommentReactionService service;
 
     private UUID userId;
@@ -46,6 +59,7 @@ class CommentReactionServiceTest {
     private UUID commentId;
     private User user;
     private Comment comment;
+    private GamerProfile profile;
 
     @BeforeEach
     void setUp() {
@@ -59,8 +73,10 @@ class CommentReactionServiceTest {
                 .likeCount(3)
                 .reactionCount(4)
                 .build();
+        profile = GamerProfile.builder().nickname("PlayerNick").avatarUrl("avatar.png").build();
         when(userFinder.findProfileByUserId(userId)).thenReturn(user);
-        when(commentFinder.findById(commentId)).thenReturn(comment);
+        lenient().when(commentFinder.findById(commentId)).thenReturn(comment);
+        lenient().when(gamerProfileFinder.findProfileByUserId(userId)).thenReturn(profile);
     }
 
     @Test
@@ -73,7 +89,7 @@ class CommentReactionServiceTest {
         assertThat(comment.getLikeCount()).isEqualTo(4);
         assertThat(comment.getReactionCount()).isEqualTo(4);
         assertThat(response).isEqualTo(
-                new CommentReactionResponse(postId, commentId, "player", ReactionType.LIKE));
+                new CommentReactionResponse(postId, commentId, userId, "player", "PlayerNick", "avatar.png", ReactionType.LIKE));
         verify(commentRepository).save(comment);
     }
 
@@ -170,6 +186,35 @@ class CommentReactionServiceTest {
 
         verify(commentRepository, never()).save(any());
         verify(reactionRepository, never()).delete(any());
+    }
+
+    @Test
+    void getLikesMapsLikeReactionsWithProfiles() {
+        Pageable pageable = PageRequest.of(0, 10);
+        CommentReaction existing = reaction(ReactionType.LIKE);
+        when(reactionRepository.findByComment_Post_IdAndComment_IdAndReactionType(
+                postId, commentId, ReactionType.LIKE, pageable))
+                .thenReturn(new PageImpl<>(List.of(existing), pageable, 1));
+
+        Page<CommentReactionResponse> result = service.getLikes(postId, commentId, userId, pageable);
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).reactionType()).isEqualTo(ReactionType.LIKE);
+        verify(userChecker).checkActive(user);
+    }
+
+    @Test
+    void getReactionsIncludesLikesSoTheFrontCanShowASingleList() {
+        // A listagem no front é uma só: o tipo aparece no ícone, não em abas separadas.
+        Pageable pageable = PageRequest.of(0, 10);
+        when(reactionRepository.findByComment_Post_IdAndComment_Id(postId, commentId, pageable))
+                .thenReturn(new PageImpl<>(List.of(reaction(ReactionType.FIRE), reaction(ReactionType.LIKE)), pageable, 2));
+
+        Page<CommentReactionResponse> result = service.getReactions(postId, commentId, userId, pageable);
+
+        assertThat(result.getContent()).extracting(CommentReactionResponse::reactionType)
+                .containsExactly(ReactionType.FIRE, ReactionType.LIKE);
+        verify(userChecker).checkActive(user);
     }
 
     private void stubNewReaction() {

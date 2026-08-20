@@ -23,5 +23,10 @@ public enum NotificationType {
 
     COMMENT_REACTION,
 
+    NEW_MESSAGE,
+    // Primeira mensagem de uma conversa DIRECT que nasceu PENDING: é uma solicitação
+    // pra trocar mensagens, não uma mensagem comum, e a aba de notificações separa as duas.
+    MESSAGE_REQUEST,
+
     SYSTEM
 }

@@ -9,6 +9,8 @@ public record UserBlockResponse(
         String blockerUsername,
         UUID blockedId,
         String blockedUsername,
+        String blockedNickname,
+        String blockedAvatarUrl,
         Instant createdAt
 ) {
 }
