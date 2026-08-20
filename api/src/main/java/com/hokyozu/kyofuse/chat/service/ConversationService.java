@@ -1,9 +1,11 @@
 package com.hokyozu.kyofuse.chat.service;
 
 import com.hokyozu.kyofuse.chat.dto.request.ConversationRequest;
+import com.hokyozu.kyofuse.chat.dto.request.UpdateConversationRequest;
 import com.hokyozu.kyofuse.chat.dto.response.ConversationResponse;
 import com.hokyozu.kyofuse.chat.entity.Conversation;
 import com.hokyozu.kyofuse.chat.entity.ConversationMember;
+import com.hokyozu.kyofuse.chat.enums.ConversationMemberRole;
 import com.hokyozu.kyofuse.chat.enums.ConversationMemberStatus;
 import com.hokyozu.kyofuse.chat.enums.ConversationType;
 import com.hokyozu.kyofuse.chat.enums.DirectConversationStatus;
@@ -16,6 +18,7 @@ import com.hokyozu.kyofuse.communities.entity.CommunityMember;
 import com.hokyozu.kyofuse.communities.enums.CommunityMemberStatus;
 import com.hokyozu.kyofuse.communities.enums.CommunityStatus;
 import com.hokyozu.kyofuse.communities.repository.CommunityMemberRepository;
+import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import com.hokyozu.kyofuse.relationships.permission.service.message.MessagePermissionService;
 import com.hokyozu.kyofuse.relationships.shared.validator.BlockValidator;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
@@ -45,6 +48,7 @@ public class ConversationService {
 
     private final UserFinder userFinder;
     private final UserChecker userChecker;
+    private final GamerProfileFinder gamerProfileFinder;
 
     private final MessagePermissionService messagePermissionService;
     private final BlockValidator blockValidator;
@@ -109,7 +113,7 @@ public class ConversationService {
                 .orElse(null);
 
         if (existing != null) {
-            return ConversationMapper.toResponse(existing);
+            return directResponse(existing);
         }
 
         boolean requiresApproval = messagePermissionService.requiresApprovalForFirstMessage(user, secondParticipant);
@@ -119,6 +123,48 @@ public class ConversationService {
 
         Conversation conversation = ConversationMapper.toEntityDirect(user, directUserOne, directUserTwo, status);
         conversationRepository.save(conversation);
+        return directResponse(conversation);
+    }
+
+    /** Uma conversa DIRECT só fica completa pro front com o nickname e o avatar dos dois
+     * participantes — sem eles a conversa apareceria sem nome nem foto na listagem. */
+    private ConversationResponse directResponse(Conversation conversation) {
+        return ConversationMapper.toResponse(
+                conversation,
+                gamerProfileFinder.findProfileByUserId(conversation.getDirectUserOne().getId()),
+                gamerProfileFinder.findProfileByUserId(conversation.getDirectUserTwo().getId())
+        );
+    }
+
+    /**
+     * Edita nome e foto de uma conversa GROUP. Só um ADMIN ativo do grupo pode editar,
+     * mesma autorização já exigida pra adicionar, remover e promover membros
+     * (ConversationMemberService). Conversas DIRECT e COMMUNITY não são editáveis:
+     * DIRECT não tem nome nem foto próprios e COMMUNITY herda ambos da comunidade.
+     */
+    @Transactional
+    public ConversationResponse editGroupConversation(UUID conversationId, @Valid UpdateConversationRequest request, UUID userId) {
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
+
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new NotFoundException("Conversation not found"));
+
+        if (conversation.getType() != ConversationType.GROUP) {
+            throw new BadRequestException("Only GROUP conversations can be edited.");
+        }
+
+        ConversationMember membership = conversationMemberRepository.findByConversationAndUser(conversation, user)
+                .filter(member -> member.getStatus() == ConversationMemberStatus.ACTIVE)
+                .orElseThrow(() -> new ForbiddenException("User is not an active member of the conversation"));
+
+        if (membership.getRole() != ConversationMemberRole.ADMIN) {
+            throw new ForbiddenException("Only an admin can edit the conversation");
+        }
+
+        ConversationMapper.toEdit(conversation, request);
+        conversationRepository.save(conversation);
+
         return ConversationMapper.toResponse(conversation);
     }
 
@@ -241,7 +287,7 @@ public class ConversationService {
 
         Page<Conversation> conversations = conversationRepository.findAllByTypeAndDirectUser(ConversationType.DIRECT, user, pageable);
 
-        return conversations.map(ConversationMapper::toResponse);
+        return conversations.map(this::directResponse);
     }
 
     @Transactional(readOnly = true)
@@ -252,11 +298,13 @@ public class ConversationService {
         Page<CommunityMember> memberships = communityMemberRepository
                 .findByUserAndStatus(user, CommunityMemberStatus.ACTIVE, pageable);
 
+        // Comunidade sem conversa é omitida em vez de derrubar a listagem inteira: hoje
+        // toda Community nasce com uma, mas as criadas antes dessa garantia não têm, e um
+        // 404 aqui quebraria a aba de conversas inteira por causa de uma única comunidade.
         List<ConversationResponse> responses = memberships.getContent().stream()
                 .map(CommunityMember::getCommunity)
                 .filter(community -> community.getStatus() != CommunityStatus.ARCHIVED)
-                .map(community -> conversationRepository.findByCommunity(community)
-                        .orElseThrow(() -> new NotFoundException("Conversation for this community not found.")))
+                .flatMap(community -> conversationRepository.findByCommunity(community).stream())
                 .map(ConversationMapper::toResponse)
                 .toList();
 
@@ -304,6 +352,8 @@ public class ConversationService {
                     .orElseThrow(() -> new ForbiddenException("User is not a member of the community."));
         }
 
-        return ConversationMapper.toResponse(conversation);
+        return conversation.getType() == ConversationType.DIRECT
+                ? directResponse(conversation)
+                : ConversationMapper.toResponse(conversation);
     }
 }

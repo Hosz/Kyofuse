@@ -65,6 +65,7 @@ class DomainEnumTest {
                 NotificationType.POST_REACTION,
                 NotificationType.COMMENT_REACTION,
                 NotificationType.NEW_MESSAGE,
+                NotificationType.MESSAGE_REQUEST,
                 NotificationType.SYSTEM
         );
         assertThat(NotificationTargetType.values()).containsExactly(

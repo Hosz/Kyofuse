@@ -89,6 +89,8 @@ class CommunityMemberControllerTest {
                 "kyofuse-cs2",
                 userId,
                 "member",
+                "Member One",
+                "https://example.com/avatar.png",
                 CommunityMemberRole.MEMBER,
                 CommunityMemberStatus.ACTIVE,
                 now,

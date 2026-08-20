@@ -25,13 +25,29 @@
         >
         <span class="text-on-surface-variant">&#64;{{ comment().author.handle }} · {{ comment().timeAgo }}</span>
       </div>
-      <app-user-options-menu [userId]="comment().authorId" (blocked)="authorBlocked.emit(comment().authorId)" />
+      <app-user-options-menu
+        [userId]="comment().authorId"
+        [canBlock]="!isMine()"
+        [canDeleteContent]="isMine()"
+        contentLabel="comentário"
+        (deleteContent)="askDelete()"
+        (blocked)="authorBlocked.emit(comment().authorId)"
+      />
     </div>
 
     <p class="text-body-sm text-on-surface">{{ comment().content }}</p>
 
+    <app-reaction-summary
+      [postId]="comment().postId"
+      [commentId]="comment().id"
+      [likeCount]="comment().stats.likes"
+      [reactionCount]="comment().stats.reactions"
+      (openList)="reactions.openList()"
+    />
+
     <div class="flex items-center pt-1 text-on-surface-variant">
       <app-reaction-button
+        #reactions
         [postId]="comment().postId"
         [commentId]="comment().id"
         [likeCount]="comment().stats.likes"
@@ -40,3 +56,13 @@
     </div>
   </div>
 </div>
+
+<app-confirm-dialog
+  [open]="confirmDeleteOpen()"
+  title="Apagar comentário"
+  message="O comentário sai do post. Não dá para desfazer."
+  confirmLabel="Apagar"
+  [pending]="deleting()"
+  (confirmed)="confirmDelete()"
+  (cancelled)="cancelDelete()"
+/>

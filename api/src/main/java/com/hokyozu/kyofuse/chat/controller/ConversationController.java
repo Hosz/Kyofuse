@@ -1,6 +1,7 @@
 package com.hokyozu.kyofuse.chat.controller;
 
 import com.hokyozu.kyofuse.chat.dto.request.ConversationRequest;
+import com.hokyozu.kyofuse.chat.dto.request.UpdateConversationRequest;
 import com.hokyozu.kyofuse.chat.dto.response.ConversationResponse;
 import com.hokyozu.kyofuse.chat.service.ConversationService;
 import jakarta.validation.Valid;
@@ -25,6 +26,14 @@ public class ConversationController {
                                                    @RequestBody @Valid ConversationRequest request) {
         UUID userId = UUID.fromString(jwt.getSubject());
         return conversationService.createConversation(request, userId);
+    }
+
+    @PatchMapping("/edit/{conversationId}")
+    public ConversationResponse editGroupConversation(@AuthenticationPrincipal Jwt jwt,
+                                                      @PathVariable UUID conversationId,
+                                                      @RequestBody @Valid UpdateConversationRequest request) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return conversationService.editGroupConversation(conversationId, request, userId);
     }
 
     @PatchMapping("/{conversationId}/accept")

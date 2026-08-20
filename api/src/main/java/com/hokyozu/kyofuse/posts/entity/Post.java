@@ -1,5 +1,6 @@
 package com.hokyozu.kyofuse.posts.entity;
 
+import com.hokyozu.kyofuse.communities.entity.Community;
 import com.hokyozu.kyofuse.posts.enums.PostStatus;
 import com.hokyozu.kyofuse.posts.enums.PostType;
 import com.hokyozu.kyofuse.posts.enums.PostVisibility;
@@ -27,6 +28,11 @@ public class Post {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "author_id", nullable = false)
     private User author;
+
+    /** NULL em posts normais; preenchido só em posts que pertencem a uma comunidade. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "community_id")
+    private Community community;
 
     @Column(name = "content", length = 2000, nullable = false)
     private String content;

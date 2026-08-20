@@ -1,11 +1,15 @@
 package com.hokyozu.kyofuse.communities.service;
 
+import com.hokyozu.kyofuse.chat.service.ConversationService;
 import com.hokyozu.kyofuse.communities.dto.request.CommunityRequest;
 import com.hokyozu.kyofuse.communities.dto.request.UpdateCommunityRequest;
 import com.hokyozu.kyofuse.communities.dto.response.CommunityResponse;
 import com.hokyozu.kyofuse.communities.entity.Community;
+import com.hokyozu.kyofuse.communities.enums.CommunityMemberStatus;
 import com.hokyozu.kyofuse.communities.enums.CommunityStatus;
 import com.hokyozu.kyofuse.communities.mapper.CommunityMapper;
+import com.hokyozu.kyofuse.communities.mapper.CommunityMemberMapper;
+import com.hokyozu.kyofuse.communities.repository.CommunityMemberRepository;
 import com.hokyozu.kyofuse.communities.repository.CommunityRepository;
 import com.hokyozu.kyofuse.communities.validator.CommunityCreationValidator;
 import com.hokyozu.kyofuse.communities.validator.CommunityEditValidator;
@@ -18,6 +22,8 @@ import com.hokyozu.kyofuse.users.finder.UserFinder;
 import com.hokyozu.kyofuse.users.service.UserChecker;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,7 +39,10 @@ public class CommunityService {
     private final CommunityCreationValidator communityCreationValidator;
     private final CommunityEditValidator communityEditValidator;
 
+    private final ConversationService conversationService;
+
     private final CommunityRepository communityRepository;
+    private final CommunityMemberRepository communityMemberRepository;
     private final TeamRepository teamRepository;
     private final TeamChecker teamChecker;
 
@@ -46,6 +55,10 @@ public class CommunityService {
 
         Community community = CommunityMapper.toEntity(request, user);
         communityRepository.save(community);
+        communityMemberRepository.save(CommunityMemberMapper.toOwnerEntity(user, community));
+        // Toda Community tem exatamente uma conversa COMMUNITY (doc.md 10.6) — sem ela a
+        // comunidade aparece na listagem de chats do membro sem conversa correspondente.
+        conversationService.createCommunityConversation(community, user);
 
         return CommunityMapper.toResponse(community);
     }
@@ -62,6 +75,7 @@ public class CommunityService {
         String slug = resolveAvailableSlug(team.getSlug());
         Community community = CommunityMapper.toEntityTeamCommunity(user, team, slug);
         communityRepository.save(community);
+        communityMemberRepository.save(CommunityMemberMapper.toOwnerEntity(user, community));
         return community;
     }
 
@@ -143,5 +157,60 @@ public class CommunityService {
 
         community.setStatus(CommunityStatus.ARCHIVED);
         communityRepository.save(community);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<CommunityResponse> listCommunities(UUID userId, String name, Pageable pageable) {
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
+
+        String trimmedName = name == null ? "" : name.trim();
+        Page<Community> communities = trimmedName.isEmpty()
+                ? communityRepository.findAllByStatus(CommunityStatus.ACTIVE, pageable)
+                : communityRepository.findAllByStatusAndNameContainingIgnoreCase(CommunityStatus.ACTIVE, trimmedName, pageable);
+
+        return communities.map(CommunityMapper::toResponse);
+    }
+
+    /** Mesma ideia de TeamService.listingMyTeams, mas via community_members: só as
+     * comunidades onde o usuário tem vínculo ACTIVE (dono ou membro comum). */
+    @Transactional(readOnly = true)
+    public Page<CommunityResponse> listMyCommunities(UUID userId, Pageable pageable) {
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
+
+        return communityMemberRepository.findByUserAndStatus(user, CommunityMemberStatus.ACTIVE, pageable)
+                .map(member -> CommunityMapper.toResponse(member.getCommunity()));
+    }
+
+    /**
+     * Comunidade vinculada a um Team, se existir. Fica aqui (e não em TeamResponse)
+     * porque o vínculo é guardado do lado de communities (communities.team_id) — incluir
+     * no TeamResponse obrigaria um lookup extra em todos os pontos que montam um Team.
+     */
+    @Transactional(readOnly = true)
+    public CommunityResponse detailCommunityByTeam(UUID teamId) {
+        Community community = communityRepository.findByTeamId(teamId)
+                .orElseThrow(() -> new NotFoundException("Community not found"));
+
+        if (community.getStatus() == CommunityStatus.ARCHIVED) {
+            throw new NotFoundException("Community not found");
+        }
+
+        return CommunityMapper.toResponse(community);
+    }
+
+    /**
+     * Comunidades de um usuário qualquer, para exibir no perfil dele. Participação em
+     * comunidade é informação pública (mesmo tratamento da lista de membros de um
+     * Team), então não passa pela Política de Autorização Social.
+     */
+    @Transactional(readOnly = true)
+    public Page<CommunityResponse> listUserCommunities(UUID viewerId, UUID userId, Pageable pageable) {
+        User viewer = userFinder.findProfileByUserId(viewerId);
+        userChecker.checkActive(viewer);
+
+        return communityMemberRepository.findByUserIdAndStatus(userId, CommunityMemberStatus.ACTIVE, pageable)
+                .map(member -> CommunityMapper.toResponse(member.getCommunity()));
     }
 }

@@ -50,11 +50,12 @@
     }
   </div>
 
+  @if (showStatusActions()) {
   <div class="flex shrink-0 items-center gap-1">
     @if (isUnread()) {
       <button
         type="button"
-        (click)="toggleRead.emit()"
+        (click)="toggleRead.emit(); $event.stopPropagation()"
         aria-label="Marcar como lida"
         title="Marcar como lida"
         class="cursor-pointer rounded-full p-2 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
@@ -65,7 +66,7 @@
     @if (!isArchived()) {
       <button
         type="button"
-        (click)="toggleArchive.emit()"
+        (click)="toggleArchive.emit(); $event.stopPropagation()"
         aria-label="Arquivar"
         title="Arquivar"
         class="cursor-pointer rounded-full p-2 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
@@ -74,4 +75,5 @@
       </button>
     }
   </div>
+  }
 </article>

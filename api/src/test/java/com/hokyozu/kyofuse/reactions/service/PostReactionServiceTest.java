@@ -110,7 +110,7 @@ class PostReactionServiceTest {
 
         assertThat(post.getLikeCount()).isEqualTo(4);
         assertThat(post.getReactionCount()).isEqualTo(4);
-        assertThat(response).isEqualTo(new PostReactionResponse(postId, "player", "PlayerNick", "avatar.png", ReactionType.LIKE));
+        assertThat(response).isEqualTo(new PostReactionResponse(postId, userId, "player", "PlayerNick", "avatar.png", ReactionType.LIKE));
         verify(postRepository).save(post);
     }
 
@@ -219,18 +219,19 @@ class PostReactionServiceTest {
     }
 
     @Test
-    void getReactionsMapsNonLikeReactionsWithProfiles() {
+    void getReactionsIncludesLikesSoTheFrontCanShowASingleList() {
+        // A listagem no front é uma só: o tipo aparece no ícone, não em abas separadas.
         Pageable pageable = PageRequest.of(0, 10);
-        PostReaction reaction = reaction(ReactionType.FIRE);
         when(postFinder.findVisibleActivePost(postId, userId)).thenReturn(post);
-        when(postReactionRepository.findByPostIdAndReactionTypeNot(postId, ReactionType.LIKE, pageable))
-                .thenReturn(new PageImpl<>(List.of(reaction), pageable, 1));
+        when(postReactionRepository.findByPostId(postId, pageable))
+                .thenReturn(new PageImpl<>(List.of(reaction(ReactionType.FIRE), reaction(ReactionType.LIKE)), pageable, 2));
 
         Page<PostReactionResponse> result = service.getReactions(userId, postId, pageable);
 
-        assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).reactionType()).isEqualTo(ReactionType.FIRE);
+        assertThat(result.getContent()).extracting(PostReactionResponse::reactionType)
+                .containsExactly(ReactionType.FIRE, ReactionType.LIKE);
         verify(userChecker).checkActive(user);
+        verify(postReactionRepository, never()).findByPostIdAndReactionTypeNot(any(), any(), any());
     }
 
     @Test

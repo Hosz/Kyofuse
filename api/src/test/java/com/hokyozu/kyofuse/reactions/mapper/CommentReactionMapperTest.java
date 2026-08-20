@@ -37,13 +37,14 @@ class CommentReactionMapperTest {
     void mapsEntityToResponse() {
         UUID postId = UUID.randomUUID();
         UUID commentId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
         Comment comment = Comment.builder()
                 .id(commentId)
                 .post(Post.builder().id(postId).build())
                 .build();
         CommentReaction reaction = CommentReaction.builder()
                 .comment(comment)
-                .user(User.builder().username("player").build())
+                .user(User.builder().id(userId).username("player").build())
                 .reactionType(ReactionType.FIRE)
                 .build();
         GamerProfile profile = GamerProfile.builder()
@@ -54,7 +55,7 @@ class CommentReactionMapperTest {
         CommentReactionResponse result = CommentReactionMapper.toResponse(reaction, profile);
 
         assertThat(result).isEqualTo(
-                new CommentReactionResponse(postId, commentId, "player", "PlayerNick",
+                new CommentReactionResponse(postId, commentId, userId, "player", "PlayerNick",
                         "https://example.com/avatar.png", ReactionType.FIRE));
     }
 

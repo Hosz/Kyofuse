@@ -14,6 +14,7 @@ public class PostReactionMapper {
     public static PostReactionResponse toResponse(PostReaction postReactionSaved, GamerProfile profile) {
         return new PostReactionResponse(
                 postReactionSaved.getPost().getId(),
+                postReactionSaved.getUser().getId(),
                 postReactionSaved.getUser().getUsername(),
                 profile.getNickname(),
                 profile.getAvatarUrl(),

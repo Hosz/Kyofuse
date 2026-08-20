@@ -57,7 +57,7 @@ public class NotificationService {
             Pageable pageable) {
 
         return notificationRepository
-                .findAllByUserId(userId, pageable)
+                .findAllByUserIdOrderByCreatedAtDesc(userId, pageable)
                 .map(notificationMapper::toResponse);
     }
 

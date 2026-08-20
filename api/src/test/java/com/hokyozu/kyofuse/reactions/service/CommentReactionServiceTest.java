@@ -89,7 +89,7 @@ class CommentReactionServiceTest {
         assertThat(comment.getLikeCount()).isEqualTo(4);
         assertThat(comment.getReactionCount()).isEqualTo(4);
         assertThat(response).isEqualTo(
-                new CommentReactionResponse(postId, commentId, "player", "PlayerNick", "avatar.png", ReactionType.LIKE));
+                new CommentReactionResponse(postId, commentId, userId, "player", "PlayerNick", "avatar.png", ReactionType.LIKE));
         verify(commentRepository).save(comment);
     }
 
@@ -204,17 +204,16 @@ class CommentReactionServiceTest {
     }
 
     @Test
-    void getReactionsMapsNonLikeReactionsWithProfiles() {
+    void getReactionsIncludesLikesSoTheFrontCanShowASingleList() {
+        // A listagem no front é uma só: o tipo aparece no ícone, não em abas separadas.
         Pageable pageable = PageRequest.of(0, 10);
-        CommentReaction existing = reaction(ReactionType.FIRE);
-        when(reactionRepository.findByComment_Post_IdAndComment_IdAndReactionTypeNot(
-                postId, commentId, ReactionType.LIKE, pageable))
-                .thenReturn(new PageImpl<>(List.of(existing), pageable, 1));
+        when(reactionRepository.findByComment_Post_IdAndComment_Id(postId, commentId, pageable))
+                .thenReturn(new PageImpl<>(List.of(reaction(ReactionType.FIRE), reaction(ReactionType.LIKE)), pageable, 2));
 
         Page<CommentReactionResponse> result = service.getReactions(postId, commentId, userId, pageable);
 
-        assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).reactionType()).isEqualTo(ReactionType.FIRE);
+        assertThat(result.getContent()).extracting(CommentReactionResponse::reactionType)
+                .containsExactly(ReactionType.FIRE, ReactionType.LIKE);
         verify(userChecker).checkActive(user);
     }
 

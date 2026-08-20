@@ -108,6 +108,8 @@ class ConversationMemberControllerTest {
                 "Squad",
                 UUID.randomUUID(),
                 "player",
+                "Player One",
+                "https://example.com/avatar.png",
                 ConversationMemberRole.MEMBER,
                 ConversationMemberStatus.ACTIVE,
                 now,

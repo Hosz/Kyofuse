@@ -10,6 +10,7 @@ import com.hokyozu.kyofuse.communities.enums.CommunityVisibility;
 import com.hokyozu.kyofuse.communities.mapper.CommunityMemberMapper;
 import com.hokyozu.kyofuse.communities.repository.CommunityMemberRepository;
 import com.hokyozu.kyofuse.communities.repository.CommunityRepository;
+import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.shared.exception.ForbiddenException;
 import com.hokyozu.kyofuse.shared.exception.NotFoundException;
@@ -33,6 +34,7 @@ public class CommunityMemberService {
     private final CommunityMemberRepository communityMemberRepository;
     private final UserFinder userFinder;
     private final UserChecker userChecker;
+    private final GamerProfileFinder gamerProfileFinder;
 
     @Transactional
     public CommunityMemberResponse joinCommunity(UUID userId, UUID communityId) {
@@ -68,7 +70,7 @@ public class CommunityMemberService {
         if (communityMember == null) {
             communityMember = CommunityMemberMapper.toEntity(user, community);
             communityMemberRepository.save(communityMember);
-            return CommunityMemberMapper.toResponse(communityMember);
+            return CommunityMemberMapper.toResponse(communityMember, gamerProfileFinder.findProfileByUserId(user.getId()));
         }
 
         if (communityMember.getStatus() == CommunityMemberStatus.BANNED) {
@@ -88,7 +90,7 @@ public class CommunityMemberService {
         communityMember.setUpdatedAt(Instant.now());
         communityMemberRepository.save(communityMember);
 
-        return CommunityMemberMapper.toResponse(communityMember);
+        return CommunityMemberMapper.toResponse(communityMember, gamerProfileFinder.findProfileByUserId(user.getId()));
     }
 
     @Transactional(readOnly = true)
@@ -101,7 +103,10 @@ public class CommunityMemberService {
         }
 
         Page<CommunityMember> members = communityMemberRepository.findByCommunityId(communityId, pageable);
-        return members.map(CommunityMemberMapper::toResponse);
+        return members.map(member -> CommunityMemberMapper.toResponse(
+                member,
+                gamerProfileFinder.findProfileByUserId(member.getUser().getId())
+        ));
     }
 
     @Transactional

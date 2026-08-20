@@ -175,6 +175,16 @@ body {
 }
 
 /* Scrollbar minimalista para as colunas roláveis (sidebar, feed e discovery) */
+/* Rolagem sem barra visível — usada em faixas horizontais que já têm setas próprias. */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 .scrollbar-minimal {
   scrollbar-width: thin;
   scrollbar-color: var(--color-outline-variant) transparent;

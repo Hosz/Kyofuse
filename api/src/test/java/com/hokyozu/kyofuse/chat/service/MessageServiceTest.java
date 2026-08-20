@@ -23,6 +23,7 @@ import com.hokyozu.kyofuse.notifications.dto.request.CreateNotificationRequest;
 import com.hokyozu.kyofuse.notifications.enums.NotificationTargetType;
 import com.hokyozu.kyofuse.notifications.enums.NotificationType;
 import com.hokyozu.kyofuse.notifications.service.NotificationService;
+import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import com.hokyozu.kyofuse.shared.exception.ForbiddenException;
 import com.hokyozu.kyofuse.shared.exception.NotFoundException;
 import com.hokyozu.kyofuse.users.entity.User;
@@ -75,6 +76,9 @@ class MessageServiceTest {
 
     @Mock
     private NotificationService notificationService;
+
+    @Mock
+    private GamerProfileFinder gamerProfileFinder;
 
     @Spy
     private UserChecker userChecker = new UserChecker();
@@ -197,7 +201,7 @@ class MessageServiceTest {
     }
 
     @Test
-    void sendMessageRejectsPendingDirectConversationEvenForOriginalSender() {
+    void sendMessagePersistsFirstMessageFromCreatorOnPendingDirectConversation() {
         User sender = activeUser("alice");
         User other = activeUser("bob");
         Conversation conversation = directConversation(sender, other, DirectConversationStatus.PENDING);
@@ -205,8 +209,81 @@ class MessageServiceTest {
 
         when(userFinder.findProfileByUserId(sender.getId())).thenReturn(sender);
         when(conversationRepository.findById(conversation.getId())).thenReturn(Optional.of(conversation));
+        when(messageRepository.existsByConversation(conversation)).thenReturn(false);
+        when(messageRepository.save(any(Message.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        MessageResponse response = messageService.sendMessage(conversation.getId(), request, sender.getId());
+
+        assertThat(response.content()).isEqualTo("are you there?");
+        verify(messageRepository).save(any(Message.class));
+    }
+
+    @Test
+    void sendMessageNotifiesFirstMessageOnPendingConversationAsAMessageRequest() {
+        User sender = activeUser("alice");
+        User other = activeUser("bob");
+        Conversation conversation = directConversation(sender, other, DirectConversationStatus.PENDING);
+
+        when(userFinder.findProfileByUserId(sender.getId())).thenReturn(sender);
+        when(conversationRepository.findById(conversation.getId())).thenReturn(Optional.of(conversation));
+        when(messageRepository.existsByConversation(conversation)).thenReturn(false);
+        when(messageRepository.save(any(Message.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        messageService.sendMessage(conversation.getId(), new MessageRequest("oi"), sender.getId());
+
+        ArgumentCaptor<CreateNotificationRequest> captor = ArgumentCaptor.forClass(CreateNotificationRequest.class);
+        verify(notificationService).createNotification(captor.capture());
+        assertThat(captor.getValue().type()).isEqualTo(NotificationType.MESSAGE_REQUEST);
+        assertThat(captor.getValue().recipient()).isEqualTo(other);
+        assertThat(captor.getValue().targetId()).isEqualTo(conversation.getId());
+    }
+
+    @Test
+    void sendMessageNotifiesAcceptedDirectConversationAsANormalMessage() {
+        User sender = activeUser("alice");
+        User other = activeUser("bob");
+        Conversation conversation = directConversation(sender, other, DirectConversationStatus.ACCEPTED);
+
+        when(userFinder.findProfileByUserId(sender.getId())).thenReturn(sender);
+        when(conversationRepository.findById(conversation.getId())).thenReturn(Optional.of(conversation));
+        when(messageRepository.save(any(Message.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        messageService.sendMessage(conversation.getId(), new MessageRequest("oi"), sender.getId());
+
+        ArgumentCaptor<CreateNotificationRequest> captor = ArgumentCaptor.forClass(CreateNotificationRequest.class);
+        verify(notificationService).createNotification(captor.capture());
+        assertThat(captor.getValue().type()).isEqualTo(NotificationType.NEW_MESSAGE);
+    }
+
+    @Test
+    void sendMessageRejectsSecondMessageFromCreatorOnPendingDirectConversation() {
+        User sender = activeUser("alice");
+        User other = activeUser("bob");
+        Conversation conversation = directConversation(sender, other, DirectConversationStatus.PENDING);
+        MessageRequest request = new MessageRequest("still there?");
+
+        when(userFinder.findProfileByUserId(sender.getId())).thenReturn(sender);
+        when(conversationRepository.findById(conversation.getId())).thenReturn(Optional.of(conversation));
+        when(messageRepository.existsByConversation(conversation)).thenReturn(true);
 
         assertThatThrownBy(() -> messageService.sendMessage(conversation.getId(), request, sender.getId()))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("This conversation is not accepted yet.");
+
+        verify(messageRepository, never()).save(any());
+    }
+
+    @Test
+    void sendMessageRejectsRecipientOnPendingDirectConversation() {
+        User creator = activeUser("alice");
+        User recipient = activeUser("bob");
+        Conversation conversation = directConversation(creator, recipient, DirectConversationStatus.PENDING);
+        MessageRequest request = new MessageRequest("let me in first");
+
+        when(userFinder.findProfileByUserId(recipient.getId())).thenReturn(recipient);
+        when(conversationRepository.findById(conversation.getId())).thenReturn(Optional.of(conversation));
+
+        assertThatThrownBy(() -> messageService.sendMessage(conversation.getId(), request, recipient.getId()))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("This conversation is not accepted yet.");
 

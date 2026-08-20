@@ -12,6 +12,8 @@ public record ConversationMemberResponse(
         String conversationName,
         UUID userId,
         String username,
+        String nickname,
+        String avatarUrl,
         ConversationMemberRole role,
         ConversationMemberStatus status,
         Instant joinedAt,

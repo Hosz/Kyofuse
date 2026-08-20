@@ -7,9 +7,8 @@ import { PageResponse } from '../../../models/page-response.model';
 import { FALLBACK_AVATAR_URL } from '../../../shared/utils/format.util';
 import { REACTION_OPTIONS, ReactionType } from '../../../shared/models/reaction.model';
 
-export type ReactionListTab = 'likes' | 'reactions';
-
 interface ReactionEntry {
+  userId: string;
   username: string;
   nickname: string;
   avatarUrl: string;
@@ -24,7 +23,6 @@ interface ReactionEntry {
 })
 export class ReactionListModalComponent {
   open = input(false);
-  initialTab = input<ReactionListTab>('likes');
   postId = input.required<string>();
   /** Ausente quando a reação é de um post; presente quando é de um comentário. */
   commentId = input<string | null>(null);
@@ -34,7 +32,6 @@ export class ReactionListModalComponent {
   private postReactionService = inject(PostReactionService);
   private commentReactionService = inject(CommentReactionService);
 
-  activeTab = signal<ReactionListTab>('likes');
   entries = signal<ReactionEntry[]>([]);
   loading = signal(false);
   loadingMore = signal(false);
@@ -47,23 +44,13 @@ export class ReactionListModalComponent {
 
   constructor() {
     effect(() => {
-      if (this.open()) {
-        const tab = this.initialTab();
-        this.activeTab.set(tab);
-        this.fetch(tab, 0);
-      }
+      if (this.open()) this.fetch(0);
     });
-  }
-
-  setTab(tab: ReactionListTab): void {
-    if (this.activeTab() === tab) return;
-    this.activeTab.set(tab);
-    this.fetch(tab, 0);
   }
 
   loadMore(): void {
     if (this.loadingMore() || !this.hasMoreToLoad()) return;
-    this.fetch(this.activeTab(), this.page() + 1);
+    this.fetch(this.page() + 1);
   }
 
   reactionIcon(type: ReactionType): string {
@@ -74,7 +61,9 @@ export class ReactionListModalComponent {
     return REACTION_OPTIONS.find((option) => option.type === type)?.label ?? type;
   }
 
-  private fetch(tab: ReactionListTab, page: number): void {
+  /** Uma listagem só: getReactions devolve curtidas e demais reações juntas, e o tipo
+   * de cada uma aparece no ícone ao lado da pessoa. */
+  private fetch(page: number): void {
     if (page === 0) {
       this.loading.set(true);
       this.error.set(null);
@@ -83,14 +72,9 @@ export class ReactionListModalComponent {
     }
 
     const commentId = this.commentId();
-    const request$ =
-      tab === 'likes'
-        ? commentId
-          ? this.commentReactionService.getLikes(this.postId(), commentId, page)
-          : this.postReactionService.getLikes(this.postId(), page)
-        : commentId
-          ? this.commentReactionService.getReactions(this.postId(), commentId, page)
-          : this.postReactionService.getReactions(this.postId(), page);
+    const request$ = commentId
+      ? this.commentReactionService.getReactions(this.postId(), commentId, page)
+      : this.postReactionService.getReactions(this.postId(), page);
 
     request$.subscribe({
       next: (response) => this.applyResponse(page, response),
@@ -103,8 +87,9 @@ export class ReactionListModalComponent {
     });
   }
 
-  private applyResponse(page: number, response: PageResponse<{ username: string; nickname: string; profileImage: string; reactionType: ReactionType }>): void {
+  private applyResponse(page: number, response: PageResponse<{ userId: string; username: string; nickname: string; profileImage: string; reactionType: ReactionType }>): void {
     const mapped = response.content.map((entry) => ({
+      userId: entry.userId,
       username: entry.username,
       nickname: entry.nickname,
       avatarUrl: entry.profileImage || FALLBACK_AVATAR_URL,

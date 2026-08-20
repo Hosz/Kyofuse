@@ -14,6 +14,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -63,6 +64,34 @@ public class PostController {
         UUID userId = UUID.fromString(jwt.getSubject());
 
         return postService.getProfilePosts(profileId, pageable, userId);
+    }
+
+    @PostMapping("/community/{communityId}/post")
+    @ResponseStatus(HttpStatus.CREATED)
+    public PostResponse postInCommunity(@AuthenticationPrincipal Jwt jwt,
+                                        @PathVariable UUID communityId,
+                                        @RequestBody @Valid CreatePostRequest request) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return postService.postInCommunity(userId, communityId, request);
+    }
+
+    @GetMapping("/community/{communityId}/posts")
+    public Page<PostResponse> getCommunityPosts(@AuthenticationPrincipal Jwt jwt,
+                                                @PathVariable UUID communityId,
+                                                @RequestParam(defaultValue = "0") @Min(0) int page,
+                                                @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
+        Pageable pageable = defaultPageable(page, size);
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return postService.getCommunityPosts(userId, communityId, pageable);
+    }
+
+    @GetMapping("/following/posts")
+    public Page<PostResponse> getFollowingPosts(@AuthenticationPrincipal Jwt jwt,
+                                                @RequestParam(defaultValue = "0") @Min(0) int page,
+                                                @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        Pageable pageable = defaultPageable(page, size);
+        return postService.getFollowingPosts(userId, pageable);
     }
 
     @GetMapping("/posts/me")

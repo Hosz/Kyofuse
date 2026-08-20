@@ -25,6 +25,7 @@ public class CommentReactionMapper {
         return new CommentReactionResponse(
                 commentReactionSaved.getComment().getPost().getId(),
                 commentReactionSaved.getComment().getId(),
+                commentReactionSaved.getUser().getId(),
                 commentReactionSaved.getUser().getUsername(),
                 profile.getNickname(),
                 profile.getAvatarUrl(),

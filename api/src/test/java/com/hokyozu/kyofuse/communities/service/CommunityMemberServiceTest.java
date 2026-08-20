@@ -14,6 +14,7 @@ import com.hokyozu.kyofuse.shared.exception.ForbiddenException;
 import com.hokyozu.kyofuse.shared.exception.NotFoundException;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.enums.UserStatus;
+import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import com.hokyozu.kyofuse.users.finder.UserFinder;
 import com.hokyozu.kyofuse.users.service.UserChecker;
 import org.junit.jupiter.api.Test;
@@ -51,6 +52,9 @@ class CommunityMemberServiceTest {
 
     @Mock
     private UserFinder userFinder;
+
+    @Mock
+    private GamerProfileFinder gamerProfileFinder;
 
     @Spy
     private UserChecker userChecker = new UserChecker();

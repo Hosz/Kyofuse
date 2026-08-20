@@ -1,8 +1,12 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { AppSidebarComponent } from '../../components/layout/app-sidebar/app-sidebar';
 import { NotificationCardComponent } from '../../components/notifications/notification-card/notification-card';
+import { SkeletonComponent } from '../../components/shared/skeleton/skeleton';
+import { InfiniteScrollDirective } from '../../shared/directives/infinite-scroll.directive';
 import { AppNotification } from '../../shared/models/notification.model';
 import { NotificationService } from '../../core/services/notifications/notification.service';
+import { ToastService } from '../../core/services/ui/toast.service';
 import { FollowService } from '../../core/services/follow/follow.service';
 import { FriendshipService } from '../../core/services/friendship/friendship.service';
 import { FriendRequestService } from '../../core/services/friendship/friend-request.service';
@@ -13,7 +17,7 @@ import { toTimeAgo } from '../../shared/utils/format.util';
 
 type FilterId = 'all' | 'unread' | 'read' | 'archived' | 'system';
 type ViewMode = 'notifications' | 'requests';
-type RequestTab = 'all' | 'friends' | 'follow' | 'teams';
+type RequestTab = 'all' | 'friends' | 'follow' | 'teams' | 'messages';
 
 /** Espelha o enum NotificationType do backend — cada tipo vira um ícone. */
 const TYPE_ICON: Record<NotificationType, string> = {
@@ -33,7 +37,31 @@ const TYPE_ICON: Record<NotificationType, string> = {
   POST_COMMENT: 'chat_bubble',
   POST_REACTION: 'favorite',
   COMMENT_REACTION: 'favorite',
+  NEW_MESSAGE: 'chat',
+  MESSAGE_REQUEST: 'mark_unread_chat_alt',
   SYSTEM: 'info',
+};
+
+/**
+ * Uma solicitação pode nascer de duas origens: da lista de notificações (seguir, time,
+ * mensagem) ou do endpoint de pedidos de amizade. Elas são normalizadas nesse item pra
+ * caberem numa lista só, ordenada por data como a de notificações.
+ */
+interface RequestItem {
+  key: string;
+  tab: Exclude<RequestTab, 'all'>;
+  createdAt: string;
+  notification: AppNotification;
+  /** Só nos pedidos de amizade — o aceite deles usa outro serviço. */
+  friendRequest?: FriendRequestResponse;
+}
+
+const REQUESTS_EMPTY_MESSAGE: Record<RequestTab, string> = {
+  all: 'Nenhuma solicitação pendente.',
+  friends: 'Nenhuma solicitação de amizade pendente.',
+  follow: 'Nenhuma solicitação para seguir pendente.',
+  teams: 'Nenhum convite de time pendente.',
+  messages: 'Nenhuma solicitação de mensagem.',
 };
 
 const EMPTY_MESSAGE: Record<FilterId, string> = {
@@ -46,7 +74,7 @@ const EMPTY_MESSAGE: Record<FilterId, string> = {
 
 @Component({
   selector: 'app-notifications',
-  imports: [AppSidebarComponent, NotificationCardComponent],
+  imports: [AppSidebarComponent, NotificationCardComponent, SkeletonComponent, InfiniteScrollDirective],
   templateUrl: './notifications.html',
   styleUrl: './notifications.css',
 })
@@ -56,6 +84,8 @@ export class NotificationsComponent {
   private friendshipService = inject(FriendshipService);
   private friendRequestService = inject(FriendRequestService);
   private teamInviteService = inject(TeamInviteService);
+  private router = inject(Router);
+  private toastService = inject(ToastService);
 
   private notifications = signal<AppNotification[]>([]);
   private page = signal(0);
@@ -80,6 +110,7 @@ export class NotificationsComponent {
     { id: 'friends', label: 'Amizade' },
     { id: 'follow', label: 'Seguir' },
     { id: 'teams', label: 'Times' },
+    { id: 'messages', label: 'Mensagens' },
   ];
 
   friendRequests = signal<FriendRequestResponse[]>([]);
@@ -93,6 +124,13 @@ export class NotificationsComponent {
 
   unreadCount = computed(() => this.notifications().filter((n) => n.status === 'unread').length);
 
+  /** Solicitações de conversa: o backend marca a primeira mensagem de uma conversa
+   * ainda pendente como MESSAGE_REQUEST, então basta filtrar por esse tipo. O aceite
+   * acontece na própria conversa, pra onde o clique leva. */
+  messageRequests = computed(() =>
+    this.notifications().filter((n) => n.type === 'MESSAGE_REQUEST'),
+  );
+
   /** Pedidos de follow ainda pendentes: derivados da própria lista de notificações
    * (não existe endpoint dedicado pra listar solicitações de follow recebidas). */
   followRequests = computed(() =>
@@ -103,6 +141,65 @@ export class NotificationsComponent {
    * (não existe endpoint pra listar convites recebidos por mim em todos os times). */
   teamInviteRequests = computed(() =>
     this.notifications().filter((n) => n.type === 'TEAM_INVITE_RECEIVED' && !!n.action),
+  );
+
+  /** Pedidos de amizade viram notificações sintéticas pra renderizarem no mesmo card das
+   * demais solicitações — visualmente não há motivo pra elas destoarem. */
+  private friendRequestItems = computed<RequestItem[]>(() =>
+    this.friendRequests().map((request) => ({
+      key: `friend:${request.id}`,
+      tab: 'friends' as const,
+      createdAt: request.createdAt,
+      friendRequest: request,
+      notification: {
+        id: request.id,
+        type: 'FOLLOW_REQUEST_RECEIVED',
+        source: 'social',
+        title: 'Solicitação de amizade',
+        timeAgo: toTimeAgo(request.createdAt),
+        createdAt: request.createdAt,
+        status: 'unread',
+        icon: 'person_add',
+        body: [
+          { text: '@' + request.senderUsername, bold: true },
+          { text: ' quer ser seu amigo' },
+        ],
+        action: { acceptLabel: 'Aceitar', declineLabel: 'Recusar' },
+      },
+    })),
+  );
+
+  /** Tudo junto e em ordem cronológica, como na aba de notificações: separar por tópico
+   * atrapalha quando há muita solicitação acumulada. */
+  private allRequests = computed<RequestItem[]>(() => {
+    const fromNotifications = (list: AppNotification[], tab: Exclude<RequestTab, 'all'>) =>
+      list.map((notification) => ({
+        key: `${tab}:${notification.id}`,
+        tab,
+        createdAt: notification.createdAt,
+        notification,
+      }));
+
+    return [
+      ...this.friendRequestItems(),
+      ...fromNotifications(this.followRequests(), 'follow'),
+      ...fromNotifications(this.teamInviteRequests(), 'teams'),
+      ...fromNotifications(this.messageRequests(), 'messages'),
+    ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  });
+
+  visibleRequests = computed(() => {
+    const tab = this.requestTab();
+    return tab === 'all' ? this.allRequests() : this.allRequests().filter((item) => item.tab === tab);
+  });
+
+  requestsLoading = computed(() => this.loading() || this.friendRequestsLoading());
+
+  requestsEmptyMessage = computed(() => REQUESTS_EMPTY_MESSAGE[this.requestTab()]);
+
+  /** A paginação de amizade só faz sentido enquanto esses itens estão em tela. */
+  showLoadMoreFriendRequests = computed(
+    () => this.hasMoreFriendRequests() && (this.requestTab() === 'all' || this.requestTab() === 'friends'),
   );
 
   pendingRequestsCount = computed(
@@ -144,6 +241,12 @@ export class NotificationsComponent {
     this.view.set(view);
   }
 
+  openConversation(notification: AppNotification): void {
+    if (!notification.conversationId) return;
+    if (notification.status === 'unread') this.toggleRead(notification);
+    this.router.navigate(['/chats', notification.conversationId]);
+  }
+
   setRequestTab(tab: RequestTab): void {
     this.requestTab.set(tab);
   }
@@ -152,12 +255,34 @@ export class NotificationsComponent {
     this.activeFilter.set(id);
   }
 
+  acceptRequest(item: RequestItem): void {
+    if (item.friendRequest) this.acceptFriendRequest(item.friendRequest);
+    else this.accept(item.notification);
+  }
+
+  declineRequest(item: RequestItem): void {
+    if (item.friendRequest) this.declineFriendRequest(item.friendRequest);
+    else this.decline(item.notification);
+  }
+
+  /** Só a solicitação de mensagem leva a algum lugar: o aceite dela mora na conversa. */
+  openRequest(item: RequestItem): void {
+    if (item.tab === 'messages') this.openConversation(item.notification);
+  }
+
+  isRequestPending(item: RequestItem): boolean {
+    return !!item.friendRequest && this.isFriendRequestPending(item.friendRequest.id);
+  }
+
   toggleRead(notification: AppNotification): void {
     if (notification.status !== 'unread') return;
 
     this.notificationService.readNotification(notification.id).subscribe({
       next: () => this.updateNotification(notification.id, (n) => ({ ...n, status: 'read' })),
-      error: (error) => console.error('Failed to mark notification as read:', error),
+      error: (error) => {
+        console.error('Failed to mark notification as read:', error);
+        this.toastService.error('Não foi possível marcar como lida.');
+      },
     });
   }
 
@@ -166,7 +291,10 @@ export class NotificationsComponent {
 
     this.notificationService.archiveNotification(notification.id).subscribe({
       next: () => this.updateNotification(notification.id, (n) => ({ ...n, status: 'archived' })),
-      error: (error) => console.error('Failed to archive notification:', error),
+      error: (error) => {
+        console.error('Failed to archive notification:', error);
+        this.toastService.error('Não foi possível arquivar a notificação.');
+      },
     });
   }
 
@@ -175,7 +303,10 @@ export class NotificationsComponent {
     if (!targetId) return;
 
     const onSuccess = () => this.updateNotification(notification.id, (n) => ({ ...n, status: 'read', action: undefined }));
-    const onError = (error: unknown) => console.error('Failed to accept request:', error);
+    const onError = (error: unknown) => {
+      console.error('Failed to accept request:', error);
+      this.toastService.error('Não foi possível aceitar a solicitação.');
+    };
 
     if (notification.type === 'TEAM_INVITE_RECEIVED') {
       this.teamInviteService.acceptInvite(targetId).subscribe({ next: onSuccess, error: onError });
@@ -189,7 +320,10 @@ export class NotificationsComponent {
     if (!targetId) return;
 
     const onSuccess = () => this.updateNotification(notification.id, (n) => ({ ...n, status: 'archived', action: undefined }));
-    const onError = (error: unknown) => console.error('Failed to decline request:', error);
+    const onError = (error: unknown) => {
+      console.error('Failed to decline request:', error);
+      this.toastService.error('Não foi possível recusar a solicitação.');
+    };
 
     if (notification.type === 'TEAM_INVITE_RECEIVED') {
       this.teamInviteService.declineInvite(targetId).subscribe({ next: onSuccess, error: onError });
@@ -207,7 +341,11 @@ export class NotificationsComponent {
     });
   }
 
+  loadingMore = signal(false);
+
   loadPrevious(): void {
+    if (this.loadingMore() || this.lastPage()) return;
+    this.loadingMore.set(true);
     this.loadPage(this.page() + 1);
   }
 
@@ -288,10 +426,13 @@ export class NotificationsComponent {
         this.page.set(page);
         this.lastPage.set(response.last);
         this.loading.set(false);
+        this.loadingMore.set(false);
       },
       error: (error) => {
         console.error('Failed to fetch notifications:', error);
         this.loading.set(false);
+        this.loadingMore.set(false);
+        this.toastService.error('Não foi possível carregar as notificações.');
       },
     });
   }
@@ -302,6 +443,9 @@ export class NotificationsComponent {
 
   private toAppNotification(n: NotificationResponse): AppNotification {
     const isActionable = n.type === 'FOLLOW_REQUEST_RECEIVED' || n.type === 'TEAM_INVITE_RECEIVED';
+    // Solicitação de mensagem não tem aceite aqui: o Aceitar/Recusar vive na própria
+    // conversa, então guardamos o id dela pra poder navegar até lá.
+    const conversationId = n.target?.type === 'CONVERSATION' ? n.target.id : undefined;
 
     return {
       id: n.id,
@@ -309,12 +453,14 @@ export class NotificationsComponent {
       source: n.type === 'SYSTEM' ? 'system' : 'social',
       title: n.title,
       timeAgo: toTimeAgo(n.createdAt),
+      createdAt: n.createdAt,
       status: n.status === 'UNREAD' ? 'unread' : n.status === 'READ' ? 'read' : 'archived',
       icon: TYPE_ICON[n.type],
       avatarUrl: n.actor?.avatarUrl,
       body: [{ text: n.message }],
       action: isActionable ? { acceptLabel: 'Aceitar', declineLabel: 'Recusar' } : undefined,
       targetId: isActionable ? n.target?.id : undefined,
+      conversationId,
     };
   }
 }

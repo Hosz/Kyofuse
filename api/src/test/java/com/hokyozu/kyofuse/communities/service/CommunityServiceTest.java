@@ -1,11 +1,16 @@
 package com.hokyozu.kyofuse.communities.service;
 
+import com.hokyozu.kyofuse.chat.service.ConversationService;
 import com.hokyozu.kyofuse.communities.dto.request.CommunityRequest;
 import com.hokyozu.kyofuse.communities.dto.request.UpdateCommunityRequest;
 import com.hokyozu.kyofuse.communities.dto.response.CommunityResponse;
 import com.hokyozu.kyofuse.communities.entity.Community;
+import com.hokyozu.kyofuse.communities.entity.CommunityMember;
+import com.hokyozu.kyofuse.communities.enums.CommunityMemberRole;
+import com.hokyozu.kyofuse.communities.enums.CommunityMemberStatus;
 import com.hokyozu.kyofuse.communities.enums.CommunityStatus;
 import com.hokyozu.kyofuse.communities.enums.CommunityVisibility;
+import com.hokyozu.kyofuse.communities.repository.CommunityMemberRepository;
 import com.hokyozu.kyofuse.communities.repository.CommunityRepository;
 import com.hokyozu.kyofuse.communities.validator.CommunityCreationValidator;
 import com.hokyozu.kyofuse.communities.validator.CommunityEditValidator;
@@ -24,8 +29,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -50,6 +59,12 @@ class CommunityServiceTest {
 
     @Mock
     private CommunityRepository communityRepository;
+
+    @Mock
+    private CommunityMemberRepository communityMemberRepository;
+
+    @Mock
+    private ConversationService conversationService;
 
     @Spy
     private UserChecker userChecker = new UserChecker();
@@ -78,6 +93,7 @@ class CommunityServiceTest {
         verify(communityRepository).save(captor.capture());
 
         Community saved = captor.getValue();
+        verify(conversationService).createCommunityConversation(saved, user);
         assertThat(saved.getOwner()).isSameAs(user);
         assertThat(saved.getName()).isEqualTo("Kyofuse CS2");
         assertThat(saved.getSlug()).isEqualTo("kyofuse-cs2");
@@ -307,6 +323,201 @@ class CommunityServiceTest {
                 .hasMessage("Community not found");
 
         verify(communityRepository, never()).save(any());
+    }
+
+    @Test
+    void listCommunitiesReturnsActiveCommunitiesForActiveUser() {
+        UUID userId = UUID.randomUUID();
+        User user = activeUser(userId, "viewer");
+        Community community = activeCommunity(UUID.randomUUID(), activeUser(UUID.randomUUID(), "owner"));
+        Pageable pageable = PageRequest.of(0, 20);
+
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
+        when(communityRepository.findAllByStatus(CommunityStatus.ACTIVE, pageable))
+                .thenReturn(new PageImpl<>(List.of(community), pageable, 1));
+
+        var response = communityService.listCommunities(userId, null, pageable);
+
+        assertThat(response.getContent()).hasSize(1);
+        assertThat(response.getContent().getFirst().id()).isEqualTo(community.getId());
+    }
+
+    @Test
+    void listCommunitiesRejectsInactiveUser() {
+        UUID userId = UUID.randomUUID();
+        User user = User.builder().id(userId).status(UserStatus.INACTIVE).build();
+        Pageable pageable = PageRequest.of(0, 20);
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
+
+        assertThatThrownBy(() -> communityService.listCommunities(userId, null, pageable))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Usuário não ativo.");
+
+        verify(communityRepository, never()).findAllByStatus(any(), any());
+    }
+
+    @Test
+    void listMyCommunitiesReturnsCommunitiesOfActiveMemberships() {
+        UUID userId = UUID.randomUUID();
+        User user = activeUser(userId, "viewer");
+        Community community = activeCommunity(UUID.randomUUID(), activeUser(UUID.randomUUID(), "owner"));
+        CommunityMember membership = CommunityMember.builder()
+                .id(UUID.randomUUID())
+                .community(community)
+                .user(user)
+                .status(CommunityMemberStatus.ACTIVE)
+                .joinedAt(Instant.now())
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+        Pageable pageable = PageRequest.of(0, 20);
+
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
+        when(communityMemberRepository.findByUserAndStatus(user, CommunityMemberStatus.ACTIVE, pageable))
+                .thenReturn(new PageImpl<>(List.of(membership), pageable, 1));
+
+        var response = communityService.listMyCommunities(userId, pageable);
+
+        assertThat(response.getContent()).hasSize(1);
+        assertThat(response.getContent().getFirst().id()).isEqualTo(community.getId());
+    }
+
+    @Test
+    void listMyCommunitiesRejectsInactiveUser() {
+        UUID userId = UUID.randomUUID();
+        User user = User.builder().id(userId).status(UserStatus.INACTIVE).build();
+        Pageable pageable = PageRequest.of(0, 20);
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
+
+        assertThatThrownBy(() -> communityService.listMyCommunities(userId, pageable))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Usuário não ativo.");
+
+        verify(communityMemberRepository, never()).findByUserAndStatus(any(), any(), any());
+    }
+
+    @Test
+    void createCommunityAlsoRegistersOwnerAsAdminMember() {
+        UUID userId = UUID.randomUUID();
+        User user = activeUser(userId, "owner");
+
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
+        when(communityRepository.save(any(Community.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        communityService.createCommunity(validRequest(), userId);
+
+        ArgumentCaptor<CommunityMember> captor = ArgumentCaptor.forClass(CommunityMember.class);
+        verify(communityMemberRepository).save(captor.capture());
+        assertThat(captor.getValue().getUser()).isSameAs(user);
+        assertThat(captor.getValue().getRole()).isEqualTo(CommunityMemberRole.ADMIN);
+        assertThat(captor.getValue().getStatus()).isEqualTo(CommunityMemberStatus.ACTIVE);
+    }
+
+    @Test
+    void autoCreateTeamCommunityAlsoRegistersOwnerAsAdminMember() {
+        User owner = activeUser(UUID.randomUUID(), "owner");
+        Team team = team(owner, "Kyofuse Academy", "kyofuse-academy");
+
+        when(communityRepository.existsBySlug("kyofuse-academy")).thenReturn(false);
+        when(communityRepository.save(any(Community.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        communityService.autoCreateTeamCommunity(owner, team);
+
+        ArgumentCaptor<CommunityMember> captor = ArgumentCaptor.forClass(CommunityMember.class);
+        verify(communityMemberRepository).save(captor.capture());
+        assertThat(captor.getValue().getUser()).isSameAs(owner);
+        assertThat(captor.getValue().getRole()).isEqualTo(CommunityMemberRole.ADMIN);
+    }
+
+    @Test
+    void listCommunitiesFiltersByNameWhenProvided() {
+        UUID userId = UUID.randomUUID();
+        User user = activeUser(userId, "viewer");
+        Community community = activeCommunity(UUID.randomUUID(), activeUser(UUID.randomUUID(), "owner"));
+        Pageable pageable = PageRequest.of(0, 20);
+
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
+        when(communityRepository.findAllByStatusAndNameContainingIgnoreCase(CommunityStatus.ACTIVE, "kyo", pageable))
+                .thenReturn(new PageImpl<>(List.of(community), pageable, 1));
+
+        var response = communityService.listCommunities(userId, "  kyo  ", pageable);
+
+        assertThat(response.getContent()).hasSize(1);
+        verify(communityRepository, never()).findAllByStatus(any(), any());
+    }
+
+    @Test
+    void listCommunitiesIgnoresBlankNameFilter() {
+        UUID userId = UUID.randomUUID();
+        User user = activeUser(userId, "viewer");
+        Pageable pageable = PageRequest.of(0, 20);
+
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
+        when(communityRepository.findAllByStatus(CommunityStatus.ACTIVE, pageable))
+                .thenReturn(new PageImpl<>(List.of(), pageable, 0));
+
+        communityService.listCommunities(userId, "   ", pageable);
+
+        verify(communityRepository, never()).findAllByStatusAndNameContainingIgnoreCase(any(), any(), any());
+    }
+
+    @Test
+    void detailCommunityByTeamReturnsLinkedCommunity() {
+        UUID teamId = UUID.randomUUID();
+        Community community = activeCommunity(UUID.randomUUID(), activeUser(UUID.randomUUID(), "owner"));
+        when(communityRepository.findByTeamId(teamId)).thenReturn(Optional.of(community));
+
+        var response = communityService.detailCommunityByTeam(teamId);
+
+        assertThat(response.id()).isEqualTo(community.getId());
+    }
+
+    @Test
+    void detailCommunityByTeamThrowsNotFoundWhenTeamHasNoCommunity() {
+        UUID teamId = UUID.randomUUID();
+        when(communityRepository.findByTeamId(teamId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> communityService.detailCommunityByTeam(teamId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Community not found");
+    }
+
+    @Test
+    void detailCommunityByTeamThrowsNotFoundWhenArchived() {
+        UUID teamId = UUID.randomUUID();
+        Community community = activeCommunity(UUID.randomUUID(), activeUser(UUID.randomUUID(), "owner"));
+        community.setStatus(CommunityStatus.ARCHIVED);
+        when(communityRepository.findByTeamId(teamId)).thenReturn(Optional.of(community));
+
+        assertThatThrownBy(() -> communityService.detailCommunityByTeam(teamId))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void listUserCommunitiesReturnsCommunitiesOfTargetUser() {
+        UUID viewerId = UUID.randomUUID();
+        UUID targetId = UUID.randomUUID();
+        User viewer = activeUser(viewerId, "viewer");
+        Community community = activeCommunity(UUID.randomUUID(), activeUser(UUID.randomUUID(), "owner"));
+        CommunityMember membership = CommunityMember.builder()
+                .id(UUID.randomUUID())
+                .community(community)
+                .user(activeUser(targetId, "target"))
+                .status(CommunityMemberStatus.ACTIVE)
+                .joinedAt(Instant.now())
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+        Pageable pageable = PageRequest.of(0, 20);
+
+        when(userFinder.findProfileByUserId(viewerId)).thenReturn(viewer);
+        when(communityMemberRepository.findByUserIdAndStatus(targetId, CommunityMemberStatus.ACTIVE, pageable))
+                .thenReturn(new PageImpl<>(List.of(membership), pageable, 1));
+
+        var response = communityService.listUserCommunities(viewerId, targetId, pageable);
+
+        assertThat(response.getContent()).hasSize(1);
+        assertThat(response.getContent().getFirst().id()).isEqualTo(community.getId());
     }
 
     private CommunityRequest validRequest() {

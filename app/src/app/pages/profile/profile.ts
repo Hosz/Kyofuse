@@ -1,5 +1,9 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { ConversationService } from '../../core/services/chat/conversation.service';
+import { CommunityService } from '../../core/services/communities/community.service';
+import { TeamService } from '../../core/services/teams/team.service';
+import { ProfileEntity } from '../../shared/models/profile.model';
 import { catchError, forkJoin, map, of } from 'rxjs';
 import { AppSidebarComponent } from '../../components/layout/app-sidebar/app-sidebar';
 import { ProfileHeaderComponent } from '../../components/profile/profile-header/profile-header';
@@ -39,6 +43,7 @@ const EMPTY_PROFILE: gamerProfileResponse = {
   nickname: '',
   bio: '',
   avatarUrl: '',
+  bannerUrl: '',
   country: '',
   city: '',
   state: '',
@@ -87,8 +92,23 @@ export class ProfileComponent {
   friendshipService = inject(FriendshipService);
   friendRequestService = inject(FriendRequestService);
   private router = inject(Router);
+  private conversationService = inject(ConversationService);
+  private communityService = inject(CommunityService);
+  private teamService = inject(TeamService);
 
   profile = signal<gamerProfileResponse>(EMPTY_PROFILE);
+  startingConversation = signal(false);
+  messageError = signal<string | null>(null);
+
+  communities = signal<ProfileEntity[]>([]);
+  teams = signal<ProfileEntity[]>([]);
+
+  /**
+   * Perfil privado de quem não é amigo nem seguidor: a identidade aparece normalmente,
+   * mas a API nega posts, respostas e as listas de conexões. Um 403 nesses endpoints é
+   * resposta esperada, não falha — por isso vira estado de tela, não erro de console.
+   */
+  contentRestricted = signal(false);
   posts = signal<Post[]>([]);
   postsCount = signal(0);
   private postsPage = signal(0);
@@ -153,6 +173,15 @@ export class ProfileComponent {
     this.router.navigate(['/post', reply.comment.postId], { queryParams: { comment: reply.comment.id } });
   }
 
+  /** Sem isso o botão nascia sempre como "Seguir", e clicar em quem já seguimos
+   * disparava um follow duplicado que o backend recusa. */
+  private loadFollowState(targetUserId: string): void {
+    this.followService.isFollowing(targetUserId).subscribe({
+      next: (following) => this.viewerIsFollowing.set(following),
+      error: (error) => console.error('Failed to fetch follow state:', error),
+    });
+  }
+
   onToggleFollow(): void {
     const targetUserId = this.userId();
     if (!targetUserId || this.followActionPending()) return;
@@ -215,8 +244,69 @@ export class ProfileComponent {
     });
   }
 
+  /**
+   * Times e comunidades do dono do perfil. Carregado depois que o perfil resolve,
+   * porque a rota do próprio perfil (/perfil, sem :userId) só descobre o userId ali.
+   */
+  private loadMemberships(userId: string): void {
+    this.communityService.listUserCommunities(userId).subscribe({
+      next: (response) =>
+        this.communities.set(
+          response.content.map((community) => ({
+            id: community.id,
+            name: community.communityName,
+            meta: community.visibility === 'PRIVATE' ? 'Privada' : 'Pública',
+            icon: 'groups_2',
+            imageUrl: community.communityAvatarUrl,
+            route: `/comunidade/${community.id}`,
+          })),
+        ),
+      error: (error) => console.error('Failed to fetch user communities:', error),
+    });
+
+    this.teamService.listingUserTeams(userId).subscribe({
+      next: (response) =>
+        this.teams.set(
+          response.content.map((team) => ({
+            id: team.id,
+            name: team.name,
+            meta: team.region || 'Time',
+            icon: 'groups',
+            imageUrl: team.avatarUrl,
+            route: `/times/${team.id}`,
+          })),
+        ),
+      error: (error) => console.error('Failed to fetch user teams:', error),
+    });
+  }
+
   onProfileBlocked(): void {
     this.router.navigateByUrl('/home');
+  }
+
+  /**
+   * createConversation é idempotente pra DIRECT: se já existir conversa com essa
+   * pessoa o backend devolve a existente em vez de criar outra, então dá pra usar
+   * tanto pra iniciar quanto pra reabrir uma conversa.
+   */
+  onMessageClick(): void {
+    const targetUserId = this.profile().userId;
+    if (!targetUserId || this.startingConversation()) return;
+
+    this.startingConversation.set(true);
+    this.conversationService.createConversation({ participantIds: [targetUserId] }).subscribe({
+      next: (conversation) => {
+        this.startingConversation.set(false);
+        this.router.navigate(['/chats', conversation.id]);
+      },
+      error: (error) => {
+        console.error('Failed to start conversation:', error);
+        this.startingConversation.set(false);
+        this.messageError.set(
+          error?.error?.message ?? 'Não foi possível iniciar uma conversa com esse usuário.',
+        );
+      },
+    });
   }
 
   onAuthorBlocked(authorId: string): void {
@@ -224,7 +314,16 @@ export class ProfileComponent {
       this.router.navigateByUrl('/home');
       return;
     }
+
     this.posts.update((list) => list.filter((post) => post.author.id !== authorId));
+  }
+
+  onReplyDeleted(commentId: string): void {
+    this.replies.update((list) => list.filter((reply) => reply.comment.id !== commentId));
+  }
+
+  onPostDeleted(postId: string): void {
+    this.posts.update((list) => list.filter((post) => post.id !== postId));
   }
 
   openModal(kind: ModalKind): void {
@@ -239,7 +338,10 @@ export class ProfileComponent {
     this.viewMode.set('owner');
 
     this.profileService.myProfile().subscribe({
-      next: (response) => this.profile.set(response),
+      next: (response) => {
+        this.profile.set(response);
+        this.loadMemberships(response.userId);
+      },
       error: (error) => console.error('Failed to fetch my profile:', error),
     });
 
@@ -247,17 +349,23 @@ export class ProfileComponent {
 
     this.followService.showMyFollowersQuantity().subscribe({
       next: (count) => this.followersCount.set(count ?? 0),
-      error: (error) => console.error('Failed to fetch followers count:', error),
+      error: (error) => {
+        if (error?.status !== 403) console.error('Failed to fetch followers count:', error);
+      },
     });
 
     this.followService.showMyFollowingQuantity().subscribe({
       next: (count) => this.followingCount.set(count ?? 0),
-      error: (error) => console.error('Failed to fetch following count:', error),
+      error: (error) => {
+        if (error?.status !== 403) console.error('Failed to fetch following count:', error);
+      },
     });
 
     this.friendshipService.showMyFriendsQuantity().subscribe({
       next: (count) => this.friendsCount.set(count),
-      error: (error) => console.error('Failed to fetch friends count:', error),
+      error: (error) => {
+        if (error?.status !== 403) console.error('Failed to fetch friends count:', error);
+      },
     });
   }
 
@@ -266,10 +374,13 @@ export class ProfileComponent {
       next: (response) => {
         this.profile.set(response);
         this.viewMode.set('visitor');
+        this.loadFollowState(targetUserId);
         this.loadOtherProfileExtras(targetUserId);
+        this.loadMemberships(targetUserId);
       },
       error: (error) => {
-        console.error('Failed to fetch user profile:', error);
+        // Depois que perfil privado passou a ser visível, um 403 aqui significa bloqueio.
+        if (error?.status !== 403) console.error('Failed to fetch user profile:', error);
         this.viewMode.set('restricted');
       },
     });
@@ -280,17 +391,23 @@ export class ProfileComponent {
 
     this.followService.showFollowersQuantity(targetUserId).subscribe({
       next: (count) => this.followersCount.set(count ?? 0),
-      error: (error) => console.error('Failed to fetch followers count:', error),
+      error: (error) => {
+        if (error?.status !== 403) console.error('Failed to fetch followers count:', error);
+      },
     });
 
     this.followService.showFollowingQuantity(targetUserId).subscribe({
       next: (count) => this.followingCount.set(count ?? 0),
-      error: (error) => console.error('Failed to fetch following count:', error),
+      error: (error) => {
+        if (error?.status !== 403) console.error('Failed to fetch following count:', error);
+      },
     });
 
     this.friendshipService.showUserFriendsQuantity(targetUserId).subscribe({
       next: (count) => this.friendsCount.set(count),
-      error: (error) => console.error('Failed to fetch friends count:', error),
+      error: (error) => {
+        if (error?.status !== 403) console.error('Failed to fetch friends count:', error);
+      },
     });
 
     /** Não existe endpoint pra checar diretamente "já mandei pedido pra esse usuário?",
@@ -333,7 +450,11 @@ export class ProfileComponent {
         this.postsLoadingMore.set(false);
       },
       error: (error) => {
-        console.error('Failed to fetch posts:', error);
+        if (error?.status === 403) {
+          this.contentRestricted.set(true);
+        } else {
+          console.error('Failed to fetch posts:', error);
+        }
         this.postsLoadingMore.set(false);
       },
     });
@@ -382,7 +503,11 @@ export class ProfileComponent {
         });
       },
       error: (error) => {
-        console.error('Failed to fetch user comments:', error);
+        if (error?.status === 403) {
+          this.contentRestricted.set(true);
+        } else {
+          console.error('Failed to fetch user comments:', error);
+        }
         this.repliesLoading.set(false);
         this.repliesLoadingMore.set(false);
       },

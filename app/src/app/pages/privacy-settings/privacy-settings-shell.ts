@@ -17,6 +17,7 @@ export class PrivacySettingsShellComponent {
     { path: 'conteudo', label: 'Visibilidade de Conteúdo', icon: 'article' },
     { path: 'conexoes', label: 'Visibilidade de Conexões', icon: 'diversity_3' },
     { path: 'interacoes', label: 'Permissões de Interação', icon: 'shield_person' },
+    { path: 'bloqueados', label: 'Usuários Bloqueados', icon: 'block' },
   ];
 
   ngOnInit(): void {

@@ -9,7 +9,7 @@
         } @else {
           <app-profile-header
             [profile]="profile()"
-            [bannerUrl]="''"
+            [bannerUrl]="profile().bannerUrl"
             [verified]="false"
             [stats]="rankStats()"
             [handle]="profile().username"
@@ -27,8 +27,15 @@
             (toggleFollow)="onToggleFollow()"
             (toggleFriendRequest)="onToggleFriendRequest()"
             (inviteClick)="openModal('invite')"
+            (messageClick)="onMessageClick()"
             (blocked)="onProfileBlocked()"
           />
+
+          @if (messageError()) {
+            <p class="rounded-lg border border-error/40 bg-error/10 px-4 py-2.5 text-label-md text-error">
+              {{ messageError() }}
+            </p>
+          }
 
           <app-profile-highlights />
 
@@ -36,8 +43,22 @@
             <div class="flex min-w-0 flex-1 flex-col">
               <app-feed-tabs [tabs]="profileTabs()" (tabSelected)="onTabSelected($event)" />
 
-              @if (activeTabId() === 'posts') {
-                <app-feed-list [posts]="posts()" (authorBlocked)="onAuthorBlocked($event)" />
+              @if (contentRestricted()) {
+                <div class="flex flex-col items-center gap-3 px-lg py-16 text-center">
+                  <span class="flex h-16 w-16 items-center justify-center rounded-full border-2 border-outline-variant text-on-surface-variant">
+                    <span class="material-symbols-outlined text-[28px]">lock</span>
+                  </span>
+                  <p class="text-body-md font-semibold text-on-surface">Esta conta é privada</p>
+                  <p class="max-w-[24rem] text-body-sm text-on-surface-variant">
+                    Siga {{ profile().nickname || profile().username }} para ver as publicações, respostas e conexões.
+                  </p>
+                </div>
+              } @else if (activeTabId() === 'posts') {
+                <app-feed-list
+                  [posts]="posts()"
+                  (authorBlocked)="onAuthorBlocked($event)"
+                  (postDeleted)="onPostDeleted($event)"
+                />
 
                 @if (hasMorePostsToLoad()) {
                   <button
@@ -61,14 +82,18 @@
                       >
                         @if (reply.post; as replyPost) {
                           <div (click)="$event.stopPropagation()">
-                            <app-post-card [post]="replyPost" (authorBlocked)="onAuthorBlocked($event)" />
+                            <app-post-card [post]="replyPost" (authorBlocked)="onAuthorBlocked($event)" (deleted)="onPostDeleted($event)" />
                           </div>
                         }
                         <span class="flex items-center gap-1 px-lg pt-2 text-label-sm text-on-surface-variant">
                           <span class="material-symbols-outlined text-[16px]">subdirectory_arrow_right</span>
                           Respondendo
                         </span>
-                        <app-comment-card [comment]="reply.comment" (authorBlocked)="onAuthorBlocked($event)" />
+                        <app-comment-card
+                          [comment]="reply.comment"
+                          (authorBlocked)="onAuthorBlocked($event)"
+                          (deleted)="onReplyDeleted($event)"
+                        />
                       </div>
                     } @empty {
                       <p class="px-lg py-16 text-center text-body-sm text-on-surface-variant">Nenhuma resposta ainda.</p>
@@ -98,8 +123,8 @@
             </div>
 
             <aside class="flex w-full shrink-0 flex-col gap-lg lg:w-80">
-              <app-entity-summary-card title="Comunidades" (viewAll)="openModal('communities')" />
-              <app-entity-summary-card title="Times" (viewAll)="openModal('teams')" />
+              <app-entity-summary-card title="Comunidades" [items]="communities()" (viewAll)="openModal('communities')" />
+              <app-entity-summary-card title="Times" [items]="teams()" (viewAll)="openModal('teams')" />
             </aside>
           </div>
         }
@@ -112,6 +137,7 @@
   title="Seguidores"
   type="followers"
   [profileUserId]="userId()"
+  [manageable]="viewMode() === 'owner'"
   [open]="activeModal() === 'followers'"
   (closed)="closeModal()"
 />
@@ -119,6 +145,7 @@
   title="Seguindo"
   type="following"
   [profileUserId]="userId()"
+  [manageable]="viewMode() === 'owner'"
   [open]="activeModal() === 'following'"
   (closed)="closeModal()"
 />
@@ -126,13 +153,20 @@
   title="Amigos"
   type="friends"
   [profileUserId]="userId()"
+  [manageable]="viewMode() === 'owner'"
   [open]="activeModal() === 'friends'"
   (closed)="closeModal()"
 />
-<app-entity-list-modal title="Comunidades" [open]="activeModal() === 'communities'" (closed)="closeModal()" />
-<app-entity-list-modal title="Times" [open]="activeModal() === 'teams'" (closed)="closeModal()" />
+<app-entity-list-modal
+  title="Comunidades"
+  [open]="activeModal() === 'communities'"
+  [items]="communities()"
+  (closed)="closeModal()"
+/>
+<app-entity-list-modal title="Times" [open]="activeModal() === 'teams'" [items]="teams()" (closed)="closeModal()" />
 <app-invite-modal
   [open]="activeModal() === 'invite'"
   [targetName]="profile().nickname"
+  [targetUserId]="profile().userId"
   (closed)="closeModal()"
 />

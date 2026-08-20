@@ -34,4 +34,7 @@
       {{ isFollowing() ? 'Seguindo' : 'Seguir' }}
     </button>
   }
+
+  <!-- Slot para ações da linha (ex.: menu de 3 pontinhos na lista de seguidores). -->
+  <ng-content select="[rowActions]"></ng-content>
 </div>

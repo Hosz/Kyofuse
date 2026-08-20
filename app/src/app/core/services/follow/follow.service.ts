@@ -3,6 +3,7 @@ import { API_URL } from '../../../models/api-url.model';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { followResponse } from '../../../models/follow/follow-response.model';
 import { PageResponse } from '../../../models/page-response.model';
+import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -34,6 +35,11 @@ export class FollowService {
 
   public showMyFollowersQuantity() {
     return this.http.get<number | null>(`${this.url}/me/followers/quantity`);
+  }
+
+  /** Se eu já sigo esse usuário — o botão precisa disso pra nascer como "Seguindo". */
+  public isFollowing(userId: string): Observable<boolean> {
+    return this.http.get<boolean>(`${this.url}/${userId}/is-following`);
   }
 
   public unfollowUser(userId: string) {

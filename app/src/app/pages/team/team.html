@@ -26,20 +26,27 @@
         } @else {
           <section class="flex flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container-low">
             <div class="tactical-grid relative h-32 w-full shrink-0 overflow-hidden bg-gradient-to-br from-primary-container/30 via-surface-container to-surface-container-low sm:h-40">
-              <span class="absolute right-3 top-3 rounded-md bg-surface-dim/70 px-2 py-1 text-label-sm font-semibold text-on-surface">
-                Banner em breve
-              </span>
+              @if (team()!.bannerUrl) {
+                <img [src]="team()!.bannerUrl" alt="" class="h-full w-full object-cover" />
+              }
             </div>
 
             <div class="flex flex-col gap-lg p-lg">
               <div class="flex flex-col gap-lg lg:flex-row lg:items-start lg:justify-between">
                 <div class="flex min-w-0 flex-col gap-lg sm:flex-row lg:flex-1">
-                  <div
-                    class="relative z-10 -mt-16 flex h-24 w-24 shrink-0 items-center justify-center rounded-xl border-4 border-surface-container-low bg-surface-container object-cover shadow-lg sm:-mt-20"
-                    title="Escudo do time em breve"
-                  >
-                    <span class="material-symbols-outlined text-[36px] text-on-surface-variant">shield</span>
-                  </div>
+                  @if (team()!.avatarUrl) {
+                    <img
+                      [src]="team()!.avatarUrl"
+                      [alt]="team()!.name"
+                      class="relative z-10 -mt-16 h-24 w-24 shrink-0 rounded-xl border-4 border-surface-container-low bg-surface-container object-cover shadow-lg sm:-mt-20"
+                    />
+                  } @else {
+                    <div
+                      class="relative z-10 -mt-16 flex h-24 w-24 shrink-0 items-center justify-center rounded-xl border-4 border-surface-container-low bg-surface-container object-cover shadow-lg sm:-mt-20"
+                    >
+                      <span class="material-symbols-outlined text-[36px] text-on-surface-variant">shield</span>
+                    </div>
+                  }
 
                   <div class="flex flex-1 flex-col gap-2 sm:pt-2">
                     <div class="flex flex-wrap items-center gap-2">
@@ -58,13 +65,26 @@
                       }
                       <span class="flex items-center gap-1.5">
                         <span class="material-symbols-outlined text-[16px]">military_tech</span>
-                        Dono: <span class="font-semibold text-on-surface">&#64;{{ team()!.ownerName }}</span>
+                        Dono:
+                        <a
+                          [routerLink]="['/perfil', team()!.ownerId]"
+                          class="font-semibold text-primary hover:underline"
+                        >&#64;{{ team()!.ownerName }}</a>
                       </span>
                     </div>
                   </div>
                 </div>
 
               <div class="flex shrink-0 flex-wrap items-center gap-2">
+                @if (community(); as teamCommunity) {
+                  <a
+                    [routerLink]="['/comunidade', teamCommunity.id]"
+                    class="flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-outline-variant px-4 py-2 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high active:scale-[0.97]"
+                  >
+                    <span class="material-symbols-outlined text-[16px]">groups_2</span>
+                    Comunidade
+                  </a>
+                }
                 @if (viewMode() === 'admin') {
                   <a
                     [routerLink]="['/times', teamId(), 'admin']"
@@ -76,7 +96,7 @@
                 } @else if (viewMode() === 'member') {
                   <button
                     type="button"
-                    (click)="leaveTeam()"
+                    (click)="askLeaveTeam()"
                     [disabled]="leaving()"
                     class="flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-error/40 px-4 py-2 text-label-sm font-bold text-error transition-colors hover:bg-error-container hover:text-on-error-container disabled:cursor-not-allowed disabled:opacity-60"
                   >
@@ -164,31 +184,15 @@
                 <p class="py-6 text-center text-body-sm text-on-surface-variant">Carregando membros...</p>
               } @else {
                 <div class="flex flex-col gap-1">
-                  @for (member of members(); track member.userName) {
-                    <div class="flex items-center justify-between gap-3 rounded-lg px-2 py-2.5 hover:bg-surface-container-high">
-                      <div class="flex flex-col">
-                        <span class="text-body-sm font-semibold text-on-surface">&#64;{{ member.userName }}</span>
-                        <span class="text-label-sm text-on-surface-variant">
-                          {{ member.roleInTeam ? roleLabel(member.roleInTeam) : 'Sem papel' }} &#183;
-                          {{ memberStatusLabel[member.status] }}
-                        </span>
-                      </div>
-                      @if (member.userName === team()!.ownerName) {
-                        <span class="shrink-0 rounded-md border border-primary-container px-2 py-0.5 text-label-sm font-semibold text-primary-container">
-                          Dono
-                        </span>
-                      } @else if (viewMode() === 'member' && member.userName !== myUsername()) {
-                        <button
-                          type="button"
-                          disabled
-                          title="Vote kick ainda não está disponível"
-                          class="flex shrink-0 cursor-not-allowed items-center gap-1.5 rounded-full border border-outline-variant px-3 py-1.5 text-label-sm font-bold text-on-surface-variant opacity-60"
-                        >
-                          <span class="material-symbols-outlined text-[16px]">how_to_vote</span>
-                          Vote Kick
-                        </button>
-                      }
-                    </div>
+                  @for (member of members(); track member.userId) {
+                    <app-team-member-row
+                      [member]="member"
+                      [ownerName]="team()!.ownerName"
+                      [canManage]="canManageMembers()"
+                      [roleLabel]="member.roleInTeam ? roleLabel(member.roleInTeam) : ''"
+                      [statusLabel]="memberStatusLabel[member.status]"
+                      (selected)="openMember($event)"
+                    />
                   } @empty {
                     <p class="py-6 text-center text-body-sm text-on-surface-variant">Nenhum membro ainda.</p>
                   }
@@ -220,3 +224,28 @@
     </main>
   </div>
 </div>
+
+<app-confirm-dialog
+  [open]="leaveConfirmOpen()"
+  title="Sair do time"
+  message="Você deixa de ser membro do time. Para voltar, alguém precisa te convidar de novo."
+  confirmLabel="Sair"
+  [pending]="leaving()"
+  [error]="leaveError()"
+  (confirmed)="leaveTeam()"
+  (cancelled)="cancelLeaveTeam()"
+/>
+
+<app-team-member-modal
+  [member]="selectedMember()"
+  [canManage]="canManageMembers()"
+  [isOwner]="selectedMember()?.userName === team()?.ownerName"
+  [roleLabel]="selectedMember()?.roleInTeam ? roleLabel(selectedMember()!.roleInTeam!) : ''"
+  [statusLabel]="selectedMember() ? memberStatusLabel[selectedMember()!.status] : ''"
+  [removing]="removingMember()"
+  [saving]="savingMember()"
+  [error]="memberActionError()"
+  (closed)="closeMember()"
+  (removeRequested)="removeMember($event)"
+  (editRequested)="editMember($event)"
+/>

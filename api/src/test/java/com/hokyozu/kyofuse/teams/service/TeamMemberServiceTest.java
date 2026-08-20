@@ -17,6 +17,7 @@ import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.enums.UserStatus;
 import com.hokyozu.kyofuse.users.finder.UserFinder;
 import com.hokyozu.kyofuse.users.service.UserChecker;
+import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -63,6 +64,12 @@ class TeamMemberServiceTest {
     @Spy
     private TeamChecker teamChecker = new TeamChecker();
 
+    @Mock
+    private GamerProfileFinder gamerProfileFinder;
+
+    @Mock
+    private TeamRequiredRoleFulfillment teamRequiredRoleFulfillment;
+
     @InjectMocks
     private TeamMemberService teamMemberService;
 
@@ -104,6 +111,61 @@ class TeamMemberServiceTest {
                 .hasMessage("User is already a member of the team.");
 
         verify(teamMemberRepository, never()).save(any());
+    }
+
+    @Test
+    void editMemberClosesTheAnnouncedRoleThatWasJustFilled() {
+        // O time deixa de anunciar a vaga assim que alguém assume a função.
+        UUID teamId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID memberId = UUID.randomUUID();
+        User owner = User.builder().id(ownerId).username("owner").build();
+        User member = User.builder().id(memberId).username("member").build();
+        Team team = Team.builder().id(teamId).name("Kyofuse").owner(owner).build();
+        TeamMember teamMember = TeamMember.builder()
+                .id(UUID.randomUUID())
+                .team(team)
+                .user(member)
+                .memberType(TeamMemberType.UNASSIGNED)
+                .build();
+
+        when(userFinder.findProfileByUserId(ownerId)).thenReturn(owner);
+        when(userFinder.findProfileByUserId(memberId)).thenReturn(member);
+        when(teamFinder.findTeamById(teamId)).thenReturn(team);
+        when(teamMemberRepository.existsByTeamAndUser(team, member)).thenReturn(true);
+        when(teamMemberRepository.findByTeamAndUser(team, member)).thenReturn(teamMember);
+
+        teamMemberService.editMember(teamId, memberId, ownerId,
+                new TeamMemberEditRequest(PlayerRole.AWPER, TeamMemberType.PLAYER));
+
+        verify(teamRequiredRoleFulfillment).fulfill(team, PlayerRole.AWPER);
+    }
+
+    @Test
+    void editMemberDoesNotCloseAnyRoleWhenOnlyTheMemberTypeChanges() {
+        UUID teamId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID memberId = UUID.randomUUID();
+        User owner = User.builder().id(ownerId).username("owner").build();
+        User member = User.builder().id(memberId).username("member").build();
+        Team team = Team.builder().id(teamId).name("Kyofuse").owner(owner).build();
+        TeamMember teamMember = TeamMember.builder()
+                .id(UUID.randomUUID())
+                .team(team)
+                .user(member)
+                .memberType(TeamMemberType.UNASSIGNED)
+                .build();
+
+        when(userFinder.findProfileByUserId(ownerId)).thenReturn(owner);
+        when(userFinder.findProfileByUserId(memberId)).thenReturn(member);
+        when(teamFinder.findTeamById(teamId)).thenReturn(team);
+        when(teamMemberRepository.existsByTeamAndUser(team, member)).thenReturn(true);
+        when(teamMemberRepository.findByTeamAndUser(team, member)).thenReturn(teamMember);
+
+        teamMemberService.editMember(teamId, memberId, ownerId,
+                new TeamMemberEditRequest(null, TeamMemberType.COACH));
+
+        verify(teamRequiredRoleFulfillment).fulfill(team, null);
     }
 
     @Test

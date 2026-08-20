@@ -67,6 +67,7 @@ export class ProfileEditComponent implements OnDestroy {
   nickname = signal('');
   bio = signal('');
   avatarUrl = signal('');
+  bannerUrl = signal('');
   country = signal('');
   city = signal('');
   state = signal('');
@@ -171,6 +172,7 @@ export class ProfileEditComponent implements OnDestroy {
       nickname: this.nickname().trim(),
       bio: this.bio().trim(),
       avatarUrl: this.avatarUrl().trim(),
+      bannerUrl: this.bannerUrl().trim(),
       country: this.country().trim(),
       city: this.city().trim(),
       state: this.state().trim(),
@@ -202,6 +204,7 @@ export class ProfileEditComponent implements OnDestroy {
     this.nickname.set(p.nickname ?? '');
     this.bio.set(p.bio ?? '');
     this.avatarUrl.set(p.avatarUrl ?? '');
+    this.bannerUrl.set(p.bannerUrl ?? '');
     this.country.set(p.country ?? '');
     this.city.set(p.city ?? '');
     this.state.set(p.state ?? '');

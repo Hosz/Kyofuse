@@ -1,19 +1,45 @@
 <app-modal [open]="open()" [title]="title()" (closed)="closed.emit()">
   <div class="flex flex-col gap-md">
-    @for (user of users(); track user.id) {
-      <app-user-row
-        [userId]="user.id"
-        [name]="user.name"
-        [handle]="user.handle"
-        [avatarUrl]="user.avatarUrl"
-        [isFollowing]="user.isFollowing ?? null"
-        (actionClick)="toggleFollow.emit(user)"
-      />
-    } @empty {
-      <p class="py-6 text-center text-body-sm text-on-surface-variant">Ninguém por aqui ainda.</p>
+    @if (restricted()) {
+      <div class="flex flex-col items-center gap-2 py-8 text-center">
+        <span class="material-symbols-outlined text-[28px] text-on-surface-variant">lock</span>
+        <p class="text-body-sm text-on-surface-variant">Esta conta é privada. Siga para ver esta lista.</p>
+      </div>
+    } @else {
+      @for (user of users(); track user.id) {
+        <app-user-row
+          [userId]="user.id"
+          [name]="user.name"
+          [handle]="user.handle"
+          [avatarUrl]="user.avatarUrl"
+          [isFollowing]="user.isFollowing ?? null"
+          (actionClick)="toggleFollow.emit(user)"
+        >
+          <!-- O elemento com [rowActions] precisa ser estático: dentro de um @if, o
+               seletor do ng-content não casa e o conteúdo é descartado. O @if fica aqui
+               dentro, e o hidden tira o span do layout pra não sobrar o gap da linha. -->
+          <span rowActions [hidden]="!hasRowActions()">
+            @if (hasRowActions()) {
+              <app-user-options-menu
+                [userId]="user.id"
+                presentation="modal"
+                [canRemoveFollower]="canManageFollowers()"
+                [canUnfollow]="canUnfollow()"
+                [canRemoveFriend]="canRemoveFriend()"
+                (followerRemoved)="removeFromList(user.id)"
+                (unfollowed)="removeFromList(user.id)"
+                (friendRemoved)="removeFromList(user.id)"
+                (blocked)="removeFromList(user.id)"
+              />
+            }
+          </span>
+        </app-user-row>
+      } @empty {
+        <p class="py-6 text-center text-body-sm text-on-surface-variant">Ninguém por aqui ainda.</p>
+      }
     }
 
-    @if (hasMoreToLoad()) {
+    @if (!restricted() && hasMoreToLoad()) {
       <button
         type="button"
         (click)="loadMore()"

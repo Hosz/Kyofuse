@@ -97,13 +97,18 @@ class CommunityMapperTest {
 
     @Test
     void toResponse_shouldMapEntityWithTeam() {
-        Team team = Team.builder().id(UUID.randomUUID()).name("Kyofuse Academy").build();
+        Team team = Team.builder()
+                .id(UUID.randomUUID())
+                .name("Kyofuse Academy")
+                .avatarUrl("https://example.com/team.png")
+                .build();
         Community community = createCommunity(createUser(), team);
 
         CommunityResponse response = CommunityMapper.toResponse(community);
 
         assertThat(response.teamId()).isEqualTo(team.getId());
         assertThat(response.teamName()).isEqualTo("Kyofuse Academy");
+        assertThat(response.teamAvatarUrl()).isEqualTo("https://example.com/team.png");
     }
 
     @Test

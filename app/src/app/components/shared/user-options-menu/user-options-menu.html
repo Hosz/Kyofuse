@@ -8,7 +8,7 @@
     <span class="material-symbols-outlined text-[20px]">more_horiz</span>
   </button>
 
-  @if (menuOpen()) {
+  @if (menuOpen() && presentation() === 'dropdown') {
     <button
       type="button"
       class="fixed inset-0 z-10 cursor-default"
@@ -19,55 +19,143 @@
     <div
       class="absolute right-0 top-full z-20 mt-1 flex w-48 flex-col overflow-hidden rounded-lg border border-outline-variant bg-surface-container-low py-1 shadow-2xl"
     >
-      <button
-        type="button"
-        (click)="openBlockConfirm()"
-        class="flex cursor-pointer items-center gap-2 px-4 py-2.5 text-left text-body-sm text-error transition-colors hover:bg-error-container hover:text-on-error-container"
-      >
-        <span class="material-symbols-outlined text-[18px]">block</span>
-        Bloquear
-      </button>
-      <button
-        type="button"
-        disabled
-        title="Denunciar ainda não está disponível"
-        class="flex cursor-not-allowed items-center gap-2 px-4 py-2.5 text-left text-body-sm text-on-surface-variant opacity-60"
-      >
-        <span class="material-symbols-outlined text-[18px]">flag</span>
-        Denunciar
-      </button>
+      <ng-container *ngTemplateOutlet="optionsList"></ng-container>
     </div>
   }
 </div>
 
-<app-modal [open]="confirmOpen()" title="Bloquear usuário" (closed)="closeBlockConfirm()" (click)="$event.stopPropagation()">
-  <div class="flex flex-col gap-lg">
-    <p class="text-body-sm text-on-surface">
-      Depois de bloqueado, esse usuário não vai poder ver seu perfil nem interagir com você, e você deixa de ver o
-      conteúdo dele.
-    </p>
-
-    @if (error()) {
-      <p class="text-label-sm text-error">{{ error() }}</p>
-    }
-
-    <div class="flex justify-end gap-2">
-      <button
-        type="button"
-        (click)="closeBlockConfirm()"
-        [disabled]="blocking()"
-        class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        Cancelar
-      </button>
-      <button
-        type="button"
-        (click)="confirmBlock()"
-        [disabled]="blocking()"
-        class="cursor-pointer rounded-full bg-error px-4 py-2 text-label-md font-bold text-on-error transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {{ blocking() ? 'Bloqueando...' : 'Bloquear' }}
-      </button>
+@if (presentation() === 'modal') {
+  <app-modal [open]="menuOpen()" title="Opções" size="compact" (closed)="closeMenu()" (click)="$event.stopPropagation()">
+    <div class="flex flex-col">
+      <ng-container *ngTemplateOutlet="optionsList"></ng-container>
     </div>
-  </div>
-</app-modal>
+  </app-modal>
+}
+
+<ng-template #optionsList>
+  @if (canEditContent()) {
+    @if (editDisabledReason(); as reason) {
+      <button
+        type="button"
+        disabled
+        [title]="reason"
+        class="flex cursor-not-allowed items-center gap-2 px-4 py-2.5 text-left text-body-sm text-on-surface-variant opacity-60"
+      >
+        <span class="material-symbols-outlined text-[18px]">edit</span>
+        Editar
+      </button>
+    } @else {
+      <button
+        type="button"
+        (click)="requestEdit()"
+        class="flex cursor-pointer items-center gap-2 px-4 py-2.5 text-left text-body-sm text-on-surface transition-colors hover:bg-surface-container-high"
+      >
+        <span class="material-symbols-outlined text-[18px]">edit</span>
+        Editar
+      </button>
+    }
+  }
+  @if (canDeleteContent()) {
+    <button
+      type="button"
+      (click)="requestDelete()"
+      class="flex cursor-pointer items-center gap-2 px-4 py-2.5 text-left text-body-sm text-error transition-colors hover:bg-error-container hover:text-on-error-container"
+    >
+      <span class="material-symbols-outlined text-[18px]">delete</span>
+      Apagar {{ contentLabel() }}
+    </button>
+  }
+  @if (canRemoveFollower()) {
+    <button
+      type="button"
+      (click)="openRemoveConfirm()"
+      class="flex cursor-pointer items-center gap-2 px-4 py-2.5 text-left text-body-sm text-on-surface transition-colors hover:bg-surface-container-high"
+    >
+      <span class="material-symbols-outlined text-[18px]">person_remove</span>
+      Remover seguidor
+    </button>
+  }
+  @if (canUnfollow()) {
+    <button
+      type="button"
+      (click)="openUnfollowConfirm()"
+      class="flex cursor-pointer items-center gap-2 px-4 py-2.5 text-left text-body-sm text-on-surface transition-colors hover:bg-surface-container-high"
+    >
+      <span class="material-symbols-outlined text-[18px]">person_remove</span>
+      Deixar de seguir
+    </button>
+  }
+  @if (canRemoveFriend()) {
+    <button
+      type="button"
+      (click)="openFriendConfirm()"
+      class="flex cursor-pointer items-center gap-2 px-4 py-2.5 text-left text-body-sm text-on-surface transition-colors hover:bg-surface-container-high"
+    >
+      <span class="material-symbols-outlined text-[18px]">heart_broken</span>
+      Desfazer amizade
+    </button>
+  }
+  @if (canBlock()) {
+    <button
+      type="button"
+      (click)="openBlockConfirm()"
+      class="flex cursor-pointer items-center gap-2 px-4 py-2.5 text-left text-body-sm text-error transition-colors hover:bg-error-container hover:text-on-error-container"
+    >
+      <span class="material-symbols-outlined text-[18px]">block</span>
+      Bloquear
+    </button>
+    <button
+      type="button"
+      disabled
+      title="Denunciar ainda não está disponível"
+      class="flex cursor-not-allowed items-center gap-2 px-4 py-2.5 text-left text-body-sm text-on-surface-variant opacity-60"
+    >
+      <span class="material-symbols-outlined text-[18px]">flag</span>
+      Denunciar
+    </button>
+  }
+</ng-template>
+
+<app-confirm-dialog
+  [open]="confirmOpen()"
+  title="Bloquear usuário"
+  message="Depois de bloqueado, esse usuário não vai poder ver seu perfil nem interagir com você, e você deixa de ver o conteúdo dele."
+  confirmLabel="Bloquear"
+  [pending]="blocking()"
+  [error]="error()"
+  (confirmed)="confirmBlock()"
+  (cancelled)="closeBlockConfirm()"
+/>
+
+<app-confirm-dialog
+  [open]="removeConfirmOpen()"
+  title="Remover seguidor"
+  message="Essa pessoa deixa de te seguir. Ela pode voltar a te seguir depois, a não ser que você bloqueie."
+  confirmLabel="Remover"
+  [pending]="removing()"
+  [error]="removeError()"
+  (confirmed)="confirmRemoveFollower()"
+  (cancelled)="closeRemoveConfirm()"
+/>
+
+<app-confirm-dialog
+  [open]="unfollowConfirmOpen()"
+  title="Deixar de seguir"
+  message="Você para de ver as publicações dessa pessoa no feed de Seguindo."
+  confirmLabel="Deixar de seguir"
+  [pending]="unfollowing()"
+  [error]="unfollowError()"
+  (confirmed)="confirmUnfollow()"
+  (cancelled)="closeUnfollowConfirm()"
+/>
+
+<app-confirm-dialog
+  [open]="friendConfirmOpen()"
+  title="Desfazer amizade"
+  message="Vocês deixam de ser amigos. Para voltar, alguém precisa mandar um novo pedido."
+  confirmLabel="Desfazer"
+  [pending]="removingFriend()"
+  [error]="friendError()"
+  (confirmed)="confirmRemoveFriend()"
+  (cancelled)="closeFriendConfirm()"
+/>

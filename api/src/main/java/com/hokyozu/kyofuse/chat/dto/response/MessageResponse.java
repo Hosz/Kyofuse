@@ -8,6 +8,8 @@ public record MessageResponse(
         UUID conversationId,
         UUID senderId,
         String senderUsername,
+        String senderNickname,
+        String senderAvatarUrl,
         String content,
         Instant createdAt
 ) {

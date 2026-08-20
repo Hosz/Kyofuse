@@ -107,6 +107,19 @@ public class UserFollowService {
         });
     }
 
+    /**
+     * Se o usuário logado já segue alguém. O front precisa disso pra mostrar "Seguindo"
+     * em vez de "Seguir" — sem essa informação o botão nascia sempre como "Seguir" e o
+     * clique batia num follow que o backend recusa.
+     */
+    @Transactional(readOnly = true)
+    public boolean isFollowing(UUID userId, UUID otherUserId) {
+        User user = userFinder.findProfileByUserId(userId);
+        User other = userFinder.findProfileByUserId(otherUserId);
+
+        return userFollowRepository.existsByFollowerAndFollowed(user, other);
+    }
+
     @Transactional
     public void unfollowUser(UUID userId, UUID followingId) {
         User user = userFinder.findProfileByUserId(userId);

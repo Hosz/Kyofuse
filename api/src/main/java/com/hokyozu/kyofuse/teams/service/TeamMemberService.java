@@ -8,6 +8,8 @@ import com.hokyozu.kyofuse.notifications.dto.request.CreateNotificationRequest;
 import com.hokyozu.kyofuse.notifications.enums.NotificationTargetType;
 import com.hokyozu.kyofuse.notifications.enums.NotificationType;
 import com.hokyozu.kyofuse.notifications.service.NotificationService;
+import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
+import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.teams.dto.request.TeamMemberEditRequest;
 import com.hokyozu.kyofuse.teams.dto.response.TeamMemberResponse;
@@ -27,8 +29,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +40,8 @@ public class TeamMemberService {
 
     private final UserFinder userFinder;
     private final TeamFinder teamFinder;
+    private final GamerProfileFinder gamerProfileFinder;
+    private final TeamRequiredRoleFulfillment teamRequiredRoleFulfillment;
     private final UserChecker userChecker;
 
     private final TeamMemberRepository teamMemberRepository;
@@ -121,6 +127,9 @@ public class TeamMemberService {
 
         teamMemberRepository.save(teamMember);
 
+        // A função passou a ter dono: se o time anunciava essa vaga, ela sai do anúncio.
+        teamRequiredRoleFulfillment.fulfill(team, request.roleInTeam());
+
         notificationService.createNotification(
                 CreateNotificationRequest.builder()
                         .recipient(userEdited)
@@ -147,7 +156,17 @@ public class TeamMemberService {
         teamChecker.checkInactive(team);
 
         Page<TeamMember> teamMembers = teamMemberRepository.findByTeam(team, pageable);
-        return teamMembers.map(TeamMemberMapper::toResponse);
+
+        // Apelido e foto vêm do perfil, em lote: um lookup por membro faria o número de
+        // consultas crescer junto com o tamanho do time.
+        List<UUID> memberIds = teamMembers.getContent().stream()
+                .map(member -> member.getUser().getId())
+                .distinct()
+                .toList();
+        Map<UUID, GamerProfile> profiles = gamerProfileFinder.findAllByUserIds(memberIds).stream()
+                .collect(Collectors.toMap(profile -> profile.getUser().getId(), profile -> profile));
+
+        return teamMembers.map(member -> TeamMemberMapper.toResponse(member, profiles.get(member.getUser().getId())));
     }
 
     @Transactional

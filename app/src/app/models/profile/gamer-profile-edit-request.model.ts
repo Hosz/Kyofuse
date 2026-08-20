@@ -4,6 +4,7 @@ export interface GamerProfileEditRequest {
   nickname?: string;
   bio?: string;
   avatarUrl?: string;
+  bannerUrl?: string;
   country?: string;
   city?: string;
   state?: string;

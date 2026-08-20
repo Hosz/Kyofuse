@@ -31,6 +31,10 @@ public class UpdateFavoriteMapsService {
         favoriteMapsValidator.validate(favoriteMaps);
 
         gamerProfileFavoriteMapRepository.deleteByProfile_Id(profile.getId());
+        // Num mesmo flush o Hibernate executa todos os INSERTs antes dos DELETEs. Sem
+        // forçar a remoção agora, regravar um mapa que já era favorito tentaria inserir
+        // a linha antes de a antiga sair e violaria uk_gamer_profile_favorite_maps_profile_map.
+        gamerProfileFavoriteMapRepository.flush();
 
         List<GamerProfileFavoriteMap> maps = favoriteMaps.stream()
                 .distinct()

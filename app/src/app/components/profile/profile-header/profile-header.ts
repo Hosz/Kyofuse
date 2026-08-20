@@ -38,6 +38,7 @@ export class ProfileHeaderComponent {
   toggleFollow = output<void>();
   toggleFriendRequest = output<void>();
   inviteClick = output<void>();
+  messageClick = output<void>();
   blocked = output<void>();
 
   formatCount(value: number | null | undefined): string {

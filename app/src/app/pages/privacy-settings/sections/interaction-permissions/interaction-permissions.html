@@ -16,7 +16,7 @@
         class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
       >
         @for (option of messagePermissionOptions; track option.value) {
-          <option [value]="option.value">{{ option.label }}</option>
+          <option [value]="option.value" [selected]="option.value === store.messagePermission()">{{ option.label }}</option>
         }
       </select>
     </label>
@@ -28,7 +28,7 @@
         class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
       >
         @for (option of friendRequestPermissionOptions; track option.value) {
-          <option [value]="option.value">{{ option.label }}</option>
+          <option [value]="option.value" [selected]="option.value === store.friendRequestPermission()">{{ option.label }}</option>
         }
       </select>
     </label>
@@ -40,7 +40,7 @@
         class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
       >
         @for (option of followPermissionOptions; track option.value) {
-          <option [value]="option.value">{{ option.label }}</option>
+          <option [value]="option.value" [selected]="option.value === store.followPermission()">{{ option.label }}</option>
         }
       </select>
     </label>
@@ -52,7 +52,7 @@
         class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
       >
         @for (option of teamInvitePermissionOptions; track option.value) {
-          <option [value]="option.value">{{ option.label }}</option>
+          <option [value]="option.value" [selected]="option.value === store.teamInvitePermission()">{{ option.label }}</option>
         }
       </select>
     </label>
@@ -64,7 +64,7 @@
         class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
       >
         @for (option of duoInvitePermissionOptions; track option.value) {
-          <option [value]="option.value">{{ option.label }}</option>
+          <option [value]="option.value" [selected]="option.value === store.duoInvitePermission()">{{ option.label }}</option>
         }
       </select>
     </label>

@@ -22,6 +22,11 @@ import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.enums.UserStatus;
 import com.hokyozu.kyofuse.users.finder.UserFinder;
 import com.hokyozu.kyofuse.users.service.UserChecker;
+import com.hokyozu.kyofuse.teams.repository.TeamMemberRepository;
+import com.hokyozu.kyofuse.profiles.repository.GamerProfileRepository;
+import com.hokyozu.kyofuse.teams.entity.TeamMember;
+import com.hokyozu.kyofuse.teams.enums.TeamMemberStatus;
+import com.hokyozu.kyofuse.teams.enums.TeamMemberType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -31,6 +36,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -44,6 +50,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -75,8 +82,99 @@ class TeamServiceTest {
     @Spy
     private TeamChecker teamChecker = new TeamChecker();
 
+    @Mock
+    private TeamMemberRepository teamMemberRepository;
+
+    @Mock
+    private GamerProfileRepository gamerProfileRepository;
+
     @InjectMocks
     private TeamService teamService;
+
+    @Test
+    void listPlayersLookingForTeamExcludesWhoIsAlreadyInTheTeam() {
+        UUID userId = UUID.randomUUID();
+        UUID teamId = UUID.randomUUID();
+        UUID memberId = UUID.randomUUID();
+        User owner = User.builder().id(userId).username("owner").status(UserStatus.ACTIVE).build();
+        User member = User.builder().id(memberId).username("member").status(UserStatus.ACTIVE).build();
+        Team team = Team.builder().id(teamId).owner(owner).status(TeamStatus.ACTIVE).build();
+        Pageable pageable = PageRequest.of(0, 20);
+
+        when(userFinder.findProfileByUserId(userId)).thenReturn(owner);
+        when(teamFinder.findTeamById(teamId)).thenReturn(team);
+        when(teamMemberRepository.findByTeam(team))
+                .thenReturn(List.of(TeamMember.builder().team(team).user(member).build()));
+        when(gamerProfileRepository.findByLookingForTeamTrueAndUser_StatusAndUserIdNotIn(
+                eq(UserStatus.ACTIVE), anyList(), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(), pageable, 0));
+
+        teamService.listPlayersLookingForTeam(userId, teamId, pageable);
+
+        ArgumentCaptor<List<UUID>> excludedCaptor = uuidListCaptor();
+        verify(gamerProfileRepository).findByLookingForTeamTrueAndUser_StatusAndUserIdNotIn(
+                eq(UserStatus.ACTIVE), excludedCaptor.capture(), eq(pageable));
+        // Convidar quem já está no time seria recusado pelo backend do convite.
+        assertThat(excludedCaptor.getValue()).contains(memberId, userId);
+    }
+
+    @Test
+    void listPlayersLookingForTeamRejectsWhoIsNotTheOwner() {
+        UUID userId = UUID.randomUUID();
+        UUID teamId = UUID.randomUUID();
+        User stranger = User.builder().id(userId).username("stranger").status(UserStatus.ACTIVE).build();
+        Team team = Team.builder().id(teamId).owner(User.builder().id(UUID.randomUUID()).build()).status(TeamStatus.ACTIVE).build();
+
+        when(userFinder.findProfileByUserId(userId)).thenReturn(stranger);
+        when(teamFinder.findTeamById(teamId)).thenReturn(team);
+        doThrow(new BadRequestException("Usuário não é o dono do time."))
+                .when(teamChecker).checkUserIsOwner(team, stranger);
+
+        assertThatThrownBy(() -> teamService.listPlayersLookingForTeam(userId, teamId, PageRequest.of(0, 20)))
+                .isInstanceOf(BadRequestException.class);
+
+        verify(gamerProfileRepository, never())
+                .findByLookingForTeamTrueAndUser_StatusAndUserIdNotIn(any(), anyList(), any());
+    }
+
+    @SuppressWarnings("unchecked")
+    private static ArgumentCaptor<List<UUID>> uuidListCaptor() {
+        return ArgumentCaptor.forClass(List.class);
+    }
+
+    @Test
+    void createTeamsAddsTheOwnerAsAMemberSoTheTeamShowsUpInTheirList() {
+        // "Meus times" e a lista de membros saem de team_members: sem essa linha o dono
+        // não via o próprio time nem aparecia entre os membros.
+        UUID userId = UUID.randomUUID();
+        UUID teamId = UUID.randomUUID();
+        User user = User.builder().id(userId).username("owner").status(UserStatus.ACTIVE).build();
+        Community community = Community.builder().id(UUID.randomUUID()).owner(user).build();
+
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
+        when(teamRepository.existsBySlug("kyofuse-academy")).thenReturn(false);
+        when(teamRepository.save(any(Team.class))).thenAnswer(invocation -> {
+            Team team = invocation.getArgument(0);
+            team.setId(teamId);
+            return team;
+        });
+        when(teamRequiredRoleRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(communityService.autoCreateTeamCommunity(eq(user), any(Team.class))).thenReturn(community);
+
+        teamService.createTeams(validRequest(List.of(PlayerRole.AWPER)), userId);
+
+        ArgumentCaptor<TeamMember> memberCaptor = ArgumentCaptor.forClass(TeamMember.class);
+        verify(teamMemberRepository).save(memberCaptor.capture());
+
+        TeamMember member = memberCaptor.getValue();
+        assertThat(member.getUser()).isSameAs(user);
+        assertThat(member.getTeam().getId()).isEqualTo(teamId);
+        assertThat(member.getStatus()).isEqualTo(TeamMemberStatus.ACTIVE);
+        // MANAGER e sem prazo: UNASSIGNED com assignmentDueAt faria a rotina de limpeza
+        // remover o próprio dono do time depois de 14 dias.
+        assertThat(member.getMemberType()).isEqualTo(TeamMemberType.MANAGER);
+        assertThat(member.getAssignmentDueAt()).isNull();
+    }
 
     @Test
     void createTeamsCreatesActiveTeamAndDeduplicatesRequiredRoles() {

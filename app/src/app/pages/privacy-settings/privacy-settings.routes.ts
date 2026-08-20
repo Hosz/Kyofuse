@@ -28,6 +28,11 @@ export const PRIVACY_SETTINGS_ROUTES: Routes = [
           ),
       },
       {
+        path: 'bloqueados',
+        loadComponent: () =>
+          import('./sections/blocked-users/blocked-users').then((m) => m.BlockedUsersSectionComponent),
+      },
+      {
         path: 'interacoes',
         loadComponent: () =>
           import('./sections/interaction-permissions/interaction-permissions').then(

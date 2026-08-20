@@ -5,6 +5,8 @@ export interface TeamMemberResponse {
     teamName: string;
     userId: string;
     userName: string;
+    nickname: string | null;
+    avatarUrl: string | null;
     roleInTeam: PlayerRole | null;
     memberType: TeamMemberType;
     status: TeamMemberStatus;

@@ -55,6 +55,14 @@ public class UserFollowController {
         return userFollowService.showMyFollowersQuantity(userId);
     }
 
+    @GetMapping("/{otherUserId}/is-following")
+    public boolean isFollowing(@PathVariable UUID otherUserId,
+                               @AuthenticationPrincipal Jwt jwt) {
+
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return userFollowService.isFollowing(userId, otherUserId);
+    }
+
     @DeleteMapping("{followingId}/unfollow")
     public void unfollowUser(@PathVariable UUID followingId,
                              @AuthenticationPrincipal Jwt jwt) {

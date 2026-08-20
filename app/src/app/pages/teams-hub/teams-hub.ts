@@ -1,6 +1,7 @@
-import { Component, OnDestroy, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { AppSidebarComponent } from '../../components/layout/app-sidebar/app-sidebar';
+import { CreateTeamModalComponent } from '../../components/teams/create-team-modal/create-team-modal';
 import { TeamService } from '../../core/services/teams/team.service';
 import { TeamResponse } from '../../models/teams/team.model';
 import { TEAM_STATUS_OPTIONS } from '../../shared/models/team-options.model';
@@ -11,13 +12,16 @@ const SEARCH_DEBOUNCE_MS = 300;
 
 @Component({
   selector: 'app-teams-hub',
-  imports: [RouterLink, AppSidebarComponent],
+  imports: [RouterLink, AppSidebarComponent, CreateTeamModalComponent],
   templateUrl: './teams-hub.html',
   styleUrl: './teams-hub.css',
 })
 export class TeamsHubComponent implements OnDestroy {
   private teamService = inject(TeamService);
+  private router = inject(Router);
   private searchDebounce?: ReturnType<typeof setTimeout>;
+
+  createModalOpen = signal(false);
 
   activeTab = signal<HubTab>('discover');
 
@@ -31,6 +35,19 @@ export class TeamsHubComponent implements OnDestroy {
   myTeams = signal<TeamResponse[]>([]);
   private myTeamsLoaded = false;
 
+  myTeamsQuery = signal('');
+
+  /**
+   * "Meus times" não tem filtro por nome no backend (deriva de team_members), então a
+   * busca é aplicada sobre a página já carregada — suficiente para a quantidade de
+   * times que um usuário costuma ter.
+   */
+  visibleMyTeams = computed(() => {
+    const query = this.myTeamsQuery().trim().toLowerCase();
+    if (!query) return this.myTeams();
+    return this.myTeams().filter((team) => team.name.toLowerCase().includes(query));
+  });
+
   ngOnInit(): void {
     this.loadTeams();
   }
@@ -39,9 +56,26 @@ export class TeamsHubComponent implements OnDestroy {
     if (this.searchDebounce) clearTimeout(this.searchDebounce);
   }
 
+  openCreateModal(): void {
+    this.createModalOpen.set(true);
+  }
+
+  closeCreateModal(): void {
+    this.createModalOpen.set(false);
+  }
+
+  onTeamCreated(team: TeamResponse): void {
+    this.createModalOpen.set(false);
+    this.router.navigate(['/times', team.id]);
+  }
+
   setTab(tab: HubTab): void {
     this.activeTab.set(tab);
     if (tab === 'mine') this.loadMyTeamsIfNeeded();
+  }
+
+  onMyTeamsSearchInput(value: string): void {
+    this.myTeamsQuery.set(value);
   }
 
   onSearchInput(value: string): void {

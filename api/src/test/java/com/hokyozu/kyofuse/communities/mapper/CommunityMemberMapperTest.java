@@ -7,6 +7,7 @@ import com.hokyozu.kyofuse.communities.enums.CommunityMemberRole;
 import com.hokyozu.kyofuse.communities.enums.CommunityMemberStatus;
 import com.hokyozu.kyofuse.communities.enums.CommunityStatus;
 import com.hokyozu.kyofuse.communities.enums.CommunityVisibility;
+import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.users.entity.User;
 import org.junit.jupiter.api.Test;
 
@@ -56,7 +57,12 @@ class CommunityMemberMapperTest {
                 .updatedAt(now)
                 .build();
 
-        CommunityMemberResponse response = CommunityMemberMapper.toResponse(member);
+        GamerProfile profile = GamerProfile.builder()
+                .nickname("Member One")
+                .avatarUrl("https://example.com/avatar.png")
+                .build();
+
+        CommunityMemberResponse response = CommunityMemberMapper.toResponse(member, profile);
 
         assertThat(response.id()).isEqualTo(member.getId());
         assertThat(response.communityId()).isEqualTo(community.getId());
@@ -64,6 +70,8 @@ class CommunityMemberMapperTest {
         assertThat(response.communitySlug()).isEqualTo(community.getSlug());
         assertThat(response.memberId()).isEqualTo(user.getId());
         assertThat(response.memberUsername()).isEqualTo(user.getUsername());
+        assertThat(response.memberNickname()).isEqualTo("Member One");
+        assertThat(response.memberAvatarUrl()).isEqualTo("https://example.com/avatar.png");
         assertThat(response.role()).isEqualTo(CommunityMemberRole.ADMIN);
         assertThat(response.status()).isEqualTo(CommunityMemberStatus.ACTIVE);
         assertThat(response.joinedAt()).isEqualTo(now);
@@ -87,10 +95,12 @@ class CommunityMemberMapperTest {
                 .updatedAt(now)
                 .build();
 
-        CommunityMemberResponse response = CommunityMemberMapper.toResponse(member);
+        CommunityMemberResponse response = CommunityMemberMapper.toResponse(member, null);
 
         assertThat(response.status()).isEqualTo(CommunityMemberStatus.LEFT);
         assertThat(response.leftAt()).isEqualTo(now);
+        assertThat(response.memberNickname()).isNull();
+        assertThat(response.memberAvatarUrl()).isNull();
     }
 
     private Community community() {

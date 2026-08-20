@@ -6,7 +6,7 @@ import { TeamService } from '../../core/services/teams/team.service';
 import { TeamMemberService } from '../../core/services/teams/team-member.service';
 import { TeamInviteService } from '../../core/services/teams/team-invite.service';
 import { TeamResponse, UpdateTeamRequest } from '../../models/teams/team.model';
-import { TeamMemberResponse } from '../../models/teams/team-member.model';
+import { TeamMemberEditRequest, TeamMemberResponse } from '../../models/teams/team-member.model';
 import { PLAYER_ROLE_OPTIONS, PlayerRole } from '../../shared/models/profile-options.model';
 import {
   TEAM_MEMBER_STATUS_LABEL,
@@ -15,8 +15,13 @@ import {
   TeamMemberType,
   TeamStatus,
 } from '../../shared/models/team-options.model';
+import { ConfirmDialogComponent } from '../../components/shared/confirm-dialog/confirm-dialog';
+import { gamerProfileResponse } from '../../models/profile/gamer-profile.model';
+import { FALLBACK_AVATAR_URL } from '../../shared/utils/format.util';
+import { TeamMemberRowComponent } from '../../components/team/team-member-row/team-member-row';
+import { TeamMemberModalComponent } from '../../components/team/team-member-modal/team-member-modal';
 
-type SectionId = 'geral' | 'requisitos' | 'papeis' | 'membros';
+type SectionId = 'geral' | 'requisitos' | 'papeis' | 'membros' | 'recrutamento';
 
 /** Só pra dar variedade visual às cartas de papel (mesma ideia dos mapas na edição de perfil). */
 const ROLE_ACCENT_HUE: Record<PlayerRole, number> = {
@@ -31,7 +36,7 @@ const ROLE_ACCENT_HUE: Record<PlayerRole, number> = {
 
 @Component({
   selector: 'app-team-admin',
-  imports: [RouterLink, AppSidebarComponent, ModalComponent],
+  imports: [RouterLink, AppSidebarComponent, ModalComponent, ConfirmDialogComponent, TeamMemberRowComponent, TeamMemberModalComponent],
   templateUrl: './team-admin.html',
   styleUrl: './team-admin.css',
 })
@@ -55,6 +60,7 @@ export class TeamAdminComponent {
     { id: 'requisitos', label: 'Requisitos Competitivos', icon: 'military_tech' },
     { id: 'papeis', label: 'Papéis Necessários', icon: 'groups' },
     { id: 'membros', label: 'Membros', icon: 'group' },
+    { id: 'recrutamento', label: 'Recrutamento', icon: 'person_search' },
   ];
 
   activeSection = signal<SectionId>('geral');
@@ -66,6 +72,8 @@ export class TeamAdminComponent {
 
   name = signal('');
   description = signal('');
+  avatarUrl = signal('');
+  bannerUrl = signal('');
   region = signal('');
   minPremierRating = signal<number | null>(null);
   maxPremierRating = signal<number | null>(null);
@@ -93,6 +101,53 @@ export class TeamAdminComponent {
 
   removeConfirmMember = signal<TeamMemberResponse | null>(null);
   removing = signal(false);
+  readonly fallbackAvatar = FALLBACK_AVATAR_URL;
+
+  /** Jogadores anunciando que procuram time — candidatos para convidar. */
+  lookingForTeam = signal<gamerProfileResponse[]>([]);
+  lookingLoading = signal(false);
+  lookingLoadingMore = signal(false);
+  private lookingPage = signal(0);
+  private lookingLastPage = signal(true);
+
+  hasMoreLookingToLoad = computed(() => !this.lookingLastPage());
+
+  loadLookingForTeam(page: number = 0): void {
+    const id = this.teamId();
+    if (!id) return;
+
+    if (page === 0) this.lookingLoading.set(true);
+    else this.lookingLoadingMore.set(true);
+
+    this.teamService.listPlayersLookingForTeam(id, page).subscribe({
+      next: (response) => {
+        this.lookingForTeam.update((list) => (page === 0 ? response.content : [...list, ...response.content]));
+        this.lookingPage.set(page);
+        this.lookingLastPage.set(response.last);
+        this.lookingLoading.set(false);
+        this.lookingLoadingMore.set(false);
+      },
+      error: (error) => {
+        console.error('Failed to fetch players looking for a team:', error);
+        this.lookingLoading.set(false);
+        this.lookingLoadingMore.set(false);
+      },
+    });
+  }
+
+  loadMoreLooking(): void {
+    if (this.lookingLoadingMore() || this.lookingLastPage()) return;
+    this.loadLookingForTeam(this.lookingPage() + 1);
+  }
+
+  /** Reaproveita o convite por id que já existe no formulário acima. */
+  invitePlayer(profile: gamerProfileResponse): void {
+    this.inviteUserId.set(profile.userId);
+    this.inviteMember();
+  }
+
+  /** Nome do dono, guardado ao carregar o time: a linha dele leva o selo e não tem ações. */
+  ownerName = signal<string | null>(null);
   removeError = signal<string | null>(null);
 
   ngOnInit(): void {
@@ -106,10 +161,12 @@ export class TeamAdminComponent {
 
     this.teamService.detailTeam(id).subscribe({
       next: (team) => {
+        this.ownerName.set(team.ownerName);
         this.seedFromTeam(team);
         this.loading.set(false);
         this.setupSectionObserver();
         this.loadMembers(id);
+        this.loadLookingForTeam();
       },
       error: (error) => {
         console.error('Failed to fetch team:', error);
@@ -175,6 +232,8 @@ export class TeamAdminComponent {
     const request: UpdateTeamRequest = {
       name: this.name().trim(),
       description: this.description().trim(),
+      avatarUrl: this.avatarUrl().trim(),
+      bannerUrl: this.bannerUrl().trim(),
       region: this.region().trim(),
       minPremierRating: this.minPremierRating() ?? undefined,
       maxPremierRating: this.maxPremierRating() ?? undefined,
@@ -239,7 +298,54 @@ export class TeamAdminComponent {
       });
   }
 
+  selectedMember = signal<TeamMemberResponse | null>(null);
+
+  openMember(member: TeamMemberResponse): void {
+    this.removeError.set(null);
+    this.selectedMember.set(member);
+  }
+
+  closeMember(): void {
+    if (this.removing()) return;
+    this.selectedMember.set(null);
+  }
+
+  savingMember = signal(false);
+
+  /** Preencher um papel anunciado tira a vaga do anúncio no backend — por isso o time
+   * é relido, para a seção "Papéis Necessários" refletir a mudança na hora. */
+  editMember(request: TeamMemberEditRequest): void {
+    const id = this.teamId();
+    const member = this.selectedMember();
+    if (!id || !member || this.savingMember()) return;
+
+    this.savingMember.set(true);
+    this.removeError.set(null);
+
+    this.teamMemberService.editMember(id, member.userId, request).subscribe({
+      next: (updated) => {
+        this.savingMember.set(false);
+        this.selectedMember.set(null);
+        this.members.update((list) => list.map((m) => (m.userId === member.userId ? { ...m, ...updated } : m)));
+        this.reloadRequiredRoles(id);
+      },
+      error: (error) => {
+        console.error('Failed to edit member:', error);
+        this.savingMember.set(false);
+        this.removeError.set(error?.error?.message ?? 'Não foi possível salvar as alterações.');
+      },
+    });
+  }
+
+  private reloadRequiredRoles(teamId: string): void {
+    this.teamService.detailTeam(teamId).subscribe({
+      next: (team) => this.requiredRoles.set(team.requiredRoles ?? []),
+      error: (error) => console.error('Failed to refresh required roles:', error),
+    });
+  }
+
   openRemoveConfirm(member: TeamMemberResponse): void {
+    this.selectedMember.set(null);
     this.removeError.set(null);
     this.removeConfirmMember.set(member);
   }
@@ -271,13 +377,38 @@ export class TeamAdminComponent {
     });
   }
 
+  leaveConfirmOpen = signal(false);
+  leaving = signal(false);
+  leaveError = signal<string | null>(null);
+
+  askLeaveTeam(): void {
+    this.leaveError.set(null);
+    this.leaveConfirmOpen.set(true);
+  }
+
+  cancelLeaveTeam(): void {
+    if (this.leaving()) return;
+    this.leaveConfirmOpen.set(false);
+  }
+
   leaveTeam(): void {
     const teamId = this.teamId();
-    if (!teamId) return;
+    if (!teamId || this.leaving()) return;
+
+    this.leaving.set(true);
+    this.leaveError.set(null);
 
     this.teamMemberService.leaveTeam(teamId).subscribe({
-      next: () => this.router.navigateByUrl('/times'),
-      error: (error) => console.error('Failed to leave team:', error),
+      next: () => {
+        this.leaving.set(false);
+        this.leaveConfirmOpen.set(false);
+        this.router.navigateByUrl('/times');
+      },
+      error: (error) => {
+        console.error('Failed to leave team:', error);
+        this.leaving.set(false);
+        this.leaveError.set('Não foi possível sair do time. Tente novamente.');
+      },
     });
   }
 
@@ -309,6 +440,8 @@ export class TeamAdminComponent {
   private seedFromTeam(team: TeamResponse): void {
     this.name.set(team.name);
     this.description.set(team.description ?? '');
+    this.avatarUrl.set(team.avatarUrl ?? '');
+    this.bannerUrl.set(team.bannerUrl ?? '');
     this.region.set(team.region ?? '');
     this.minPremierRating.set(team.minPremierRating ?? null);
     this.maxPremierRating.set(team.maxPremierRating ?? null);

@@ -22,6 +22,8 @@ public interface CommunityMemberRepository extends JpaRepository<CommunityMember
 
     Page<CommunityMember> findByUserAndStatus(User user, CommunityMemberStatus status, Pageable pageable);
 
+    Page<CommunityMember> findByUserIdAndStatus(UUID userId, CommunityMemberStatus status, Pageable pageable);
+
     Optional<CommunityMember> findByCommunityAndUser(Community community, User user);
 
     // Sem paginação de propósito: usado pra notificar todos os membros ativos de uma

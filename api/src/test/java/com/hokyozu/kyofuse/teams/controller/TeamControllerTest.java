@@ -137,6 +137,7 @@ class TeamControllerTest {
         Instant now = Instant.now();
         return new TeamResponse(
                 UUID.randomUUID(),
+                UUID.randomUUID(),
                 "owner",
                 "Kyofuse",
                 "kyofuse",

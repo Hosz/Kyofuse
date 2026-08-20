@@ -1,6 +1,7 @@
 package com.hokyozu.kyofuse.chat.service;
 
 import com.hokyozu.kyofuse.chat.dto.request.ConversationRequest;
+import com.hokyozu.kyofuse.chat.dto.request.UpdateConversationRequest;
 import com.hokyozu.kyofuse.chat.dto.response.ConversationResponse;
 import com.hokyozu.kyofuse.chat.entity.Conversation;
 import com.hokyozu.kyofuse.chat.entity.ConversationMember;
@@ -17,6 +18,7 @@ import com.hokyozu.kyofuse.communities.enums.CommunityMemberStatus;
 import com.hokyozu.kyofuse.communities.enums.CommunityStatus;
 import com.hokyozu.kyofuse.communities.enums.CommunityVisibility;
 import com.hokyozu.kyofuse.communities.repository.CommunityMemberRepository;
+import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import com.hokyozu.kyofuse.relationships.permission.service.message.MessagePermissionService;
 import com.hokyozu.kyofuse.relationships.shared.validator.BlockValidator;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
@@ -71,6 +73,9 @@ class ConversationServiceTest {
     private CommunityMemberRepository communityMemberRepository;
 
     @Mock
+    private GamerProfileFinder gamerProfileFinder;
+
+    @Mock
     private ConversationMemberRepository conversationMemberRepository;
 
     @Spy
@@ -87,7 +92,7 @@ class ConversationServiceTest {
         User other = activeUser(otherId, "other");
         // participantIds inclui o próprio criador por engano — não deve virar uma
         // segunda linha de ConversationMember pra ele.
-        ConversationRequest request = new ConversationRequest("Squad", List.of(userId, otherId));
+        ConversationRequest request = new ConversationRequest("Squad", null, List.of(userId, otherId));
 
         when(userFinder.findProfileByUserId(userId)).thenReturn(creator);
         when(userFinder.findProfileByUserId(otherId)).thenReturn(other);
@@ -117,7 +122,7 @@ class ConversationServiceTest {
         UUID otherId = UUID.randomUUID();
         User creator = activeUser(userId, "creator");
         User other = activeUser(otherId, "other");
-        ConversationRequest request = new ConversationRequest("Squad", List.of(otherId, UUID.randomUUID()));
+        ConversationRequest request = new ConversationRequest("Squad", null, List.of(otherId, UUID.randomUUID()));
         User third = activeUser(request.participantIds().get(1), "third");
 
         when(userFinder.findProfileByUserId(userId)).thenReturn(creator);
@@ -137,7 +142,7 @@ class ConversationServiceTest {
         UUID otherId = UUID.randomUUID();
         User user = activeUser(userId, "alice");
         User other = activeUser(otherId, "bob");
-        ConversationRequest request = new ConversationRequest(null, List.of(otherId));
+        ConversationRequest request = new ConversationRequest(null, null, List.of(otherId));
         Conversation existing = directConversation(user, other, DirectConversationStatus.ACCEPTED);
 
         when(userFinder.findProfileByUserId(userId)).thenReturn(user);
@@ -159,7 +164,7 @@ class ConversationServiceTest {
         UUID larger = UUID.fromString("80000000-0000-0000-0000-000000000001");
         User initiator = activeUser(larger, "initiator");
         User target = activeUser(smaller, "target");
-        ConversationRequest request = new ConversationRequest(null, List.of(smaller));
+        ConversationRequest request = new ConversationRequest(null, null, List.of(smaller));
 
         when(userFinder.findProfileByUserId(larger)).thenReturn(initiator);
         when(userFinder.findProfileByUserId(smaller)).thenReturn(target);
@@ -180,7 +185,7 @@ class ConversationServiceTest {
         UUID otherId = UUID.randomUUID();
         User user = activeUser(userId, "alice");
         User other = activeUser(otherId, "bob");
-        ConversationRequest request = new ConversationRequest(null, List.of(otherId));
+        ConversationRequest request = new ConversationRequest(null, null, List.of(otherId));
 
         when(userFinder.findProfileByUserId(userId)).thenReturn(user);
         when(userFinder.findProfileByUserId(otherId)).thenReturn(other);
@@ -199,7 +204,7 @@ class ConversationServiceTest {
         UUID larger = UUID.fromString("80000000-0000-0000-0000-000000000001");
         User initiator = activeUser(smaller, "initiator");
         User target = activeUser(larger, "target");
-        ConversationRequest request = new ConversationRequest(null, List.of(larger));
+        ConversationRequest request = new ConversationRequest(null, null, List.of(larger));
 
         when(userFinder.findProfileByUserId(smaller)).thenReturn(initiator);
         when(userFinder.findProfileByUserId(larger)).thenReturn(target);
@@ -499,20 +504,29 @@ class ConversationServiceTest {
     }
 
     @Test
-    void listCommunityConversationsRejectsWhenConversationIsMissingForActiveCommunity() {
+    void listCommunityConversationsSkipsCommunityWithoutConversationInsteadOfFailing() {
+        // Toda Community passou a nascer com uma conversa, mas as criadas antes dessa
+        // garantia não têm — uma delas não pode derrubar a aba de conversas inteira.
         UUID userId = UUID.randomUUID();
         Pageable pageable = PageRequest.of(0, 10);
         User user = activeUser(userId, "alice");
-        Community activeCommunity = community(user);
-        CommunityMember activeMembership = communityMembership(user, activeCommunity);
+        Community withoutConversation = community(user);
+        Community withConversation = community(user);
+        Conversation conversation = communityConversation(withConversation, user);
 
         when(userFinder.findProfileByUserId(userId)).thenReturn(user);
         when(communityMemberRepository.findByUserAndStatus(user, CommunityMemberStatus.ACTIVE, pageable))
-                .thenReturn(new PageImpl<>(List.of(activeMembership), pageable, 1));
-        when(conversationRepository.findByCommunity(activeCommunity)).thenReturn(Optional.empty());
+                .thenReturn(new PageImpl<>(
+                        List.of(communityMembership(user, withoutConversation), communityMembership(user, withConversation)),
+                        pageable,
+                        2));
+        when(conversationRepository.findByCommunity(withoutConversation)).thenReturn(Optional.empty());
+        when(conversationRepository.findByCommunity(withConversation)).thenReturn(Optional.of(conversation));
 
-        assertThatThrownBy(() -> conversationService.listCommunityConversations(userId, pageable))
-                .isInstanceOf(NotFoundException.class);
+        Page<ConversationResponse> response = conversationService.listCommunityConversations(userId, pageable);
+
+        assertThat(response.getContent()).hasSize(1);
+        assertThat(response.getContent().getFirst().communityId()).isEqualTo(withConversation.getId());
     }
 
     @Test
@@ -715,6 +729,146 @@ class ConversationServiceTest {
 
         assertThatThrownBy(() -> conversationService.getConversationDetails(conversationId, userId))
                 .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void editGroupConversationUpdatesNameAndAvatarForAdmin() {
+        User admin = activeUser(UUID.randomUUID(), "admin");
+        Conversation conversation = groupConversation(admin);
+        ConversationMember membership = groupMembership(conversation, admin, ConversationMemberRole.ADMIN, ConversationMemberStatus.ACTIVE);
+        UpdateConversationRequest request = new UpdateConversationRequest("Squad Renomeado", "https://example.com/group.png");
+
+        when(userFinder.findProfileByUserId(admin.getId())).thenReturn(admin);
+        when(conversationRepository.findById(conversation.getId())).thenReturn(Optional.of(conversation));
+        when(conversationMemberRepository.findByConversationAndUser(conversation, admin)).thenReturn(Optional.of(membership));
+        when(conversationRepository.save(conversation)).thenReturn(conversation);
+
+        ConversationResponse response = conversationService.editGroupConversation(conversation.getId(), request, admin.getId());
+
+        verify(conversationRepository).save(conversation);
+        assertThat(conversation.getName()).isEqualTo("Squad Renomeado");
+        assertThat(conversation.getAvatarUrl()).isEqualTo("https://example.com/group.png");
+        assertThat(response.name()).isEqualTo("Squad Renomeado");
+        assertThat(response.avatarUrl()).isEqualTo("https://example.com/group.png");
+    }
+
+    @Test
+    void editGroupConversationKeepsUntouchedFieldsWhenRequestOmitsThem() {
+        User admin = activeUser(UUID.randomUUID(), "admin");
+        Conversation conversation = groupConversation(admin);
+        conversation.setAvatarUrl("https://example.com/original.png");
+        ConversationMember membership = groupMembership(conversation, admin, ConversationMemberRole.ADMIN, ConversationMemberStatus.ACTIVE);
+
+        when(userFinder.findProfileByUserId(admin.getId())).thenReturn(admin);
+        when(conversationRepository.findById(conversation.getId())).thenReturn(Optional.of(conversation));
+        when(conversationMemberRepository.findByConversationAndUser(conversation, admin)).thenReturn(Optional.of(membership));
+        when(conversationRepository.save(conversation)).thenReturn(conversation);
+
+        conversationService.editGroupConversation(conversation.getId(), new UpdateConversationRequest(null, null), admin.getId());
+
+        assertThat(conversation.getName()).isEqualTo("Squad");
+        assertThat(conversation.getAvatarUrl()).isEqualTo("https://example.com/original.png");
+    }
+
+    @Test
+    void editGroupConversationRejectsNonAdminMember() {
+        User member = activeUser(UUID.randomUUID(), "member");
+        Conversation conversation = groupConversation(activeUser(UUID.randomUUID(), "creator"));
+        ConversationMember membership = groupMembership(conversation, member, ConversationMemberRole.MEMBER, ConversationMemberStatus.ACTIVE);
+
+        when(userFinder.findProfileByUserId(member.getId())).thenReturn(member);
+        when(conversationRepository.findById(conversation.getId())).thenReturn(Optional.of(conversation));
+        when(conversationMemberRepository.findByConversationAndUser(conversation, member)).thenReturn(Optional.of(membership));
+
+        assertThatThrownBy(() -> conversationService.editGroupConversation(
+                conversation.getId(), new UpdateConversationRequest("Hack", null), member.getId()))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("Only an admin can edit the conversation");
+
+        verify(conversationRepository, never()).save(any());
+    }
+
+    @Test
+    void editGroupConversationRejectsUserWithoutActiveMembership() {
+        User outsider = activeUser(UUID.randomUUID(), "outsider");
+        Conversation conversation = groupConversation(activeUser(UUID.randomUUID(), "creator"));
+
+        when(userFinder.findProfileByUserId(outsider.getId())).thenReturn(outsider);
+        when(conversationRepository.findById(conversation.getId())).thenReturn(Optional.of(conversation));
+        when(conversationMemberRepository.findByConversationAndUser(conversation, outsider)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> conversationService.editGroupConversation(
+                conversation.getId(), new UpdateConversationRequest("Hack", null), outsider.getId()))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("User is not an active member of the conversation");
+    }
+
+    @Test
+    void editGroupConversationRejectsRemovedMemberEvenIfAdmin() {
+        User removedAdmin = activeUser(UUID.randomUUID(), "removed-admin");
+        Conversation conversation = groupConversation(activeUser(UUID.randomUUID(), "creator"));
+        ConversationMember membership = groupMembership(conversation, removedAdmin, ConversationMemberRole.ADMIN, ConversationMemberStatus.REMOVED);
+
+        when(userFinder.findProfileByUserId(removedAdmin.getId())).thenReturn(removedAdmin);
+        when(conversationRepository.findById(conversation.getId())).thenReturn(Optional.of(conversation));
+        when(conversationMemberRepository.findByConversationAndUser(conversation, removedAdmin)).thenReturn(Optional.of(membership));
+
+        assertThatThrownBy(() -> conversationService.editGroupConversation(
+                conversation.getId(), new UpdateConversationRequest("Hack", null), removedAdmin.getId()))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("User is not an active member of the conversation");
+    }
+
+    @Test
+    void editGroupConversationRejectsDirectConversation() {
+        User user = activeUser(UUID.randomUUID(), "user");
+        Conversation conversation = directConversation(user, activeUser(UUID.randomUUID(), "other"), DirectConversationStatus.ACCEPTED);
+
+        when(userFinder.findProfileByUserId(user.getId())).thenReturn(user);
+        when(conversationRepository.findById(conversation.getId())).thenReturn(Optional.of(conversation));
+
+        assertThatThrownBy(() -> conversationService.editGroupConversation(
+                conversation.getId(), new UpdateConversationRequest("Nope", null), user.getId()))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Only GROUP conversations can be edited.");
+    }
+
+    @Test
+    void editGroupConversationRejectsMissingConversation() {
+        User user = activeUser(UUID.randomUUID(), "user");
+        UUID conversationId = UUID.randomUUID();
+
+        when(userFinder.findProfileByUserId(user.getId())).thenReturn(user);
+        when(conversationRepository.findById(conversationId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> conversationService.editGroupConversation(
+                conversationId, new UpdateConversationRequest("Nope", null), user.getId()))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Conversation not found");
+    }
+
+    private Conversation groupConversation(User creator) {
+        return Conversation.builder()
+                .id(UUID.randomUUID())
+                .type(ConversationType.GROUP)
+                .name("Squad")
+                .createdBy(creator)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+    }
+
+    private ConversationMember groupMembership(Conversation conversation, User user, ConversationMemberRole role, ConversationMemberStatus status) {
+        return ConversationMember.builder()
+                .id(UUID.randomUUID())
+                .conversation(conversation)
+                .user(user)
+                .role(role)
+                .status(status)
+                .joinedAt(Instant.now())
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
     }
 
     private User activeUser(UUID id, String username) {

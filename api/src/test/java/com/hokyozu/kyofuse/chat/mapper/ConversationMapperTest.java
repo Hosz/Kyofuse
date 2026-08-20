@@ -1,6 +1,7 @@
 package com.hokyozu.kyofuse.chat.mapper;
 
 import com.hokyozu.kyofuse.chat.dto.request.ConversationRequest;
+import com.hokyozu.kyofuse.chat.dto.request.UpdateConversationRequest;
 import com.hokyozu.kyofuse.chat.dto.response.ConversationResponse;
 import com.hokyozu.kyofuse.chat.entity.Conversation;
 import com.hokyozu.kyofuse.chat.enums.ConversationType;
@@ -22,7 +23,7 @@ class ConversationMapperTest {
     @Test
     void toEntityGroupBuildsGroupTypeWithoutDirectOrCommunityFields() {
         User creator = user("creator");
-        ConversationRequest request = new ConversationRequest("Squad", List.of(UUID.randomUUID(), UUID.randomUUID()));
+        ConversationRequest request = new ConversationRequest("Squad", null, List.of(UUID.randomUUID(), UUID.randomUUID()));
 
         Conversation conversation = ConversationMapper.toEntityGroup(request, creator);
 
@@ -35,6 +36,52 @@ class ConversationMapperTest {
         assertThat(conversation.getDirectMessageStatus()).isNull();
         assertThat(conversation.getCreatedAt()).isNotNull();
         assertThat(conversation.getUpdatedAt()).isNotNull();
+    }
+
+    @Test
+    void toEntityGroupCarriesAvatarUrlFromRequest() {
+        ConversationRequest request = new ConversationRequest("Squad", "https://example.com/group.png", List.of(UUID.randomUUID()));
+
+        Conversation conversation = ConversationMapper.toEntityGroup(request, user("creator"));
+
+        assertThat(conversation.getAvatarUrl()).isEqualTo("https://example.com/group.png");
+    }
+
+    @Test
+    void toEditUpdatesOnlyProvidedFieldsAndTimestamp() {
+        Conversation conversation = Conversation.builder()
+                .id(UUID.randomUUID())
+                .type(ConversationType.GROUP)
+                .name("Squad")
+                .avatarUrl("https://example.com/old.png")
+                .createdBy(user("creator"))
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now().minusSeconds(60))
+                .build();
+        Instant previousUpdatedAt = conversation.getUpdatedAt();
+
+        ConversationMapper.toEdit(conversation, new UpdateConversationRequest("Squad Renomeado", null));
+
+        assertThat(conversation.getName()).isEqualTo("Squad Renomeado");
+        assertThat(conversation.getAvatarUrl()).isEqualTo("https://example.com/old.png");
+        assertThat(conversation.getUpdatedAt()).isAfter(previousUpdatedAt);
+    }
+
+    @Test
+    void toEditUpdatesAvatarWhenProvided() {
+        Conversation conversation = Conversation.builder()
+                .id(UUID.randomUUID())
+                .type(ConversationType.GROUP)
+                .name("Squad")
+                .createdBy(user("creator"))
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+
+        ConversationMapper.toEdit(conversation, new UpdateConversationRequest(null, "https://example.com/new.png"));
+
+        assertThat(conversation.getName()).isEqualTo("Squad");
+        assertThat(conversation.getAvatarUrl()).isEqualTo("https://example.com/new.png");
     }
 
     @Test
@@ -110,7 +157,11 @@ class ConversationMapperTest {
     @Test
     void toResponseMapsCommunityConversationFields() {
         User creator = user("owner");
-        Community community = Community.builder().id(UUID.randomUUID()).name("Kyofuse CS2").build();
+        Community community = Community.builder()
+                .id(UUID.randomUUID())
+                .name("Kyofuse CS2")
+                .avatarUrl("https://example.com/community.png")
+                .build();
         Conversation conversation = Conversation.builder()
                 .id(UUID.randomUUID())
                 .type(ConversationType.COMMUNITY)
@@ -124,6 +175,9 @@ class ConversationMapperTest {
 
         assertThat(response.communityId()).isEqualTo(community.getId());
         assertThat(response.communityName()).isEqualTo("Kyofuse CS2");
+        // A conversa COMMUNITY não tem foto própria: exibe a da comunidade vinculada.
+        assertThat(response.communityAvatarUrl()).isEqualTo("https://example.com/community.png");
+        assertThat(response.avatarUrl()).isNull();
         assertThat(response.directUserOneId()).isNull();
         assertThat(response.directUserOneUsername()).isNull();
         assertThat(response.directUserTwoId()).isNull();

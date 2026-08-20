@@ -7,9 +7,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,6 +29,20 @@ class CommunityJoinRequestControllerTest {
 
     @InjectMocks
     private CommunityJoinRequestController controller;
+
+    @Test
+    void listJoinRequestsUsesAuthenticatedUserIdAndPathCommunityId() {
+        UUID userId = UUID.randomUUID();
+        UUID communityId = UUID.randomUUID();
+        Pageable pageable = PageRequest.of(0, 20);
+        Page<CommunityJoinRequestResponse> expected = new PageImpl<>(List.of(response(communityId, UUID.randomUUID())));
+        when(communityJoinRequestService.listJoinRequests(userId, communityId, pageable)).thenReturn(expected);
+
+        Page<CommunityJoinRequestResponse> result = controller.listJoinRequests(jwt(userId), communityId, pageable);
+
+        assertThat(result).isSameAs(expected);
+        verify(communityJoinRequestService).listJoinRequests(userId, communityId, pageable);
+    }
 
     @Test
     void requestToJoinCommunityUsesAuthenticatedUserIdAndPathCommunityId() {

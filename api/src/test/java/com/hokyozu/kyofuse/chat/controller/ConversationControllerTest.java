@@ -1,6 +1,7 @@
 package com.hokyozu.kyofuse.chat.controller;
 
 import com.hokyozu.kyofuse.chat.dto.request.ConversationRequest;
+import com.hokyozu.kyofuse.chat.dto.request.UpdateConversationRequest;
 import com.hokyozu.kyofuse.chat.dto.response.ConversationResponse;
 import com.hokyozu.kyofuse.chat.enums.ConversationType;
 import com.hokyozu.kyofuse.chat.enums.DirectConversationStatus;
@@ -36,7 +37,7 @@ class ConversationControllerTest {
     @Test
     void createConversationUsesAuthenticatedUserId() {
         UUID userId = UUID.randomUUID();
-        ConversationRequest request = new ConversationRequest("Squad", List.of(UUID.randomUUID(), UUID.randomUUID()));
+        ConversationRequest request = new ConversationRequest("Squad", null, List.of(UUID.randomUUID(), UUID.randomUUID()));
         ConversationResponse expected = response();
         when(conversationService.createConversation(request, userId)).thenReturn(expected);
 
@@ -44,6 +45,20 @@ class ConversationControllerTest {
 
         assertThat(result).isSameAs(expected);
         verify(conversationService).createConversation(request, userId);
+    }
+
+    @Test
+    void editGroupConversationUsesAuthenticatedUserIdAndPathConversationId() {
+        UUID userId = UUID.randomUUID();
+        UUID conversationId = UUID.randomUUID();
+        UpdateConversationRequest request = new UpdateConversationRequest("Squad", "https://example.com/group.png");
+        ConversationResponse expected = response();
+        when(conversationService.editGroupConversation(conversationId, request, userId)).thenReturn(expected);
+
+        ConversationResponse result = controller.editGroupConversation(jwt(userId), conversationId, request);
+
+        assertThat(result).isSameAs(expected);
+        verify(conversationService).editGroupConversation(conversationId, request, userId);
     }
 
     @Test
@@ -143,8 +158,14 @@ class ConversationControllerTest {
                 UUID.randomUUID(),
                 ConversationType.GROUP,
                 "Squad",
+                "https://example.com/group.png",
                 UUID.randomUUID(),
                 "creator",
+                null,
+                null,
+                null,
+                null,
+                null,
                 null,
                 null,
                 null,

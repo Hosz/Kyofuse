@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { API_URL } from '../../../models/api-url.model';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { PageResponse } from '../../../models/page-response.model';
 import { UserBlockResponse } from '../../../models/block/block.model';
 
@@ -17,8 +17,9 @@ export class BlockService {
     return this.http.post<UserBlockResponse>(`${this.url}/${userId}/block`, null);
   }
 
-  public getBlockedUsers() {
-    return this.http.get<PageResponse<UserBlockResponse>>(`${this.url}/blocked-users`);
+  public getBlockedUsers(page: number = 0, size: number = 20) {
+    const params = new HttpParams().set('page', page.toString()).set('size', size.toString());
+    return this.http.get<PageResponse<UserBlockResponse>>(`${this.url}/blocked-users`, { params });
   }
 
   public unblockUser(userId: string) {

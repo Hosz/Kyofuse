@@ -6,13 +6,25 @@
       [conversations]="allConversations()"
       [selectedId]="selectedId()"
       (select)="onSelectConversation($event)"
+      (newConversation)="openNewConversationModal()"
     />
 
     <app-chat-window
       [conversation]="selectedConversation()"
+      [myUserId]="myUserIdValue()"
+      (groupUpdated)="onGroupUpdated($event)"
       (accept)="onAccept()"
       (decline)="onDecline()"
+      (revoke)="onRevoke()"
       (sendMessage)="onSendMessage($event)"
+      (deleteMessage)="onDeleteMessage($event)"
     />
   </div>
+
+  <app-new-conversation-modal
+    [open]="activeModal() === 'new-conversation'"
+    (closed)="closeModal()"
+    (startDirect)="onStartDirectConversation($event)"
+    (createGroup)="onCreateGroupConversation($event)"
+  />
 </div>

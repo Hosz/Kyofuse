@@ -13,6 +13,8 @@ public record CommunityMemberResponse(
         String communitySlug,
         UUID memberId,
         String memberUsername,
+        String memberNickname,
+        String memberAvatarUrl,
         CommunityMemberRole role,
         CommunityMemberStatus status,
         Instant joinedAt,

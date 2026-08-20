@@ -12,4 +12,5 @@ export class FeedListComponent {
   posts = input<Post[]>([]);
 
   authorBlocked = output<string>();
+  postDeleted = output<string>();
 }

@@ -4,23 +4,136 @@
 
     <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto border-r border-outline-variant bg-surface">
       <div class="feed-container mx-auto flex w-full flex-col">
-        <app-feed-tabs />
-        <app-post-composer />
-        <app-feed-list [posts]="posts()" (authorBlocked)="onAuthorBlocked($event)" />
+        <div class="sticky top-0 z-10 flex items-stretch border-b border-outline-variant bg-surface/90 backdrop-blur-md supports-[backdrop-filter]:bg-surface/70">
+          <div class="relative flex min-w-0 flex-1 items-stretch">
+            @if (strip.canScrollLeft()) {
+              <button
+                type="button"
+                (click)="strip.scrollByStep(-1)"
+                aria-label="Rolar abas para a esquerda"
+                class="absolute left-0 top-0 z-10 flex h-full cursor-pointer items-center bg-gradient-to-r from-surface via-surface/90 to-transparent pl-1 pr-6 text-on-surface-variant transition-colors hover:text-on-surface"
+              >
+                <span class="material-symbols-outlined text-[20px]">chevron_left</span>
+              </button>
+            }
 
-        @if (hasMoreToLoad()) {
+            <div
+              appDragScroll
+              #strip="dragScroll"
+              class="scrollbar-none flex min-w-0 flex-1 select-none items-center gap-1 overflow-x-auto px-2"
+            >
+              <button
+                type="button"
+                (click)="selectFeed(forYou)"
+                class="cursor-pointer whitespace-nowrap border-b-2 px-4 py-3.5 text-label-md font-bold transition-colors"
+                [class.flex-1]="stretchTabs()"
+                [class.shrink-0]="!stretchTabs()"
+                [class]="activeFeed() === forYou ? 'border-primary text-on-surface' : 'border-transparent text-on-surface-variant hover:text-on-surface'"
+              >
+                Para Você
+              </button>
+
+              <button
+                type="button"
+                (click)="selectFeed(following)"
+                class="cursor-pointer whitespace-nowrap border-b-2 px-4 py-3.5 text-label-md font-bold transition-colors"
+                [class.flex-1]="stretchTabs()"
+                [class.shrink-0]="!stretchTabs()"
+                [class]="activeFeed() === following ? 'border-primary text-on-surface' : 'border-transparent text-on-surface-variant hover:text-on-surface'"
+              >
+                Seguindo
+              </button>
+
+              @for (community of pinnedCommunities(); track community.id) {
+                <button
+                  type="button"
+                  (click)="selectFeed(community.id)"
+                  class="flex cursor-pointer items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3.5 text-label-md font-bold transition-colors"
+                  [class.flex-1]="stretchTabs()"
+                  [class.min-w-0]="stretchTabs()"
+                  [class.justify-center]="stretchTabs()"
+                  [class.shrink-0]="!stretchTabs()"
+                  [class]="activeFeed() === community.id ? 'border-primary text-on-surface' : 'border-transparent text-on-surface-variant hover:text-on-surface'"
+                >
+                  @if (community.communityAvatarUrl) {
+                    <img
+                      [src]="community.communityAvatarUrl"
+                      [alt]="community.communityName"
+                      draggable="false"
+                      class="h-5 w-5 shrink-0 rounded object-cover"
+                    />
+                  }
+                  <!-- Esticada, a aba pode ficar mais estreita que o nome da comunidade. -->
+                  <span class="truncate">{{ community.communityName }}</span>
+                </button>
+              }
+            </div>
+
+            @if (strip.canScrollRight()) {
+              <button
+                type="button"
+                (click)="strip.scrollByStep(1)"
+                aria-label="Rolar abas para a direita"
+                class="absolute right-0 top-0 z-10 flex h-full cursor-pointer items-center bg-gradient-to-l from-surface via-surface/90 to-transparent pl-6 pr-1 text-on-surface-variant transition-colors hover:text-on-surface"
+              >
+                <span class="material-symbols-outlined text-[20px]">chevron_right</span>
+              </button>
+            }
+          </div>
+
           <button
             type="button"
-            (click)="loadMore()"
-            [disabled]="loadingMore()"
-            class="mx-lg my-md cursor-pointer rounded-full border border-outline-variant py-2.5 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
+            (click)="openPinModal()"
+            aria-label="Escolher comunidades do feed"
+            title="Escolher comunidades do feed"
+            class="flex shrink-0 cursor-pointer items-center border-l border-outline-variant px-3 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
           >
-            {{ loadingMore() ? 'Carregando...' : 'Carregar mais' }}
+            <span class="material-symbols-outlined text-[20px]">add</span>
           </button>
+        </div>
+
+        @if (isFixedFeed()) {
+          <app-post-composer />
+        } @else if (activeCommunity(); as community) {
+          <div class="flex items-center justify-between gap-3 border-b border-outline-variant px-lg py-3">
+            <span class="text-label-md text-on-surface-variant">
+              Publicações de <span class="font-bold text-on-surface">{{ community.communityName }}</span>
+            </span>
+            <a
+              [routerLink]="['/comunidade', community.id]"
+              class="shrink-0 cursor-pointer rounded-full border border-outline-variant px-3 py-1.5 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high"
+            >
+              Abrir comunidade
+            </a>
+          </div>
+        }
+
+        @if (loading()) {
+          <app-skeleton variant="post" [count]="4" />
+        } @else {
+          <app-feed-list
+            [posts]="posts()"
+            (authorBlocked)="onAuthorBlocked($event)"
+            (postDeleted)="onPostDeleted($event)"
+          />
+
+          <!-- Sentinela: carrega a próxima página ao se aproximar do fim da lista. -->
+          <div [appInfiniteScroll]="hasMoreToLoad() && !loadingMore()" (loadMore)="loadMore()"></div>
+
+          @if (loadingMore()) {
+            <app-skeleton variant="post" [count]="2" />
+          }
         }
       </div>
     </main>
 
     <app-discovery-sidebar />
   </div>
+
+  <app-pin-community-modal
+    [open]="pinModalOpen()"
+    [pinned]="pinnedCommunities()"
+    (closed)="closePinModal()"
+    (pinnedChanged)="onPinnedChanged($event)"
+  />
 </div>

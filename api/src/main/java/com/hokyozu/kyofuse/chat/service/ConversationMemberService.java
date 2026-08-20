@@ -9,6 +9,7 @@ import com.hokyozu.kyofuse.chat.enums.ConversationType;
 import com.hokyozu.kyofuse.chat.mapper.ConversationMemberMapper;
 import com.hokyozu.kyofuse.chat.repository.ConversationMemberRepository;
 import com.hokyozu.kyofuse.chat.repository.ConversationRepository;
+import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import com.hokyozu.kyofuse.relationships.shared.validator.BlockValidator;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.shared.exception.ForbiddenException;
@@ -31,6 +32,7 @@ public class ConversationMemberService {
 
     private final UserFinder userFinder;
     private final UserChecker userChecker;
+    private final GamerProfileFinder gamerProfileFinder;
     private final BlockValidator blockValidator;
     private final ConversationRepository conversationRepository;
     private final ConversationMemberRepository conversationMemberRepository;
@@ -94,7 +96,10 @@ public class ConversationMemberService {
                 .orElseThrow(() -> new ForbiddenException("User is not an active member of the conversation"));
 
         return conversationMemberRepository.findByConversation(conversation, pageable)
-                .map(ConversationMemberMapper::toResponse);
+                .map(member -> ConversationMemberMapper.toResponse(
+                        member,
+                        gamerProfileFinder.findProfileByUserId(member.getUser().getId())
+                ));
     }
 
     @Transactional

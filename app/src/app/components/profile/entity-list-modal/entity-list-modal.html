@@ -6,9 +6,13 @@
         (click)="itemClick.emit(item)"
         class="flex items-center gap-3 rounded-lg transition-colors hover:bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
       >
-        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-tertiary-container/20 text-tertiary">
-          <span class="material-symbols-outlined text-[22px]">{{ item.icon }}</span>
-        </div>
+        @if (item.imageUrl) {
+          <img [src]="item.imageUrl" [alt]="item.name" class="h-11 w-11 shrink-0 rounded-lg object-cover" />
+        } @else {
+          <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-tertiary-container/20 text-tertiary">
+            <span class="material-symbols-outlined text-[22px]">{{ item.icon }}</span>
+          </div>
+        }
         <div class="flex flex-1 flex-col">
           <span class="text-body-sm font-semibold text-on-surface">{{ item.name }}</span>
           <span class="text-label-sm uppercase text-on-surface-variant">{{ item.meta }}</span>

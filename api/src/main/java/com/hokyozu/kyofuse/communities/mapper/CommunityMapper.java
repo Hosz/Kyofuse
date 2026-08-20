@@ -41,6 +41,7 @@ public class CommunityMapper {
                 community.getOwner().getUsername(),
                 community.getTeam() != null ? community.getTeam().getId() : null,
                 community.getTeam() != null ? community.getTeam().getName() : null,
+                community.getTeam() != null ? community.getTeam().getAvatarUrl() : null,
                 community.getVisibility(),
                 community.getStatus(),
                 //community.getMemberCount(),

@@ -18,6 +18,8 @@ import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.finder.UserFinder;
 import com.hokyozu.kyofuse.users.service.UserChecker;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -90,6 +92,22 @@ public class CommunityJoinRequestService {
 
         communityMemberService.addMember(communityJoinRequest.getRequester(), community);
         communityJoinRequestRepository.delete(communityJoinRequest);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<CommunityJoinRequestResponse> listJoinRequests(UUID userId, UUID communityId, Pageable pageable) {
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
+
+        Community community = communityRepository.findById(communityId)
+                .orElseThrow(() -> new NotFoundException("Community not found"));
+
+        if (!communityMemberService.isOwnerOrStaff(user, community)) {
+            throw new ForbiddenException("Only the community owner, an admin or a moderator can view join requests");
+        }
+
+        return communityJoinRequestRepository.findByCommunityId(communityId, pageable)
+                .map(CommunityJoinRequestMapper::toResponse);
     }
 
     @Transactional

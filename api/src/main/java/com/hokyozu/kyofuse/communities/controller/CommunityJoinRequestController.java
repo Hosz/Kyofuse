@@ -3,6 +3,8 @@ package com.hokyozu.kyofuse.communities.controller;
 import com.hokyozu.kyofuse.communities.dto.response.CommunityJoinRequestResponse;
 import com.hokyozu.kyofuse.communities.service.CommunityJoinRequestService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +17,14 @@ import java.util.UUID;
 public class CommunityJoinRequestController {
 
     private final CommunityJoinRequestService communityJoinRequestService;
+
+    @GetMapping("/{communityId}")
+    public Page<CommunityJoinRequestResponse> listJoinRequests(@AuthenticationPrincipal Jwt jwt,
+                                                                @PathVariable UUID communityId,
+                                                                Pageable pageable) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return communityJoinRequestService.listJoinRequests(userId, communityId, pageable);
+    }
 
     @PostMapping("/{communityId}/request")
     public CommunityJoinRequestResponse requestToJoinCommunity(@AuthenticationPrincipal Jwt jwt,

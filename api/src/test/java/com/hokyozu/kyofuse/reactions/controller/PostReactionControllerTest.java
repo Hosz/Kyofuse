@@ -31,7 +31,7 @@ class PostReactionControllerTest {
         UUID userId = UUID.randomUUID();
         UUID postId = UUID.randomUUID();
         PostReactionRequest request = new PostReactionRequest(ReactionType.LIKE);
-        PostReactionResponse expected = new PostReactionResponse(postId, "player", "PlayerNick", "avatar.png", ReactionType.LIKE);
+        PostReactionResponse expected = new PostReactionResponse(postId, userId, "player", "PlayerNick", "avatar.png", ReactionType.LIKE);
         Jwt jwt = Jwt.withTokenValue("token")
                 .header("alg", "none")
                 .subject(userId.toString())

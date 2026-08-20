@@ -84,6 +84,7 @@ Table gamer_profile_favorite_maps {
 
 Table posts {
   id uuid [pk]
+  community_id uuid [ref: > communities.id, note: 'NULL em post comum; preenchido em post exclusivo de uma comunidade']
 
   author_id uuid [not null, ref: > users.id]
 
@@ -486,6 +487,27 @@ Table community_members {
 
 // Espelha user_friend_requests: sem coluna de status, a existência da linha já é o PENDING.
 // Aceitar cria/atualiza a linha correspondente em community_members e remove esta; recusar apenas remove.
+// Comunidades que o usuário fixou como aba do feed inicial. Preferência pessoal: não
+// tem relação com associação (community_members).
+Table user_pinned_communities {
+  id uuid [pk]
+
+  user_id uuid [not null, ref: > users.id]
+  community_id uuid [not null, ref: > communities.id]
+
+  position int [not null, note: 'Ordem da aba no feed, começando em 0']
+
+  created_at timestamptz [not null]
+
+  indexes {
+    (user_id, community_id) [unique]
+
+    user_id
+    community_id
+    (user_id, position)
+  }
+}
+
 Table community_join_requests {
   id uuid [pk]
 
@@ -512,6 +534,7 @@ Table conversations {
   type varchar(20) [not null]
 
   name varchar(80)
+  avatar_url varchar(500) [note: 'Só GROUP: DIRECT usa o avatar do outro participante e COMMUNITY o da comunidade']
   created_by uuid [not null, ref: > users.id]
 
   community_id uuid [unique, ref: > communities.id]

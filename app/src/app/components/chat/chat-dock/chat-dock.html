@@ -1,0 +1,283 @@
+@if (!hidden()) {
+  <div class="fixed bottom-6 right-6 z-40">
+    @if (open()) {
+      <section
+        class="dock-panel flex h-[32rem] max-h-[calc(100vh-3rem)] w-[22rem] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-2xl border border-outline-variant/50 bg-surface-container-low/70 shadow-2xl backdrop-blur-xl"
+      >
+        @if (active(); as conversation) {
+          <header class="dock-view-forward flex shrink-0 items-center gap-1 border-b border-outline-variant/50 bg-surface-container/40 px-2 py-2">
+            <button
+              type="button"
+              (click)="back()"
+              aria-label="Voltar para as conversas"
+              class="cursor-pointer rounded-full p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high/60 hover:text-on-surface"
+            >
+              <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+            </button>
+
+            <button
+              type="button"
+              (click)="openInfoPanel()"
+              title="Ver informações da conversa"
+              class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg px-1 py-1 text-left transition-colors hover:bg-surface-container-high/60"
+            >
+              <img
+                [src]="conversation.participant.avatarUrl"
+                [alt]="conversation.participant.name"
+                class="h-8 w-8 shrink-0 rounded-full object-cover"
+              />
+              <span class="flex min-w-0 flex-1 flex-col leading-tight">
+                <span class="truncate text-body-sm font-bold text-on-surface">{{ conversation.participant.name }}</span>
+                <span class="truncate text-label-sm text-on-surface-variant">
+                  @if (conversation.type === 'DIRECT') {
+                    &#64;{{ conversation.participant.handle }}
+                  } @else {
+                    {{ conversation.type === 'GROUP' ? 'Grupo' : 'Comunidade' }}
+                  }
+                </span>
+              </span>
+            </button>
+
+            <button
+              type="button"
+              (click)="expand()"
+              aria-label="Abrir em tela cheia"
+              title="Abrir em tela cheia"
+              class="cursor-pointer rounded-full p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high/60 hover:text-on-surface"
+            >
+              <span class="material-symbols-outlined text-[18px]">open_in_full</span>
+            </button>
+            <button
+              type="button"
+              (click)="close()"
+              aria-label="Minimizar"
+              title="Minimizar"
+              class="cursor-pointer rounded-full p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high/60 hover:text-on-surface"
+            >
+              <span class="material-symbols-outlined text-[18px]">close_fullscreen</span>
+            </button>
+          </header>
+
+          <div #scroller class="scrollbar-minimal dock-view-forward flex flex-1 flex-col gap-3 overflow-y-auto px-3 py-3">
+            @if (messagesLoading()) {
+              <p class="py-8 text-center text-body-sm text-on-surface-variant">Carregando mensagens...</p>
+            } @else {
+              @for (group of messageGroups(); track group.key) {
+                <div class="flex items-end gap-2" [class.flex-row-reverse]="group.author === 'me'">
+                  @if (group.author === 'them') {
+                    <img
+                      [src]="group.senderAvatarUrl || conversation.participant.avatarUrl"
+                      [alt]="group.senderNickname || group.senderUsername || ''"
+                      class="h-6 w-6 shrink-0 rounded-full object-cover"
+                    />
+                  }
+
+                  <div class="flex min-w-0 max-w-[75%] flex-col gap-1" [class.items-end]="group.author === 'me'">
+                    @if (group.author === 'them' && conversation.type !== 'DIRECT') {
+                      <span class="px-1 text-label-sm font-semibold text-on-surface-variant">
+                        {{ group.senderNickname || group.senderUsername }}
+                      </span>
+                    }
+
+                    @for (message of group.messages; track message.id) {
+                      <span class="group flex items-center gap-1">
+                        @if (group.author === 'me') {
+                          <button
+                            type="button"
+                            (click)="askDeleteMessage(message.id)"
+                            aria-label="Apagar mensagem"
+                            title="Apagar mensagem"
+                            class="cursor-pointer rounded-full p-0.5 text-on-surface-variant opacity-0 transition-opacity hover:text-error focus-visible:opacity-100 group-hover:opacity-100"
+                          >
+                            <span class="material-symbols-outlined text-[14px]">delete</span>
+                          </button>
+                        }
+                        <span
+                          class="whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-body-sm backdrop-blur-sm"
+                          [class]="
+                            group.author === 'me'
+                              ? 'bg-primary-container/85 text-on-primary-container'
+                              : 'bg-surface-container-high/70 text-on-surface'
+                          "
+                        >
+                          {{ message.content }}
+                        </span>
+                      </span>
+                    }
+
+                    <span class="px-1 text-label-sm text-on-surface-variant">{{ group.timestamp }}</span>
+                  </div>
+                </div>
+              } @empty {
+                <p class="py-8 text-center text-body-sm text-on-surface-variant">Nenhuma mensagem ainda.</p>
+              }
+            }
+          </div>
+
+          @if (canType()) {
+            <form
+              (submit)="$event.preventDefault(); send()"
+              class="flex shrink-0 items-center gap-2 border-t border-outline-variant/50 bg-surface-container/40 px-3 py-2.5"
+            >
+              <input
+                type="text"
+                [value]="draft()"
+                (input)="onDraftChange($any($event.target).value)"
+                placeholder="Escreva uma mensagem"
+                class="min-w-0 flex-1 rounded-full border border-outline-variant/60 bg-surface/50 px-3 py-2 text-body-sm text-on-surface outline-none transition-colors placeholder:text-on-surface-variant focus:border-primary"
+              />
+              <button
+                type="submit"
+                [disabled]="!draft().trim() || sending()"
+                aria-label="Enviar"
+                class="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary-container/90 text-on-primary-container transition-all hover:brightness-110 active:scale-[0.95] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <span class="material-symbols-outlined text-[18px]">send</span>
+              </button>
+            </form>
+          } @else {
+            <button
+              type="button"
+              (click)="expand()"
+              class="shrink-0 cursor-pointer border-t border-outline-variant/50 bg-surface-container/40 px-3 py-3 text-label-md text-on-surface-variant transition-colors hover:bg-surface-container-high/60 hover:text-on-surface"
+            >
+              {{ blockedNotice() }}
+            </button>
+          }
+        } @else {
+          <header class="flex shrink-0 flex-col gap-2 border-b border-outline-variant/50 bg-surface-container/40 px-3 py-2.5">
+            <div class="flex items-center justify-between">
+              <span class="px-1 text-body-sm font-bold text-on-surface">Conversas</span>
+              <div class="flex items-center gap-1">
+                <button
+                  type="button"
+                  (click)="expand()"
+                  aria-label="Abrir em tela cheia"
+                  title="Abrir em tela cheia"
+                  class="cursor-pointer rounded-full p-1 text-on-surface-variant transition-colors hover:bg-surface-container-high/60 hover:text-on-surface"
+                >
+                  <span class="material-symbols-outlined text-[18px]">open_in_full</span>
+                </button>
+                <button
+                  type="button"
+                  (click)="close()"
+                  aria-label="Minimizar"
+                  title="Minimizar"
+                  class="cursor-pointer rounded-full p-1 text-on-surface-variant transition-colors hover:bg-surface-container-high/60 hover:text-on-surface"
+                >
+                  <span class="material-symbols-outlined text-[18px]">close_fullscreen</span>
+                </button>
+              </div>
+            </div>
+
+            <label class="flex items-center gap-2 rounded-full border border-outline-variant/60 bg-surface/50 px-3 py-1.5">
+              <span class="material-symbols-outlined shrink-0 text-[18px] text-on-surface-variant">search</span>
+              <input
+                type="text"
+                [value]="query()"
+                (input)="onQueryChange($any($event.target).value)"
+                placeholder="Buscar conversas"
+                class="min-w-0 flex-1 bg-transparent text-body-sm text-on-surface outline-none placeholder:text-on-surface-variant"
+              />
+              @if (query()) {
+                <button
+                  type="button"
+                  (click)="onQueryChange('')"
+                  aria-label="Limpar busca"
+                  class="cursor-pointer text-on-surface-variant transition-colors hover:text-on-surface"
+                >
+                  <span class="material-symbols-outlined text-[16px]">close</span>
+                </button>
+              }
+            </label>
+
+            <div class="flex items-center gap-1.5">
+              @for (filter of filters; track filter.value) {
+                <button
+                  type="button"
+                  (click)="setFilter(filter.value)"
+                  class="cursor-pointer whitespace-nowrap rounded-full px-3 py-1 text-label-sm font-bold transition-colors"
+                  [class]="
+                    activeFilter() === filter.value
+                      ? 'bg-primary-container/90 text-on-primary-container'
+                      : 'border border-outline-variant/60 text-on-surface-variant hover:bg-surface-container-high/60'
+                  "
+                >
+                  {{ filter.label }}
+                </button>
+              }
+            </div>
+          </header>
+
+          <div class="scrollbar-minimal dock-view-back flex flex-1 flex-col overflow-y-auto">
+            @if (loading()) {
+              <app-skeleton variant="conversation" [count]="5" />
+            } @else {
+              @for (conversation of visibleConversations(); track conversation.id) {
+                <button
+                  type="button"
+                  (click)="openConversation(conversation)"
+                  class="flex cursor-pointer items-center gap-3 border-b border-outline-variant/40 px-4 py-2.5 text-left transition-colors hover:bg-surface-container-high/60"
+                >
+                  <img
+                    [src]="conversation.participant.avatarUrl"
+                    [alt]="conversation.participant.name"
+                    class="h-9 w-9 shrink-0 rounded-full object-cover"
+                  />
+                  <span class="flex min-w-0 flex-1 flex-col">
+                    <span class="truncate text-body-sm font-semibold text-on-surface">
+                      {{ conversation.participant.name }}
+                    </span>
+                    @if (conversation.type === 'DIRECT') {
+                      <span class="truncate text-label-sm text-on-surface-variant">&#64;{{ conversation.participant.handle }}</span>
+                    } @else {
+                      <span class="truncate text-label-sm text-on-surface-variant">
+                        {{ conversation.type === 'GROUP' ? 'Grupo' : 'Comunidade' }}
+                      </span>
+                    }
+                  </span>
+                  <span class="shrink-0 text-label-sm text-on-surface-variant">{{ conversation.lastMessageAt }}</span>
+                </button>
+              } @empty {
+                <p class="py-8 text-center text-body-sm text-on-surface-variant">
+                  {{ query() ? 'Nenhuma conversa encontrada.' : 'Nenhuma conversa ainda.' }}
+                </p>
+              }
+            }
+          </div>
+        }
+      </section>
+    } @else {
+      <button
+        type="button"
+        (click)="toggle()"
+        [attr.aria-expanded]="open()"
+        aria-label="Conversas"
+        class="dock-fab flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-primary-container/90 text-on-primary-container shadow-2xl backdrop-blur-md transition-all hover:brightness-110 active:scale-[0.95]"
+      >
+        <span class="material-symbols-outlined text-[24px]">chat_bubble</span>
+      </button>
+    }
+  </div>
+
+  <app-confirm-dialog
+    [open]="messagePendingDeletion() !== null"
+    title="Apagar mensagem"
+    message="Essa mensagem será removida da conversa. Não dá para desfazer."
+    confirmLabel="Apagar"
+    (confirmed)="confirmDeleteMessage()"
+    (cancelled)="cancelDeleteMessage()"
+  />
+
+  <!-- Fora da janelinha de propósito: o backdrop-filter dela cria bloco de contenção
+       e prenderia este modal de tela cheia dentro dos 22rem do painel. -->
+  @if (active(); as conversation) {
+    <app-conversation-info-panel
+      [open]="infoPanelOpen()"
+      [conversation]="conversation"
+      [myUserId]="myUserIdValue()"
+      (closed)="closeInfoPanel()"
+      (groupUpdated)="onGroupUpdated($event)"
+    />
+  }
+}

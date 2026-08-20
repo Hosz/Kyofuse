@@ -1,5 +1,12 @@
+import { ConversationType } from '../../models/chat/chat.model';
+
 export interface ChatParticipant {
+  /** Id do usuário (users.id) — só preenchido em conversas DIRECT, onde participant
+   * representa uma pessoa de verdade (em GROUP/COMMUNITY é o nome do grupo/comunidade). */
+  id?: string;
+  /** Nome de exibição: nickname do perfil em DIRECT, nome do grupo/comunidade nos outros. */
   name: string;
+  /** Username sem @ — só faz sentido em DIRECT, onde o participante é uma pessoa. */
   handle: string;
   avatarUrl: string;
   badge?: string;
@@ -23,16 +30,40 @@ export interface ChatMessage {
   id: string;
   author: 'me' | 'them';
   content: string;
+  /** Texto relativo já formatado ("5min", "2h") exibido embaixo do balão. */
   timestamp: string;
+  /** ISO cru — usado para agrupar mensagens seguidas do mesmo autor. */
+  createdAt: string;
   read?: boolean;
+  senderUsername?: string;
+  senderNickname?: string;
+  senderAvatarUrl?: string;
+}
+
+/**
+ * Mensagens seguidas do mesmo autor dentro de uma janela curta viram um bloco só, para
+ * não repetir avatar e horário em cada linha de uma rajada de mensagens.
+ */
+export interface ChatMessageGroup {
+  key: string;
+  author: 'me' | 'them';
+  senderUsername?: string;
+  senderNickname?: string;
+  senderAvatarUrl?: string;
+  messages: ChatMessage[];
+  /** Horário do bloco: o da última mensagem dele. */
+  timestamp: string;
 }
 
 export interface Conversation {
   id: string;
+  type: ConversationType;
   participant: ChatParticipant;
   relationship: MessageRelationship;
   lastMessageAt: string;
   unread?: boolean;
   isTyping?: boolean;
   messages: ChatMessage[];
+  /** Só preenchido em conversas COMMUNITY — usado pra linkar de volta pra página da comunidade. */
+  communityId?: string;
 }

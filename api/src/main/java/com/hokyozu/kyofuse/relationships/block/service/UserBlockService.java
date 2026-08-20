@@ -4,6 +4,7 @@ import com.hokyozu.kyofuse.relationships.block.dto.response.UserBlockResponse;
 import com.hokyozu.kyofuse.relationships.block.entity.UserBlock;
 import com.hokyozu.kyofuse.relationships.block.mapper.UserBlockMapper;
 import com.hokyozu.kyofuse.relationships.block.repository.UserBlockRepository;
+import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.finder.UserFinder;
@@ -22,6 +23,7 @@ public class UserBlockService {
 
     private final UserFinder userFinder;
     private final UserChecker userChecker;
+    private final GamerProfileFinder gamerProfileFinder;
 
     private final UserBlockRepository userBlockRepository;
 
@@ -55,7 +57,10 @@ public class UserBlockService {
         userChecker.checkActive(user);
 
         Page<UserBlock> blocks = userBlockRepository.findAllByBlocker(user, pageable);
-        return blocks.map(UserBlockMapper::toResponse);
+        return blocks.map(block -> UserBlockMapper.toResponse(
+                block,
+                gamerProfileFinder.findProfileByUserId(block.getBlocked().getId())
+        ));
     }
 
     @Transactional

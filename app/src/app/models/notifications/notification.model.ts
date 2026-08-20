@@ -15,11 +15,20 @@ export type NotificationType =
   | 'POST_COMMENT'
   | 'POST_REACTION'
   | 'COMMENT_REACTION'
+  | 'NEW_MESSAGE'
+  | 'MESSAGE_REQUEST'
   | 'SYSTEM';
 
 export type NotificationStatus = 'UNREAD' | 'READ' | 'ARCHIVED';
 
-export type NotificationTargetType = 'POST' | 'COMMENT' | 'TEAM' | 'TEAM_INVITE' | 'FOLLOW' | 'SYSTEM';
+export type NotificationTargetType =
+  | 'POST'
+  | 'COMMENT'
+  | 'TEAM'
+  | 'TEAM_INVITE'
+  | 'FOLLOW'
+  | 'CONVERSATION'
+  | 'SYSTEM';
 
 export interface NotificationActorResponse {
     username: string;

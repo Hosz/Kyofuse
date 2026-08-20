@@ -38,9 +38,10 @@ class PostReactionMapperTest {
     @Test
     void mapsEntityToResponse() {
         UUID postId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
         PostReaction reaction = PostReaction.builder()
                 .post(Post.builder().id(postId).build())
-                .user(User.builder().username("player").build())
+                .user(User.builder().id(userId).username("player").build())
                 .reactionType(ReactionType.FIRE)
                 .build();
         GamerProfile profile = GamerProfile.builder()
@@ -51,7 +52,7 @@ class PostReactionMapperTest {
         PostReactionResponse result = PostReactionMapper.toResponse(reaction, profile);
 
         assertThat(result).isEqualTo(new PostReactionResponse(
-                postId, "player", "PlayerNick", "https://example.com/avatar.png", ReactionType.FIRE));
+                postId, userId, "player", "PlayerNick", "https://example.com/avatar.png", ReactionType.FIRE));
     }
 
     @Test

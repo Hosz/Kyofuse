@@ -30,6 +30,10 @@ public class Conversation {
     @Column(name = "name", length = 80)
     private String name;
 
+    /** Só preenchido em conversas GROUP — ver V27 e doc.md 10.6. */
+    @Column(name = "avatar_url", length = 500)
+    private String avatarUrl;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;

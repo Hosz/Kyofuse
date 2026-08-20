@@ -13,4 +13,6 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
     Page<Message> findByConversation(Conversation conversation, Pageable pageable);
 
     Optional<Message> findByIdAndConversation(UUID messageId, Conversation conversation);
+
+    boolean existsByConversation(Conversation conversation);
 }

@@ -42,6 +42,7 @@ public class TeamMapper {
 
         return new TeamResponse(
                 teamSaved.getId(),
+                teamSaved.getOwner().getId(),
                 teamSaved.getOwner().getUsername(),
                 teamSaved.getName(),
                 teamSaved.getSlug(),

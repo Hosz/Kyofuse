@@ -20,13 +20,15 @@ public class ProfilePermissionService {
     private final UserFollowRepository userFollowRepository;
     private final BlockValidator blockValidator;
 
+    /**
+     * Perfil privado continua visível como identidade — avatar, banner, apelido e bio.
+     * O que a privacidade protege é o conteúdo e as conexões (posts, comentários,
+     * seguidores, seguindo e amigos), validados pelos métodos abaixo. Só bloqueio
+     * impede ver o perfil em si, e PRIVATE significa apenas que novos seguidores
+     * precisam de aprovação (doc.md 4.5).
+     */
     public void validateViewProfile(User viewer, User owner) {
-
-        try {
-            validatePrivateProfileAccess(viewer, owner);
-        } catch (ForbiddenException e) {
-            throw new ForbiddenException("User does not have permission to view this profile.");
-        }
+        blockValidator.validate(viewer, owner);
     }
 
     public void validateViewPosts(User viewer, User owner) {

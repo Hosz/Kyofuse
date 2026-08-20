@@ -1,0 +1,79 @@
+:host {
+  display: contents;
+}
+
+/**
+ * O painel nasce do canto onde o botão estava: a origem no canto inferior direito faz a
+ * escala parecer o próprio botão se esticando, em vez de um card aparecendo do nada.
+ */
+.dock-panel {
+  animation: dock-expand 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: bottom right;
+}
+
+@keyframes dock-expand {
+  from {
+    opacity: 0;
+    transform: scale(0.35) translate(12%, 12%);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translate(0, 0);
+  }
+}
+
+/* Botão voltando ao lugar quando a janelinha fecha. */
+.dock-fab {
+  animation: dock-collapse 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dock-collapse {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Troca entre lista e conversa: entra pelo lado pra onde a navegação vai. */
+.dock-view-forward {
+  animation: dock-slide-in 180ms ease-out;
+}
+
+.dock-view-back {
+  animation: dock-slide-back 180ms ease-out;
+}
+
+@keyframes dock-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes dock-slide-back {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dock-panel,
+  .dock-fab,
+  .dock-view-forward,
+  .dock-view-back {
+    animation: none;
+  }
+}

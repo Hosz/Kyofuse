@@ -1,7 +1,9 @@
 @if (open()) {
+  <!-- stopPropagation: sem isso o clique sobe até o card que abriu o modal (o post tem
+       routerLink) e fechar a lista acabava navegando pro post. -->
   <div
     class="fixed inset-0 z-50 flex items-center justify-center bg-surface-dim/80 px-4 py-8 backdrop-blur-sm"
-    (click)="onBackdropClick()"
+    (click)="$event.stopPropagation(); onBackdropClick()"
   >
     <div
       #panel
@@ -10,9 +12,13 @@
       [attr.aria-labelledby]="titleId"
       tabindex="-1"
       (click)="$event.stopPropagation()"
-      class="scrollbar-minimal flex max-h-[80vh] w-full max-w-[28rem] flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container-low shadow-2xl focus:outline-none"
+      class="scrollbar-minimal flex max-h-[80vh] w-full flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container-low shadow-2xl focus:outline-none"
+      [class]="size() === 'compact' ? 'max-w-[17rem]' : 'max-w-[28rem]'"
     >
-      <div class="flex shrink-0 items-center justify-between border-b border-outline-variant px-lg py-4">
+      <div
+        class="flex shrink-0 items-center justify-between border-b border-outline-variant px-lg"
+        [class]="size() === 'compact' ? 'py-2.5' : 'py-4'"
+      >
         <h2 [id]="titleId" class="text-body-md font-bold text-on-surface">{{ title() }}</h2>
         <button
           type="button"
@@ -24,7 +30,7 @@
         </button>
       </div>
 
-      <div class="scrollbar-minimal overflow-y-auto px-lg py-lg">
+      <div class="scrollbar-minimal overflow-y-auto" [class]="size() === 'compact' ? 'px-2 py-2' : 'px-lg py-lg'">
         <ng-content></ng-content>
       </div>
     </div>

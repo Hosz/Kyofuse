@@ -68,6 +68,28 @@
                   <span class="text-label-sm text-on-surface-variant">Cole o link de uma imagem para usar como avatar.</span>
                 </label>
               </div>
+
+              <div class="flex flex-col gap-3">
+                <div class="tactical-grid h-28 w-full shrink-0 overflow-hidden rounded-lg border border-outline-variant bg-surface-container">
+                  @if (bannerUrl()) {
+                    <img [src]="bannerUrl()" alt="Banner" class="h-full w-full object-cover" />
+                  } @else {
+                    <div class="h-full w-full bg-gradient-to-br from-primary-container/40 via-surface-container to-surface-container-low"></div>
+                  }
+                </div>
+                <label class="flex w-full flex-col gap-1.5">
+                  <span class="text-label-sm font-semibold text-on-surface-variant">URL do banner</span>
+                  <input
+                    type="text"
+                    maxlength="500"
+                    placeholder="https://..."
+                    [value]="bannerUrl()"
+                    (input)="bannerUrl.set($any($event.target).value)"
+                    class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                  />
+                  <span class="text-label-sm text-on-surface-variant">Imagem larga exibida no topo do seu perfil.</span>
+                </label>
+              </div>
             </section>
 
             <section

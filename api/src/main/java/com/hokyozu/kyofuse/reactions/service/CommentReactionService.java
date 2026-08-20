@@ -126,6 +126,10 @@ public class CommentReactionService {
     }
 
     @Transactional(readOnly = true)
+    /**
+     * Todas as reações do comentário, curtidas incluídas: a listagem no front é uma só,
+     * e o tipo aparece no ícone ao lado de cada pessoa.
+     */
     public Page<CommentReactionResponse> getReactions(UUID postId, UUID commentId, UUID userId, Pageable pageable) {
         User user = userFinder.findProfileByUserId(userId);
         postFinder.findVisibleActivePost(postId, userId);
@@ -133,7 +137,7 @@ public class CommentReactionService {
 
         userChecker.checkActive(user);
 
-        Page<CommentReaction> whoReacted = commentReactionRepository.findByComment_Post_IdAndComment_IdAndReactionTypeNot(postId, commentId, ReactionType.LIKE, pageable);
+        Page<CommentReaction> whoReacted = commentReactionRepository.findByComment_Post_IdAndComment_Id(postId, commentId, pageable);
 
         return whoReacted.map(wr -> {
             GamerProfile profile = gamerProfileFinder.findProfileByUserId(wr.getUser().getId());

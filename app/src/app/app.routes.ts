@@ -87,6 +87,27 @@ export const routes: Routes = [
     title: 'Kyofuse | Time',
   },
   {
+    path: 'comunidade',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./pages/communities-hub/communities-hub').then((m) => m.CommunitiesHubComponent),
+    title: 'Kyofuse | Comunidades',
+  },
+  {
+    path: 'comunidade/:communityId/membros',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./pages/community-members/community-members').then((m) => m.CommunityMembersComponent),
+    title: 'Kyofuse | Membros da Comunidade',
+  },
+  {
+    path: 'comunidade/:communityId',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./pages/community/community').then((m) => m.CommunityComponent),
+    title: 'Kyofuse | Comunidade',
+  },
+  {
     path: 'chats',
     canActivate: [authGuard],
     loadComponent: () =>

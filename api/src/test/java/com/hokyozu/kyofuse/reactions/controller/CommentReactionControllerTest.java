@@ -33,7 +33,7 @@ class CommentReactionControllerTest {
         UUID commentId = UUID.randomUUID();
         CommentReactionRequest request = new CommentReactionRequest(ReactionType.LIKE);
         CommentReactionResponse expected =
-                new CommentReactionResponse(postId, commentId, "player", "PlayerNick", "avatar.png", ReactionType.LIKE);
+                new CommentReactionResponse(postId, commentId, userId, "player", "PlayerNick", "avatar.png", ReactionType.LIKE);
         when(service.upsertReaction(postId, commentId, request, userId)).thenReturn(expected);
 
         CommentReactionResponse result =

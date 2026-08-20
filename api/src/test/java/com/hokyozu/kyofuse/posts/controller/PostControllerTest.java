@@ -138,6 +138,39 @@ class PostControllerTest {
     }
 
     @Test
+    void getFollowingPostsBuildsDefaultSortedPageable() {
+        UUID userId = UUID.randomUUID();
+        Page<PostResponse> expected = new PageImpl<>(List.of(response(UUID.randomUUID(), UUID.randomUUID())));
+        when(postService.getFollowingPosts(eq(userId), any(Pageable.class))).thenReturn(expected);
+
+        Page<PostResponse> result = controller.getFollowingPosts(jwt(userId), 1, 15);
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        assertThat(result).isSameAs(expected);
+        verify(postService).getFollowingPosts(eq(userId), pageableCaptor.capture());
+        assertThat(pageableCaptor.getValue().getPageNumber()).isEqualTo(1);
+        assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(15);
+        assertThat(pageableCaptor.getValue().getSort().getOrderFor("createdAt"))
+                .extracting(Sort.Order::getDirection)
+                .isEqualTo(Sort.Direction.DESC);
+    }
+
+    @Test
+    void getFollowingPostsRejectsNegativePageAndOutOfRangeSize() throws NoSuchMethodException {
+        Method method = PostController.class.getMethod("getFollowingPosts", Jwt.class, int.class, int.class);
+
+        Set<ConstraintViolation<PostController>> violations = executableValidator.validateParameters(
+                controller,
+                method,
+                new Object[]{jwt(UUID.randomUUID()), -1, 101}
+        );
+
+        assertThat(violations)
+                .extracting(violation -> violation.getPropertyPath().toString())
+                .contains("getFollowingPosts.page", "getFollowingPosts.size");
+    }
+
+    @Test
     void paginationRejectsNegativePageAndOutOfRangeSize() throws NoSuchMethodException {
         Method method = PostController.class.getMethod("getFeed", Jwt.class, int.class, int.class);
 
@@ -183,6 +216,8 @@ class PostControllerTest {
                 "A",
                 "content",
                 "",
+                null,
+                null,
                 "",
                 PostType.TEXT,
                 PostVisibility.PUBLIC,

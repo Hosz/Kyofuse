@@ -1,0 +1,136 @@
+<app-modal [open]="member() !== null" [title]="displayName()" (closed)="closed.emit()">
+  @if (member(); as m) {
+    <div class="flex flex-col gap-lg">
+      <div class="flex items-center gap-3">
+        <img
+          [src]="m.avatarUrl || fallbackAvatar"
+          [alt]="displayName()"
+          class="h-14 w-14 shrink-0 rounded-full object-cover"
+        />
+        <div class="flex min-w-0 flex-col">
+          <span class="truncate text-body-md font-bold text-on-surface">{{ displayName() }}</span>
+          <span class="truncate text-label-md text-on-surface-variant">&#64;{{ m.userName }}</span>
+          <span class="truncate text-label-sm text-on-surface-variant">
+            {{ roleLabel() || 'Sem papel' }} &#183; {{ statusLabel() }}
+          </span>
+        </div>
+      </div>
+
+      <a
+        [routerLink]="['/perfil', m.userId]"
+        (click)="closed.emit()"
+        class="flex cursor-pointer items-center justify-center gap-2 rounded-full bg-primary-container px-4 py-2.5 text-label-md font-bold text-on-primary-container transition-all hover:brightness-110"
+      >
+        <span class="material-symbols-outlined text-[18px]">person</span>
+        Ver perfil
+      </a>
+
+      @if (showActions()) {
+        <div class="flex flex-col gap-1 border-t border-outline-variant pt-md">
+          <span class="px-1 pb-1 text-label-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant">
+            Gerenciar
+          </span>
+
+          @if (editing()) {
+            <div class="flex flex-col gap-3 rounded-lg bg-surface-container px-3 py-3">
+              <label class="flex flex-col gap-1">
+                <span class="text-label-sm text-on-surface-variant">Papel em jogo</span>
+                <select
+                  [value]="draftRole()"
+                  (change)="draftRole.set($any($event.target).value)"
+                  class="cursor-pointer rounded-lg border border-outline-variant bg-surface px-3 py-2 text-body-sm text-on-surface outline-none focus:border-primary"
+                >
+                  <option value="" [selected]="draftRole() === ''">Sem papel</option>
+                  @for (option of roleOptions; track option.value) {
+                    <option [value]="option.value" [selected]="option.value === draftRole()">{{ option.label }}</option>
+                  }
+                </select>
+              </label>
+
+              <label class="flex flex-col gap-1">
+                <span class="text-label-sm text-on-surface-variant">Função no time</span>
+                <select
+                  [value]="draftMemberType()"
+                  (change)="draftMemberType.set($any($event.target).value)"
+                  class="cursor-pointer rounded-lg border border-outline-variant bg-surface px-3 py-2 text-body-sm text-on-surface outline-none focus:border-primary"
+                >
+                  @for (option of memberTypeOptions; track option.value) {
+                    <option [value]="option.value" [selected]="option.value === draftMemberType()">
+                      {{ option.label }}
+                    </option>
+                  }
+                </select>
+              </label>
+
+              <p class="text-label-sm text-on-surface-variant">
+                Se o time estiver anunciando esse papel, a vaga sai do anúncio ao salvar.
+              </p>
+
+              <div class="flex justify-end gap-2">
+                <button
+                  type="button"
+                  (click)="cancelEditing()"
+                  [disabled]="saving()"
+                  class="cursor-pointer rounded-full border border-outline-variant px-4 py-1.5 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  (click)="save()"
+                  [disabled]="!canSave() || saving()"
+                  class="cursor-pointer rounded-full bg-primary-container px-4 py-1.5 text-label-sm font-bold text-on-primary-container transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {{ saving() ? 'Salvando...' : 'Salvar' }}
+                </button>
+              </div>
+            </div>
+          } @else {
+            <button
+              type="button"
+              (click)="startEditing()"
+              class="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-left text-body-sm text-on-surface transition-colors hover:bg-surface-container-high"
+            >
+              <span class="material-symbols-outlined text-[18px]">edit</span>
+              Editar papel e função
+            </button>
+          }
+
+          <button
+            type="button"
+            (click)="removeRequested.emit(m)"
+            [disabled]="removing()"
+            class="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-left text-body-sm text-error transition-colors hover:bg-error-container hover:text-on-error-container disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <span class="material-symbols-outlined text-[18px]">person_remove</span>
+            {{ removing() ? 'Expulsando...' : 'Expulsar do time' }}
+          </button>
+
+          <button
+            type="button"
+            disabled
+            title="Vote kick ainda não está disponível"
+            class="flex cursor-not-allowed items-center gap-2 rounded-lg px-3 py-2.5 text-left text-body-sm text-on-surface-variant opacity-60"
+          >
+            <span class="material-symbols-outlined text-[18px]">how_to_vote</span>
+            Abrir vote kick
+          </button>
+
+          <button
+            type="button"
+            disabled
+            title="Banimento ainda não está disponível"
+            class="flex cursor-not-allowed items-center gap-2 rounded-lg px-3 py-2.5 text-left text-body-sm text-on-surface-variant opacity-60"
+          >
+            <span class="material-symbols-outlined text-[18px]">gavel</span>
+            Banir do time
+          </button>
+        </div>
+      }
+
+      @if (error()) {
+        <p class="text-label-sm text-error">{{ error() }}</p>
+      }
+    </div>
+  }
+</app-modal>

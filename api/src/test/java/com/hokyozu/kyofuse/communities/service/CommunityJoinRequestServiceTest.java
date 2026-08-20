@@ -26,8 +26,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -249,6 +253,64 @@ class CommunityJoinRequestServiceTest {
         assertThatThrownBy(() -> communityJoinRequestService.approveJoinRequest(userId, requestId))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Join request not found");
+    }
+
+    @Test
+    void listJoinRequestsReturnsPendingRequestsForStaff() {
+        UUID userId = UUID.randomUUID();
+        UUID communityId = UUID.randomUUID();
+        User staff = activeUser(userId, "moderator");
+        Community community = community(communityId, CommunityVisibility.PRIVATE, CommunityStatus.ACTIVE);
+        CommunityJoinRequest joinRequest = CommunityJoinRequest.builder()
+                .id(UUID.randomUUID())
+                .community(community)
+                .requester(activeUser(UUID.randomUUID(), "requester"))
+                .createdAt(Instant.now())
+                .build();
+        Pageable pageable = PageRequest.of(0, 20);
+
+        when(userFinder.findProfileByUserId(userId)).thenReturn(staff);
+        when(communityRepository.findById(communityId)).thenReturn(Optional.of(community));
+        when(communityMemberService.isOwnerOrStaff(staff, community)).thenReturn(true);
+        when(communityJoinRequestRepository.findByCommunityId(communityId, pageable))
+                .thenReturn(new PageImpl<>(List.of(joinRequest), pageable, 1));
+
+        var response = communityJoinRequestService.listJoinRequests(userId, communityId, pageable);
+
+        assertThat(response.getContent()).hasSize(1);
+        assertThat(response.getContent().getFirst().id()).isEqualTo(joinRequest.getId());
+    }
+
+    @Test
+    void listJoinRequestsRejectsNonStaffRequester() {
+        UUID userId = UUID.randomUUID();
+        UUID communityId = UUID.randomUUID();
+        User caller = activeUser(userId, "regular-member");
+        Community community = community(communityId, CommunityVisibility.PRIVATE, CommunityStatus.ACTIVE);
+        Pageable pageable = PageRequest.of(0, 20);
+
+        when(userFinder.findProfileByUserId(userId)).thenReturn(caller);
+        when(communityRepository.findById(communityId)).thenReturn(Optional.of(community));
+        when(communityMemberService.isOwnerOrStaff(caller, community)).thenReturn(false);
+
+        assertThatThrownBy(() -> communityJoinRequestService.listJoinRequests(userId, communityId, pageable))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("Only the community owner, an admin or a moderator can view join requests");
+
+        verify(communityJoinRequestRepository, never()).findByCommunityId(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void listJoinRequestsRejectsMissingCommunity() {
+        UUID userId = UUID.randomUUID();
+        UUID communityId = UUID.randomUUID();
+        Pageable pageable = PageRequest.of(0, 20);
+        when(userFinder.findProfileByUserId(userId)).thenReturn(activeUser(userId, "staff"));
+        when(communityRepository.findById(communityId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> communityJoinRequestService.listJoinRequests(userId, communityId, pageable))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Community not found");
     }
 
     @Test

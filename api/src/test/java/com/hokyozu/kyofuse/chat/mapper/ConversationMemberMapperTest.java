@@ -6,6 +6,7 @@ import com.hokyozu.kyofuse.chat.entity.ConversationMember;
 import com.hokyozu.kyofuse.chat.enums.ConversationMemberRole;
 import com.hokyozu.kyofuse.chat.enums.ConversationMemberStatus;
 import com.hokyozu.kyofuse.chat.enums.ConversationType;
+import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.enums.UserRole;
 import com.hokyozu.kyofuse.users.enums.UserStatus;
@@ -68,13 +69,20 @@ class ConversationMemberMapperTest {
                 .updatedAt(now)
                 .build();
 
-        ConversationMemberResponse response = ConversationMemberMapper.toResponse(member);
+        GamerProfile profile = GamerProfile.builder()
+                .nickname("Participant")
+                .avatarUrl("https://example.com/avatar.png")
+                .build();
+
+        ConversationMemberResponse response = ConversationMemberMapper.toResponse(member, profile);
 
         assertThat(response.id()).isEqualTo(member.getId());
         assertThat(response.conversationId()).isEqualTo(conversation.getId());
         assertThat(response.conversationName()).isEqualTo(conversation.getName());
         assertThat(response.userId()).isEqualTo(user.getId());
         assertThat(response.username()).isEqualTo("participant");
+        assertThat(response.nickname()).isEqualTo("Participant");
+        assertThat(response.avatarUrl()).isEqualTo("https://example.com/avatar.png");
         assertThat(response.role()).isEqualTo(ConversationMemberRole.MEMBER);
         assertThat(response.status()).isEqualTo(ConversationMemberStatus.ACTIVE);
         assertThat(response.joinedAt()).isEqualTo(now);
@@ -82,6 +90,27 @@ class ConversationMemberMapperTest {
         assertThat(response.lastReadAt()).isEqualTo(now);
         assertThat(response.createdAt()).isEqualTo(now);
         assertThat(response.updatedAt()).isEqualTo(now);
+    }
+
+    @Test
+    void toResponseLeavesNicknameAndAvatarNullWhenProfileIsAbsent() {
+        Instant now = Instant.now();
+        ConversationMember member = ConversationMember.builder()
+                .id(UUID.randomUUID())
+                .conversation(conversation())
+                .user(user("participant"))
+                .role(ConversationMemberRole.MEMBER)
+                .status(ConversationMemberStatus.ACTIVE)
+                .joinedAt(now)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+
+        ConversationMemberResponse response = ConversationMemberMapper.toResponse(member, null);
+
+        assertThat(response.username()).isEqualTo("participant");
+        assertThat(response.nickname()).isNull();
+        assertThat(response.avatarUrl()).isNull();
     }
 
     private Conversation conversation() {

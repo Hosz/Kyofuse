@@ -76,6 +76,8 @@ class MessageControllerTest {
                 UUID.randomUUID(),
                 UUID.randomUUID(),
                 "player",
+                "Player",
+                "https://example.com/avatar.png",
                 "hello there",
                 Instant.now()
         );
