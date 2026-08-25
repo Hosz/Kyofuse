@@ -1,13 +1,18 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { API_URL } from '../../../models/api-url.model';
 import { inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { registerRequest } from '../../../models/auth/register-form.model';
 import { loginRequest } from '../../../models/auth/login-form.model';
 import { authResponse, RequestFail } from '../../../models/auth/auth-response.model';
-import { Observable } from 'rxjs';
-import { JwtHelperService } from '@auth0/angular-jwt';
+import { Observable, catchError, finalize, map, of, shareReplay, tap } from 'rxjs';
 
+/**
+ * Access token e refresh token vivem em cookies HttpOnly (setados pela API): o JS nunca
+ * os enxerga, então o estado "estou autenticado?" só pode ser conhecido de fato batendo
+ * no backend (/me ou /refresh). O signal `authenticated` é só uma cache otimista em
+ * memória, atualizada nesses pontos de contato.
+ */
 @Injectable({
   providedIn: 'root',
 })
@@ -16,44 +21,68 @@ export class AuthService {
   api = API_URL;
   private url = `${this.api}/api/auth`;
   private http = inject(HttpClient);
-  private jwtHelper = new JwtHelperService();
 
-  public register(request: registerRequest) {
-    return this.http.post<authResponse>(`${this.url}/register`, request);
+  private readonly authenticated = signal(false);
+
+  private refreshInFlight: Observable<boolean> | null = null;
+
+  public register(request: registerRequest): Observable<authResponse> {
+    return this.http.post<authResponse>(`${this.url}/register`, request, { withCredentials: true })
+      .pipe(tap(() => this.authenticated.set(true)));
   }
 
-  public login(request: loginRequest) {
-    return this.http.post<authResponse>(`${this.url}/login`, request);
+  public login(request: loginRequest): Observable<authResponse> {
+    return this.http.post<authResponse>(`${this.url}/login`, request, { withCredentials: true })
+      .pipe(tap(() => this.authenticated.set(true)));
   }
 
   public logout(): Observable<string | RequestFail> {
-    return this.http.post<string | RequestFail>(`${this.url}/logout`, {});
+    return this.http.post<string | RequestFail>(`${this.url}/logout`, {}, { withCredentials: true })
+      .pipe(tap(() => this.authenticated.set(false)));
   }
 
-  public saveToken(token: string): void {
-    localStorage.setItem("accessToken", token)
+  /** Renova o access token via refresh token cookie. Deduplica chamadas concorrentes. */
+  public refresh(): Observable<boolean> {
+    if (this.refreshInFlight) {
+      return this.refreshInFlight;
+    }
+
+    this.refreshInFlight = this.http.post(`${this.url}/refresh`, {}, { withCredentials: true }).pipe(
+      map(() => {
+        this.authenticated.set(true);
+        return true;
+      }),
+      catchError(() => {
+        this.authenticated.set(false);
+        return of(false);
+      }),
+      finalize(() => this.refreshInFlight = null),
+      shareReplay(1),
+    );
+
+    return this.refreshInFlight;
   }
 
-  public clearToken() {
-    localStorage.removeItem("accessToken");
+  /** Confere a sessão contra o backend (usado nos guards, já que não há mais token local para decodificar). */
+  public checkSession(): Observable<boolean> {
+    return this.http.get(`${this.url}/me`, { withCredentials: true }).pipe(
+      map(() => {
+        this.authenticated.set(true);
+        return true;
+      }),
+      catchError(() => {
+        this.authenticated.set(false);
+        return of(false);
+      }),
+    );
   }
 
-  public getToken(): string {
-    return localStorage.getItem("accessToken") ?? ""
-  }
-
+  /** Estado conhecido em memória, sem chamar a API. Use checkSession() quando precisar de certeza. */
   public isAuthenticated(): boolean {
-    const token = this.getToken();
+    return this.authenticated();
+  }
 
-    if (!token) {
-      return false;
-    }
-
-    if (this.jwtHelper.isTokenExpired(token)) {
-      this.clearToken();
-      return false;
-    }
-
-    return true;
+  public clearSession(): void {
+    this.authenticated.set(false);
   }
 }

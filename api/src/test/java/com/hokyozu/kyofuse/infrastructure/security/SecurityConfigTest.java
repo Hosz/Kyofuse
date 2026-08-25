@@ -1,9 +1,13 @@
 package com.hokyozu.kyofuse.infrastructure.security;
 
+import com.hokyozu.kyofuse.infrastructure.security.jwt.AuthCookieService;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -30,5 +34,32 @@ class SecurityConfigTest {
 
         assertThat(encoder).isNotNull();
         assertThat(decoder).isNotNull();
+    }
+
+    @Test
+    void bearerTokenResolverReadsTokenFromAccessTokenCookie() {
+        BearerTokenResolver resolver = securityConfig.bearerTokenResolver();
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setCookies(new Cookie(AuthCookieService.ACCESS_TOKEN_COOKIE, "jwt-value"));
+
+        assertThat(resolver.resolve(request)).isEqualTo("jwt-value");
+    }
+
+    @Test
+    void bearerTokenResolverReturnsNullWhenCookieMissing() {
+        BearerTokenResolver resolver = securityConfig.bearerTokenResolver();
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setCookies(new Cookie("other_cookie", "value"));
+
+        assertThat(resolver.resolve(request)).isNull();
+    }
+
+    @Test
+    void bearerTokenResolverReturnsNullWhenNoCookiesPresent() {
+        BearerTokenResolver resolver = securityConfig.bearerTokenResolver();
+
+        assertThat(resolver.resolve(new MockHttpServletRequest())).isNull();
     }
 }

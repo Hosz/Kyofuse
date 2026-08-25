@@ -37,4 +37,7 @@ server:
 security:
   jwt:
     secret: ${JWT_SECRET}
-    expiration-minutes: ${JWT_EXPIRATION_MINUTES:360}
+    expiration-minutes: ${JWT_EXPIRATION_MINUTES:10}
+    refresh-token-expiration-days: ${JWT_REFRESH_EXPIRATION_DAYS:30}
+  cookie:
+    secure: ${COOKIE_SECURE:false}

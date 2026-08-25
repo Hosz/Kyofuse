@@ -40,7 +40,6 @@ export class AuthComponent {
     this.authService.login(payload).subscribe({
       next: (response) => {
         console.log('Login successful:', response);
-        this.authService.saveToken(response.token);
         this.router.navigateByUrl('/home');
       },
       error: (error) => {
@@ -54,7 +53,6 @@ export class AuthComponent {
     this.authService.register(payload).subscribe({
       next: (response) => {
         console.log('Registration successful:', response);
-        this.authService.saveToken(response.token);
         this.router.navigateByUrl('/home');
       },
       error: (error) => {
@@ -68,12 +66,11 @@ export class AuthComponent {
     this.authService.logout().subscribe({
       next: (response) => {
         console.log('Logout successful:', response);
-        this.authService.clearToken();
         this.router.navigateByUrl('');
       },
       error: (error) => {
         console.error('Logout failed:', error);
-        this.authService.clearToken();
+        this.authService.clearSession();
         this.router.navigateByUrl('');
       }
     });

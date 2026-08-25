@@ -27,14 +27,12 @@ public class AuthMapper {
                 .build();
     }
 
-    public static AuthResponse toResponse(User savedUser, String token) {
+    public static AuthResponse toResponse(User user) {
         return new AuthResponse(
-                token,
-                "Bearer",
-                savedUser.getId(),
-                savedUser.getEmail(),
-                savedUser.getUsername(),
-                savedUser.getRole().name()
+                user.getId(),
+                user.getEmail(),
+                user.getUsername(),
+                user.getRole().name()
         );
     }
 }

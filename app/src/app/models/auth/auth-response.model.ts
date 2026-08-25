@@ -9,6 +9,8 @@ export interface RequestFail {
 }
 
 export interface authResponse {
-  token: string;
-  userId: number;
+  userId: string;
+  email: string;
+  username: string;
+  role: string;
 }

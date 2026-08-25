@@ -2,14 +2,15 @@ package com.hokyozu.kyofuse.auth.service;
 
 import com.hokyozu.kyofuse.auth.dto.request.LoginRequest;
 import com.hokyozu.kyofuse.auth.dto.request.RegisterRequest;
-import com.hokyozu.kyofuse.auth.dto.response.AuthResponse;
 import com.hokyozu.kyofuse.auth.repository.UserRepository;
 import com.hokyozu.kyofuse.auth.validator.EmailAndUsernameAvailabilityValidator;
 import com.hokyozu.kyofuse.auth.validator.LoginFinderValidator;
 import com.hokyozu.kyofuse.auth.validator.LoginValidator;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.JwtService;
+import com.hokyozu.kyofuse.infrastructure.security.jwt.RefreshTokenService;
 import com.hokyozu.kyofuse.profiles.service.GamerProfileService;
 import com.hokyozu.kyofuse.relationships.privacy.service.UserPrivacySettingsService;
+import com.hokyozu.kyofuse.shared.exception.UnauthorizedException;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.enums.UserRole;
 import com.hokyozu.kyofuse.users.enums.UserStatus;
@@ -25,6 +26,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -40,6 +42,9 @@ class AuthServiceTest {
 
     @Mock
     private JwtService jwtService;
+
+    @Mock
+    private RefreshTokenService refreshTokenService;
 
     @Mock
     private GamerProfileService gamerProfileService;
@@ -60,7 +65,7 @@ class AuthServiceTest {
     private AuthService authService;
 
     @Test
-    void registerCreatesUserProfileAndToken() {
+    void registerCreatesUserProfileAndTokens() {
         RegisterRequest request = new RegisterRequest(
                 " Hideo ",
                 " Kojima ",
@@ -69,6 +74,7 @@ class AuthServiceTest {
                 "password123"
         );
         UUID userId = UUID.randomUUID();
+        Instant refreshExpiresAt = Instant.now().plusSeconds(3600);
 
         when(passwordEncoder.encode("password123")).thenReturn("hashed-password");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
@@ -77,8 +83,10 @@ class AuthServiceTest {
             return user;
         });
         when(jwtService.generateToken(any(User.class))).thenReturn("jwt-token");
+        when(refreshTokenService.issue(any(User.class)))
+                .thenReturn(new RefreshTokenService.IssuedToken("refresh-token", refreshExpiresAt));
 
-        AuthResponse response = authService.register(request);
+        AuthService.AuthResult result = authService.register(request);
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(emailAndUsernameAvailabilityValidator).validate(" hideo@example.com ", " hideo ");
@@ -95,16 +103,16 @@ class AuthServiceTest {
         assertThat(savedUser.getRole()).isEqualTo(UserRole.USER);
         assertThat(savedUser.getStatus()).isEqualTo(UserStatus.ACTIVE);
 
-        assertThat(response.token()).isEqualTo("jwt-token");
-        assertThat(response.tokenType()).isEqualTo("Bearer");
-        assertThat(response.userId()).isEqualTo(userId);
-        assertThat(response.email()).isEqualTo("hideo@example.com");
-        assertThat(response.username()).isEqualTo("hideo");
-        assertThat(response.role()).isEqualTo("USER");
+        assertThat(result.accessToken()).isEqualTo("jwt-token");
+        assertThat(result.refreshToken()).isEqualTo("refresh-token");
+        assertThat(result.refreshTokenExpiresAt()).isEqualTo(refreshExpiresAt);
+        assertThat(result.user().getId()).isEqualTo(userId);
+        assertThat(result.user().getEmail()).isEqualTo("hideo@example.com");
+        assertThat(result.user().getUsername()).isEqualTo("hideo");
     }
 
     @Test
-    void loginValidatesUserAndReturnsToken() {
+    void loginValidatesUserAndReturnsTokens() {
         LoginRequest request = new LoginRequest("hideo", "password123");
         User user = User.builder()
                 .id(UUID.randomUUID())
@@ -116,15 +124,62 @@ class AuthServiceTest {
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
+        Instant refreshExpiresAt = Instant.now().plusSeconds(3600);
 
         when(loginFinderValidator.validate(request)).thenReturn(user);
         when(jwtService.generateToken(user)).thenReturn("jwt-token");
+        when(refreshTokenService.issue(user))
+                .thenReturn(new RefreshTokenService.IssuedToken("refresh-token", refreshExpiresAt));
 
-        AuthResponse response = authService.login(request);
+        AuthService.AuthResult result = authService.login(request);
 
         verify(loginValidator).validate(user, request);
-        assertThat(response.token()).isEqualTo("jwt-token");
-        assertThat(response.userId()).isEqualTo(user.getId());
-        assertThat(response.email()).isEqualTo(user.getEmail());
+        assertThat(result.accessToken()).isEqualTo("jwt-token");
+        assertThat(result.refreshToken()).isEqualTo("refresh-token");
+        assertThat(result.user().getId()).isEqualTo(user.getId());
+        assertThat(result.user().getEmail()).isEqualTo(user.getEmail());
+    }
+
+    @Test
+    void refreshRotatesTokenAndIssuesNewAccessToken() {
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .email("hideo@example.com")
+                .username("hideo")
+                .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
+                .build();
+        Instant refreshExpiresAt = Instant.now().plusSeconds(3600);
+        RefreshTokenService.IssuedToken issuedToken = new RefreshTokenService.IssuedToken("new-refresh-token", refreshExpiresAt);
+
+        when(refreshTokenService.rotate("old-refresh-token"))
+                .thenReturn(new RefreshTokenService.RotationResult(user, issuedToken));
+        when(jwtService.generateToken(user)).thenReturn("new-access-token");
+
+        AuthService.AuthResult result = authService.refresh("old-refresh-token");
+
+        assertThat(result.accessToken()).isEqualTo("new-access-token");
+        assertThat(result.refreshToken()).isEqualTo("new-refresh-token");
+        assertThat(result.user()).isEqualTo(user);
+    }
+
+    @Test
+    void refreshRejectsBlankToken() {
+        assertThatThrownBy(() -> authService.refresh(" "))
+                .isInstanceOf(UnauthorizedException.class);
+    }
+
+    @Test
+    void logoutRevokesRefreshToken() {
+        authService.logout("refresh-token");
+
+        verify(refreshTokenService).revoke("refresh-token");
+    }
+
+    @Test
+    void logoutIgnoresBlankToken() {
+        authService.logout(" ");
+
+        verify(refreshTokenService, org.mockito.Mockito.never()).revoke(any());
     }
 }
