@@ -8,8 +8,11 @@ import com.hokyozu.kyofuse.auth.validator.LoginFinderValidator;
 import com.hokyozu.kyofuse.auth.validator.LoginValidator;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.JwtService;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.RefreshTokenService;
+import com.hokyozu.kyofuse.infrastructure.security.ratelimit.RateLimitPolicies;
+import com.hokyozu.kyofuse.infrastructure.security.ratelimit.RateLimiterService;
 import com.hokyozu.kyofuse.profiles.service.GamerProfileService;
 import com.hokyozu.kyofuse.relationships.privacy.service.UserPrivacySettingsService;
+import com.hokyozu.kyofuse.shared.exception.TooManyAttemptsException;
 import com.hokyozu.kyofuse.shared.exception.UnauthorizedException;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.enums.UserRole;
@@ -22,13 +25,18 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -61,8 +69,16 @@ class AuthServiceTest {
     @Mock
     private LoginValidator loginValidator;
 
+    @Mock
+    private RateLimiterService rateLimiterService;
+
+    @Mock
+    private RateLimitPolicies rateLimitPolicies;
+
     @InjectMocks
     private AuthService authService;
+
+    private static final String CLIENT_IP = "203.0.113.10";
 
     @Test
     void registerCreatesUserProfileAndTokens() {
@@ -86,9 +102,10 @@ class AuthServiceTest {
         when(refreshTokenService.issue(any(User.class)))
                 .thenReturn(new RefreshTokenService.IssuedToken("refresh-token", refreshExpiresAt));
 
-        AuthService.AuthResult result = authService.register(request);
+        AuthService.AuthResult result = authService.register(request, CLIENT_IP);
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(rateLimiterService).checkAndConsume(eq("register:ip:" + CLIENT_IP), any());
         verify(emailAndUsernameAvailabilityValidator).validate(" hideo@example.com ", " hideo ");
         verify(userRepository).save(userCaptor.capture());
         verify(gamerProfileService).createGamerProfileMin(userCaptor.getValue());
@@ -112,6 +129,19 @@ class AuthServiceTest {
     }
 
     @Test
+    void registerIsBlockedWhenIpRateLimitIsExceeded() {
+        RegisterRequest request = new RegisterRequest("Hideo", "Kojima", "hideo@example.com", "hideo", "password123");
+
+        doThrow(new TooManyAttemptsException("Muitas tentativas.", Duration.ofMinutes(5)))
+                .when(rateLimiterService).checkAndConsume(eq("register:ip:" + CLIENT_IP), any());
+
+        assertThatThrownBy(() -> authService.register(request, CLIENT_IP))
+                .isInstanceOf(TooManyAttemptsException.class);
+
+        verifyNoInteractions(emailAndUsernameAvailabilityValidator, userRepository);
+    }
+
+    @Test
     void loginValidatesUserAndReturnsTokens() {
         LoginRequest request = new LoginRequest("hideo", "password123");
         User user = User.builder()
@@ -131,13 +161,43 @@ class AuthServiceTest {
         when(refreshTokenService.issue(user))
                 .thenReturn(new RefreshTokenService.IssuedToken("refresh-token", refreshExpiresAt));
 
-        AuthService.AuthResult result = authService.login(request);
+        AuthService.AuthResult result = authService.login(request, CLIENT_IP);
 
         verify(loginValidator).validate(user, request);
+        verify(rateLimiterService).checkAndConsume(eq("login:ip:" + CLIENT_IP), any());
+        verify(rateLimiterService).checkAndConsume(eq("login:user:hideo"), any());
+        verify(rateLimiterService).recordSuccess("login:ip:" + CLIENT_IP);
+        verify(rateLimiterService).recordSuccess("login:user:hideo");
         assertThat(result.accessToken()).isEqualTo("jwt-token");
         assertThat(result.refreshToken()).isEqualTo("refresh-token");
         assertThat(result.user().getId()).isEqualTo(user.getId());
         assertThat(result.user().getEmail()).isEqualTo(user.getEmail());
+    }
+
+    @Test
+    void loginIsBlockedWhenRateLimitIsExceededBeforeValidatingCredentials() {
+        LoginRequest request = new LoginRequest("hideo", "password123");
+
+        doThrow(new TooManyAttemptsException("Muitas tentativas.", Duration.ofMinutes(1)))
+                .when(rateLimiterService).checkAndConsume(eq("login:ip:" + CLIENT_IP), any());
+
+        assertThatThrownBy(() -> authService.login(request, CLIENT_IP))
+                .isInstanceOf(TooManyAttemptsException.class);
+
+        verifyNoInteractions(loginFinderValidator, loginValidator);
+    }
+
+    @Test
+    void loginDoesNotResetRateLimitWhenCredentialsAreInvalid() {
+        LoginRequest request = new LoginRequest("hideo", "wrong-password");
+
+        when(loginFinderValidator.validate(request))
+                .thenThrow(new UnauthorizedException("Credenciais inválidas."));
+
+        assertThatThrownBy(() -> authService.login(request, CLIENT_IP))
+                .isInstanceOf(UnauthorizedException.class);
+
+        verify(rateLimiterService, never()).recordSuccess(any());
     }
 
     @Test
@@ -180,6 +240,6 @@ class AuthServiceTest {
     void logoutIgnoresBlankToken() {
         authService.logout(" ");
 
-        verify(refreshTokenService, org.mockito.Mockito.never()).revoke(any());
+        verify(refreshTokenService, never()).revoke(any());
     }
 }

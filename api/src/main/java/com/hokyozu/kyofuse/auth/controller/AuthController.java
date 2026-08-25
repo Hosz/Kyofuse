@@ -7,6 +7,7 @@ import com.hokyozu.kyofuse.auth.dto.response.AuthResponse;
 import com.hokyozu.kyofuse.auth.mapper.AuthMapper;
 import com.hokyozu.kyofuse.auth.service.AuthService;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.AuthCookieService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,16 +29,24 @@ public class AuthController {
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
-    public AuthResponse register(@RequestBody @Valid RegisterRequest request, HttpServletResponse response) {
-        AuthService.AuthResult result = authService.register(request);
+    public AuthResponse register(
+            @RequestBody @Valid RegisterRequest request,
+            HttpServletRequest httpRequest,
+            HttpServletResponse response
+    ) {
+        AuthService.AuthResult result = authService.register(request, clientIp(httpRequest));
         applyAuthCookies(response, result);
 
         return AuthMapper.toResponse(result.user());
     }
 
     @PostMapping("/login")
-    public AuthResponse login(@RequestBody @Valid LoginRequest request, HttpServletResponse response) {
-        AuthService.AuthResult result = authService.login(request);
+    public AuthResponse login(
+            @RequestBody @Valid LoginRequest request,
+            HttpServletRequest httpRequest,
+            HttpServletResponse response
+    ) {
+        AuthService.AuthResult result = authService.login(request, clientIp(httpRequest));
         applyAuthCookies(response, result);
 
         return AuthMapper.toResponse(result.user());
@@ -72,6 +81,16 @@ public class AuthController {
                 jwt.getClaimAsString("username"),
                 jwt.getClaimAsString("role")
         );
+    }
+
+    /**
+     * Sem proxy reverso na frente hoje, então o IP de origem é o do socket direto. Se um
+     * dia entrar um load balancer/reverse proxy, isso precisa virar uma resolução de
+     * X-Forwarded-For restrita a proxies confiáveis — confiar nesse header sem validação
+     * permite qualquer cliente forjar o IP e burlar o limitador por completo.
+     */
+    private String clientIp(HttpServletRequest request) {
+        return request.getRemoteAddr();
     }
 
     private void applyAuthCookies(HttpServletResponse response, AuthService.AuthResult result) {

@@ -9,6 +9,8 @@ import com.hokyozu.kyofuse.auth.validator.LoginFinderValidator;
 import com.hokyozu.kyofuse.auth.validator.LoginValidator;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.JwtService;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.RefreshTokenService;
+import com.hokyozu.kyofuse.infrastructure.security.ratelimit.RateLimitPolicies;
+import com.hokyozu.kyofuse.infrastructure.security.ratelimit.RateLimiterService;
 import com.hokyozu.kyofuse.profiles.service.GamerProfileService;
 import com.hokyozu.kyofuse.relationships.privacy.service.UserPrivacySettingsService;
 import com.hokyozu.kyofuse.shared.exception.UnauthorizedException;
@@ -36,10 +38,19 @@ public class AuthService {
     private final LoginFinderValidator loginFinderValidator;
     private final LoginValidator loginValidator;
 
+    private final RateLimiterService rateLimiterService;
+    private final RateLimitPolicies rateLimitPolicies;
+
+    private static final String LOGIN_IP_KEY_PREFIX = "login:ip:";
+    private static final String LOGIN_USER_KEY_PREFIX = "login:user:";
+    private static final String REGISTER_IP_KEY_PREFIX = "register:ip:";
+
     public record AuthResult(User user, String accessToken, String refreshToken, Instant refreshTokenExpiresAt) {}
 
     @Transactional
-    public AuthResult register(RegisterRequest request) {
+    public AuthResult register(RegisterRequest request, String clientIp) {
+
+       rateLimiterService.checkAndConsume(REGISTER_IP_KEY_PREFIX + clientIp, rateLimitPolicies.register());
 
        emailAndUsernameAvailabilityValidator.validate(request.email(), request.username());
        String passwordHash = passwordEncoder.encode(request.password());
@@ -51,10 +62,19 @@ public class AuthService {
        return issueTokens(user);
     }
 
-    public AuthResult login(LoginRequest request) {
+    public AuthResult login(LoginRequest request, String clientIp) {
+
+        String ipKey = LOGIN_IP_KEY_PREFIX + clientIp;
+        String userKey = LOGIN_USER_KEY_PREFIX + request.login().trim().toLowerCase();
+
+        rateLimiterService.checkAndConsume(ipKey, rateLimitPolicies.login());
+        rateLimiterService.checkAndConsume(userKey, rateLimitPolicies.login());
 
         User user = loginFinderValidator.validate(request);
         loginValidator.validate(user, request);
+
+        rateLimiterService.recordSuccess(ipKey);
+        rateLimiterService.recordSuccess(userKey);
 
         return issueTokens(user);
     }

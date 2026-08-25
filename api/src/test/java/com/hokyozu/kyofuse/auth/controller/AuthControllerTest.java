@@ -15,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseCookie;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.oauth2.jwt.Jwt;
 
@@ -44,16 +45,18 @@ class AuthControllerTest {
         User user = user();
         RegisterRequest request = new RegisterRequest("John", "Doe", "john@example.com", "john", "password123");
         AuthService.AuthResult result = new AuthService.AuthResult(user, "access-token", "refresh-token", Instant.now());
+        MockHttpServletRequest httpRequest = new MockHttpServletRequest();
+        httpRequest.setRemoteAddr("203.0.113.10");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        when(authService.register(request)).thenReturn(result);
+        when(authService.register(request, "203.0.113.10")).thenReturn(result);
         stubCookies();
 
-        AuthResponse authResponse = controller.register(request, response);
+        AuthResponse authResponse = controller.register(request, httpRequest, response);
 
         assertThat(authResponse.userId()).isEqualTo(user.getId());
         assertThat(authResponse.email()).isEqualTo(user.getEmail());
-        verify(authService).register(request);
+        verify(authService).register(request, "203.0.113.10");
         assertThat(response.getCookies()).extracting("name")
                 .containsExactlyInAnyOrder(AuthCookieService.ACCESS_TOKEN_COOKIE, AuthCookieService.REFRESH_TOKEN_COOKIE);
     }
@@ -63,15 +66,17 @@ class AuthControllerTest {
         User user = user();
         LoginRequest request = new LoginRequest("john", "password123");
         AuthService.AuthResult result = new AuthService.AuthResult(user, "access-token", "refresh-token", Instant.now());
+        MockHttpServletRequest httpRequest = new MockHttpServletRequest();
+        httpRequest.setRemoteAddr("203.0.113.10");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        when(authService.login(request)).thenReturn(result);
+        when(authService.login(request, "203.0.113.10")).thenReturn(result);
         stubCookies();
 
-        AuthResponse authResponse = controller.login(request, response);
+        AuthResponse authResponse = controller.login(request, httpRequest, response);
 
         assertThat(authResponse.userId()).isEqualTo(user.getId());
-        verify(authService).login(request);
+        verify(authService).login(request, "203.0.113.10");
         assertThat(response.getCookies()).extracting("name")
                 .containsExactlyInAnyOrder(AuthCookieService.ACCESS_TOKEN_COOKIE, AuthCookieService.REFRESH_TOKEN_COOKIE);
     }
