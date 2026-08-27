@@ -1,7 +1,7 @@
 package com.hokyozu.kyofuse.infrastructure.security.jwt;
 
 import com.hokyozu.kyofuse.infrastructure.entity.RefreshToken;
-import com.hokyozu.kyofuse.shared.exception.UnauthorizedException;
+import com.hokyozu.kyofuse.shared.exception.RefreshTokenExpiredException;
 import com.hokyozu.kyofuse.users.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -47,15 +47,15 @@ public class RefreshTokenService {
     @Transactional
     public RotationResult rotate(String rawToken) {
         RefreshToken current = refreshTokenRepository.findByTokenHash(hash(rawToken))
-                .orElseThrow(() -> new UnauthorizedException("Refresh token inválido."));
+                .orElseThrow(() -> new RefreshTokenExpiredException("Refresh token inválido."));
 
         if (current.isRevoked()) {
             refreshTokenRepository.revokeAllByFamilyId(current.getFamilyId());
-            throw new UnauthorizedException("Refresh token já utilizado.");
+            throw new RefreshTokenExpiredException("Refresh token já utilizado.");
         }
 
         if (current.getExpiresAt().isBefore(Instant.now())) {
-            throw new UnauthorizedException("Refresh token expirado.");
+            throw new RefreshTokenExpiredException("Refresh token expirado.");
         }
 
         User user = current.getUser();

@@ -1,0 +1,203 @@
+<section class="flex flex-col gap-lg rounded-xl border border-outline-variant bg-surface-container-low p-lg">
+  <div class="flex items-center justify-between border-b border-outline-variant pb-3">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-primary">security</span>
+      <h2 class="text-title-md font-bold text-on-surface">Autenticação em Duas Etapas</h2>
+    </div>
+    @if (!loading()) {
+      <span
+        class="rounded-md border px-2 py-1 text-label-sm font-semibold"
+        [class]="enabled() ? 'border-tertiary text-tertiary' : 'border-outline-variant text-on-surface-variant'"
+      >
+        {{ enabled() ? 'Ativado' : 'Desativado' }}
+      </span>
+    }
+  </div>
+
+  @if (loading()) {
+    <p class="py-8 text-center text-body-sm text-on-surface-variant">Carregando status da conta...</p>
+  } @else if (loadError()) {
+    <p class="py-8 text-center text-body-sm text-error">{{ loadError() }}</p>
+  } @else {
+    @switch (step()) {
+      @case ('status') {
+        <p class="text-label-md text-on-surface-variant">
+          Com o 2FA ativo, além da senha, o login pede um código gerado por um app autenticador
+          (Google Authenticator, Authy...). Isso protege sua conta mesmo se sua senha vazar.
+        </p>
+
+        @if (!enabled()) {
+          <div class="flex flex-col gap-sm">
+            <div>
+              <button
+                type="button"
+                (click)="startSetup()"
+                class="cursor-pointer rounded-full bg-secondary-fixed px-4 py-2 text-label-md font-bold text-on-secondary transition-colors hover:brightness-110"
+              >
+                Ativar 2FA
+              </button>
+            </div>
+            @if (setupError()) {
+              <p class="text-label-sm text-error">{{ setupError() }}</p>
+            }
+          </div>
+        } @else {
+          <div class="flex flex-col gap-sm">
+            <div class="flex items-center gap-2 rounded-lg border border-tertiary/40 bg-tertiary/10 px-3 py-2.5 text-label-sm text-tertiary">
+              <span class="material-symbols-outlined text-[18px]">check_circle</span>
+              Sua conta está protegida por 2FA.
+            </div>
+
+            @if (!showDisableForm()) {
+              <div>
+                <button
+                  type="button"
+                  (click)="toggleDisableForm()"
+                  class="cursor-pointer rounded-full border border-error px-4 py-2 text-label-md font-bold text-error transition-colors hover:bg-error/10"
+                >
+                  Desativar 2FA
+                </button>
+              </div>
+            } @else {
+              <div class="flex flex-col gap-sm rounded-lg border border-outline-variant bg-surface-container p-lg">
+                <label class="flex w-full flex-col gap-1.5 sm:w-72">
+                  <span class="text-label-sm font-semibold text-on-surface-variant">Confirme sua senha para desativar</span>
+                  <input
+                    type="password"
+                    autocomplete="current-password"
+                    [value]="disablePassword()"
+                    (input)="disablePassword.set($any($event.target).value)"
+                    class="rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                  />
+                </label>
+
+                @if (disableError()) {
+                  <p class="text-label-sm text-error">{{ disableError() }}</p>
+                }
+
+                <div class="flex items-center gap-3">
+                  <button
+                    type="button"
+                    (click)="toggleDisableForm()"
+                    class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    (click)="confirmDisable()"
+                    [disabled]="submittingDisable() || !disablePassword()"
+                    class="cursor-pointer rounded-full bg-error px-4 py-2 text-label-md font-bold text-on-error transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {{ submittingDisable() ? 'Desativando...' : 'Confirmar desativação' }}
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      }
+
+      @case ('setup') {
+        <div class="flex flex-col gap-lg">
+          <div class="flex flex-col gap-sm">
+            <p class="text-label-md text-on-surface-variant">
+              1. Abra seu app autenticador e adicione uma conta manualmente com a chave abaixo.
+            </p>
+
+            <div class="flex items-center justify-between gap-3 rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5">
+              <code class="truncate text-body-sm font-semibold tracking-wider text-on-surface">{{ secret() }}</code>
+              <button
+                type="button"
+                (click)="copySecret()"
+                aria-label="Copiar chave"
+                class="shrink-0 cursor-pointer rounded p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+              >
+                <span class="material-symbols-outlined text-[18px]">{{ secretCopied() ? 'check' : 'content_copy' }}</span>
+              </button>
+            </div>
+
+            <p class="text-label-sm text-on-surface-variant">Conta: Kyofuse &middot; Emissor: Kyofuse</p>
+          </div>
+
+          <div class="flex flex-col gap-sm">
+            <p class="text-label-md text-on-surface-variant">2. Informe o código de 6 dígitos gerado pelo app.</p>
+            <label class="flex w-full flex-col gap-1.5 sm:w-56">
+              <input
+                type="text"
+                inputmode="numeric"
+                placeholder="123456"
+                [value]="setupCode()"
+                (input)="setupCode.set($any($event.target).value)"
+                class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+              />
+            </label>
+            @if (setupError()) {
+              <p class="text-label-sm text-error">{{ setupError() }}</p>
+            }
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 border-t border-outline-variant pt-lg">
+          <button
+            type="button"
+            (click)="cancelSetup()"
+            class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            (click)="confirmSetup()"
+            [disabled]="submittingSetup() || !setupCode().trim()"
+            class="cursor-pointer rounded-full bg-secondary-fixed px-4 py-2 text-label-md font-bold text-on-secondary transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {{ submittingSetup() ? 'Confirmando...' : 'Confirmar e ativar' }}
+          </button>
+        </div>
+      }
+
+      @case ('recovery-codes') {
+        <div class="flex flex-col gap-sm">
+          <div class="flex items-center gap-2 rounded-lg border border-tertiary/40 bg-tertiary/10 px-3 py-2.5 text-label-sm text-tertiary">
+            <span class="material-symbols-outlined text-[18px]">check_circle</span>
+            2FA ativado com sucesso.
+          </div>
+
+          <p class="text-label-md text-on-surface-variant">
+            Guarde estes códigos de backup em um lugar seguro. Cada um só pode ser usado uma vez, e
+            eles são a única forma de entrar na conta caso você perca acesso ao app autenticador.
+            Eles não serão mostrados novamente.
+          </p>
+
+          <div class="grid grid-cols-2 gap-2 rounded-lg border border-outline-variant bg-surface-container p-lg font-mono text-body-sm text-on-surface sm:grid-cols-4">
+            @for (code of recoveryCodes(); track code) {
+              <span>{{ code }}</span>
+            }
+          </div>
+
+          <div>
+            <button
+              type="button"
+              (click)="copyRecoveryCodes()"
+              class="flex items-center gap-1.5 rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high"
+            >
+              <span class="material-symbols-outlined text-[16px]">{{ recoveryCodesCopied() ? 'check' : 'content_copy' }}</span>
+              {{ recoveryCodesCopied() ? 'Copiado' : 'Copiar códigos' }}
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 border-t border-outline-variant pt-lg">
+          <button
+            type="button"
+            (click)="finishRecoveryCodes()"
+            class="cursor-pointer rounded-full bg-secondary-fixed px-4 py-2 text-label-md font-bold text-on-secondary transition-colors hover:brightness-110"
+          >
+            Já salvei meus códigos
+          </button>
+        </div>
+      }
+    }
+  }
+</section>

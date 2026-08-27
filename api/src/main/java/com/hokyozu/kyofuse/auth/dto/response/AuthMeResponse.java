@@ -6,6 +6,7 @@ public record AuthMeResponse(
         UUID userId,
         String email,
         String username,
-        String role
+        String role,
+        boolean totpEnabled
 ) {
 }

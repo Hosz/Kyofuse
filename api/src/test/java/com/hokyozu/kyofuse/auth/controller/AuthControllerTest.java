@@ -5,6 +5,7 @@ import com.hokyozu.kyofuse.auth.dto.request.RegisterRequest;
 import com.hokyozu.kyofuse.auth.dto.response.AuthMeResponse;
 import com.hokyozu.kyofuse.auth.dto.response.AuthResponse;
 import com.hokyozu.kyofuse.auth.service.AuthService;
+import com.hokyozu.kyofuse.auth.service.TwoFactorAuthService;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.AuthCookieService;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.enums.UserRole;
@@ -15,6 +16,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -33,6 +35,9 @@ class AuthControllerTest {
 
     @Mock
     private AuthService authService;
+
+    @Mock
+    private TwoFactorAuthService twoFactorAuthService;
 
     @Mock
     private AuthCookieService authCookieService;
@@ -70,15 +75,33 @@ class AuthControllerTest {
         httpRequest.setRemoteAddr("203.0.113.10");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        when(authService.login(request, "203.0.113.10")).thenReturn(result);
+        when(authService.login(request, "203.0.113.10")).thenReturn(new AuthService.LoginOutcome.Authenticated(result));
         stubCookies();
 
-        AuthResponse authResponse = controller.login(request, httpRequest, response);
+        ResponseEntity<?> responseEntity = controller.login(request, httpRequest, response);
 
+        AuthResponse authResponse = (AuthResponse) responseEntity.getBody();
         assertThat(authResponse.userId()).isEqualTo(user.getId());
         verify(authService).login(request, "203.0.113.10");
         assertThat(response.getCookies()).extracting("name")
                 .containsExactlyInAnyOrder(AuthCookieService.ACCESS_TOKEN_COOKIE, AuthCookieService.REFRESH_TOKEN_COOKIE);
+    }
+
+    @Test
+    void loginReturnsMfaChallengeWithoutSettingCookiesWhenTotpIsEnabled() {
+        LoginRequest request = new LoginRequest("john", "password123");
+        MockHttpServletRequest httpRequest = new MockHttpServletRequest();
+        httpRequest.setRemoteAddr("203.0.113.10");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        when(authService.login(request, "203.0.113.10"))
+                .thenReturn(new AuthService.LoginOutcome.MfaRequired("mfa-token"));
+
+        ResponseEntity<?> responseEntity = controller.login(request, httpRequest, response);
+
+        assertThat(responseEntity.getBody())
+                .isEqualTo(new com.hokyozu.kyofuse.auth.dto.response.MfaRequiredResponse("mfa-token"));
+        assertThat(response.getCookies()).isEmpty();
     }
 
     @Test
@@ -119,7 +142,8 @@ class AuthControllerTest {
         Jwt jwt = jwt(userId, Map.of(
                 "email", "john@example.com",
                 "username", "john",
-                "role", "USER"
+                "role", "USER",
+                "totpEnabled", true
         ));
 
         AuthMeResponse response = controller.me(jwt);
@@ -128,6 +152,7 @@ class AuthControllerTest {
         assertThat(response.email()).isEqualTo("john@example.com");
         assertThat(response.username()).isEqualTo("john");
         assertThat(response.role()).isEqualTo("USER");
+        assertThat(response.totpEnabled()).isTrue();
     }
 
     private void stubCookies() {

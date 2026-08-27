@@ -4,33 +4,46 @@
 
     <div class="w-full max-w-[24rem] shrink-0">
       <div class="overflow-hidden rounded-xl border border-b-2 border-outline-variant border-b-primary-container bg-surface-container-low">
-        <app-auth-tabs [active]="activeTab()" (tabSelected)="onTabSelected($event)" />
+        @if (mfaToken()) {
+          <div class="flex flex-col gap-lg px-lg py-lg">
+            <app-mfa-verify-form
+              [errorMessage]="mfaError()"
+              [submitting]="mfaSubmitting()"
+              (submitCode)="onVerifyMfa($event)"
+              (back)="onCancelMfa()"
+            />
+          </div>
+        } @else {
+          <app-auth-tabs [active]="activeTab()" (tabSelected)="onTabSelected($event)" />
 
-        <div class="flex flex-col gap-lg px-lg py-lg">
-          @if (activeTab() === 'login') {
-            <app-login-form (submitLogin)="onLogin($event)" />
-          } @else {
-            <app-register-form (submitRegister)="onRegister($event)" />
-          }
-
-          <app-social-auth-buttons />
-        </div>
-
-        <div class="border-t border-outline-variant bg-surface-container px-lg py-3.5 text-center">
-          <button
-            type="button"
-            (click)="toggleTab()"
-            class="cursor-pointer rounded text-label-sm text-on-surface-variant transition-colors hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"
-          >
+          <div class="flex flex-col gap-lg px-lg py-lg">
             @if (activeTab() === 'login') {
-              Ainda não faz parte da unidade?
-              <span class="font-bold text-primary-container">Registrar</span>
+              <app-login-form (submitLogin)="onLogin($event)" />
             } @else {
-              Já faz parte da unidade?
-              <span class="font-bold text-primary-container">Entrar no Sistema</span>
+              <app-register-form (submitRegister)="onRegister($event)" />
             }
-          </button>
-        </div>
+
+            <app-social-auth-buttons />
+          </div>
+        }
+
+        @if (!mfaToken()) {
+          <div class="border-t border-outline-variant bg-surface-container px-lg py-3.5 text-center">
+            <button
+              type="button"
+              (click)="toggleTab()"
+              class="cursor-pointer rounded text-label-sm text-on-surface-variant transition-colors hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"
+            >
+              @if (activeTab() === 'login') {
+                Ainda não faz parte da unidade?
+                <span class="font-bold text-primary-container">Registrar</span>
+              } @else {
+                Já faz parte da unidade?
+                <span class="font-bold text-primary-container">Entrar no Sistema</span>
+              }
+            </button>
+          </div>
+        }
       </div>
     </div>
   </div>

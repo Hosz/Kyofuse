@@ -10,7 +10,7 @@ import { GamerProfileEditRequest } from '../../../models/profile/gamer-profile-e
 export class ProfileService {
 
   api = API_URL;
-  private url = `${this.api}/profile`;
+  private url = `${this.api}/api/profile`;
   private http = inject(HttpClient);
 
   public myProfile() {

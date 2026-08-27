@@ -7,7 +7,7 @@ export const PRIVACY_SETTINGS_ROUTES: Routes = [
     providers: [PrivacySettingsStore],
     loadComponent: () =>
       import('./privacy-settings-shell').then((m) => m.PrivacySettingsShellComponent),
-    title: 'Kyofuse | Privacidade',
+    title: 'Kyofuse | Configurações',
     children: [
       { path: '', redirectTo: 'perfil', pathMatch: 'full' },
       {
@@ -37,6 +37,13 @@ export const PRIVACY_SETTINGS_ROUTES: Routes = [
         loadComponent: () =>
           import('./sections/interaction-permissions/interaction-permissions').then(
             (m) => m.InteractionPermissionsSectionComponent,
+          ),
+      },
+      {
+        path: 'seguranca',
+        loadComponent: () =>
+          import('./sections/security-settings/security-settings').then(
+            (m) => m.SecuritySettingsSectionComponent,
           ),
       },
     ],

@@ -72,6 +72,10 @@ services:
       # Auth
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES}
+      EMAIL_ENCRYPTION_KEY: ${EMAIL_ENCRYPTION_KEY}
+      EMAIL_INDEX_SECRET: ${EMAIL_INDEX_SECRET}
+      TOTP_ENCRYPTION_KEY: ${TOTP_ENCRYPTION_KEY}
+      MFA_JWT_SECRET: ${MFA_JWT_SECRET}
 
       # JVM memory/GC tuning, read automatically by the `java` launcher.
       # Balanced for a small monolith on a dev machine with limited RAM

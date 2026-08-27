@@ -39,6 +39,13 @@ security:
     secret: ${JWT_SECRET}
     expiration-minutes: ${JWT_EXPIRATION_MINUTES:10}
     refresh-token-expiration-days: ${JWT_REFRESH_EXPIRATION_DAYS:30}
+    mfa-secret: ${MFA_JWT_SECRET}
+    mfa-token-expiration-minutes: ${MFA_TOKEN_EXPIRATION_MINUTES:5}
+  email-encryption:
+    key: ${EMAIL_ENCRYPTION_KEY}
+    index-secret: ${EMAIL_INDEX_SECRET}
+  totp-encryption:
+    key: ${TOTP_ENCRYPTION_KEY}
   cookie:
     secure: ${COOKIE_SECURE:false}
   rate-limit:
@@ -50,3 +57,7 @@ security:
       max-attempts: ${REGISTER_RATE_LIMIT_MAX_ATTEMPTS:20}
       window-minutes: ${REGISTER_RATE_LIMIT_WINDOW_MINUTES:60}
       lockout-minutes: ${REGISTER_RATE_LIMIT_LOCKOUT_MINUTES:5,30,120}
+    mfa:
+      max-attempts: ${MFA_RATE_LIMIT_MAX_ATTEMPTS:5}
+      window-minutes: ${MFA_RATE_LIMIT_WINDOW_MINUTES:10}
+      lockout-minutes: ${MFA_RATE_LIMIT_LOCKOUT_MINUTES:1,5,15,60}

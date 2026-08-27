@@ -2,6 +2,7 @@ package com.hokyozu.kyofuse.auth.validator;
 
 import com.hokyozu.kyofuse.auth.dto.request.LoginRequest;
 import com.hokyozu.kyofuse.auth.repository.UserRepository;
+import com.hokyozu.kyofuse.infrastructure.security.crypto.EmailCipherService;
 import com.hokyozu.kyofuse.shared.exception.UnauthorizedException;
 import com.hokyozu.kyofuse.users.entity.User;
 import org.junit.jupiter.api.Test;
@@ -23,24 +24,29 @@ class LoginFinderValidatorTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private EmailCipherService emailCipherService;
+
     @InjectMocks
     private LoginFinderValidator validator;
 
     @Test
     void validateFindsUserByEmailFirst() {
         User user = User.builder().email("user@example.com").build();
-        when(userRepository.findByEmailIgnoreCase("user@example.com")).thenReturn(Optional.of(user));
+        when(emailCipherService.blindIndex("user@example.com")).thenReturn("email-index-hash");
+        when(userRepository.findByEmailIndex("email-index-hash")).thenReturn(Optional.of(user));
 
         User result = validator.validate(new LoginRequest(" User@Example.com ", "password123"));
 
         assertThat(result).isSameAs(user);
-        verify(userRepository).findByEmailIgnoreCase("user@example.com");
+        verify(userRepository).findByEmailIndex("email-index-hash");
     }
 
     @Test
     void validateFindsUserByUsernameWhenEmailDoesNotMatch() {
         User user = User.builder().username("player").build();
-        when(userRepository.findByEmailIgnoreCase("player")).thenReturn(Optional.empty());
+        when(emailCipherService.blindIndex("player")).thenReturn("email-index-hash");
+        when(userRepository.findByEmailIndex("email-index-hash")).thenReturn(Optional.empty());
         when(userRepository.findByUsernameIgnoreCase("player")).thenReturn(Optional.of(user));
 
         User result = validator.validate(new LoginRequest(" PLAYER ", "password123"));
@@ -50,7 +56,8 @@ class LoginFinderValidatorTest {
 
     @Test
     void validateThrowsWhenUserIsNotFound() {
-        when(userRepository.findByEmailIgnoreCase("missing")).thenReturn(Optional.empty());
+        when(emailCipherService.blindIndex("missing")).thenReturn("email-index-hash");
+        when(userRepository.findByEmailIndex("email-index-hash")).thenReturn(Optional.empty());
         when(userRepository.findByUsernameIgnoreCase("missing")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> validator.validate(new LoginRequest("missing", "password123")))

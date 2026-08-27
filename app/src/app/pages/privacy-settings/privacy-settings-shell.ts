@@ -20,6 +20,10 @@ export class PrivacySettingsShellComponent {
     { path: 'bloqueados', label: 'Usuários Bloqueados', icon: 'block' },
   ];
 
+  readonly securitySections = [
+    { path: 'seguranca', label: 'Autenticação em Duas Etapas', icon: 'security' },
+  ];
+
   ngOnInit(): void {
     this.store.load();
   }

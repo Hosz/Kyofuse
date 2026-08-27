@@ -12,12 +12,13 @@ public class AuthMapper {
 
     private AuthMapper() {}
 
-    public static User toEntity(RegisterRequest request, String passwordHash) {
+    public static User toEntity(RegisterRequest request, String passwordHash, String emailIndex) {
         Instant now = Instant.now();
         return User.builder()
                 .firstName(request.firstName().trim())
                 .lastName(request.lastName().trim())
                 .email(request.email().trim())
+                .emailIndex(emailIndex)
                 .username(request.username().trim())
                 .passwordHash(passwordHash)
                 .role(UserRole.USER)

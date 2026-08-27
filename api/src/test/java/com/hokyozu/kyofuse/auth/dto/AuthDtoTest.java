@@ -62,7 +62,7 @@ class AuthDtoTest {
         UUID userId = UUID.randomUUID();
 
         AuthResponse authResponse = new AuthResponse(userId, "john@example.com", "john", "USER");
-        AuthMeResponse meResponse = new AuthMeResponse(userId, "john@example.com", "john", "USER");
+        AuthMeResponse meResponse = new AuthMeResponse(userId, "john@example.com", "john", "USER", true);
 
         assertThat(authResponse.userId()).isEqualTo(userId);
         assertThat(authResponse.email()).isEqualTo("john@example.com");
@@ -72,5 +72,6 @@ class AuthDtoTest {
         assertThat(meResponse.email()).isEqualTo("john@example.com");
         assertThat(meResponse.username()).isEqualTo("john");
         assertThat(meResponse.role()).isEqualTo("USER");
+        assertThat(meResponse.totpEnabled()).isTrue();
     }
 }

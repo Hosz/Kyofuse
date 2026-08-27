@@ -24,18 +24,18 @@ class EmailAndUsernameAvailabilityValidatorTest {
 
     @Test
     void validatePassesWhenEmailAndUsernameAreAvailable() {
-        assertThatCode(() -> validator.validate(" user@example.com ", " player "))
+        assertThatCode(() -> validator.validate("email-index-hash", " player "))
                 .doesNotThrowAnyException();
 
-        verify(userRepository).existsByEmailIgnoreCase("user@example.com");
+        verify(userRepository).existsByEmailIndex("email-index-hash");
         verify(userRepository).existsByUsernameIgnoreCase("player");
     }
 
     @Test
     void validateThrowsWhenEmailAlreadyExists() {
-        when(userRepository.existsByEmailIgnoreCase("user@example.com")).thenReturn(true);
+        when(userRepository.existsByEmailIndex("email-index-hash")).thenReturn(true);
 
-        assertThatThrownBy(() -> validator.validate(" user@example.com ", "player"))
+        assertThatThrownBy(() -> validator.validate("email-index-hash", "player"))
                 .isInstanceOf(ConflictException.class)
                 .hasMessage("Email já está em uso.");
     }
@@ -44,7 +44,7 @@ class EmailAndUsernameAvailabilityValidatorTest {
     void validateThrowsWhenUsernameAlreadyExists() {
         when(userRepository.existsByUsernameIgnoreCase("player")).thenReturn(true);
 
-        assertThatThrownBy(() -> validator.validate("user@example.com", " player "))
+        assertThatThrownBy(() -> validator.validate("email-index-hash", " player "))
                 .isInstanceOf(ConflictException.class)
                 .hasMessage("Username já está em uso.");
     }

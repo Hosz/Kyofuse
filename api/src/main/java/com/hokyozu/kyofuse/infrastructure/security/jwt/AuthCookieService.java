@@ -12,7 +12,12 @@ public class AuthCookieService {
     public static final String ACCESS_TOKEN_COOKIE = "access_token";
     public static final String REFRESH_TOKEN_COOKIE = "refresh_token";
 
-    private static final String REFRESH_TOKEN_PATH = "/api/auth";
+    /**
+     * Path global "/" garante que o refresh token seja enviado em TODAS as requisições,
+     * inclusive para o endpoint /api/auth/refresh. Anteriormente, path="/api/auth"
+     * causava um ciclo infinito quando o token expirava fora desse contexto.
+     */
+    private static final String REFRESH_TOKEN_PATH = "/";
 
     @Value("${security.jwt.expiration-minutes}")
     private long accessTokenExpirationMinutes;
