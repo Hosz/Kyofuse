@@ -65,6 +65,8 @@ security:
   oauth2:
     google:
       client-id: ${GOOGLE_CLIENT_ID:}
+  steam:
+    api-key: ${STEAM_API_KEY:}
   cookie:
     secure: ${COOKIE_SECURE:false}
   rate-limit:

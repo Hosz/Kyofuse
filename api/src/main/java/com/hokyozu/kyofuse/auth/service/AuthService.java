@@ -14,10 +14,13 @@ import com.hokyozu.kyofuse.infrastructure.security.jwt.RefreshTokenService;
 import com.hokyozu.kyofuse.infrastructure.security.oauth.GoogleTokenVerifierService;
 import com.hokyozu.kyofuse.infrastructure.security.ratelimit.RateLimitPolicies;
 import com.hokyozu.kyofuse.infrastructure.security.ratelimit.RateLimiterService;
+import com.hokyozu.kyofuse.infrastructure.security.steam.SteamPlayerSummary;
+import com.hokyozu.kyofuse.infrastructure.security.steam.SteamService;
 import com.hokyozu.kyofuse.infrastructure.security.totp.MfaTokenService;
 import com.hokyozu.kyofuse.infrastructure.security.totp.RecoveryCodeService;
 import com.hokyozu.kyofuse.infrastructure.security.totp.TotpService;
 import com.hokyozu.kyofuse.profiles.service.GamerProfileService;
+import com.hokyozu.kyofuse.profiles.service.SteamProfileSyncService;
 import com.hokyozu.kyofuse.relationships.privacy.service.UserPrivacySettingsService;
 import com.hokyozu.kyofuse.shared.exception.RefreshTokenAbsentException;
 import com.hokyozu.kyofuse.shared.exception.UnauthorizedException;
@@ -31,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -44,6 +48,7 @@ public class AuthService {
     private final RefreshTokenService refreshTokenService;
 
     private final GamerProfileService gamerProfileService;
+    private final SteamProfileSyncService steamProfileSyncService;
     private final UserPrivacySettingsService userPrivacySettingsService;
 
     private final EmailAndUsernameAvailabilityValidator emailAndUsernameAvailabilityValidator;
@@ -61,6 +66,7 @@ public class AuthService {
 
     private final EmailVerificationService emailVerificationService;
     private final GoogleTokenVerifierService googleTokenVerifierService;
+    private final SteamService steamService;
 
     private static final String LOGIN_IP_KEY_PREFIX = "login:ip:";
     private static final String LOGIN_USER_KEY_PREFIX = "login:user:";
@@ -150,6 +156,62 @@ public class AuthService {
         return new LoginOutcome.Authenticated(issueTokens(user));
     }
 
+    public LoginOutcome loginWithSteam(Map<String, String> openIdParams, String clientIp) {
+        String ipKey = LOGIN_IP_KEY_PREFIX + clientIp;
+        rateLimiterService.checkAndConsume(ipKey, rateLimitPolicies.login());
+
+        String steamId = steamService.validateOpenIdAndGetSteamId(openIdParams);
+
+        Optional<User> existingUserOpt = userRepository.findBySteamId(steamId);
+        User user;
+
+        if (existingUserOpt.isPresent()) {
+            user = existingUserOpt.get();
+
+            if (user.getStatus() != UserStatus.ACTIVE) {
+                throw new UnauthorizedException("Usuário não está ativo.");
+            }
+
+            Optional<SteamPlayerSummary> summaryOpt = steamService.getPlayerSummary(steamId);
+            summaryOpt.ifPresent(summary -> steamProfileSyncService.syncIfMissing(user, summary));
+        } else {
+            Optional<SteamPlayerSummary> summaryOpt = steamService.getPlayerSummary(steamId);
+            user = createSteamUser(steamId, summaryOpt.orElse(null));
+        }
+
+        rateLimiterService.recordSuccess(ipKey);
+
+        if (user.isTotpEnabled()) {
+            return new LoginOutcome.MfaRequired(mfaTokenService.generate(user));
+        }
+
+        return new LoginOutcome.Authenticated(issueTokens(user));
+    }
+
+    private User createSteamUser(String steamId, SteamPlayerSummary summary) {
+        String personaName = (summary != null && summary.personaName() != null && !summary.personaName().isBlank())
+                ? summary.personaName()
+                : "steam_" + steamId.substring(Math.max(0, steamId.length() - 6));
+
+        String syntheticEmail = "steam_" + steamId + "@steam.kyofuse.local";
+        String emailIndex = emailCipherService.blindIndex(syntheticEmail);
+
+        String uniqueUsername = generateUniqueUsername(personaName);
+        String passwordHash = passwordEncoder.encode(UUID.randomUUID().toString());
+
+        User newUser = AuthMapper.toSteamEntity(steamId, personaName, syntheticEmail, emailIndex, uniqueUsername, passwordHash);
+
+        userRepository.save(newUser);
+
+        String avatarUrl = summary != null ? summary.avatarFull() : null;
+        String country = summary != null ? summary.locCountryCode() : null;
+
+        gamerProfileService.createGamerProfile(newUser, personaName, avatarUrl, country);
+        userPrivacySettingsService.createDefault(newUser);
+
+        return newUser;
+    }
+
     private User createGoogleUser(GoogleIdToken.Payload payload, String emailIndex) {
         String givenName = (String) payload.get("given_name");
         String familyName = (String) payload.get("family_name");
@@ -165,22 +227,9 @@ public class AuthService {
 
         String baseUsername = email.split("@")[0];
         String uniqueUsername = generateUniqueUsername(baseUsername);
+        String passwordHash = passwordEncoder.encode(UUID.randomUUID().toString());
 
-        Instant now = Instant.now();
-        User newUser = User.builder()
-                .firstName(givenName.trim())
-                .lastName(familyName.trim())
-                .email(email.trim())
-                .emailIndex(emailIndex)
-                .username(uniqueUsername)
-                .passwordHash(passwordEncoder.encode(UUID.randomUUID().toString()))
-                .role(UserRole.USER)
-                .status(UserStatus.ACTIVE)
-                .emailVerified(true)
-                .emailVerifiedAt(now)
-                .createdAt(now)
-                .updatedAt(now)
-                .build();
+        User newUser = AuthMapper.toGoogleEntity(givenName, familyName, email, emailIndex, uniqueUsername, passwordHash);
 
         userRepository.save(newUser);
         gamerProfileService.createGamerProfileMin(newUser);

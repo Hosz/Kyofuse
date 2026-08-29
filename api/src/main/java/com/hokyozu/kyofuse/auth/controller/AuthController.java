@@ -8,6 +8,7 @@ import com.hokyozu.kyofuse.auth.service.EmailVerificationService;
 import com.hokyozu.kyofuse.auth.service.PasswordResetService;
 import com.hokyozu.kyofuse.auth.service.TwoFactorAuthService;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.AuthCookieService;
+import com.hokyozu.kyofuse.infrastructure.security.steam.SteamService;
 import com.hokyozu.kyofuse.users.entity.User;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -20,6 +21,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -32,6 +34,7 @@ public class AuthController {
     private final AuthCookieService authCookieService;
     private final PasswordResetService passwordResetService;
     private final EmailVerificationService emailVerificationService;
+    private final SteamService steamService;
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
@@ -94,6 +97,32 @@ public class AuthController {
             HttpServletResponse response
     ) {
         AuthService.LoginOutcome outcome = authService.loginWithGoogle(request.idToken(), clientIp(httpRequest));
+
+        return switch (outcome) {
+            case AuthService.LoginOutcome.MfaRequired mfaRequired ->
+                    ResponseEntity.ok(new MfaRequiredResponse(mfaRequired.mfaToken()));
+            case AuthService.LoginOutcome.Authenticated authenticated -> {
+                applyAuthCookies(response, authenticated.result());
+                yield ResponseEntity.ok(AuthMapper.toResponse(authenticated.result().user()));
+            }
+        };
+    }
+
+    @GetMapping("/steam")
+    public ResponseEntity<Void> redirectToSteam(@RequestParam(required = false) String returnUrl) {
+        String loginUrl = steamService.buildLoginUrl(returnUrl);
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .header(HttpHeaders.LOCATION, loginUrl)
+                .build();
+    }
+
+    @PostMapping("/steam")
+    public ResponseEntity<?> loginWithSteam(
+            @RequestBody Map<String, String> openIdParams,
+            HttpServletRequest httpRequest,
+            HttpServletResponse response
+    ) {
+        AuthService.LoginOutcome outcome = authService.loginWithSteam(openIdParams, clientIp(httpRequest));
 
         return switch (outcome) {
             case AuthService.LoginOutcome.MfaRequired mfaRequired ->

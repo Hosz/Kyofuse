@@ -95,6 +95,8 @@ services:
       EMAIL_INDEX_SECRET: ${EMAIL_INDEX_SECRET}
       TOTP_ENCRYPTION_KEY: ${TOTP_ENCRYPTION_KEY}
       MFA_JWT_SECRET: ${MFA_JWT_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      STEAM_API_KEY: ${STEAM_API_KEY:-}
 
       # JVM memory/GC tuning, read automatically by the `java` launcher.
       # Balanced for a small monolith on a dev machine with limited RAM

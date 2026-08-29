@@ -89,4 +89,7 @@ public class User {
 
     @Column(name = "email_verified_at")
     private Instant emailVerifiedAt;
+
+    @Column(name = "steam_id", length = 30)
+    private String steamId;
 }

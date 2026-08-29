@@ -110,6 +110,11 @@ export class AuthComponent {
     });
   }
 
+  onSteamClick(): void {
+    this.loginError.set(null);
+    this.authService.redirectToSteam();
+  }
+
   onRegister(payload: registerRequest): void {
     this.registerError.set(null);
 

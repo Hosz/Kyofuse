@@ -82,6 +82,35 @@ class AuthMapperTest {
         assertThat(response.role()).isEqualTo(UserRole.ADMIN.name());
     }
 
+    @Test
+    void toSteamEntity_shouldMapAllFieldsCorrectly() {
+        User user = AuthMapper.toSteamEntity("76561198012345678", "Gamer", "steam_76561198012345678@steam.kyofuse.local", "email-index", "gamer", "hash");
+
+        assertThat(user.getSteamId()).isEqualTo("76561198012345678");
+        assertThat(user.getFirstName()).isEqualTo("Gamer");
+        assertThat(user.getLastName()).isEqualTo("Steam");
+        assertThat(user.getEmail()).isEqualTo("steam_76561198012345678@steam.kyofuse.local");
+        assertThat(user.getEmailIndex()).isEqualTo("email-index");
+        assertThat(user.getUsername()).isEqualTo("gamer");
+        assertThat(user.getPasswordHash()).isEqualTo("hash");
+        assertThat(user.isEmailVerified()).isTrue();
+        assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
+    }
+
+    @Test
+    void toGoogleEntity_shouldMapAllFieldsCorrectly() {
+        User user = AuthMapper.toGoogleEntity("Gamer", "Pro", "gamer@gmail.com", "email-index", "gamer", "hash");
+
+        assertThat(user.getFirstName()).isEqualTo("Gamer");
+        assertThat(user.getLastName()).isEqualTo("Pro");
+        assertThat(user.getEmail()).isEqualTo("gamer@gmail.com");
+        assertThat(user.getEmailIndex()).isEqualTo("email-index");
+        assertThat(user.getUsername()).isEqualTo("gamer");
+        assertThat(user.getPasswordHash()).isEqualTo("hash");
+        assertThat(user.isEmailVerified()).isTrue();
+        assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
+    }
+
     private User createUser() {
         return User.builder()
                 .id(UUID.randomUUID())

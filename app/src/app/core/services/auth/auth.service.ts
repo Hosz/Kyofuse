@@ -53,6 +53,20 @@ export class AuthService {
       }));
   }
 
+  public loginWithSteam(openIdParams: Record<string, string>): Observable<loginResult> {
+    return this.http.post<loginResult>(`${this.url}/steam`, openIdParams, { withCredentials: true })
+      .pipe(tap((result) => {
+        if (!isMfaRequired(result)) {
+          this.authenticated.set(true);
+        }
+      }));
+  }
+
+  public redirectToSteam(): void {
+    const returnUrl = `${window.location.origin}/auth/steam/callback`;
+    window.location.href = `${this.url}/steam?returnUrl=${encodeURIComponent(returnUrl)}`;
+  }
+
   public verifyEmail(token: string): Observable<authResponse> {
     return this.http.post<authResponse>(`${this.url}/verify-email`, { token }, { withCredentials: true })
       .pipe(tap(() => this.authenticated.set(true)));

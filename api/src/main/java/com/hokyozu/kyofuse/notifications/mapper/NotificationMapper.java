@@ -23,12 +23,12 @@ public class NotificationMapper {
 
     public static Notification toEntity(CreateNotificationRequest request) {
         return Notification.builder()
-                .user(request.actor())
+                .user(request.recipient())
+                .actor(request.actor())
                 .type(request.type())
                 .title(request.title())
                 .message(request.message())
                 .status(NotificationStatus.UNREAD)
-                .actor(request.actor())
                 .targetType(request.targetType())
                 .targetId(request.targetId())
                 .metadataJson(request.metadata())

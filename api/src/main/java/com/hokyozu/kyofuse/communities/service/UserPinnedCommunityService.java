@@ -5,6 +5,7 @@ import com.hokyozu.kyofuse.communities.entity.Community;
 import com.hokyozu.kyofuse.communities.entity.UserPinnedCommunity;
 import com.hokyozu.kyofuse.communities.enums.CommunityStatus;
 import com.hokyozu.kyofuse.communities.mapper.CommunityMapper;
+import com.hokyozu.kyofuse.communities.mapper.UserPinnedCommunityMapper;
 import com.hokyozu.kyofuse.communities.repository.CommunityRepository;
 import com.hokyozu.kyofuse.communities.repository.UserPinnedCommunityRepository;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
@@ -70,12 +71,9 @@ public class UserPinnedCommunityService {
         // Nova fixada entra no fim da barra.
         int nextPosition = userPinnedCommunityRepository.findByUserIdOrderByPositionAsc(userId).size();
 
-        userPinnedCommunityRepository.save(UserPinnedCommunity.builder()
-                .user(user)
-                .community(community)
-                .position(nextPosition)
-                .createdAt(Instant.now())
-                .build());
+        userPinnedCommunityRepository.save(
+                UserPinnedCommunityMapper.toEntity(user, community, nextPosition)
+        );
 
         return CommunityMapper.toResponse(community);
     }

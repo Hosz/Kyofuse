@@ -53,6 +53,9 @@ class AuthControllerTest {
     @Mock
     private EmailVerificationService emailVerificationService;
 
+    @Mock
+    private com.hokyozu.kyofuse.infrastructure.security.steam.SteamService steamService;
+
     @InjectMocks
     private AuthController controller;
 
@@ -110,6 +113,39 @@ class AuthControllerTest {
         AuthResponse authResponse = (AuthResponse) responseEntity.getBody();
         assertThat(authResponse.userId()).isEqualTo(user.getId());
         verify(authService).loginWithGoogle("google-id-token", "203.0.113.10");
+        assertThat(response.getCookies()).extracting("name")
+                .containsExactlyInAnyOrder(AuthCookieService.ACCESS_TOKEN_COOKIE, AuthCookieService.REFRESH_TOKEN_COOKIE);
+    }
+
+    @Test
+    void redirectToSteamReturnsFoundWithLocationHeader() {
+        when(steamService.buildLoginUrl("http://localhost:4200/auth/steam/callback"))
+                .thenReturn("https://steamcommunity.com/openid/login?openid.mode=checkid_setup");
+
+        ResponseEntity<Void> response = controller.redirectToSteam("http://localhost:4200/auth/steam/callback");
+
+        assertThat(response.getStatusCode().value()).isEqualTo(302);
+        assertThat(response.getHeaders().getLocation()).hasToString("https://steamcommunity.com/openid/login?openid.mode=checkid_setup");
+    }
+
+    @Test
+    void loginWithSteamDelegatesToAuthServiceAndSetsCookies() {
+        User user = user();
+        Map<String, String> openIdParams = Map.of("openid.mode", "id_res", "openid.claimed_id", "https://steamcommunity.com/openid/id/76561198012345678");
+        AuthService.AuthResult result = new AuthService.AuthResult(user, "access-token", "refresh-token", Instant.now());
+        MockHttpServletRequest httpRequest = new MockHttpServletRequest();
+        httpRequest.setRemoteAddr("203.0.113.10");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        when(authService.loginWithSteam(openIdParams, "203.0.113.10"))
+                .thenReturn(new AuthService.LoginOutcome.Authenticated(result));
+        stubCookies();
+
+        ResponseEntity<?> responseEntity = controller.loginWithSteam(openIdParams, httpRequest, response);
+
+        AuthResponse authResponse = (AuthResponse) responseEntity.getBody();
+        assertThat(authResponse.userId()).isEqualTo(user.getId());
+        verify(authService).loginWithSteam(openIdParams, "203.0.113.10");
         assertThat(response.getCookies()).extracting("name")
                 .containsExactlyInAnyOrder(AuthCookieService.ACCESS_TOKEN_COOKIE, AuthCookieService.REFRESH_TOKEN_COOKIE);
     }

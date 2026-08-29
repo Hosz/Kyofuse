@@ -1,5 +1,6 @@
 package com.hokyozu.kyofuse.infrastructure.security.totp;
 
+import com.hokyozu.kyofuse.auth.mapper.RecoveryCodeMapper;
 import com.hokyozu.kyofuse.infrastructure.entity.RecoveryCode;
 import com.hokyozu.kyofuse.users.entity.User;
 import lombok.RequiredArgsConstructor;
@@ -40,11 +41,7 @@ public class RecoveryCodeService {
         for (int i = 0; i < CODE_COUNT; i++) {
             String rawCode = generateRawCode();
             rawCodes.add(rawCode);
-            entities.add(RecoveryCode.builder()
-                    .user(user)
-                    .codeHash(hash(rawCode))
-                    .createdAt(now)
-                    .build());
+            entities.add(RecoveryCodeMapper.toEntity(user, hash(rawCode), now));
         }
 
         recoveryCodeRepository.saveAll(entities);

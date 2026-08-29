@@ -30,6 +30,43 @@ public class AuthMapper {
                 .build();
     }
 
+    public static User toSteamEntity(String steamId, String firstName, String syntheticEmail, String emailIndex, String username, String passwordHash) {
+        Instant now = Instant.now();
+        return User.builder()
+                .steamId(steamId)
+                .firstName(firstName.trim())
+                .lastName("Steam")
+                .email(syntheticEmail)
+                .emailIndex(emailIndex)
+                .username(username)
+                .passwordHash(passwordHash)
+                .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
+                .emailVerified(true)
+                .emailVerifiedAt(now)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+    }
+
+    public static User toGoogleEntity(String givenName, String familyName, String email, String emailIndex, String username, String passwordHash) {
+        Instant now = Instant.now();
+        return User.builder()
+                .firstName(givenName.trim())
+                .lastName(familyName.trim())
+                .email(email.trim())
+                .emailIndex(emailIndex)
+                .username(username)
+                .passwordHash(passwordHash)
+                .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
+                .emailVerified(true)
+                .emailVerifiedAt(now)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+    }
+
     public static AuthResponse toResponse(User user) {
         return new AuthResponse(
                 user.getId(),

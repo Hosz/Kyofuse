@@ -1,5 +1,6 @@
 package com.hokyozu.kyofuse.infrastructure.security.jwt;
 
+import com.hokyozu.kyofuse.auth.mapper.RefreshTokenMapper;
 import com.hokyozu.kyofuse.infrastructure.entity.RefreshToken;
 import com.hokyozu.kyofuse.shared.exception.RefreshTokenExpiredException;
 import com.hokyozu.kyofuse.users.entity.User;
@@ -81,14 +82,8 @@ public class RefreshTokenService {
         Instant now = Instant.now();
         Instant expiresAt = now.plus(refreshTokenExpirationDays, ChronoUnit.DAYS);
 
-        RefreshToken refreshToken = RefreshToken.builder()
-                .user(user)
-                .tokenHash(hash(rawToken))
-                .familyId(familyId)
-                .revoked(false)
-                .expiresAt(expiresAt)
-                .createdAt(now)
-                .build();
+        RefreshToken refreshToken = RefreshTokenMapper
+                .toEntity(user, hash(rawToken), familyId, expiresAt);
 
         refreshTokenRepository.save(refreshToken);
 

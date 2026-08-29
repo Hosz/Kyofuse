@@ -37,18 +37,7 @@ public class NotificationService {
 
     @Transactional
     public Notification createNotification(CreateNotificationRequest request) {
-        Notification notification = Notification.builder()
-                .user(request.recipient())
-                .actor(request.actor())
-                .type(request.type())
-                .title(request.title())
-                .message(request.message())
-                .status(NotificationStatus.UNREAD)
-                .targetType(request.targetType())
-                .targetId(request.targetId())
-                .metadataJson(request.metadata())
-                .createdAt(Instant.now())
-                .build();
+        Notification notification = NotificationMapper.toEntity(request);
         return notificationRepository.save(notification);
     }
 

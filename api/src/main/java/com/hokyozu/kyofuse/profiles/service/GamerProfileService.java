@@ -40,6 +40,12 @@ public class GamerProfileService {
     }
 
     @Transactional
+    public void createGamerProfile(User user, String nickname, String avatarUrl, String country) {
+        GamerProfile profile = GamerProfileMapper.toEntity(user, nickname, avatarUrl, country);
+        gamerProfileRepository.save(profile);
+    }
+
+    @Transactional
     public GamerProfileResponse editProfile(UUID userId, GamerProfileRequest request) {
 
         if (request.nickname() != null && request.nickname().trim().isEmpty()) {

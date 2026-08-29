@@ -25,6 +25,13 @@ export const routes: Routes = [
     title: 'Kyofuse | Confirmar E-mail',
   },
   {
+    path: 'auth/steam/callback',
+    canActivate: [guestGuard],
+    loadComponent: () =>
+      import('./pages/steam-callback/steam-callback').then((m) => m.SteamCallbackComponent),
+    title: 'Kyofuse | Autenticando com Steam',
+  },
+  {
     path: 'home',
     canActivate: [authGuard],
     loadComponent: () =>

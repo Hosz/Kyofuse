@@ -98,7 +98,10 @@
               <app-register-form (submitRegister)="onRegister($event)" />
             }
 
-            <app-social-auth-buttons (googleCredential)="onGoogleCredentialReceived($event)" />
+            <app-social-auth-buttons
+              (googleCredential)="onGoogleCredentialReceived($event)"
+              (steamClick)="onSteamClick()"
+            />
           </div>
         }
 

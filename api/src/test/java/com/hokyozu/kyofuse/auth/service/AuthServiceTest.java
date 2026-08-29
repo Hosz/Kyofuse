@@ -33,6 +33,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -95,6 +96,12 @@ class AuthServiceTest {
 
     @Mock
     private GoogleTokenVerifierService googleTokenVerifierService;
+
+    @Mock
+    private com.hokyozu.kyofuse.infrastructure.security.steam.SteamService steamService;
+
+    @Mock
+    private com.hokyozu.kyofuse.profiles.service.SteamProfileSyncService steamProfileSyncService;
 
     @InjectMocks
     private AuthService authService;
@@ -250,6 +257,62 @@ class AuthServiceTest {
         assertThat(outcome).isInstanceOf(AuthService.LoginOutcome.Authenticated.class);
         verify(userRepository).save(any(User.class));
         verify(gamerProfileService).createGamerProfileMin(any(User.class));
+        verify(userPrivacySettingsService).createDefault(any(User.class));
+    }
+
+    @Test
+    void loginWithSteamAuthenticatesExistingUser() {
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .steamId("76561198012345678")
+                .email("steam_76561198012345678@steam.kyofuse.local")
+                .username("steamuser")
+                .passwordHash("hash")
+                .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
+                .emailVerified(true)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+
+        Map<String, String> openIdParams = Map.of("openid.mode", "id_res");
+
+        when(steamService.validateOpenIdAndGetSteamId(openIdParams)).thenReturn("76561198012345678");
+        when(userRepository.findBySteamId("76561198012345678")).thenReturn(Optional.of(user));
+        when(steamService.getPlayerSummary("76561198012345678")).thenReturn(Optional.empty());
+        when(jwtService.generateToken(user)).thenReturn("jwt-token");
+        when(refreshTokenService.issue(user))
+                .thenReturn(new RefreshTokenService.IssuedToken("refresh-token", Instant.now().plusSeconds(3600)));
+
+        AuthService.LoginOutcome outcome = authService.loginWithSteam(openIdParams, CLIENT_IP);
+
+        assertThat(outcome).isInstanceOf(AuthService.LoginOutcome.Authenticated.class);
+        verify(rateLimiterService).recordSuccess("login:ip:" + CLIENT_IP);
+    }
+
+    @Test
+    void loginWithSteamCreatesNewUserWhenNotExists() {
+        Map<String, String> openIdParams = Map.of("openid.mode", "id_res");
+        com.hokyozu.kyofuse.infrastructure.security.steam.SteamPlayerSummary summary =
+                new com.hokyozu.kyofuse.infrastructure.security.steam.SteamPlayerSummary(
+                        "76561198012345678", "GamerHero", "https://steamcommunity.com/id/gamerhero", "https://avatar.url", "BR"
+                );
+
+        when(steamService.validateOpenIdAndGetSteamId(openIdParams)).thenReturn("76561198012345678");
+        when(userRepository.findBySteamId("76561198012345678")).thenReturn(Optional.empty());
+        when(steamService.getPlayerSummary("76561198012345678")).thenReturn(Optional.of(summary));
+        when(emailCipherService.blindIndex(anyString())).thenReturn("email-index-steam");
+        when(userRepository.existsByUsernameIgnoreCase("gamerhero")).thenReturn(false);
+        when(passwordEncoder.encode(any())).thenReturn("random-hash");
+        when(jwtService.generateToken(any())).thenReturn("jwt-token");
+        when(refreshTokenService.issue(any()))
+                .thenReturn(new RefreshTokenService.IssuedToken("refresh-token", Instant.now().plusSeconds(3600)));
+
+        AuthService.LoginOutcome outcome = authService.loginWithSteam(openIdParams, CLIENT_IP);
+
+        assertThat(outcome).isInstanceOf(AuthService.LoginOutcome.Authenticated.class);
+        verify(userRepository).save(any(User.class));
+        verify(gamerProfileService).createGamerProfile(any(User.class), eq("GamerHero"), eq("https://avatar.url"), eq("BR"));
         verify(userPrivacySettingsService).createDefault(any(User.class));
     }
 

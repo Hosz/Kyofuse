@@ -70,4 +70,36 @@ class GamerProfileMapperTest {
         assertThat(profile.getLookingForDuo()).isFalse();
         assertThat(profile.getUpdatedAt()).isAfter(previousUpdatedAt);
     }
+
+    @Test
+    void updateFromSteamFillsOnlyMissingOrFallbackFields() {
+        GamerProfile profile = GamerProfile.builder()
+                .nickname("steam_123456")
+                .avatarUrl(null)
+                .country(null)
+                .build();
+
+        boolean changed = GamerProfileMapper.updateFromSteam(profile, "ProGamer", "https://avatar.url", "BR");
+
+        assertThat(changed).isTrue();
+        assertThat(profile.getNickname()).isEqualTo("ProGamer");
+        assertThat(profile.getAvatarUrl()).isEqualTo("https://avatar.url");
+        assertThat(profile.getCountry()).isEqualTo("BR");
+    }
+
+    @Test
+    void updateFromSteamDoesNotOverwriteExistingCustomData() {
+        GamerProfile profile = GamerProfile.builder()
+                .nickname("CustomNick")
+                .avatarUrl("https://custom.avatar")
+                .country("US")
+                .build();
+
+        boolean changed = GamerProfileMapper.updateFromSteam(profile, "SteamNick", "https://steam.avatar", "BR");
+
+        assertThat(changed).isFalse();
+        assertThat(profile.getNickname()).isEqualTo("CustomNick");
+        assertThat(profile.getAvatarUrl()).isEqualTo("https://custom.avatar");
+        assertThat(profile.getCountry()).isEqualTo("US");
+    }
 }
