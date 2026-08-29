@@ -82,4 +82,11 @@ public class User {
 
     @Column(name = "totp_confirmed_at")
     private Instant totpConfirmedAt;
+
+    @Column(name = "email_verified", nullable = false)
+    @Builder.Default
+    private boolean emailVerified = false;
+
+    @Column(name = "email_verified_at")
+    private Instant emailVerifiedAt;
 }

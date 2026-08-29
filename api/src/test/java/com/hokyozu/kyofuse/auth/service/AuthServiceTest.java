@@ -1,5 +1,6 @@
 package com.hokyozu.kyofuse.auth.service;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.hokyozu.kyofuse.auth.dto.request.LoginRequest;
 import com.hokyozu.kyofuse.auth.dto.request.RegisterRequest;
 import com.hokyozu.kyofuse.auth.repository.UserRepository;
@@ -9,6 +10,7 @@ import com.hokyozu.kyofuse.auth.validator.LoginValidator;
 import com.hokyozu.kyofuse.infrastructure.security.crypto.EmailCipherService;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.JwtService;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.RefreshTokenService;
+import com.hokyozu.kyofuse.infrastructure.security.oauth.GoogleTokenVerifierService;
 import com.hokyozu.kyofuse.infrastructure.security.ratelimit.RateLimitPolicies;
 import com.hokyozu.kyofuse.infrastructure.security.ratelimit.RateLimiterService;
 import com.hokyozu.kyofuse.infrastructure.security.totp.MfaTokenService;
@@ -31,17 +33,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
@@ -91,13 +90,19 @@ class AuthServiceTest {
     @Mock
     private RecoveryCodeService recoveryCodeService;
 
+    @Mock
+    private EmailVerificationService emailVerificationService;
+
+    @Mock
+    private GoogleTokenVerifierService googleTokenVerifierService;
+
     @InjectMocks
     private AuthService authService;
 
     private static final String CLIENT_IP = "203.0.113.10";
 
     @Test
-    void registerCreatesUserProfileAndTokens() {
+    void registerCreatesUserProfileAndTriggersVerificationEmail() {
         RegisterRequest request = new RegisterRequest(
                 " Hideo ",
                 " Kojima ",
@@ -106,7 +111,6 @@ class AuthServiceTest {
                 "password123"
         );
         UUID userId = UUID.randomUUID();
-        Instant refreshExpiresAt = Instant.now().plusSeconds(3600);
 
         when(passwordEncoder.encode("password123")).thenReturn("hashed-password");
         when(emailCipherService.blindIndex(" hideo@example.com ")).thenReturn("email-index-hash");
@@ -115,11 +119,8 @@ class AuthServiceTest {
             user.setId(userId);
             return user;
         });
-        when(jwtService.generateToken(any(User.class))).thenReturn("jwt-token");
-        when(refreshTokenService.issue(any(User.class)))
-                .thenReturn(new RefreshTokenService.IssuedToken("refresh-token", refreshExpiresAt));
 
-        AuthService.AuthResult result = authService.register(request, CLIENT_IP);
+        User result = authService.register(request, CLIENT_IP);
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(rateLimiterService).checkAndConsume(eq("register:ip:" + CLIENT_IP), any());
@@ -127,6 +128,7 @@ class AuthServiceTest {
         verify(userRepository).save(userCaptor.capture());
         verify(gamerProfileService).createGamerProfileMin(userCaptor.getValue());
         verify(userPrivacySettingsService).createDefault(userCaptor.getValue());
+        verify(emailVerificationService).createVerificationToken(userCaptor.getValue());
 
         User savedUser = userCaptor.getValue();
         assertThat(savedUser.getFirstName()).isEqualTo("Hideo");
@@ -137,13 +139,11 @@ class AuthServiceTest {
         assertThat(savedUser.getPasswordHash()).isEqualTo("hashed-password");
         assertThat(savedUser.getRole()).isEqualTo(UserRole.USER);
         assertThat(savedUser.getStatus()).isEqualTo(UserStatus.ACTIVE);
+        assertThat(savedUser.isEmailVerified()).isFalse();
 
-        assertThat(result.accessToken()).isEqualTo("jwt-token");
-        assertThat(result.refreshToken()).isEqualTo("refresh-token");
-        assertThat(result.refreshTokenExpiresAt()).isEqualTo(refreshExpiresAt);
-        assertThat(result.user().getId()).isEqualTo(userId);
-        assertThat(result.user().getEmail()).isEqualTo("hideo@example.com");
-        assertThat(result.user().getUsername()).isEqualTo("hideo");
+        assertThat(result.getId()).isEqualTo(userId);
+        assertThat(result.getEmail()).isEqualTo("hideo@example.com");
+        assertThat(result.getUsername()).isEqualTo("hideo");
     }
 
     @Test
@@ -169,6 +169,7 @@ class AuthServiceTest {
                 .passwordHash("hash")
                 .role(UserRole.USER)
                 .status(UserStatus.ACTIVE)
+                .emailVerified(true)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
@@ -197,6 +198,62 @@ class AuthServiceTest {
     }
 
     @Test
+    void loginWithGoogleAuthenticatesExistingVerifiedUser() {
+        GoogleIdToken.Payload payload = new GoogleIdToken.Payload();
+        payload.setEmail("hideo@example.com");
+        payload.set("given_name", "Hideo");
+        payload.set("family_name", "Kojima");
+
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .email("hideo@example.com")
+                .emailIndex("email-index-hash")
+                .username("hideo")
+                .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
+                .emailVerified(true)
+                .build();
+
+        Instant refreshExpiresAt = Instant.now().plusSeconds(3600);
+
+        when(googleTokenVerifierService.verify("google-token")).thenReturn(payload);
+        when(emailCipherService.blindIndex("hideo@example.com")).thenReturn("email-index-hash");
+        when(userRepository.findByEmailIndex("email-index-hash")).thenReturn(Optional.of(user));
+        when(jwtService.generateToken(user)).thenReturn("jwt-token");
+        when(refreshTokenService.issue(user))
+                .thenReturn(new RefreshTokenService.IssuedToken("refresh-token", refreshExpiresAt));
+
+        AuthService.LoginOutcome outcome = authService.loginWithGoogle("google-token", CLIENT_IP);
+
+        assertThat(outcome).isInstanceOf(AuthService.LoginOutcome.Authenticated.class);
+        verify(rateLimiterService).recordSuccess("login:ip:" + CLIENT_IP);
+    }
+
+    @Test
+    void loginWithGoogleCreatesNewUserWhenNotExists() {
+        GoogleIdToken.Payload payload = new GoogleIdToken.Payload();
+        payload.setEmail("newuser@gmail.com");
+        payload.set("given_name", "New");
+        payload.set("family_name", "Gamer");
+
+        when(googleTokenVerifierService.verify("google-token")).thenReturn(payload);
+        when(emailCipherService.blindIndex("newuser@gmail.com")).thenReturn("email-index-new");
+        when(userRepository.findByEmailIndex("email-index-new")).thenReturn(Optional.empty());
+        when(userRepository.existsByUsernameIgnoreCase("newuser")).thenReturn(false);
+        when(passwordEncoder.encode(any())).thenReturn("random-hash");
+        when(jwtService.generateToken(any())).thenReturn("jwt-token");
+        when(refreshTokenService.issue(any()))
+                .thenReturn(new RefreshTokenService.IssuedToken("refresh-token", Instant.now().plusSeconds(3600)));
+
+        AuthService.LoginOutcome outcome = authService.loginWithGoogle("google-token", CLIENT_IP);
+
+        assertThat(outcome).isInstanceOf(AuthService.LoginOutcome.Authenticated.class);
+        verify(userRepository).save(any(User.class));
+        verify(gamerProfileService).createGamerProfileMin(any(User.class));
+        verify(userPrivacySettingsService).createDefault(any(User.class));
+    }
+
+    @Test
     void loginReturnsMfaChallengeWhenTotpIsEnabled() {
         LoginRequest request = new LoginRequest("hideo", "password123");
         User user = User.builder()
@@ -207,6 +264,7 @@ class AuthServiceTest {
                 .role(UserRole.USER)
                 .status(UserStatus.ACTIVE)
                 .totpEnabled(true)
+                .emailVerified(true)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();

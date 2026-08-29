@@ -4,8 +4,9 @@ import { inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { registerRequest } from '../../../models/auth/register-form.model';
 import { loginRequest } from '../../../models/auth/login-form.model';
-import { authMeResponse, authResponse, isMfaRequired, loginResult, RequestFail } from '../../../models/auth/auth-response.model';
+import { authMeResponse, authResponse, isMfaRequired, loginResult, RegisterResponse, RequestFail } from '../../../models/auth/auth-response.model';
 import { mfaVerifyRequest } from '../../../models/auth/mfa.model';
+import { ForgotPasswordRequest, ResetPasswordRequest } from '../../../models/auth/password-reset.model';
 import { Observable, catchError, finalize, map, of, shareReplay, tap } from 'rxjs';
 
 /**
@@ -28,9 +29,8 @@ export class AuthService {
 
   private refreshInFlight: Observable<boolean> | null = null;
 
-  public register(request: registerRequest): Observable<authResponse> {
-    return this.http.post<authResponse>(`${this.url}/register`, request, { withCredentials: true })
-      .pipe(tap(() => this.authenticated.set(true)));
+  public register(request: registerRequest): Observable<RegisterResponse> {
+    return this.http.post<RegisterResponse>(`${this.url}/register`, request);
   }
 
   /** Se a conta tiver 2FA ativo, o backend responde com um desafio (mfaRequired) em vez
@@ -44,9 +44,47 @@ export class AuthService {
       }));
   }
 
+  public loginWithGoogle(idToken: string): Observable<loginResult> {
+    return this.http.post<loginResult>(`${this.url}/google`, { idToken }, { withCredentials: true })
+      .pipe(tap((result) => {
+        if (!isMfaRequired(result)) {
+          this.authenticated.set(true);
+        }
+      }));
+  }
+
+  public verifyEmail(token: string): Observable<authResponse> {
+    return this.http.post<authResponse>(`${this.url}/verify-email`, { token }, { withCredentials: true })
+      .pipe(tap(() => this.authenticated.set(true)));
+  }
+
+  public validateEmailVerificationToken(token: string): Observable<void> {
+    return this.http.get<void>(`${this.url}/verify-email/validate`, {
+      params: { token },
+    });
+  }
+
+  public resendVerificationEmail(emailOrUsername: string): Observable<void> {
+    return this.http.post<void>(`${this.url}/resend-verification`, { emailOrUsername });
+  }
+
   public verifyMfa(request: mfaVerifyRequest): Observable<authResponse> {
     return this.http.post<authResponse>(`${this.url}/2fa/verify`, request, { withCredentials: true })
       .pipe(tap(() => this.authenticated.set(true)));
+  }
+
+  public forgotPassword(request: ForgotPasswordRequest): Observable<void> {
+    return this.http.post<void>(`${this.url}/forgot-password`, request);
+  }
+
+  public validateResetToken(token: string): Observable<void> {
+    return this.http.get<void>(`${this.url}/reset-password/validate`, {
+      params: { token },
+    });
+  }
+
+  public resetPassword(request: ResetPasswordRequest): Observable<void> {
+    return this.http.post<void>(`${this.url}/reset-password`, request);
   }
 
   public logout(): Observable<void> {

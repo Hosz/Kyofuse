@@ -1,5 +1,6 @@
 package com.hokyozu.kyofuse.auth.service;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.hokyozu.kyofuse.auth.dto.request.LoginRequest;
 import com.hokyozu.kyofuse.auth.dto.request.RegisterRequest;
 import com.hokyozu.kyofuse.auth.mapper.AuthMapper;
@@ -10,6 +11,7 @@ import com.hokyozu.kyofuse.auth.validator.LoginValidator;
 import com.hokyozu.kyofuse.infrastructure.security.crypto.EmailCipherService;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.JwtService;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.RefreshTokenService;
+import com.hokyozu.kyofuse.infrastructure.security.oauth.GoogleTokenVerifierService;
 import com.hokyozu.kyofuse.infrastructure.security.ratelimit.RateLimitPolicies;
 import com.hokyozu.kyofuse.infrastructure.security.ratelimit.RateLimiterService;
 import com.hokyozu.kyofuse.infrastructure.security.totp.MfaTokenService;
@@ -20,12 +22,16 @@ import com.hokyozu.kyofuse.relationships.privacy.service.UserPrivacySettingsServ
 import com.hokyozu.kyofuse.shared.exception.RefreshTokenAbsentException;
 import com.hokyozu.kyofuse.shared.exception.UnauthorizedException;
 import com.hokyozu.kyofuse.users.entity.User;
+import com.hokyozu.kyofuse.users.enums.UserRole;
+import com.hokyozu.kyofuse.users.enums.UserStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -53,6 +59,9 @@ public class AuthService {
     private final TotpService totpService;
     private final RecoveryCodeService recoveryCodeService;
 
+    private final EmailVerificationService emailVerificationService;
+    private final GoogleTokenVerifierService googleTokenVerifierService;
+
     private static final String LOGIN_IP_KEY_PREFIX = "login:ip:";
     private static final String LOGIN_USER_KEY_PREFIX = "login:user:";
     private static final String REGISTER_IP_KEY_PREFIX = "register:ip:";
@@ -66,23 +75,23 @@ public class AuthService {
     }
 
     @Transactional
-    public AuthResult register(RegisterRequest request, String clientIp) {
+    public User register(RegisterRequest request, String clientIp) {
+        rateLimiterService.checkAndConsume(REGISTER_IP_KEY_PREFIX + clientIp, rateLimitPolicies.register());
 
-       rateLimiterService.checkAndConsume(REGISTER_IP_KEY_PREFIX + clientIp, rateLimitPolicies.register());
+        String emailIndex = emailCipherService.blindIndex(request.email());
+        emailAndUsernameAvailabilityValidator.validate(emailIndex, request.username());
+        String passwordHash = passwordEncoder.encode(request.password());
+        User user = AuthMapper.toEntity(request, passwordHash, emailIndex);
+        userRepository.save(user);
+        gamerProfileService.createGamerProfileMin(user);
+        userPrivacySettingsService.createDefault(user);
 
-       String emailIndex = emailCipherService.blindIndex(request.email());
-       emailAndUsernameAvailabilityValidator.validate(emailIndex, request.username());
-       String passwordHash = passwordEncoder.encode(request.password());
-       User user = AuthMapper.toEntity(request, passwordHash, emailIndex);
-       userRepository.save(user);
-       gamerProfileService.createGamerProfileMin(user);
-       userPrivacySettingsService.createDefault(user);
+        emailVerificationService.createVerificationToken(user);
 
-       return issueTokens(user);
+        return user;
     }
 
     public LoginOutcome login(LoginRequest request, String clientIp) {
-
         String ipKey = LOGIN_IP_KEY_PREFIX + clientIp;
         String userKey = LOGIN_USER_KEY_PREFIX + request.login().trim().toLowerCase();
 
@@ -100,6 +109,114 @@ public class AuthService {
         }
 
         return new LoginOutcome.Authenticated(issueTokens(user));
+    }
+
+    @Transactional
+    public LoginOutcome loginWithGoogle(String idTokenString, String clientIp) {
+        String ipKey = LOGIN_IP_KEY_PREFIX + clientIp;
+        rateLimiterService.checkAndConsume(ipKey, rateLimitPolicies.login());
+
+        GoogleIdToken.Payload payload = googleTokenVerifierService.verify(idTokenString);
+        String email = payload.getEmail();
+        String emailIndex = emailCipherService.blindIndex(email);
+
+        Optional<User> existingUserOpt = userRepository.findByEmailIndex(emailIndex);
+        User user;
+
+        if (existingUserOpt.isPresent()) {
+            user = existingUserOpt.get();
+
+            if (!user.isEmailVerified()) {
+                user.setEmailVerified(true);
+                user.setEmailVerifiedAt(Instant.now());
+                user.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));
+                user.setUpdatedAt(Instant.now());
+                userRepository.save(user);
+            }
+
+            if (user.getStatus() != UserStatus.ACTIVE) {
+                throw new UnauthorizedException("Usuário não está ativo.");
+            }
+        } else {
+            user = createGoogleUser(payload, emailIndex);
+        }
+
+        rateLimiterService.recordSuccess(ipKey);
+
+        if (user.isTotpEnabled()) {
+            return new LoginOutcome.MfaRequired(mfaTokenService.generate(user));
+        }
+
+        return new LoginOutcome.Authenticated(issueTokens(user));
+    }
+
+    private User createGoogleUser(GoogleIdToken.Payload payload, String emailIndex) {
+        String givenName = (String) payload.get("given_name");
+        String familyName = (String) payload.get("family_name");
+        String name = (String) payload.get("name");
+        String email = payload.getEmail();
+
+        if (givenName == null || givenName.isBlank()) {
+            givenName = (name != null && !name.isBlank()) ? name : "Usuário";
+        }
+        if (familyName == null || familyName.isBlank()) {
+            familyName = "Google";
+        }
+
+        String baseUsername = email.split("@")[0];
+        String uniqueUsername = generateUniqueUsername(baseUsername);
+
+        Instant now = Instant.now();
+        User newUser = User.builder()
+                .firstName(givenName.trim())
+                .lastName(familyName.trim())
+                .email(email.trim())
+                .emailIndex(emailIndex)
+                .username(uniqueUsername)
+                .passwordHash(passwordEncoder.encode(UUID.randomUUID().toString()))
+                .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
+                .emailVerified(true)
+                .emailVerifiedAt(now)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+
+        userRepository.save(newUser);
+        gamerProfileService.createGamerProfileMin(newUser);
+        userPrivacySettingsService.createDefault(newUser);
+
+        return newUser;
+    }
+
+    private String generateUniqueUsername(String baseUsername) {
+        String cleaned = baseUsername.replaceAll("[^a-zA-Z0-9_]", "").toLowerCase();
+        if (cleaned.isBlank()) {
+            cleaned = "user";
+        }
+        if (cleaned.length() > 25) {
+            cleaned = cleaned.substring(0, 25);
+        }
+
+        if (!userRepository.existsByUsernameIgnoreCase(cleaned)) {
+            return cleaned;
+        }
+
+        SecureRandom random = new SecureRandom();
+        for (int i = 0; i < 100; i++) {
+            String candidate = cleaned + (random.nextInt(9000) + 1000);
+            if (!userRepository.existsByUsernameIgnoreCase(candidate)) {
+                return candidate;
+            }
+        }
+
+        return cleaned + UUID.randomUUID().toString().substring(0, 8);
+    }
+
+    @Transactional
+    public AuthResult verifyEmail(String token) {
+        User user = emailVerificationService.verifyEmail(token);
+        return issueTokens(user);
     }
 
     public AuthResult verifyMfa(String mfaToken, String code) {

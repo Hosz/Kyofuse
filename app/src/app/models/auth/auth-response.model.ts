@@ -34,3 +34,20 @@ export type loginResult = authResponse | mfaRequiredResponse;
 export function isMfaRequired(result: loginResult): result is mfaRequiredResponse {
   return (result as mfaRequiredResponse).mfaRequired === true;
 }
+
+export interface RegisterResponse {
+  userId: string;
+  email: string;
+  username: string;
+  emailVerified: boolean;
+  message: string;
+}
+
+export interface VerifyEmailRequest {
+  token: string;
+}
+
+export interface ResendVerificationRequest {
+  emailOrUsername: string;
+}
+

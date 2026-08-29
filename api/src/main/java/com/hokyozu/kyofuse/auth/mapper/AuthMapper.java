@@ -2,6 +2,7 @@ package com.hokyozu.kyofuse.auth.mapper;
 
 import com.hokyozu.kyofuse.auth.dto.request.RegisterRequest;
 import com.hokyozu.kyofuse.auth.dto.response.AuthResponse;
+import com.hokyozu.kyofuse.auth.dto.response.RegisterResponse;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.enums.UserRole;
 import com.hokyozu.kyofuse.users.enums.UserStatus;
@@ -23,6 +24,7 @@ public class AuthMapper {
                 .passwordHash(passwordHash)
                 .role(UserRole.USER)
                 .status(UserStatus.ACTIVE)
+                .emailVerified(false)
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
@@ -36,5 +38,14 @@ public class AuthMapper {
                 user.getRole().name()
         );
     }
-}
 
+    public static RegisterResponse toRegisterResponse(User user) {
+        return new RegisterResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getUsername(),
+                user.isEmailVerified(),
+                "Cadastro realizado com sucesso! Enviamos um link de confirmação para o seu e-mail."
+        );
+    }
+}

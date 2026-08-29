@@ -4,6 +4,8 @@
 
     <div class="w-full max-w-[24rem] shrink-0">
       <div class="overflow-hidden rounded-xl border border-b-2 border-outline-variant border-b-primary-container bg-surface-container-low">
+        
+        <!-- ESTADO: DESAFIO 2FA -->
         @if (mfaToken()) {
           <div class="flex flex-col gap-lg px-lg py-lg">
             <app-mfa-verify-form
@@ -13,21 +15,94 @@
               (back)="onCancelMfa()"
             />
           </div>
-        } @else {
+        } 
+        
+        <!-- ESTADO: RECUPERAÇÃO DE SENHA -->
+        @else if (isForgotPassword()) {
+          <div class="flex flex-col gap-lg px-lg py-lg">
+            <app-forgot-password-form
+              [errorMessage]="forgotPasswordError()"
+              [submitting]="forgotPasswordSubmitting()"
+              [success]="forgotPasswordSuccess()"
+              (submitRequest)="onRequestForgotPassword($event)"
+              (back)="onCloseForgotPassword()"
+            />
+          </div>
+        } 
+        
+        <!-- ESTADO: SUCESSO NO CADASTRO (CONFIRMAÇÃO DE EMAIL PENDENTE) -->
+        @else if (registrationSuccess()) {
+          <div class="flex flex-col gap-lg px-lg py-lg text-center">
+            <div class="flex flex-col items-center gap-3">
+              <span class="material-symbols-outlined text-[48px] text-primary-container">mark_email_read</span>
+              <h2 class="text-title-md font-bold text-on-surface">Confirme seu E-mail</h2>
+              <p class="text-body-sm text-on-surface-variant">
+                Enviamos um link de ativação para <strong class="text-on-surface">{{ registeredEmail() }}</strong>. Acesse seu e-mail para ativar sua conta e entrar na unidade.
+              </p>
+            </div>
+
+            @if (resendSuccess()) {
+              <p class="text-label-sm text-primary-container">Link reenviado com sucesso!</p>
+            }
+            @if (resendError()) {
+              <p class="text-label-sm text-error">{{ resendError() }}</p>
+            }
+
+            <div class="flex flex-col gap-2">
+              <button
+                type="button"
+                (click)="onResendRegistrationEmail()"
+                [disabled]="resendingEmail()"
+                class="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-outline-variant bg-surface-container px-4 py-2.5 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <span class="material-symbols-outlined text-[18px]">send</span>
+                {{ resendingEmail() ? 'Reenviando...' : 'Reenviar E-mail de Confirmação' }}
+              </button>
+
+              <button
+                type="button"
+                (click)="onBackToLogin()"
+                class="cursor-pointer text-label-sm text-on-surface-variant transition-colors hover:text-on-surface mt-2"
+              >
+                Ir para o Login
+              </button>
+            </div>
+          </div>
+        } 
+        
+        <!-- ESTADO: LOGIN OU REGISTRO PADRÃO -->
+        @else {
           <app-auth-tabs [active]="activeTab()" (tabSelected)="onTabSelected($event)" />
 
           <div class="flex flex-col gap-lg px-lg py-lg">
             @if (activeTab() === 'login') {
-              <app-login-form (submitLogin)="onLogin($event)" />
+              @if (loginError()) {
+                <div class="rounded-lg border border-error/20 bg-error/10 p-3 text-label-sm text-error flex items-start gap-2">
+                  <span class="material-symbols-outlined text-[18px] shrink-0">error</span>
+                  <span>{{ loginError() }}</span>
+                </div>
+              }
+
+              <app-login-form
+                (submitLogin)="onLogin($event)"
+                (forgotPassword)="onOpenForgotPassword()"
+              />
             } @else {
+              @if (registerError()) {
+                <div class="rounded-lg border border-error/20 bg-error/10 p-3 text-label-sm text-error flex items-start gap-2">
+                  <span class="material-symbols-outlined text-[18px] shrink-0">error</span>
+                  <span>{{ registerError() }}</span>
+                </div>
+              }
+
               <app-register-form (submitRegister)="onRegister($event)" />
             }
 
-            <app-social-auth-buttons />
+            <app-social-auth-buttons (googleCredential)="onGoogleCredentialReceived($event)" />
           </div>
         }
 
-        @if (!mfaToken()) {
+        @if (!mfaToken() && !isForgotPassword() && !registrationSuccess()) {
           <div class="border-t border-outline-variant bg-surface-container px-lg py-3.5 text-center">
             <button
               type="button"

@@ -20,6 +20,10 @@ public class LoginValidator {
             throw new UnauthorizedException("Credenciais inválidas.");
         }
 
+        if (!user.isEmailVerified()) {
+            throw new UnauthorizedException("E-mail não verificado. Verifique seu e-mail para ativar sua conta.");
+        }
+
         if (user.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Usuário não está ativo.");
         }

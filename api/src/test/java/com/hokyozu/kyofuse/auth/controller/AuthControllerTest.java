@@ -1,10 +1,15 @@
 package com.hokyozu.kyofuse.auth.controller;
 
+import com.hokyozu.kyofuse.auth.dto.request.GoogleLoginRequest;
 import com.hokyozu.kyofuse.auth.dto.request.LoginRequest;
 import com.hokyozu.kyofuse.auth.dto.request.RegisterRequest;
+import com.hokyozu.kyofuse.auth.dto.request.VerifyEmailRequest;
 import com.hokyozu.kyofuse.auth.dto.response.AuthMeResponse;
 import com.hokyozu.kyofuse.auth.dto.response.AuthResponse;
+import com.hokyozu.kyofuse.auth.dto.response.RegisterResponse;
 import com.hokyozu.kyofuse.auth.service.AuthService;
+import com.hokyozu.kyofuse.auth.service.EmailVerificationService;
+import com.hokyozu.kyofuse.auth.service.PasswordResetService;
 import com.hokyozu.kyofuse.auth.service.TwoFactorAuthService;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.AuthCookieService;
 import com.hokyozu.kyofuse.users.entity.User;
@@ -42,26 +47,69 @@ class AuthControllerTest {
     @Mock
     private AuthCookieService authCookieService;
 
+    @Mock
+    private PasswordResetService passwordResetService;
+
+    @Mock
+    private EmailVerificationService emailVerificationService;
+
     @InjectMocks
     private AuthController controller;
 
     @Test
-    void registerDelegatesToAuthServiceAndSetsCookies() {
+    void registerDelegatesToAuthServiceAndReturnsRegisterResponse() {
         User user = user();
         RegisterRequest request = new RegisterRequest("John", "Doe", "john@example.com", "john", "password123");
+        MockHttpServletRequest httpRequest = new MockHttpServletRequest();
+        httpRequest.setRemoteAddr("203.0.113.10");
+
+        when(authService.register(request, "203.0.113.10")).thenReturn(user);
+
+        RegisterResponse response = controller.register(request, httpRequest);
+
+        assertThat(response.userId()).isEqualTo(user.getId());
+        assertThat(response.email()).isEqualTo(user.getEmail());
+        assertThat(response.emailVerified()).isFalse();
+        verify(authService).register(request, "203.0.113.10");
+    }
+
+    @Test
+    void verifyEmailDelegatesToAuthServiceAndSetsCookies() {
+        User user = user();
+        user.setEmailVerified(true);
+        VerifyEmailRequest request = new VerifyEmailRequest("valid-token");
+        AuthService.AuthResult result = new AuthService.AuthResult(user, "access-token", "refresh-token", Instant.now());
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        when(authService.verifyEmail("valid-token")).thenReturn(result);
+        stubCookies();
+
+        AuthResponse authResponse = controller.verifyEmail(request, response);
+
+        assertThat(authResponse.userId()).isEqualTo(user.getId());
+        verify(authService).verifyEmail("valid-token");
+        assertThat(response.getCookies()).extracting("name")
+                .containsExactlyInAnyOrder(AuthCookieService.ACCESS_TOKEN_COOKIE, AuthCookieService.REFRESH_TOKEN_COOKIE);
+    }
+
+    @Test
+    void loginWithGoogleDelegatesToAuthServiceAndSetsCookies() {
+        User user = user();
+        GoogleLoginRequest request = new GoogleLoginRequest("google-id-token");
         AuthService.AuthResult result = new AuthService.AuthResult(user, "access-token", "refresh-token", Instant.now());
         MockHttpServletRequest httpRequest = new MockHttpServletRequest();
         httpRequest.setRemoteAddr("203.0.113.10");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        when(authService.register(request, "203.0.113.10")).thenReturn(result);
+        when(authService.loginWithGoogle("google-id-token", "203.0.113.10"))
+                .thenReturn(new AuthService.LoginOutcome.Authenticated(result));
         stubCookies();
 
-        AuthResponse authResponse = controller.register(request, httpRequest, response);
+        ResponseEntity<?> responseEntity = controller.loginWithGoogle(request, httpRequest, response);
 
+        AuthResponse authResponse = (AuthResponse) responseEntity.getBody();
         assertThat(authResponse.userId()).isEqualTo(user.getId());
-        assertThat(authResponse.email()).isEqualTo(user.getEmail());
-        verify(authService).register(request, "203.0.113.10");
+        verify(authService).loginWithGoogle("google-id-token", "203.0.113.10");
         assertThat(response.getCookies()).extracting("name")
                 .containsExactlyInAnyOrder(AuthCookieService.ACCESS_TOKEN_COOKIE, AuthCookieService.REFRESH_TOKEN_COOKIE);
     }
@@ -169,6 +217,7 @@ class AuthControllerTest {
                 .username("john")
                 .role(UserRole.USER)
                 .status(UserStatus.ACTIVE)
+                .emailVerified(false)
                 .build();
     }
 

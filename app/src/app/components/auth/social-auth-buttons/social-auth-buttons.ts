@@ -1,4 +1,7 @@
-import { Component, output } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, ViewChild, output } from '@angular/core';
+import { GOOGLE_CLIENT_ID } from '../../../core/config/google-auth.config';
+
+declare const google: any;
 
 @Component({
   selector: 'app-social-auth-buttons',
@@ -6,7 +9,47 @@ import { Component, output } from '@angular/core';
   templateUrl: './social-auth-buttons.html',
   styleUrl: './social-auth-buttons.css',
 })
-export class SocialAuthButtonsComponent {
-  googleClick = output<void>();
+export class SocialAuthButtonsComponent implements AfterViewInit {
+  @ViewChild('googleBtnContainer') googleBtnContainer?: ElementRef<HTMLDivElement>;
+
+  googleCredential = output<string>();
   steamClick = output<void>();
+
+  ngAfterViewInit(): void {
+    this.initGoogleButton();
+  }
+
+  private initGoogleButton(): void {
+    if (typeof google === 'undefined' || !google.accounts?.id) {
+      setTimeout(() => this.initGoogleButton(), 300);
+      return;
+    }
+
+    try {
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: (response: any) => {
+          if (response?.credential) {
+            this.googleCredential.emit(response.credential);
+          }
+        },
+        ux_mode: 'popup',
+        auto_select: false,
+        cancel_on_tap_outside: true,
+      });
+
+      if (this.googleBtnContainer?.nativeElement) {
+        google.accounts.id.renderButton(this.googleBtnContainer.nativeElement, {
+          type: 'standard',
+          shape: 'rectangular',
+          theme: 'outline',
+          text: 'signin_with',
+          size: 'large',
+          width: 250,
+        });
+      }
+    } catch (e) {
+      console.warn('Falha ao inicializar Google Sign-In:', e);
+    }
+  }
 }

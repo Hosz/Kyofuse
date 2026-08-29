@@ -11,6 +11,7 @@ import { loginRequest } from '../../../models/auth/login-form.model';
 })
 export class LoginFormComponent {
   submitLogin = output<loginRequest>();
+  forgotPassword = output<void>();
 
   login = signal('');
   password = signal('');

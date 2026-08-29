@@ -41,6 +41,16 @@
     </button>
   </app-auth-field>
 
+  <div class="flex justify-end -mt-2">
+    <button
+      type="button"
+      (click)="forgotPassword.emit()"
+      class="cursor-pointer text-label-sm text-on-surface-variant transition-colors hover:text-primary-container focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container rounded"
+    >
+      Esqueceu a senha?
+    </button>
+  </div>
+
   <button
     type="submit"
     class="ignite-glow flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary-container px-6 py-3 text-label-md font-bold uppercase tracking-[0.04em] text-on-primary-container transition-all hover:brightness-110 active:scale-[0.98] active:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"

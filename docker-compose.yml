@@ -44,6 +44,20 @@ services:
       - kyofuse-internal
 
   # ---------------------------------------------------------------------------
+  # Mailpit — local mock SMTP server & Web UI for development email testing.
+  # ---------------------------------------------------------------------------
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: kyofuse-mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # Web Dashboard
+    networks:
+      - kyofuse-internal
+      - kyofuse-public
+
+  # ---------------------------------------------------------------------------
   # Spring Boot API — the only service with credentials/network access to
   # Postgres. Built locally from source; waits for Postgres to be healthy
   # before starting so Flyway migrations never race a not-yet-ready database.
@@ -68,6 +82,11 @@ services:
       DB_MIGRATION_USERNAME: ${DB_MIGRATION_USERNAME}
       DB_MIGRATION_PASSWORD: ${DB_MIGRATION_PASSWORD}
       FLYWAY_ENABLED: ${FLYWAY_ENABLED}
+
+      # Mail
+      MAIL_HOST: ${MAIL_HOST:-mailpit}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4200}
 
       # Auth
       JWT_SECRET: ${JWT_SECRET}

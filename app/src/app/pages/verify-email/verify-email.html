@@ -1,0 +1,92 @@
+<div class="tactical-grid flex min-h-screen w-full items-center justify-center bg-surface px-6 py-16">
+  <div class="flex w-full max-w-6xl flex-col items-center gap-16 lg:flex-row lg:items-center lg:justify-center">
+    <app-auth-hero class="flex-1" />
+
+    <div class="w-full max-w-[24rem] shrink-0">
+      <div class="overflow-hidden rounded-xl border border-b-2 border-outline-variant border-b-primary-container bg-surface-container-low">
+        <div class="flex flex-col gap-lg px-lg py-lg">
+
+          <!-- ESTADO: VALIDANDO / CONFIRMANDO -->
+          @if (validatingToken() || verifying()) {
+            <div class="flex flex-col items-center justify-center gap-4 py-8 text-center">
+              <span class="material-symbols-outlined animate-spin text-[36px] text-primary-container">progress_activity</span>
+              <p class="text-body-sm text-on-surface-variant">Confirmando e ativando sua conta...</p>
+            </div>
+          }
+
+          <!-- ESTADO: SUCESSO -->
+          @else if (verifySuccess()) {
+            <div class="flex flex-col gap-lg text-center">
+              <div class="flex flex-col items-center gap-3">
+                <span class="material-symbols-outlined text-[48px] text-primary-container">check_circle</span>
+                <h2 class="text-title-md font-bold text-on-surface">Conta Ativada!</h2>
+                <p class="text-body-sm text-on-surface-variant">
+                  Seu e-mail foi confirmado com sucesso. Redirecionando para a central de comando...
+                </p>
+              </div>
+
+              <a
+                routerLink="/home"
+                class="ignite-glow flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary-container px-6 py-3 text-label-md font-bold uppercase tracking-[0.04em] text-on-primary-container transition-all hover:brightness-110 active:scale-[0.98] active:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"
+              >
+                <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+                Acessar Agora
+              </a>
+            </div>
+          }
+
+          <!-- ESTADO: TOKEN INVÁLIDO OU EXPIRADO -->
+          @else {
+            <div class="flex flex-col gap-lg text-center">
+              <div class="flex flex-col items-center gap-3">
+                <span class="material-symbols-outlined text-[48px] text-error">link_off</span>
+                <h2 class="text-title-md font-bold text-on-surface">Link Expirado ou Inválido</h2>
+                <p class="text-body-sm text-on-surface-variant">
+                  {{ tokenError() || verifyError() }}
+                </p>
+              </div>
+
+              <!-- Reenviar Link de Verificação -->
+              <div class="flex flex-col gap-3 rounded-lg border border-outline-variant bg-surface-container p-4 text-left">
+                <label class="text-label-sm font-semibold text-on-surface">Reenviar confirmação</label>
+                <input
+                  type="text"
+                  placeholder="Seu e-mail ou username"
+                  [value]="resendEmail()"
+                  (input)="resendEmail.set($any($event.target).value)"
+                  class="rounded border border-outline-variant bg-surface-container-low px-3 py-2 text-body-sm text-on-surface placeholder:text-on-surface-variant focus:border-primary-container focus:outline-none"
+                />
+
+                @if (resendError()) {
+                  <p class="text-label-sm text-error">{{ resendError() }}</p>
+                }
+
+                @if (resendSuccess()) {
+                  <p class="text-label-sm text-primary-container">Link reenviado! Verifique sua caixa de entrada.</p>
+                }
+
+                <button
+                  type="button"
+                  (click)="onResendVerification()"
+                  [disabled]="resending() || !resendEmail().trim()"
+                  class="flex cursor-pointer items-center justify-center gap-2 rounded bg-surface-container-high px-4 py-2 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-variant disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <span class="material-symbols-outlined text-[18px]">send</span>
+                  {{ resending() ? 'Enviando...' : 'Reenviar Link' }}
+                </button>
+              </div>
+
+              <a
+                routerLink=""
+                class="cursor-pointer text-label-sm text-on-surface-variant transition-colors hover:text-on-surface"
+              >
+                Voltar ao Login
+              </a>
+            </div>
+          }
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

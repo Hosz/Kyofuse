@@ -11,6 +11,20 @@ export const routes: Routes = [
     title: 'Kyofuse | Acesso',
   },
   {
+    path: 'recuperar-senha',
+    canActivate: [guestGuard],
+    loadComponent: () =>
+      import('./pages/reset-password/reset-password').then((m) => m.ResetPasswordComponent),
+    title: 'Kyofuse | Redefinir Senha',
+  },
+  {
+    path: 'verificar-email',
+    canActivate: [guestGuard],
+    loadComponent: () =>
+      import('./pages/verify-email/verify-email').then((m) => m.VerifyEmailComponent),
+    title: 'Kyofuse | Confirmar E-mail',
+  },
+  {
     path: 'home',
     canActivate: [authGuard],
     loadComponent: () =>

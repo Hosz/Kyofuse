@@ -1,6 +1,7 @@
 package com.hokyozu.kyofuse.auth.mapper;
 
 import com.hokyozu.kyofuse.auth.dto.response.AuthResponse;
+import com.hokyozu.kyofuse.auth.dto.response.RegisterResponse;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.enums.UserRole;
 import com.hokyozu.kyofuse.users.enums.UserStatus;
@@ -24,6 +25,20 @@ class AuthMapperTest {
         assertThat(response.username()).isEqualTo(user.getUsername());
         assertThat(response.email()).isEqualTo(user.getEmail());
         assertThat(response.role()).isEqualTo(user.getRole().name());
+    }
+
+    @Test
+    void toRegisterResponse_shouldMapUserToRegisterResponse() {
+        User user = createUser();
+        user.setEmailVerified(false);
+
+        RegisterResponse response = AuthMapper.toRegisterResponse(user);
+
+        assertThat(response).isNotNull();
+        assertThat(response.userId()).isEqualTo(user.getId());
+        assertThat(response.username()).isEqualTo(user.getUsername());
+        assertThat(response.email()).isEqualTo(user.getEmail());
+        assertThat(response.emailVerified()).isFalse();
     }
 
     @Test
