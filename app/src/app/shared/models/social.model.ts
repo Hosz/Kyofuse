@@ -1,3 +1,5 @@
+import { PostMediaResponse } from '../../models/media/post-media-response.model';
+
 export interface NavItem {
   icon: string;
   label: string;
@@ -40,8 +42,10 @@ export interface Post {
   id: string;
   author: PostAuthor;
   timeAgo: string;
+  createdAt?: string;
   content: string;
   media?: PostMedia;
+  mediaList?: PostMediaResponse[];
   stats: PostStats;
 }
 
@@ -60,14 +64,16 @@ export interface Comment {
   stats: CommentStats;
 }
 
-export interface SuggestedProfile {
-  name: string;
-  handle: string;
-  avatarUrl: string;
-}
-
 export interface FeaturedTeam {
   name: string;
   playersCount: string;
   status: string;
+  avatarUrl?: string;
+}
+
+export interface SuggestedProfile {
+  id?: string;
+  name: string;
+  handle: string;
+  avatarUrl: string;
 }

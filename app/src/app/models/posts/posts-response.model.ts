@@ -1,3 +1,5 @@
+import { PostMediaResponse } from '../media/post-media-response.model';
+
 export interface postResponse  {
     id: string;
     authorId: string;
@@ -14,7 +16,7 @@ export interface postResponse  {
     likeCount: number;
     commentCount: number;
     maps: string[];
+    media: PostMediaResponse[];
     createdAt: string;
     updatedAt: string;
 }
-

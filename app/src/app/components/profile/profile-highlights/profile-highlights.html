@@ -9,6 +9,7 @@
       @for (highlight of highlights(); track highlight.label) {
         <button
           type="button"
+          (click)="openHighlight(highlight)"
           class="flex cursor-pointer flex-col items-center gap-2 rounded-lg text-center transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
         >
           <span

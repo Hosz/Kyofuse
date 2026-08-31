@@ -49,13 +49,15 @@
                     <span class="material-symbols-outlined text-[28px]">lock</span>
                   </span>
                   <p class="text-body-md font-semibold text-on-surface">Esta conta é privada</p>
-                  <p class="max-w-[24rem] text-body-sm text-on-surface-variant">
+                  <p class="text-body-sm text-on-surface-variant leading-relaxed">
                     Siga {{ profile().nickname || profile().username }} para ver as publicações, respostas e conexões.
                   </p>
                 </div>
               } @else if (activeTabId() === 'posts') {
                 <app-feed-list
                   [posts]="posts()"
+                  [emptyTitle]="profileEmptyTitle()"
+                  [emptyMessage]="profileEmptyMessage()"
                   (authorBlocked)="onAuthorBlocked($event)"
                   (postDeleted)="onPostDeleted($event)"
                 />
@@ -69,6 +71,30 @@
                   >
                     {{ postsLoadingMore() ? 'Carregando...' : 'Carregar mais' }}
                   </button>
+                }
+              } @else if (activeTabId() === 'media') {
+                @if (mediaPostsLoading()) {
+                  <p class="px-lg py-16 text-center text-body-sm text-on-surface-variant">Carregando mídias...</p>
+                } @else {
+                  <app-feed-list
+                    [posts]="mediaPosts()"
+                    [emptyTitle]="mediaEmptyTitle()"
+                    [emptyMessage]="mediaEmptyMessage()"
+                    emptyIcon="perm_media"
+                    (authorBlocked)="onAuthorBlocked($event)"
+                    (postDeleted)="onPostDeleted($event)"
+                  />
+
+                  @if (hasMoreMediaToLoad()) {
+                    <button
+                      type="button"
+                      (click)="loadMoreMediaPosts()"
+                      [disabled]="mediaPostsLoadingMore()"
+                      class="mx-lg my-md cursor-pointer rounded-full border border-outline-variant py-2.5 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {{ mediaPostsLoadingMore() ? 'Carregando...' : 'Carregar mais' }}
+                    </button>
+                  }
                 }
               } @else if (activeTabId() === 'replies') {
                 @if (repliesLoading()) {
@@ -112,13 +138,13 @@
                   }
                 }
               } @else {
-                <p class="px-lg py-16 text-center text-body-sm text-on-surface-variant">
-                  @if (activeTabId() === 'reposts') {
-                    Nenhum repost ainda.
-                  } @else {
-                    Nenhuma mídia publicada ainda.
-                  }
-                </p>
+                <div class="flex w-full flex-col items-center justify-center gap-3 px-lg py-16 text-center text-on-surface-variant">
+                  <span class="material-symbols-outlined text-[48px] text-outline-variant">repeat</span>
+                  <p class="w-full text-title-sm font-bold text-on-surface">Aba de Reposts em breve</p>
+                  <p class="w-full text-body-sm text-on-surface-variant leading-relaxed">
+                    A funcionalidade de repostar jogadas e publicações estará disponível em breve.
+                  </p>
+                </div>
               }
             </div>
 

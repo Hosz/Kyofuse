@@ -17,4 +17,10 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByUsernameIgnoreCase(String username);
 
     Optional<User> findBySteamId(String steamId);
+
+    Optional<User> findByGoogleId(String googleId);
+
+    boolean existsBySteamId(String steamId);
+
+    boolean existsByGoogleId(String googleId);
 }

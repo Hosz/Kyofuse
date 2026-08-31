@@ -76,6 +76,9 @@ class TeamServiceTest {
     @Mock
     private ConversationService conversationService;
 
+    @Mock
+    private com.hokyozu.kyofuse.storage.service.ImageProcessingService imageProcessingService;
+
     @Spy
     private UserChecker userChecker = new UserChecker();
 

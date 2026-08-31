@@ -55,6 +55,9 @@ class GamerProfileServiceTest {
     @Mock
     private ProfilePermissionService profilePermissionService;
 
+    @Mock
+    private com.hokyozu.kyofuse.storage.service.ImageProcessingService imageProcessingService;
+
     @InjectMocks
     private GamerProfileService service;
 

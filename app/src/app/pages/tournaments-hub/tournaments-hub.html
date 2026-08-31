@@ -1,0 +1,90 @@
+<div class="tactical-grid flex h-screen w-full overflow-hidden bg-surface">
+  <div class="shell-container flex h-screen">
+    <app-sidebar />
+
+    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto bg-surface">
+      <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-center px-lg py-12">
+        <section class="flex flex-col items-center justify-center rounded-2xl border border-outline-variant/60 bg-surface-container-low p-8 sm:p-12 text-center shadow-lg">
+          <!-- Ícone de destaque -->
+          <div class="relative mb-6">
+            <span class="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary-container/20 text-primary-container">
+              <span class="material-symbols-outlined text-[44px]">emoji_events</span>
+            </span>
+            <span class="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full border-2 border-surface-container-low bg-primary text-on-primary">
+              <span class="material-symbols-outlined text-[16px]">schedule</span>
+            </span>
+          </div>
+
+          <!-- Badge e Título -->
+          <span class="mb-2 inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-label-sm font-bold text-primary">
+            <span class="material-symbols-outlined text-[14px]">flag</span>
+            Funcionalidade Futura &middot; Planejada
+          </span>
+
+          <h1 class="text-headline-lg-mobile sm:text-headline-lg font-headline-lg text-on-surface">
+            Central de Torneios & Campeonatos
+          </h1>
+
+          <p class="mt-2 w-full text-body-md text-on-surface-variant leading-relaxed">
+            Um hub completo inspirado em plataformas como a HLTV.org para acompanhar e disputar campeonatos de CS2.
+          </p>
+
+          <!-- O que estará disponível (breve explicação dos pilares) -->
+          <div class="mt-8 grid w-full grid-cols-1 gap-4 sm:grid-cols-3 text-left">
+            <div class="flex flex-col gap-2 rounded-xl border border-outline-variant/50 bg-surface-container p-4">
+              <div class="flex items-center gap-2 text-primary">
+                <span class="material-symbols-outlined text-[20px]">public</span>
+                <span class="text-label-md font-bold">Torneios Oficiais</span>
+              </div>
+              <p class="text-body-sm text-on-surface-variant leading-snug">
+                Acompanhe o circuito mundial (Majors, IEM, BLAST, ESL), premiações em dinheiro, datas, chaveamentos e estatísticas de partidas ao vivo.
+              </p>
+            </div>
+
+            <div class="flex flex-col gap-2 rounded-xl border border-outline-variant/50 bg-surface-container p-4">
+              <div class="flex items-center gap-2 text-primary">
+                <span class="material-symbols-outlined text-[20px]">groups</span>
+                <span class="text-label-md font-bold">Torneios Comunitários</span>
+              </div>
+              <p class="text-body-sm text-on-surface-variant leading-snug">
+                Crie ou inscreva seu time em campeonatos organizados pela comunidade Kyofuse com chaves automáticas e premiações.
+              </p>
+            </div>
+
+            <div class="flex flex-col gap-2 rounded-xl border border-outline-variant/50 bg-surface-container p-4">
+              <div class="flex items-center gap-2 text-primary">
+                <span class="material-symbols-outlined text-[20px]">leaderboard</span>
+                <span class="text-label-md font-bold">Rankings & Escalações</span>
+              </div>
+              <p class="text-body-sm text-on-surface-variant leading-snug">
+                Tabelas de classificação com posições de times, pontuações atualizadas, variações no ranking e escalações dos jogadores.
+              </p>
+            </div>
+          </div>
+
+          <!-- Ações -->
+          <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <button
+              type="button"
+              (click)="notifyMe()"
+              class="flex cursor-pointer items-center gap-2 rounded-full bg-primary-container px-6 py-3 text-label-md font-bold text-on-primary-container transition-all hover:brightness-110 active:scale-[0.97]"
+            >
+              <span class="material-symbols-outlined text-[18px]">notifications</span>
+              Me avisar no lançamento
+            </button>
+
+            <a
+              routerLink="/roadmap"
+              class="flex cursor-pointer items-center gap-2 rounded-full border border-outline-variant px-5 py-3 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high active:scale-[0.97]"
+            >
+              <span class="material-symbols-outlined text-[18px]">route</span>
+              Ver no Roadmap
+            </a>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <app-discovery-sidebar />
+  </div>
+</div>

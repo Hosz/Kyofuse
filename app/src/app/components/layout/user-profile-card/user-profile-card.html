@@ -8,16 +8,26 @@
       [alt]="user().nickname"
       class="h-11 w-11 rounded-full object-cover"
     />
-    <div class="flex flex-1 flex-col">
-      <span class="text-label-md font-semibold text-on-surface">{{ user().nickname }}</span>
-      <span class="text-label-sm text-on-surface-variant">@{{ user().username }}</span>
+    <div class="flex flex-1 flex-col min-w-0">
+      <div class="flex items-center gap-1.5 truncate">
+        <span class="truncate text-label-md font-semibold text-on-surface">{{ user().nickname }}</span>
+        @if (flagUrl()) {
+          <img
+            [src]="flagUrl()!"
+            [alt]="user().country || 'Bandeira'"
+            class="h-3 w-4 shrink-0 rounded-[2px] object-cover"
+          />
+        }
+      </div>
+      <span class="truncate text-label-sm text-on-surface-variant">@{{ user().username }}</span>
     </div>
   </a>
-  <button
-    type="button"
+  <a
+    routerLink="/configuracoes"
     class="cursor-pointer rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high active:bg-surface-container-highest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-    aria-label="Opções da conta"
+    aria-label="Configurações da conta"
+    title="Configurações da conta"
   >
     <span class="material-symbols-outlined text-[20px]">badge</span>
-  </button>
+  </a>
 </div>

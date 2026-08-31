@@ -1,0 +1,260 @@
+<div class="tactical-grid flex min-h-screen w-full items-center justify-center bg-surface px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+  <div class="w-full max-w-5xl overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-low shadow-2xl backdrop-blur-sm">
+    
+    <!-- BARRA DE TOPO COM BRANDING E BADGE -->
+    <header class="flex flex-col gap-3 border-b border-outline-variant bg-surface-container/60 px-6 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-10 sm:py-7">
+      <div class="flex items-center gap-3">
+        <img src="/assets/images/logo.svg" alt="Kyofuse" class="h-10 w-10 rounded-lg object-contain" />
+        <div class="flex flex-col">
+          <span class="text-label-md font-bold uppercase tracking-[0.2em] text-primary">Kyofuse</span>
+          <span class="text-label-sm text-on-surface-variant">Configuração Inicial de Perfil</span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 self-start rounded-full border border-primary/40 bg-primary/10 px-3.5 py-1 sm:self-auto">
+        <span class="material-symbols-outlined text-[16px] text-primary">person_check</span>
+        <span class="text-label-sm font-semibold text-primary">Etapa 1 de 1</span>
+      </div>
+    </header>
+
+    @if (loading()) {
+      <div class="flex flex-col items-center justify-center gap-4 py-24 text-center">
+        <span class="material-symbols-outlined animate-spin text-[44px] text-primary">progress_activity</span>
+        <p class="text-body-md font-medium text-on-surface-variant">Carregando seus dados...</p>
+      </div>
+    } @else {
+      <div class="grid grid-cols-1 gap-10 p-6 sm:p-10 lg:grid-cols-12 lg:gap-12">
+        
+        <!-- COLUNA PRINCIPAL: FORMULÁRIO DE CONFIGURAÇÃO (7 COLS) -->
+        <main class="flex flex-col gap-8 lg:col-span-7">
+          <div class="flex flex-col gap-2">
+            <h1 class="text-headline-lg font-bold text-on-surface">Personalize seu Perfil</h1>
+            <p class="text-body-md text-on-surface-variant">
+              Defina como você deseja ser identificado na comunidade e nas partidas de CS2.
+            </p>
+          </div>
+
+          <!-- MENSAGEM DE ERRO -->
+          @if (errorMessage()) {
+            <div class="flex items-start gap-3 rounded-xl border border-error/40 bg-error/10 p-4 text-body-sm text-error">
+              <span class="material-symbols-outlined shrink-0 text-[20px]">error</span>
+              <span>{{ errorMessage() }}</span>
+            </div>
+          }
+
+          <form (submit)="$event.preventDefault(); save()" class="flex flex-col gap-6">
+            
+            <!-- CAMPO: NICKNAME -->
+            <div class="flex flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <label for="setup-nickname" class="text-label-md font-bold text-on-surface">
+                  Apelido de Combate (Nickname)
+                </label>
+                <span class="text-label-sm text-on-surface-variant">Obrigatório</span>
+              </div>
+              <div class="relative flex items-center">
+                <span class="material-symbols-outlined absolute left-3.5 text-[20px] text-on-surface-variant">badge</span>
+                <input
+                  id="setup-nickname"
+                  type="text"
+                  [ngModel]="nickname()"
+                  (ngModelChange)="nickname.set($event)"
+                  name="nickname"
+                  placeholder="Ex: coldzera, FalleN, SeuNome"
+                  maxlength="40"
+                  class="w-full rounded-xl border border-outline-variant bg-surface-container px-4 py-3 pl-11 text-body-md text-on-surface outline-none transition-colors focus:border-primary focus:bg-surface-container-high"
+                />
+              </div>
+              <span class="text-label-sm text-on-surface-variant">
+                Seu apelido principal exibido em destaque no seu perfil e posts.
+              </span>
+            </div>
+
+            <!-- CAMPO: USERNAME -->
+            <div class="flex flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <label for="setup-username" class="text-label-md font-bold text-on-surface">
+                  Nome de Usuário (&#64;username)
+                </label>
+                <span class="text-label-sm text-on-surface-variant">Identificador único</span>
+              </div>
+              <div class="relative flex items-center">
+                <span class="absolute left-4 font-mono text-body-md font-semibold text-primary">&#64;</span>
+                <input
+                  id="setup-username"
+                  type="text"
+                  [ngModel]="username()"
+                  (ngModelChange)="username.set($event)"
+                  name="username"
+                  placeholder="seu_username"
+                  maxlength="30"
+                  class="w-full rounded-xl border border-outline-variant bg-surface-container px-4 py-3 pl-10 font-mono text-body-md text-on-surface outline-none transition-colors focus:border-primary focus:bg-surface-container-high"
+                />
+              </div>
+              <span class="text-label-sm text-on-surface-variant">
+                Letras, números e sublinhado (_). Usado em menções e links do seu perfil.
+              </span>
+            </div>
+
+            <!-- CAMPO: AVATAR UPLOAD -->
+            <div class="flex flex-col gap-2">
+              <input
+                #setupAvatarInput
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                (change)="onAvatarFileSelected($event)"
+                class="hidden"
+              />
+              <div class="flex items-center justify-between">
+                <span class="text-label-md font-bold text-on-surface">
+                  Foto de Perfil (Avatar)
+                </span>
+                <span class="text-label-sm text-on-surface-variant">Opcional</span>
+              </div>
+              <div class="flex items-center justify-between rounded-xl border border-outline-variant bg-surface-container p-3">
+                <div class="flex items-center gap-3">
+                  <img
+                    [src]="previewAvatar()"
+                    (error)="onAvatarImageError()"
+                    alt="Preview"
+                    class="h-12 w-12 rounded-xl object-cover"
+                  />
+                  <div>
+                    <p class="text-body-sm font-semibold text-on-surface">
+                      {{ avatarUrl() ? 'Avatar carregado' : 'Sem foto selecionada' }}
+                    </p>
+                    <p class="text-label-sm text-on-surface-variant">JPG, PNG ou WebP até 10MB</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  @if (avatarUrl()) {
+                    <button
+                      type="button"
+                      (click)="clearAvatar()"
+                      class="cursor-pointer rounded-lg p-2 text-on-surface-variant transition-colors hover:text-error"
+                      title="Remover foto"
+                    >
+                      <span class="material-symbols-outlined text-[20px]">delete</span>
+                    </button>
+                  }
+                  <button
+                    type="button"
+                    (click)="setupAvatarInput.click()"
+                    [disabled]="uploadingAvatar()"
+                    class="flex cursor-pointer items-center gap-1.5 rounded-lg bg-surface-container-high px-4 py-2 text-label-md font-semibold text-primary transition-colors hover:bg-surface-container-highest disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    @if (uploadingAvatar()) {
+                      <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
+                      <span>Enviando...</span>
+                    } @else {
+                      <span class="material-symbols-outlined text-[18px]">upload</span>
+                      <span>{{ avatarUrl() ? 'Alterar' : 'Enviar foto' }}</span>
+                    }
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- BOTÕES DE AÇÃO -->
+            <div class="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center">
+              <button
+                type="submit"
+                [disabled]="saving() || !username().trim() || !nickname().trim()"
+                class="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-label-md font-bold uppercase tracking-[0.04em] text-on-primary transition-all hover:brightness-110 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                @if (saving()) {
+                  <span class="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
+                  <span>Salvando...</span>
+                } @else {
+                  <span>Salvar e Continuar</span>
+                  <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+                }
+              </button>
+
+              <button
+                type="button"
+                (click)="skip()"
+                [disabled]="saving()"
+                class="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-outline-variant px-5 py-3.5 text-label-md font-semibold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <span>Pular</span>
+                <span class="material-symbols-outlined text-[18px]">fast_forward</span>
+              </button>
+            </div>
+          </form>
+        </main>
+
+        <!-- COLUNA LATERAL: PRÉVIA AO VIVO DO CARTÃO GAMER (5 COLS) -->
+        <aside class="flex flex-col gap-4 rounded-xl border border-outline-variant bg-surface-container/50 p-6 lg:col-span-5">
+          <div class="flex items-center gap-2 text-label-sm font-bold uppercase tracking-[0.06em] text-primary">
+            <span class="material-symbols-outlined text-[18px]">visibility</span>
+            Prévia do seu Cartão
+          </div>
+
+          <!-- CARTÃO GAMER DE EXEMPLO -->
+          <div class="flex flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container-low shadow-md">
+            
+            <!-- BANNER TÁTICO -->
+            <div class="tactical-grid relative h-28 w-full bg-gradient-to-r from-primary-container/40 via-surface-container to-surface-container-high">
+              <div class="absolute right-3 top-3 flex items-center gap-1 rounded-md bg-surface-container-lowest/80 px-2 py-0.5 text-label-sm font-semibold text-tertiary backdrop-blur-xs">
+                <span class="material-symbols-outlined text-[14px]">military_tech</span>
+                Recruta
+              </div>
+            </div>
+
+            <!-- CORPO DO CARTÃO COM AVATAR -->
+            <div class="flex flex-col gap-4 px-5 pb-5">
+              <div class="flex items-end justify-between">
+                <div class="relative -mt-12">
+                  <img
+                    [src]="previewAvatar()"
+                    (error)="onAvatarImageError()"
+                    alt="Preview do Avatar"
+                    class="h-20 w-20 rounded-full border-4 border-surface-container-low bg-surface-container object-cover shadow-lg"
+                  />
+                  @if (avatarLoadError()) {
+                    <span class="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-error text-on-error" title="Falha ao carregar imagem externa">
+                      <span class="material-symbols-outlined text-[14px]">broken_image</span>
+                    </span>
+                  }
+                </div>
+
+                <div class="flex items-center gap-1 text-label-sm text-tertiary">
+                  <span class="material-symbols-outlined text-[16px]">verified</span>
+                  <span>Kyofuse</span>
+                </div>
+              </div>
+
+              <div class="flex flex-col">
+                <h3 class="truncate text-title-md font-bold text-on-surface">
+                  {{ displayNickname() }}
+                </h3>
+                <span class="font-mono text-label-sm text-on-surface-variant">
+                  &#64;{{ displayUsername() }}
+                </span>
+              </div>
+
+              <div class="rounded-lg border border-outline-variant/60 bg-surface-container px-3 py-2 text-label-sm text-on-surface-variant">
+                <p class="italic">"Pronto para a ação no Counter-Strike 2."</p>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-1.5 pt-1">
+                <span class="rounded bg-surface-container-high px-2 py-1 text-label-sm font-semibold text-on-surface-variant">
+                  CS2
+                </span>
+                <span class="rounded bg-surface-container-high px-2 py-1 text-label-sm font-semibold text-on-surface-variant">
+                  Competitivo
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <p class="text-center text-label-sm text-on-surface-variant">
+            Você poderá personalizar biografia, elos, mapas favoritos e funções a qualquer momento em <strong>Editar Perfil</strong>.
+          </p>
+        </aside>
+
+      </div>
+    }
+  </div>
+</div>

@@ -33,6 +33,10 @@ export class AuthComponent {
 
   activeTab = signal<AuthTabId>('login');
 
+  isLoggingIn = signal(false);
+  isRegistering = signal(false);
+  isSocialLoading = signal(false);
+
   loginError = signal<string | null>(null);
   registerError = signal<string | null>(null);
 
@@ -69,10 +73,13 @@ export class AuthComponent {
   }
 
   onLogin(payload: loginRequest): void {
+    if (this.isLoggingIn()) return;
+    this.isLoggingIn.set(true);
     this.loginError.set(null);
 
     this.authService.login(payload).subscribe({
       next: (result) => {
+        this.isLoggingIn.set(false);
         if (isMfaRequired(result)) {
           this.mfaError.set(null);
           this.mfaToken.set(result.mfaToken);
@@ -82,6 +89,7 @@ export class AuthComponent {
         this.router.navigateByUrl('/home');
       },
       error: (error) => {
+        this.isLoggingIn.set(false);
         this.loginError.set(
           error?.error?.message ?? 'Falha ao autenticar. Verifique suas credenciais.',
         );
@@ -90,10 +98,13 @@ export class AuthComponent {
   }
 
   onGoogleCredentialReceived(idToken: string): void {
+    if (this.isSocialLoading()) return;
+    this.isSocialLoading.set(true);
     this.loginError.set(null);
 
     this.authService.loginWithGoogle(idToken).subscribe({
       next: (result) => {
+        this.isSocialLoading.set(false);
         if (isMfaRequired(result)) {
           this.mfaError.set(null);
           this.mfaToken.set(result.mfaToken);
@@ -103,6 +114,7 @@ export class AuthComponent {
         this.router.navigateByUrl('/home');
       },
       error: (error) => {
+        this.isSocialLoading.set(false);
         this.loginError.set(
           error?.error?.message ?? 'Falha na autenticação com a conta Google.',
         );
@@ -111,19 +123,93 @@ export class AuthComponent {
   }
 
   onSteamClick(): void {
+    if (this.isSocialLoading()) return;
+    this.isSocialLoading.set(true);
     this.loginError.set(null);
-    this.authService.redirectToSteam();
+
+    let channel: BroadcastChannel | null = null;
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        channel = new BroadcastChannel('kyofuse_steam_auth');
+      }
+    } catch {}
+
+    const cleanup = () => {
+      if (channel) {
+        channel.close();
+      }
+      window.removeEventListener('message', handleMessage);
+      window.removeEventListener('storage', handleStorage);
+      clearInterval(timer);
+      this.isSocialLoading.set(false);
+    };
+
+    const processEvent = (data: any) => {
+      if (!data?.type) return;
+
+      if (data.type === 'STEAM_LOGIN_SUCCESS') {
+        cleanup();
+        if (data.mfaToken) {
+          this.mfaError.set(null);
+          this.mfaToken.set(data.mfaToken);
+          return;
+        }
+        this.router.navigateByUrl('/home');
+      } else if (data.type === 'STEAM_LOGIN_ERROR') {
+        cleanup();
+        this.loginError.set(data.message || 'Falha ao autenticar com a conta Steam.');
+      } else if (data.type === 'STEAM_CANCEL') {
+        cleanup();
+      }
+    };
+
+    if (channel) {
+      channel.onmessage = (event) => processEvent(event.data);
+    }
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      processEvent(event.data);
+    };
+    window.addEventListener('message', handleMessage);
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === 'kyofuse_steam_event' && event.newValue) {
+        try {
+          const data = JSON.parse(event.newValue);
+          processEvent(data);
+        } catch {}
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+
+    const popup = this.authService.openSteamPopup('login');
+    if (!popup) {
+      cleanup();
+      this.authService.redirectToSteam('login');
+      return;
+    }
+
+    const timer = setInterval(() => {
+      if (popup.closed) {
+        setTimeout(() => cleanup(), 500);
+      }
+    }, 1000);
   }
 
   onRegister(payload: registerRequest): void {
+    if (this.isRegistering()) return;
+    this.isRegistering.set(true);
     this.registerError.set(null);
 
     this.authService.register(payload).subscribe({
       next: () => {
+        this.isRegistering.set(false);
         this.registeredEmail.set(payload.email);
         this.registrationSuccess.set(true);
       },
       error: (error) => {
+        this.isRegistering.set(false);
         this.registerError.set(
           error?.error?.message ?? 'Falha ao criar a conta. Tente novamente.',
         );

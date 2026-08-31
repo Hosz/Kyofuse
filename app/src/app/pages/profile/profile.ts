@@ -129,6 +129,14 @@ export class ProfileComponent {
   activeModal = signal<ModalKind>(null);
   activeTabId = signal<ProfileTabId>('posts');
 
+  mediaPosts = signal<Post[]>([]);
+  mediaPostsLoading = signal(false);
+  private mediaPostsLoaded = false;
+  private mediaPostsPage = signal(0);
+  private mediaPostsLastPage = signal(true);
+  mediaPostsLoadingMore = signal(false);
+  hasMoreMediaToLoad = computed(() => !this.mediaPostsLastPage());
+
   replies = signal<ReplyItem[]>([]);
   repliesLoading = signal(false);
   private repliesLoaded = false;
@@ -136,6 +144,26 @@ export class ProfileComponent {
   private repliesLastPage = signal(true);
   repliesLoadingMore = signal(false);
   hasMoreRepliesToLoad = computed(() => !this.repliesLastPage());
+
+  profileEmptyTitle = computed(() =>
+    this.viewMode() === 'owner' ? 'Você ainda não publicou nada' : 'Nenhuma publicação ainda',
+  );
+
+  profileEmptyMessage = computed(() =>
+    this.viewMode() === 'owner'
+      ? 'Compartilhe um clipe, tática ou momento com a comunidade!'
+      : 'Esse perfil não postou nada ainda.',
+  );
+
+  mediaEmptyTitle = computed(() =>
+    this.viewMode() === 'owner' ? 'Você ainda não publicou nenhuma mídia' : 'Nenhuma mídia ainda',
+  );
+
+  mediaEmptyMessage = computed(() =>
+    this.viewMode() === 'owner'
+      ? 'Compartilhe fotos, jogadas e táticas com a comunidade!'
+      : 'Esse perfil não publicou nenhuma mídia ainda.',
+  );
 
   ngOnInit(): void {
     const targetUserId = this.userId();
@@ -162,8 +190,10 @@ export class ProfileComponent {
   onTabSelected(tab: FeedTab): void {
     if (tab.label === 'Posts') this.activeTabId.set('posts');
     else if (tab.label === 'Reposts') this.activeTabId.set('reposts');
-    else if (tab.label === 'Mídia') this.activeTabId.set('media');
-    else {
+    else if (tab.label === 'Mídia') {
+      this.activeTabId.set('media');
+      this.loadMediaPostsIfNeeded();
+    } else {
       this.activeTabId.set('replies');
       this.loadRepliesIfNeeded();
     }
@@ -316,6 +346,7 @@ export class ProfileComponent {
     }
 
     this.posts.update((list) => list.filter((post) => post.author.id !== authorId));
+    this.mediaPosts.update((list) => list.filter((post) => post.author.id !== authorId));
   }
 
   onReplyDeleted(commentId: string): void {
@@ -324,6 +355,7 @@ export class ProfileComponent {
 
   onPostDeleted(postId: string): void {
     this.posts.update((list) => list.filter((post) => post.id !== postId));
+    this.mediaPosts.update((list) => list.filter((post) => post.id !== postId));
   }
 
   openModal(kind: ModalKind): void {
@@ -430,10 +462,50 @@ export class ProfileComponent {
     this.loadPosts(this.postsPage() + 1);
   }
 
+  loadMoreMediaPosts(): void {
+    if (this.mediaPostsLoadingMore() || this.mediaPostsLastPage()) return;
+    this.mediaPostsLoadingMore.set(true);
+    this.loadMediaPosts(this.mediaPostsPage() + 1);
+  }
+
   loadMoreReplies(): void {
     if (this.repliesLoadingMore() || this.repliesLastPage()) return;
     this.repliesLoadingMore.set(true);
     this.loadReplies(this.repliesPage() + 1);
+  }
+
+  private loadMediaPostsIfNeeded(): void {
+    if (this.mediaPostsLoaded) return;
+    this.mediaPostsLoaded = true;
+    this.mediaPostsLoading.set(true);
+    this.loadMediaPosts(0);
+  }
+
+  private loadMediaPosts(page: number): void {
+    const targetUserId = this.userId();
+    const request = targetUserId
+      ? this.postService.getProfileMediaPosts(targetUserId, page)
+      : this.postService.getMyMediaPosts(page);
+
+    request.subscribe({
+      next: (response) => {
+        const mapped = response.content.map((post) => toPost(post));
+        this.mediaPosts.update((list) => (page === 0 ? mapped : [...list, ...mapped]));
+        this.mediaPostsLastPage.set(response.last);
+        this.mediaPostsPage.set(page);
+        this.mediaPostsLoading.set(false);
+        this.mediaPostsLoadingMore.set(false);
+      },
+      error: (error) => {
+        if (error?.status === 403) {
+          this.contentRestricted.set(true);
+        } else {
+          console.error('Failed to fetch media posts:', error);
+        }
+        this.mediaPostsLoading.set(false);
+        this.mediaPostsLoadingMore.set(false);
+      },
+    });
   }
 
   private loadPosts(page: number): void {

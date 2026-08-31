@@ -18,7 +18,7 @@
         @if (loading()) {
           <p class="px-lg py-lg text-body-md text-on-surface-variant">Carregando publicação...</p>
         } @else if (post(); as p) {
-          <app-post-card [post]="p" (authorBlocked)="onAuthorBlocked()" (deleted)="onPostDeleted()" />
+          <app-post-card [post]="p" [isDetail]="true" (authorBlocked)="onAuthorBlocked()" (deleted)="onPostDeleted()" />
 
           <form class="flex items-start gap-3 border-b border-outline-variant px-lg py-md" (ngSubmit)="submitComment()">
             <textarea

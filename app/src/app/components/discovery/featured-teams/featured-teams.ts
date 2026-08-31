@@ -1,9 +1,11 @@
 import { Component, input } from '@angular/core';
 import { FeaturedTeam } from '../../../shared/models/social.model';
 
+import { RouterLink } from '@angular/router';
+
 @Component({
   selector: 'app-featured-teams',
-  imports: [],
+  imports: [RouterLink],
   templateUrl: './featured-teams.html',
   styleUrl: './featured-teams.css',
 })

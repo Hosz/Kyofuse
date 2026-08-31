@@ -15,7 +15,9 @@ import com.hokyozu.kyofuse.users.finder.UserFinder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.hokyozu.kyofuse.storage.service.ImageProcessingService;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
@@ -29,9 +31,33 @@ public class GamerProfileService {
     private final GamerProfileSetupStatusResolverService setupStatusResolverService;
     private final UpdateFavoriteMapsService updateFavoriteMapsService;
     private final ProfilePermissionService profilePermissionService;
+    private final ImageProcessingService imageProcessingService;
 
     private final GamerProfileFinder gamerProfileFinder;
     private final UserFinder userFinder;
+
+    @Transactional
+    public GamerProfileResponse uploadAvatar(UUID userId, MultipartFile file) throws IOException {
+        GamerProfile profile = gamerProfileFinder.findProfileByUserId(userId);
+        String avatarUrl = imageProcessingService.processAndUploadAvatar(userId, "users", file);
+        profile.setAvatarUrl(avatarUrl);
+        profile.setSetupStatus(setupStatusResolverService.resolve(profile));
+        gamerProfileRepository.save(profile);
+        List<GamerProfileFavoriteMap> favoriteMaps =
+                gamerProfileFavoriteMapRepository.findByProfile_Id(profile.getId());
+        return GamerProfileMapper.toResponse(profile, favoriteMaps);
+    }
+
+    @Transactional
+    public GamerProfileResponse uploadBanner(UUID userId, MultipartFile file) throws IOException {
+        GamerProfile profile = gamerProfileFinder.findProfileByUserId(userId);
+        String bannerUrl = imageProcessingService.processAndUploadBanner(userId, "users", file);
+        profile.setBannerUrl(bannerUrl);
+        gamerProfileRepository.save(profile);
+        List<GamerProfileFavoriteMap> favoriteMaps =
+                gamerProfileFavoriteMapRepository.findByProfile_Id(profile.getId());
+        return GamerProfileMapper.toResponse(profile, favoriteMaps);
+    }
 
     @Transactional
     public void createGamerProfileMin(User user) {
@@ -79,6 +105,10 @@ public class GamerProfileService {
         User requestingUser = userFinder.findProfileByUserId(profileId);
         GamerProfile userRequestedProfile = gamerProfileFinder.findProfileByUserId(profileId);
         User user = userFinder.findProfileByUserId(userId);
+
+        if (userId.equals(profileId)) {
+            return viewMyProfile(userId);
+        }
 
         profilePermissionService.validateViewProfile(user, requestingUser);
 

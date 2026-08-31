@@ -11,11 +11,60 @@
       </button>
 
       <div class="flex flex-col items-center gap-3">
-        <img
-          [src]="editAvatarUrl() || fallbackAvatar"
-          alt="Foto do grupo"
-          class="h-24 w-24 rounded-xl border-4 border-surface-container object-cover"
+        <input
+          #groupEditAvatarInput
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          (change)="onAvatarFileSelected($event)"
+          class="hidden"
         />
+        <div class="group relative">
+          <img
+            [src]="editAvatarUrl() || fallbackAvatar"
+            alt="Foto do grupo"
+            class="h-24 w-24 rounded-xl border-4 border-surface-container object-cover"
+          />
+          <button
+            type="button"
+            (click)="groupEditAvatarInput.click()"
+            [disabled]="uploadingAvatar()"
+            class="absolute inset-0 flex cursor-pointer items-center justify-center rounded-xl bg-black/50 opacity-0 transition-opacity group-hover:opacity-100 disabled:cursor-not-allowed"
+            title="Alterar foto"
+          >
+            @if (uploadingAvatar()) {
+              <span class="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+            } @else {
+              <span class="material-symbols-outlined text-white">photo_camera</span>
+            }
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            (click)="groupEditAvatarInput.click()"
+            [disabled]="uploadingAvatar()"
+            class="flex cursor-pointer items-center gap-1.5 rounded-lg bg-surface-container px-3 py-1.5 text-label-sm font-semibold text-primary hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            @if (uploadingAvatar()) {
+              <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
+              <span>Enviando...</span>
+            } @else {
+              <span class="material-symbols-outlined text-[16px]">upload</span>
+              <span>{{ editAvatarUrl() ? 'Alterar foto' : 'Enviar foto' }}</span>
+            }
+          </button>
+          @if (editAvatarUrl()) {
+            <button
+              type="button"
+              (click)="removeAvatar()"
+              class="cursor-pointer rounded-lg p-1.5 text-on-surface-variant transition-colors hover:text-error"
+              title="Remover foto"
+            >
+              <span class="material-symbols-outlined text-[18px]">delete</span>
+            </button>
+          }
+        </div>
       </div>
 
       <label class="flex flex-col gap-1.5">
@@ -25,18 +74,6 @@
           maxlength="80"
           [value]="editName()"
           (input)="editName.set($any($event.target).value)"
-          class="rounded-lg border border-outline-variant bg-surface px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
-        />
-      </label>
-
-      <label class="flex flex-col gap-1.5">
-        <span class="text-label-sm font-semibold text-on-surface-variant">URL da foto</span>
-        <input
-          type="text"
-          maxlength="500"
-          placeholder="https://..."
-          [value]="editAvatarUrl()"
-          (input)="editAvatarUrl.set($any($event.target).value)"
           class="rounded-lg border border-outline-variant bg-surface px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
         />
       </label>

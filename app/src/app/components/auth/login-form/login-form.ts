@@ -1,4 +1,4 @@
-import { Component, computed, output, signal } from '@angular/core';
+import { Component, computed, input, output, signal } from '@angular/core';
 import { AuthFieldComponent } from '../auth-field/auth-field';
 import { LoginPayload } from '../../../shared/models/auth.model';
 import { loginRequest } from '../../../models/auth/login-form.model';
@@ -10,6 +10,7 @@ import { loginRequest } from '../../../models/auth/login-form.model';
   styleUrl: './login-form.css',
 })
 export class LoginFormComponent {
+  loading = input(false);
   submitLogin = output<loginRequest>();
   forgotPassword = output<void>();
 

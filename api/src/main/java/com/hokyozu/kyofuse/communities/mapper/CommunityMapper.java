@@ -65,11 +65,11 @@ public class CommunityMapper {
         }
 
         if (request.communityAvatarUrl() != null) {
-            community.setAvatarUrl(request.communityAvatarUrl());
+            community.setAvatarUrl(request.communityAvatarUrl().trim().isEmpty() ? null : request.communityAvatarUrl().trim());
         }
 
         if (request.communityBannerUrl() != null) {
-            community.setBannerUrl(request.communityBannerUrl());
+            community.setBannerUrl(request.communityBannerUrl().trim().isEmpty() ? null : request.communityBannerUrl().trim());
         }
 
         if (request.visibility() != null) {

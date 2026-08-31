@@ -20,7 +20,6 @@ import com.hokyozu.kyofuse.infrastructure.security.totp.MfaTokenService;
 import com.hokyozu.kyofuse.infrastructure.security.totp.RecoveryCodeService;
 import com.hokyozu.kyofuse.infrastructure.security.totp.TotpService;
 import com.hokyozu.kyofuse.profiles.service.GamerProfileService;
-import com.hokyozu.kyofuse.profiles.service.SteamProfileSyncService;
 import com.hokyozu.kyofuse.relationships.privacy.service.UserPrivacySettingsService;
 import com.hokyozu.kyofuse.shared.exception.RefreshTokenAbsentException;
 import com.hokyozu.kyofuse.shared.exception.UnauthorizedException;
@@ -48,7 +47,6 @@ public class AuthService {
     private final RefreshTokenService refreshTokenService;
 
     private final GamerProfileService gamerProfileService;
-    private final SteamProfileSyncService steamProfileSyncService;
     private final UserPrivacySettingsService userPrivacySettingsService;
 
     private final EmailAndUsernameAvailabilityValidator emailAndUsernameAvailabilityValidator;
@@ -123,19 +121,29 @@ public class AuthService {
         rateLimiterService.checkAndConsume(ipKey, rateLimitPolicies.login());
 
         GoogleIdToken.Payload payload = googleTokenVerifierService.verify(idTokenString);
+        String googleId = payload.getSubject();
         String email = payload.getEmail();
         String emailIndex = emailCipherService.blindIndex(email);
 
-        Optional<User> existingUserOpt = userRepository.findByEmailIndex(emailIndex);
+        Optional<User> existingUserOpt = userRepository.findByGoogleId(googleId);
+        if (existingUserOpt.isEmpty()) {
+            existingUserOpt = userRepository.findByEmailIndex(emailIndex);
+        }
+
         User user;
 
         if (existingUserOpt.isPresent()) {
             user = existingUserOpt.get();
 
+            if (user.getGoogleId() == null || user.getGoogleId().isBlank()) {
+                user.setGoogleId(googleId);
+                user.setUpdatedAt(Instant.now());
+                userRepository.save(user);
+            }
+
             if (!user.isEmailVerified()) {
                 user.setEmailVerified(true);
                 user.setEmailVerifiedAt(Instant.now());
-                user.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));
                 user.setUpdatedAt(Instant.now());
                 userRepository.save(user);
             }
@@ -144,7 +152,7 @@ public class AuthService {
                 throw new UnauthorizedException("Usuário não está ativo.");
             }
         } else {
-            user = createGoogleUser(payload, emailIndex);
+            user = createGoogleUser(payload, googleId, emailIndex);
         }
 
         rateLimiterService.recordSuccess(ipKey);
@@ -171,9 +179,6 @@ public class AuthService {
             if (user.getStatus() != UserStatus.ACTIVE) {
                 throw new UnauthorizedException("Usuário não está ativo.");
             }
-
-            Optional<SteamPlayerSummary> summaryOpt = steamService.getPlayerSummary(steamId);
-            summaryOpt.ifPresent(summary -> steamProfileSyncService.syncIfMissing(user, summary));
         } else {
             Optional<SteamPlayerSummary> summaryOpt = steamService.getPlayerSummary(steamId);
             user = createSteamUser(steamId, summaryOpt.orElse(null));
@@ -212,7 +217,7 @@ public class AuthService {
         return newUser;
     }
 
-    private User createGoogleUser(GoogleIdToken.Payload payload, String emailIndex) {
+    private User createGoogleUser(GoogleIdToken.Payload payload, String googleId, String emailIndex) {
         String givenName = (String) payload.get("given_name");
         String familyName = (String) payload.get("family_name");
         String name = (String) payload.get("name");
@@ -229,7 +234,7 @@ public class AuthService {
         String uniqueUsername = generateUniqueUsername(baseUsername);
         String passwordHash = passwordEncoder.encode(UUID.randomUUID().toString());
 
-        User newUser = AuthMapper.toGoogleEntity(givenName, familyName, email, emailIndex, uniqueUsername, passwordHash);
+        User newUser = AuthMapper.toGoogleEntity(googleId, givenName, familyName, email, emailIndex, uniqueUsername, passwordHash);
 
         userRepository.save(newUser);
         gamerProfileService.createGamerProfileMin(newUser);

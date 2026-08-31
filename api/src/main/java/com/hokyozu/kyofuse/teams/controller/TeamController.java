@@ -17,6 +17,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
 import java.util.UUID;
 
 @RestController
@@ -31,6 +34,26 @@ public class TeamController {
         UUID userId = UUID.fromString(jwt.getSubject());
 
         return teamService.createTeams(request, userId);
+    }
+
+    @PostMapping(value = "/{teamId}/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public TeamResponse uploadAvatar(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID teamId,
+            @RequestParam("file") MultipartFile file
+    ) throws IOException {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return teamService.uploadAvatar(userId, teamId, file);
+    }
+
+    @PostMapping(value = "/{teamId}/banner", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public TeamResponse uploadBanner(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID teamId,
+            @RequestParam("file") MultipartFile file
+    ) throws IOException {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return teamService.uploadBanner(userId, teamId, file);
     }
 
     @GetMapping("/{teamId}")

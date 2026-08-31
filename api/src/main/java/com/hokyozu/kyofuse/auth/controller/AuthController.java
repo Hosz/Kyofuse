@@ -9,6 +9,7 @@ import com.hokyozu.kyofuse.auth.service.PasswordResetService;
 import com.hokyozu.kyofuse.auth.service.TwoFactorAuthService;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.AuthCookieService;
 import com.hokyozu.kyofuse.infrastructure.security.steam.SteamService;
+import com.hokyozu.kyofuse.profiles.repository.GamerProfileRepository;
 import com.hokyozu.kyofuse.users.entity.User;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -35,6 +36,7 @@ public class AuthController {
     private final PasswordResetService passwordResetService;
     private final EmailVerificationService emailVerificationService;
     private final SteamService steamService;
+    private final GamerProfileRepository gamerProfileRepository;
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
@@ -190,12 +192,18 @@ public class AuthController {
 
     @GetMapping("/me")
     public AuthMeResponse me(@AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        String profileSetupStatus = gamerProfileRepository.findByUserId(userId)
+                .map(profile -> profile.getSetupStatus().name())
+                .orElse("PENDING");
+
         return new AuthMeResponse(
-                UUID.fromString(jwt.getSubject()),
+                userId,
                 jwt.getClaimAsString("email"),
                 jwt.getClaimAsString("username"),
                 jwt.getClaimAsString("role"),
-                Boolean.TRUE.equals(jwt.getClaim("totpEnabled"))
+                Boolean.TRUE.equals(jwt.getClaim("totpEnabled")),
+                profileSetupStatus
         );
     }
 

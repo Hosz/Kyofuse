@@ -72,56 +72,160 @@
               </label>
 
               <label class="flex flex-col gap-1.5">
-                <span class="text-label-sm font-semibold text-on-surface-variant">Região</span>
-                <input
-                  type="text"
-                  maxlength="80"
+                <div class="flex items-center gap-1.5">
+                  <span class="text-label-sm font-semibold text-on-surface-variant">Região (País)</span>
+                  @if (flagUrl()) {
+                    <img
+                      [src]="flagUrl()!"
+                      [alt]="region()"
+                      class="h-3.5 w-5 rounded-[2px] object-cover shadow-xs"
+                    />
+                  }
+                </div>
+                <select
                   [value]="region()"
-                  (input)="region.set($any($event.target).value)"
-                  class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
-                />
+                  (change)="region.set($any($event.target).value)"
+                  class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none transition-colors focus:border-primary"
+                >
+                  <option value="">Selecione um país</option>
+                  @for (option of countryOptions; track option.value) {
+                    <option [value]="option.value" [selected]="option.value === region()">
+                      {{ option.label }}
+                    </option>
+                  }
+                </select>
               </label>
 
               <div class="flex flex-col items-center gap-4 sm:flex-row">
-                @if (avatarUrl()) {
-                  <img [src]="avatarUrl()" alt="Escudo" class="h-24 w-24 shrink-0 rounded-xl border-4 border-surface-container object-cover" />
-                } @else {
-                  <div class="flex h-24 w-24 shrink-0 items-center justify-center rounded-xl border-4 border-surface-container bg-surface-container">
-                    <span class="material-symbols-outlined text-[32px] text-on-surface-variant">shield</span>
+                <input
+                  #teamAvatarInput
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  (change)="onAvatarFileSelected($event)"
+                  class="hidden"
+                />
+                <div class="group relative shrink-0">
+                  @if (avatarUrl()) {
+                    <img [src]="avatarUrl()" alt="Escudo" class="h-24 w-24 rounded-xl border-4 border-surface-container object-cover" />
+                  } @else {
+                    <div class="flex h-24 w-24 items-center justify-center rounded-xl border-4 border-surface-container bg-surface-container">
+                      <span class="material-symbols-outlined text-[32px] text-on-surface-variant">shield</span>
+                    </div>
+                  }
+                  <button
+                    type="button"
+                    (click)="teamAvatarInput.click()"
+                    [disabled]="uploadingAvatar()"
+                    class="absolute inset-0 flex cursor-pointer items-center justify-center rounded-xl bg-black/50 opacity-0 transition-opacity group-hover:opacity-100 disabled:cursor-not-allowed"
+                    title="Alterar escudo"
+                  >
+                    @if (uploadingAvatar()) {
+                      <span class="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                    } @else {
+                      <span class="material-symbols-outlined text-white">photo_camera</span>
+                    }
+                  </button>
+                </div>
+
+                <div class="flex w-full flex-1 flex-col gap-2">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-body-sm font-bold text-on-surface">Escudo do time</p>
+                      <p class="text-label-sm text-on-surface-variant">JPG, PNG ou WebP. Proporção 1:1 recomendada (256x256).</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      @if (avatarUrl()) {
+                        <button
+                          type="button"
+                          (click)="removeAvatar()"
+                          class="flex cursor-pointer items-center gap-1 rounded-lg border border-outline-variant px-3 py-2 text-label-md font-semibold text-on-surface-variant transition-colors hover:border-error hover:text-error"
+                          title="Remover escudo"
+                        >
+                          <span class="material-symbols-outlined text-[18px]">delete</span>
+                          <span>Remover</span>
+                        </button>
+                      }
+                      <button
+                        type="button"
+                        (click)="teamAvatarInput.click()"
+                        [disabled]="uploadingAvatar()"
+                        class="flex cursor-pointer items-center gap-1.5 rounded-lg bg-surface-container-high px-4 py-2 text-label-md font-semibold text-primary transition-colors hover:bg-surface-container-highest disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        @if (uploadingAvatar()) {
+                          <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
+                          <span>Enviando...</span>
+                        } @else {
+                          <span class="material-symbols-outlined text-[18px]">upload</span>
+                          <span>{{ avatarUrl() ? 'Alterar escudo' : 'Enviar escudo' }}</span>
+                        }
+                      </button>
+                    </div>
                   </div>
-                }
-                <label class="flex w-full flex-1 flex-col gap-1.5">
-                  <span class="text-label-sm font-semibold text-on-surface-variant">URL do escudo</span>
-                  <input
-                    type="text"
-                    maxlength="500"
-                    placeholder="https://..."
-                    [value]="avatarUrl()"
-                    (input)="avatarUrl.set($any($event.target).value)"
-                    class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
-                  />
-                </label>
+                </div>
               </div>
 
               <div class="flex flex-col gap-3">
-                <div class="tactical-grid h-28 w-full shrink-0 overflow-hidden rounded-lg border border-outline-variant bg-surface-container">
+                <input
+                  #teamBannerInput
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  (change)="onBannerFileSelected($event)"
+                  class="hidden"
+                />
+                <div class="group relative h-36 w-full shrink-0 overflow-hidden rounded-lg border border-outline-variant bg-surface-container">
                   @if (bannerUrl()) {
                     <img [src]="bannerUrl()" alt="Banner" class="h-full w-full object-cover" />
                   } @else {
                     <div class="h-full w-full bg-gradient-to-br from-primary-container/40 via-surface-container to-surface-container-low"></div>
                   }
+                  <button
+                    type="button"
+                    (click)="teamBannerInput.click()"
+                    [disabled]="uploadingBanner()"
+                    class="absolute inset-0 flex cursor-pointer items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100 disabled:cursor-not-allowed"
+                    title="Alterar banner"
+                  >
+                    @if (uploadingBanner()) {
+                      <span class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                    } @else {
+                      <span class="material-symbols-outlined text-white">photo_camera</span>
+                    }
+                  </button>
                 </div>
-                <label class="flex w-full flex-col gap-1.5">
-                  <span class="text-label-sm font-semibold text-on-surface-variant">URL do banner</span>
-                  <input
-                    type="text"
-                    maxlength="500"
-                    placeholder="https://..."
-                    [value]="bannerUrl()"
-                    (input)="bannerUrl.set($any($event.target).value)"
-                    class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
-                  />
-                </label>
+
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-body-sm font-bold text-on-surface">Banner do time</p>
+                    <p class="text-label-sm text-on-surface-variant">Imagem panorâmica exibida na página do time (1200x400).</p>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    @if (bannerUrl()) {
+                      <button
+                        type="button"
+                        (click)="removeBanner()"
+                        class="flex cursor-pointer items-center gap-1 rounded-lg border border-outline-variant px-3 py-2 text-label-md font-semibold text-on-surface-variant transition-colors hover:border-error hover:text-error"
+                        title="Remover banner"
+                      >
+                        <span class="material-symbols-outlined text-[18px]">delete</span>
+                        <span>Remover</span>
+                      </button>
+                    }
+                    <button
+                      type="button"
+                      (click)="teamBannerInput.click()"
+                      [disabled]="uploadingBanner()"
+                      class="flex cursor-pointer items-center gap-1.5 rounded-lg bg-surface-container-high px-4 py-2 text-label-md font-semibold text-primary transition-colors hover:bg-surface-container-highest disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      @if (uploadingBanner()) {
+                        <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
+                        <span>Enviando...</span>
+                      } @else {
+                        <span class="material-symbols-outlined text-[18px]">upload</span>
+                        <span>{{ bannerUrl() ? 'Alterar banner' : 'Enviar banner' }}</span>
+                      }
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <label class="flex flex-col gap-1.5">

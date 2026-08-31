@@ -51,6 +51,30 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
 
     @Query("""
         select p from Post p
+        where p.author.id = :profileId
+            and p.visibility in :visibilities
+            and p.status = :status
+            and p.community is null
+            and exists (
+                select 1 from PostMedia pm where pm.post = p
+            )
+    """)
+    Page<Post> findMediaPostsByAuthorIdAndVisibilityInAndStatus(UUID profileId, List<PostVisibility> visibilities, PostStatus status, Pageable pageable);
+
+    @Query("""
+        select p from Post p
+        where p.author.id = :authorId
+            and p.visibility in :visibilities
+            and p.status in :statuses
+            and p.community is null
+            and exists (
+                select 1 from PostMedia pm where pm.post = p
+            )
+    """)
+    Page<Post> findMyMediaPosts(UUID authorId, List<PostVisibility> visibilities, List<PostStatus> statuses, Pageable pageable);
+
+    @Query("""
+        select p from Post p
         where p.id = :postId
             and p.status = :activeStatus
             and (

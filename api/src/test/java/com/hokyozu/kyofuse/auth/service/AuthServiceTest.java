@@ -100,8 +100,6 @@ class AuthServiceTest {
     @Mock
     private com.hokyozu.kyofuse.infrastructure.security.steam.SteamService steamService;
 
-    @Mock
-    private com.hokyozu.kyofuse.profiles.service.SteamProfileSyncService steamProfileSyncService;
 
     @InjectMocks
     private AuthService authService;
@@ -207,6 +205,7 @@ class AuthServiceTest {
     @Test
     void loginWithGoogleAuthenticatesExistingVerifiedUser() {
         GoogleIdToken.Payload payload = new GoogleIdToken.Payload();
+        payload.setSubject("google-sub-123");
         payload.setEmail("hideo@example.com");
         payload.set("given_name", "Hideo");
         payload.set("family_name", "Kojima");
@@ -225,7 +224,7 @@ class AuthServiceTest {
 
         when(googleTokenVerifierService.verify("google-token")).thenReturn(payload);
         when(emailCipherService.blindIndex("hideo@example.com")).thenReturn("email-index-hash");
-        when(userRepository.findByEmailIndex("email-index-hash")).thenReturn(Optional.of(user));
+        when(userRepository.findByGoogleId("google-sub-123")).thenReturn(Optional.of(user));
         when(jwtService.generateToken(user)).thenReturn("jwt-token");
         when(refreshTokenService.issue(user))
                 .thenReturn(new RefreshTokenService.IssuedToken("refresh-token", refreshExpiresAt));
@@ -239,12 +238,14 @@ class AuthServiceTest {
     @Test
     void loginWithGoogleCreatesNewUserWhenNotExists() {
         GoogleIdToken.Payload payload = new GoogleIdToken.Payload();
+        payload.setSubject("google-sub-456");
         payload.setEmail("newuser@gmail.com");
         payload.set("given_name", "New");
         payload.set("family_name", "Gamer");
 
         when(googleTokenVerifierService.verify("google-token")).thenReturn(payload);
         when(emailCipherService.blindIndex("newuser@gmail.com")).thenReturn("email-index-new");
+        when(userRepository.findByGoogleId("google-sub-456")).thenReturn(Optional.empty());
         when(userRepository.findByEmailIndex("email-index-new")).thenReturn(Optional.empty());
         when(userRepository.existsByUsernameIgnoreCase("newuser")).thenReturn(false);
         when(passwordEncoder.encode(any())).thenReturn("random-hash");
@@ -279,7 +280,6 @@ class AuthServiceTest {
 
         when(steamService.validateOpenIdAndGetSteamId(openIdParams)).thenReturn("76561198012345678");
         when(userRepository.findBySteamId("76561198012345678")).thenReturn(Optional.of(user));
-        when(steamService.getPlayerSummary("76561198012345678")).thenReturn(Optional.empty());
         when(jwtService.generateToken(user)).thenReturn("jwt-token");
         when(refreshTokenService.issue(user))
                 .thenReturn(new RefreshTokenService.IssuedToken("refresh-token", Instant.now().plusSeconds(3600)));

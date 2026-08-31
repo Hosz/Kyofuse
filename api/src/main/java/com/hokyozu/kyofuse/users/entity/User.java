@@ -92,4 +92,11 @@ public class User {
 
     @Column(name = "steam_id", length = 30)
     private String steamId;
+
+    @Column(name = "google_id", length = 255)
+    private String googleId;
+
+    @Column(name = "has_custom_password", nullable = false)
+    @Builder.Default
+    private boolean hasCustomPassword = true;
 }

@@ -1,0 +1,122 @@
+<div class="tactical-grid flex h-screen w-full overflow-hidden bg-surface">
+  <div class="shell-container flex h-screen">
+    <app-sidebar />
+
+    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto bg-surface">
+      <div class="mx-auto flex w-full max-w-5xl flex-col gap-lg px-lg py-lg">
+        <!-- Cabeçalho do Roadmap -->
+        <header class="flex flex-col gap-4 rounded-2xl border border-outline-variant/60 bg-surface-container-low p-6 sm:p-8">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-container/20 text-primary-container">
+                <span class="material-symbols-outlined text-[28px]">route</span>
+              </span>
+              <div>
+                <h1 class="text-headline-lg-mobile font-headline-lg text-on-surface">Roadmap do Kyofuse</h1>
+                <p class="text-body-sm text-on-surface-variant">
+                  Acompanhe os próximos recursos planejados para a plataforma.
+                </p>
+              </div>
+            </div>
+            <span class="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-label-sm font-bold text-primary">
+              <span class="material-symbols-outlined text-[16px]">map</span>
+              Recursos Planejados
+            </span>
+          </div>
+
+          <!-- Filtros por Categoria -->
+          <div class="flex flex-wrap items-center gap-2 border-t border-outline-variant/40 pt-4">
+            <button
+              type="button"
+              (click)="setFilter('ALL')"
+              class="cursor-pointer rounded-full px-3.5 py-1.5 text-label-sm font-bold transition-all"
+              [class]="
+                activeFilter() === 'ALL'
+                  ? 'bg-primary-container text-on-primary-container shadow-sm'
+                  : 'border border-outline-variant text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
+              "
+            >
+              Todos ({{ roadmapItems.length }})
+            </button>
+            <button
+              type="button"
+              (click)="setFilter('MATCHMAKING_TIMES')"
+              class="cursor-pointer rounded-full px-3.5 py-1.5 text-label-sm font-bold transition-all"
+              [class]="
+                activeFilter() === 'MATCHMAKING_TIMES'
+                  ? 'bg-primary-container text-on-primary-container shadow-sm'
+                  : 'border border-outline-variant text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
+              "
+            >
+              Matchmaking & Times
+            </button>
+            <button
+              type="button"
+              (click)="setFilter('SOCIAL_FEED')"
+              class="cursor-pointer rounded-full px-3.5 py-1.5 text-label-sm font-bold transition-all"
+              [class]="
+                activeFilter() === 'SOCIAL_FEED'
+                  ? 'bg-primary-container text-on-primary-container shadow-sm'
+                  : 'border border-outline-variant text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
+              "
+            >
+              Social & Comunidade
+            </button>
+            <button
+              type="button"
+              (click)="setFilter('TATICAS_GUIAS')"
+              class="cursor-pointer rounded-full px-3.5 py-1.5 text-label-sm font-bold transition-all"
+              [class]="
+                activeFilter() === 'TATICAS_GUIAS'
+                  ? 'bg-primary-container text-on-primary-container shadow-sm'
+                  : 'border border-outline-variant text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
+              "
+            >
+              Táticas & Guias
+            </button>
+          </div>
+        </header>
+
+        <!-- Grid de Itens do Roadmap -->
+        <section class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          @for (item of filteredItems(); track item.id) {
+            <article class="flex flex-col justify-between rounded-xl border border-outline-variant/60 bg-surface-container p-5 transition-all hover:border-primary/50 hover:shadow-lg">
+              <div class="flex flex-col gap-3">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2.5">
+                    <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-container-high text-primary">
+                      <span class="material-symbols-outlined text-[22px]">{{ item.icon }}</span>
+                    </span>
+                    <span class="text-label-sm font-bold uppercase tracking-wider text-on-surface-variant">{{ item.category }}</span>
+                  </div>
+                  <span class="rounded-md border border-outline-variant bg-surface-container-high px-2 py-0.5 text-[11px] font-bold tracking-wider text-on-surface-variant">
+                    PLANEJADO
+                  </span>
+                </div>
+
+                <h2 class="text-title-sm font-bold text-on-surface">{{ item.title }}</h2>
+
+                <p class="text-body-sm text-on-surface-variant leading-relaxed">
+                  {{ item.description }}
+                </p>
+              </div>
+
+              <div class="mt-4 flex items-center justify-between border-t border-outline-variant/40 pt-4">
+                <span class="text-label-sm text-on-surface-variant">Previsão: {{ item.estimatedQuarter }}</span>
+                <button
+                  type="button"
+                  (click)="notifyMe(item)"
+                  class="cursor-pointer rounded-full border border-outline-variant px-3 py-1.5 text-label-sm font-bold text-on-surface transition-all hover:border-primary hover:bg-primary-container hover:text-on-primary-container active:scale-[0.97]"
+                >
+                  Me avisar
+                </button>
+              </div>
+            </article>
+          }
+        </section>
+      </div>
+    </main>
+
+    <app-discovery-sidebar />
+  </div>
+</div>

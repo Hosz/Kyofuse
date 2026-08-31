@@ -5,6 +5,7 @@ import { ModalComponent } from '../../shared/modal/modal';
 import { UserOptionsMenuComponent } from '../../shared/user-options-menu/user-options-menu';
 import { ConversationService } from '../../../core/services/chat/conversation.service';
 import { ConversationMemberService } from '../../../core/services/chat/conversation-member.service';
+import { MediaService } from '../../../core/services/media/media.service';
 import { ConversationMemberResponse, ConversationMemberRole, ConversationResponse } from '../../../models/chat/chat.model';
 import { Conversation } from '../../../shared/models/chat.model';
 import { FALLBACK_AVATAR_URL } from '../../../shared/utils/format.util';
@@ -43,6 +44,7 @@ export class ConversationInfoPanelComponent {
 
   private conversationService = inject(ConversationService);
   private conversationMemberService = inject(ConversationMemberService);
+  private mediaService = inject(MediaService);
 
   readonly fallbackAvatar = FALLBACK_AVATAR_URL;
 
@@ -59,6 +61,7 @@ export class ConversationInfoPanelComponent {
 
   editName = signal('');
   editAvatarUrl = signal('');
+  uploadingAvatar = signal(false);
   saving = signal(false);
   editError = signal<string | null>(null);
 
@@ -156,6 +159,27 @@ export class ConversationInfoPanelComponent {
     this.editAvatarUrl.set(conversation.participant.avatarUrl === FALLBACK_AVATAR_URL ? '' : conversation.participant.avatarUrl);
     this.editError.set(null);
     this.view.set('edit');
+  }
+
+  onAvatarFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    this.uploadingAvatar.set(true);
+    this.mediaService.uploadImage(file).subscribe({
+      next: (res) => {
+        this.editAvatarUrl.set(res.url);
+        this.uploadingAvatar.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to upload group avatar:', err);
+        this.uploadingAvatar.set(false);
+      },
+    });
+  }
+
+  removeAvatar(): void {
+    this.editAvatarUrl.set('');
   }
 
   saveEdit(): void {

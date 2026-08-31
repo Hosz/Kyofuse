@@ -84,6 +84,7 @@
               }
 
               <app-login-form
+                [loading]="isLoggingIn()"
                 (submitLogin)="onLogin($event)"
                 (forgotPassword)="onOpenForgotPassword()"
               />
@@ -95,10 +96,15 @@
                 </div>
               }
 
-              <app-register-form (submitRegister)="onRegister($event)" />
+              <app-register-form
+                [loading]="isRegistering()"
+                (submitRegister)="onRegister($event)"
+              />
             }
 
             <app-social-auth-buttons
+              [loading]="isSocialLoading()"
+              [disabled]="isLoggingIn() || isRegistering()"
               (googleCredential)="onGoogleCredentialReceived($event)"
               (steamClick)="onSteamClick()"
             />

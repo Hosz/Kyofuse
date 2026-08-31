@@ -7,7 +7,14 @@
 
   <div class="grid grid-cols-2 gap-3">
     <!-- Google Button Wrapper -->
-    <div class="relative flex h-[42px] cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-secondary-fixed transition-all hover:brightness-95 active:scale-[0.97]">
+    <div
+      class="relative flex h-[42px] items-center justify-center overflow-hidden rounded-lg bg-secondary-fixed transition-all"
+      [class.cursor-pointer]="!disabled() && !loading()"
+      [class.hover:brightness-95]="!disabled() && !loading()"
+      [class.active:scale-[0.97]]="!disabled() && !loading()"
+      [class.opacity-50]="disabled() || loading()"
+      [class.pointer-events-none]="disabled() || loading()"
+    >
       <div class="pointer-events-none flex items-center justify-center gap-2 px-4 py-2.5 text-label-md font-bold text-on-secondary">
         <span class="flex h-5 w-5 items-center justify-center rounded-full bg-on-secondary text-[11px] font-bold text-secondary-fixed">G</span>
         Google
@@ -20,10 +27,16 @@
     <button
       type="button"
       (click)="steamClick.emit()"
-      class="flex h-[42px] cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#171a21] px-4 py-2.5 text-label-md font-bold text-white transition-all hover:brightness-125 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"
+      [disabled]="disabled() || loading()"
+      class="flex h-[42px] cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#171a21] px-4 py-2.5 text-label-md font-bold text-white transition-all hover:brightness-125 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"
     >
-      <span class="material-symbols-outlined text-[18px]">sports_esports</span>
-      Steam
+      @if (loading()) {
+        <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+        <span>Conectando...</span>
+      } @else {
+        <span class="material-symbols-outlined text-[18px]">sports_esports</span>
+        <span>Steam</span>
+      }
     </button>
   </div>
 </div>

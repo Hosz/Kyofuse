@@ -10,6 +10,9 @@ import { Post } from '../../../shared/models/social.model';
 })
 export class FeedListComponent {
   posts = input<Post[]>([]);
+  emptyTitle = input<string>('Nenhuma publicação por aqui ainda');
+  emptyMessage = input<string>('Compartilhe um clipe, tática ou pensamento com a comunidade!');
+  emptyIcon = input<string>('dynamic_feed');
 
   authorBlocked = output<string>();
   postDeleted = output<string>();

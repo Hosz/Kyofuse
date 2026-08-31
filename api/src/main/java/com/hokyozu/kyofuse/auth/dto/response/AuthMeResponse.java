@@ -7,6 +7,7 @@ public record AuthMeResponse(
         String email,
         String username,
         String role,
-        boolean totpEnabled
+        boolean totpEnabled,
+        String profileSetupStatus
 ) {
 }

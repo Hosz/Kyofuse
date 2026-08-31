@@ -56,6 +56,9 @@ class AuthControllerTest {
     @Mock
     private com.hokyozu.kyofuse.infrastructure.security.steam.SteamService steamService;
 
+    @Mock
+    private com.hokyozu.kyofuse.profiles.repository.GamerProfileRepository gamerProfileRepository;
+
     @InjectMocks
     private AuthController controller;
 
@@ -230,6 +233,11 @@ class AuthControllerTest {
                 "totpEnabled", true
         ));
 
+        com.hokyozu.kyofuse.profiles.entity.GamerProfile profile = com.hokyozu.kyofuse.profiles.entity.GamerProfile.builder()
+                .setupStatus(com.hokyozu.kyofuse.profiles.enums.GamerProfileSetupStatus.COMPLETED)
+                .build();
+        when(gamerProfileRepository.findByUserId(userId)).thenReturn(java.util.Optional.of(profile));
+
         AuthMeResponse response = controller.me(jwt);
 
         assertThat(response.userId()).isEqualTo(userId);
@@ -237,6 +245,7 @@ class AuthControllerTest {
         assertThat(response.username()).isEqualTo("john");
         assertThat(response.role()).isEqualTo("USER");
         assertThat(response.totpEnabled()).isTrue();
+        assertThat(response.profileSetupStatus()).isEqualTo("COMPLETED");
     }
 
     private void stubCookies() {

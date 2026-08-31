@@ -141,9 +141,15 @@
 
   <button
     type="submit"
-    class="ignite-glow flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary-container px-6 py-3 text-label-md font-bold uppercase tracking-[0.04em] text-on-primary-container transition-all hover:brightness-110 active:scale-[0.98] active:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"
+    [disabled]="loading()"
+    class="ignite-glow flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary-container px-6 py-3 text-label-md font-bold uppercase tracking-[0.04em] text-on-primary-container transition-all hover:brightness-110 active:scale-[0.98] active:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"
   >
-    <span class="material-symbols-outlined text-[20px]">shield</span>
-    finalizar registro
+    @if (loading()) {
+      <span class="inline-block h-5 w-5 animate-spin rounded-full border-2 border-on-primary-container border-t-transparent"></span>
+      <span>Criando conta...</span>
+    } @else {
+      <span class="material-symbols-outlined text-[20px]">shield</span>
+      <span>finalizar registro</span>
+    }
   </button>
 </form>

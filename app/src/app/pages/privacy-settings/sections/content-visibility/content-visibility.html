@@ -7,43 +7,54 @@
     <span class="rounded-md border border-outline-variant px-2 py-1 text-label-sm text-on-surface-variant">Módulo 02</span>
   </div>
 
-  <div class="grid grid-cols-1 gap-lg sm:grid-cols-3">
-    <label class="flex flex-col gap-1.5">
-      <span class="text-label-sm font-semibold text-on-surface-variant">Suas publicações</span>
+  <div class="flex flex-col divide-y divide-outline-variant">
+    <div class="flex flex-col gap-2 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex flex-col">
+        <span class="text-body-md font-semibold text-on-surface">Suas publicações</span>
+        <span class="text-label-sm text-on-surface-variant">Define quem pode visualizar os posts que você publica no feed</span>
+      </div>
       <select
         [value]="store.postVisibility()"
         (change)="store.postVisibility.set($any($event.target).value)"
-        class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+        class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary sm:w-56"
       >
         @for (option of options; track option.value) {
           <option [value]="option.value" [selected]="option.value === store.postVisibility()">{{ option.label }}</option>
         }
       </select>
-    </label>
-    <label class="flex flex-col gap-1.5">
-      <span class="text-label-sm font-semibold text-on-surface-variant">Suas curtidas</span>
+    </div>
+
+    <div class="flex flex-col gap-2 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex flex-col">
+        <span class="text-body-md font-semibold text-on-surface">Suas curtidas</span>
+        <span class="text-label-sm text-on-surface-variant">Define quem pode ver a aba de publicações curtidas no seu perfil</span>
+      </div>
       <select
         [value]="store.likesVisibility()"
         (change)="store.likesVisibility.set($any($event.target).value)"
-        class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+        class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary sm:w-56"
       >
         @for (option of options; track option.value) {
           <option [value]="option.value" [selected]="option.value === store.likesVisibility()">{{ option.label }}</option>
         }
       </select>
-    </label>
-    <label class="flex flex-col gap-1.5">
-      <span class="text-label-sm font-semibold text-on-surface-variant">Seus reposts</span>
+    </div>
+
+    <div class="flex flex-col gap-2 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex flex-col">
+        <span class="text-body-md font-semibold text-on-surface">Seus reposts</span>
+        <span class="text-label-sm text-on-surface-variant">Define quem pode ver as publicações que você republicou</span>
+      </div>
       <select
         [value]="store.repostsVisibility()"
         (change)="store.repostsVisibility.set($any($event.target).value)"
-        class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+        class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary sm:w-56"
       >
         @for (option of options; track option.value) {
           <option [value]="option.value" [selected]="option.value === store.repostsVisibility()">{{ option.label }}</option>
         }
       </select>
-    </label>
+    </div>
   </div>
 
   @if (store.error()) {

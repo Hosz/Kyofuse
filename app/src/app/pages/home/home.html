@@ -113,6 +113,9 @@
         } @else {
           <app-feed-list
             [posts]="posts()"
+            [emptyTitle]="emptyTitle()"
+            [emptyMessage]="emptyMessage()"
+            [emptyIcon]="emptyIcon()"
             (authorBlocked)="onAuthorBlocked($event)"
             (postDeleted)="onPostDeleted($event)"
           />

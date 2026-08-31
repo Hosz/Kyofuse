@@ -1,69 +1,119 @@
-<div class="tactical-grid flex min-h-screen w-full items-center justify-center bg-surface px-6 py-16">
-  <div class="flex w-full max-w-6xl flex-col items-center gap-16 lg:flex-row lg:items-center lg:justify-center">
-    <app-auth-hero class="flex-1" />
+@if (isPopup()) {
+  <div class="flex min-h-screen w-full flex-col items-center justify-center bg-surface p-6 text-center">
+    <div class="flex flex-col items-center gap-4 rounded-xl border border-outline-variant bg-surface-container-low p-8 shadow-xl">
+      <div class="flex h-12 w-12 items-center justify-center rounded-full bg-[#171a21] text-white">
+        <span class="material-symbols-outlined text-[24px] animate-spin">progress_activity</span>
+      </div>
+      <div class="flex flex-col gap-1">
+        <h3 class="text-title-sm font-bold text-on-surface">Conectando ao Kyofuse...</h3>
+        <p class="text-body-sm text-on-surface-variant">Concluindo autenticação e fechando esta janela...</p>
+      </div>
+    </div>
+  </div>
+} @else {
+  <div class="tactical-grid flex min-h-screen w-full items-center justify-center bg-surface px-6 py-16">
+    <div class="flex w-full max-w-6xl flex-col items-center gap-16 lg:flex-row lg:items-center lg:justify-center">
+      <app-auth-hero class="flex-1" />
 
-    <div class="w-full max-w-[24rem] shrink-0">
-      <div class="overflow-hidden rounded-xl border border-b-2 border-outline-variant border-b-primary-container bg-surface-container-low">
-        <div class="flex flex-col gap-lg px-lg py-lg">
+      <div class="w-full max-w-[26rem] shrink-0">
+        <div class="overflow-hidden rounded-xl border border-b-2 border-outline-variant border-b-primary-container bg-surface-container-low">
+          <div class="flex flex-col gap-lg px-lg py-lg">
 
-          <!-- ESTADO: AUTENTICANDO -->
-          @if (authenticating()) {
-            <div class="flex flex-col items-center justify-center gap-4 py-8 text-center">
-              <div class="flex h-14 w-14 items-center justify-center rounded-full bg-[#171a21] text-white">
-                <span class="material-symbols-outlined text-[30px] animate-pulse">sports_esports</span>
+            <!-- ESTADO: AUTENTICANDO -->
+            @if (authenticating()) {
+              <div class="flex flex-col items-center justify-center gap-4 py-8 text-center">
+                <div class="flex h-14 w-14 items-center justify-center rounded-full bg-[#171a21] text-white">
+                  <span class="material-symbols-outlined text-[30px] animate-pulse">sports_esports</span>
+                </div>
+                <div class="flex flex-col gap-1">
+                  <h3 class="text-title-sm font-bold text-on-surface">
+                    {{ isLinkAction() ? 'Vinculando Conta Steam' : 'Autenticando com a Steam' }}
+                  </h3>
+                  <p class="text-body-sm text-on-surface-variant">
+                    {{ isLinkAction() ? 'Associando seu perfil Steam à sua conta Kyofuse...' : 'Validando sua assinatura e credenciais...' }}
+                  </p>
+                </div>
+                <span class="material-symbols-outlined animate-spin text-[28px] text-primary-container">progress_activity</span>
               </div>
-              <div class="flex flex-col gap-1">
-                <h3 class="text-title-sm font-bold text-on-surface">Autenticando com a Steam</h3>
-                <p class="text-body-sm text-on-surface-variant">Validando sua assinatura e credenciais...</p>
+            }
+
+            <!-- ESTADO: SUCESSO -->
+            @else if (success()) {
+              <div class="flex flex-col gap-lg text-center">
+                <div class="flex flex-col items-center gap-3">
+                  <span class="material-symbols-outlined text-[48px] text-primary-container">check_circle</span>
+                  <h2 class="text-title-md font-bold text-on-surface">
+                    {{ isLinkAction() ? 'Conta Steam Vinculada!' : 'Login Concluído!' }}
+                  </h2>
+                  <p class="text-body-sm text-on-surface-variant">
+                    {{ isLinkAction() ? 'Sua conta Steam foi conectada com sucesso ao seu perfil. Redirecionando...' : 'Sua conta Steam foi autenticada. Entrando na Kyofuse...' }}
+                  </p>
+                </div>
+
+                <a
+                  [routerLink]="isLinkAction() ? '/configuracoes/conta' : '/home'"
+                  class="ignite-glow flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary-container px-6 py-3 text-label-md font-bold uppercase tracking-[0.04em] text-on-primary-container transition-all hover:brightness-110 active:scale-[0.98] active:brightness-95"
+                >
+                  <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+                  {{ isLinkAction() ? 'Ver Configurações' : 'Acessar Agora' }}
+                </a>
               </div>
-              <span class="material-symbols-outlined animate-spin text-[28px] text-primary-container">progress_activity</span>
-            </div>
-          }
+            }
 
-          <!-- ESTADO: SUCESSO -->
-          @else if (success()) {
-            <div class="flex flex-col gap-lg text-center">
-              <div class="flex flex-col items-center gap-3">
-                <span class="material-symbols-outlined text-[48px] text-primary-container">check_circle</span>
-                <h2 class="text-title-md font-bold text-on-surface">Login Concluído!</h2>
-                <p class="text-body-sm text-on-surface-variant">
-                  Sua conta Steam foi autenticada. Entrando na Kyofuse...
-                </p>
+            <!-- ESTADO: ERRO DE CONFLITO (CONTA STEAM JÁ EXISTE EM OUTRO USUÁRIO) -->
+            @else if (isConflictError()) {
+              <div class="flex flex-col gap-lg text-center">
+                <div class="flex flex-col items-center gap-3">
+                  <div class="flex h-16 w-16 items-center justify-center rounded-full bg-error/10 text-error">
+                    <span class="material-symbols-outlined text-[36px]">warning</span>
+                  </div>
+                  <h2 class="text-title-md font-bold text-on-surface">Conta Steam Já em Uso</h2>
+                  <div class="rounded-lg border border-error/30 bg-error/10 p-3.5 text-left">
+                    <p class="text-body-sm font-semibold text-error">
+                      {{ error() }}
+                    </p>
+                    <p class="mt-2 text-label-sm text-on-surface-variant leading-relaxed">
+                      A conta Steam informada já está associada a outro usuário no Kyofuse. Cada conta Steam só pode ser vinculada a um único perfil na plataforma.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                  <a
+                    routerLink="/configuracoes/conta"
+                    class="ignite-glow flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-secondary-fixed px-6 py-3 text-label-md font-bold text-on-secondary transition-all hover:brightness-110 active:scale-[0.98]"
+                  >
+                    <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+                    Voltar para Configurações
+                  </a>
+                </div>
               </div>
+            }
 
-              <a
-                routerLink="/home"
-                class="ignite-glow flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary-container px-6 py-3 text-label-md font-bold uppercase tracking-[0.04em] text-on-primary-container transition-all hover:brightness-110 active:scale-[0.98] active:brightness-95"
-              >
-                <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
-                Acessar Agora
-              </a>
-            </div>
-          }
+            <!-- ESTADO: ERRO GENÉRICO -->
+            @else {
+              <div class="flex flex-col gap-lg text-center">
+                <div class="flex flex-col items-center gap-3">
+                  <span class="material-symbols-outlined text-[48px] text-error">error</span>
+                  <h2 class="text-title-md font-bold text-on-surface">Falha na Autenticação</h2>
+                  <p class="text-body-sm text-on-surface-variant">
+                    {{ error() }}
+                  </p>
+                </div>
 
-          <!-- ESTADO: ERRO -->
-          @else {
-            <div class="flex flex-col gap-lg text-center">
-              <div class="flex flex-col items-center gap-3">
-                <span class="material-symbols-outlined text-[48px] text-error">error</span>
-                <h2 class="text-title-md font-bold text-on-surface">Falha na Autenticação</h2>
-                <p class="text-body-sm text-on-surface-variant">
-                  {{ error() }}
-                </p>
+                <a
+                  [routerLink]="isLinkAction() ? '/configuracoes/conta' : ''"
+                  class="ignite-glow flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-surface-container-high px-6 py-3 text-label-md font-bold text-on-surface transition-all hover:bg-surface-variant active:scale-[0.98]"
+                >
+                  <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+                  {{ isLinkAction() ? 'Voltar para Configurações' : 'Voltar ao Início' }}
+                </a>
               </div>
+            }
 
-              <a
-                routerLink=""
-                class="ignite-glow flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-surface-container-high px-6 py-3 text-label-md font-bold text-on-surface transition-all hover:bg-surface-variant active:scale-[0.98]"
-              >
-                <span class="material-symbols-outlined text-[20px]">arrow_back</span>
-                Voltar ao Início
-              </a>
-            </div>
-          }
-
+          </div>
         </div>
       </div>
     </div>
   </div>
-</div>
+}

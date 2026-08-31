@@ -15,6 +15,8 @@ import { TEAM_MEMBER_STATUS_LABEL, TEAM_STATUS_OPTIONS } from '../../shared/mode
 import { ConfirmDialogComponent } from '../../components/shared/confirm-dialog/confirm-dialog';
 import { TeamMemberRowComponent } from '../../components/team/team-member-row/team-member-row';
 import { TeamMemberModalComponent } from '../../components/team/team-member-modal/team-member-modal';
+import { getCountryFlagUrl } from '../../shared/models/location-options.model';
+import { ToastService } from '../../core/services/ui/toast.service';
 
 type ViewMode = 'visitor' | 'member' | 'admin';
 type InfoTab = 'description' | 'requisites' | 'members' | 'history';
@@ -33,6 +35,11 @@ export class TeamComponent {
   private teamMemberService = inject(TeamMemberService);
   private communityService = inject(CommunityService);
   private profileService = inject(ProfileService);
+  private toastService = inject(ToastService);
+
+  onApplyToTeam(): void {
+    this.toastService.info('O envio de candidaturas e solicitações de entrada em times estará disponível em breve!');
+  }
 
   readonly roleOptions = PLAYER_ROLE_OPTIONS;
   readonly memberStatusLabel = TEAM_MEMBER_STATUS_LABEL;
@@ -40,6 +47,7 @@ export class TeamComponent {
   loading = signal(true);
   notFound = signal(false);
   team = signal<TeamResponse | null>(null);
+  readonly flagUrl = computed(() => getCountryFlagUrl(this.team()?.region));
 
   members = signal<TeamMemberResponse[]>([]);
   membersLoading = signal(true);

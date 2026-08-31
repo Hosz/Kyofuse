@@ -40,24 +40,26 @@ public class AuthMapper {
                 .emailIndex(emailIndex)
                 .username(username)
                 .passwordHash(passwordHash)
+                .hasCustomPassword(false)
                 .role(UserRole.USER)
                 .status(UserStatus.ACTIVE)
-                .emailVerified(true)
-                .emailVerifiedAt(now)
+                .emailVerified(false)
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
     }
 
-    public static User toGoogleEntity(String givenName, String familyName, String email, String emailIndex, String username, String passwordHash) {
+    public static User toGoogleEntity(String googleId, String givenName, String familyName, String email, String emailIndex, String username, String passwordHash) {
         Instant now = Instant.now();
         return User.builder()
+                .googleId(googleId)
                 .firstName(givenName.trim())
                 .lastName(familyName.trim())
                 .email(email.trim())
                 .emailIndex(emailIndex)
                 .username(username)
                 .passwordHash(passwordHash)
+                .hasCustomPassword(false)
                 .role(UserRole.USER)
                 .status(UserStatus.ACTIVE)
                 .emailVerified(true)

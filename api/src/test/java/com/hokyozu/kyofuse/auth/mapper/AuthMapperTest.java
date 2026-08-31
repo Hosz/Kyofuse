@@ -93,20 +93,23 @@ class AuthMapperTest {
         assertThat(user.getEmailIndex()).isEqualTo("email-index");
         assertThat(user.getUsername()).isEqualTo("gamer");
         assertThat(user.getPasswordHash()).isEqualTo("hash");
-        assertThat(user.isEmailVerified()).isTrue();
+        assertThat(user.isHasCustomPassword()).isFalse();
+        assertThat(user.isEmailVerified()).isFalse();
         assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
     }
 
     @Test
     void toGoogleEntity_shouldMapAllFieldsCorrectly() {
-        User user = AuthMapper.toGoogleEntity("Gamer", "Pro", "gamer@gmail.com", "email-index", "gamer", "hash");
+        User user = AuthMapper.toGoogleEntity("google-sub-123", "Gamer", "Pro", "gamer@gmail.com", "email-index", "gamer", "hash");
 
+        assertThat(user.getGoogleId()).isEqualTo("google-sub-123");
         assertThat(user.getFirstName()).isEqualTo("Gamer");
         assertThat(user.getLastName()).isEqualTo("Pro");
         assertThat(user.getEmail()).isEqualTo("gamer@gmail.com");
         assertThat(user.getEmailIndex()).isEqualTo("email-index");
         assertThat(user.getUsername()).isEqualTo("gamer");
         assertThat(user.getPasswordHash()).isEqualTo("hash");
+        assertThat(user.isHasCustomPassword()).isFalse();
         assertThat(user.isEmailVerified()).isTrue();
         assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
     }

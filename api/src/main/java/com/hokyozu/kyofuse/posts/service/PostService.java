@@ -34,9 +34,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import com.hokyozu.kyofuse.posts.entity.PostMedia;
+import com.hokyozu.kyofuse.posts.repository.PostMediaRepository;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -46,6 +48,7 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final PostMapRepository postMapRepository;
+    private final PostMediaRepository postMediaRepository;
 
     private final PostValidator postValidator;
     private final PostMapsValidator postMapsValidator;
@@ -76,12 +79,13 @@ public class PostService {
         Post savedPost = postRepository.save(post);
 
         List<PostMap> postMaps = PostMapper.toPostMap(post, request.maps());
-
         if (!postMaps.isEmpty()) {
             postMapRepository.saveAll(postMaps);
         }
 
-        return PostMapper.toResponse(savedPost, postMaps, gamerProfile);
+        List<PostMedia> postMedias = savePostMedia(savedPost, request);
+
+        return PostMapper.toResponse(savedPost, postMaps, postMedias, gamerProfile);
     }
 
     /**
@@ -110,7 +114,32 @@ public class PostService {
             postMapRepository.saveAll(postMaps);
         }
 
-        return PostMapper.toResponse(savedPost, postMaps, gamerProfile);
+        List<PostMedia> postMedias = savePostMedia(savedPost, request);
+
+        return PostMapper.toResponse(savedPost, postMaps, postMedias, gamerProfile);
+    }
+
+    private List<PostMedia> savePostMedia(Post post, CreatePostRequest request) {
+        if (request.media() == null || request.media().isEmpty()) {
+            return List.of();
+        }
+
+        List<PostMedia> mediaEntities = request.media().stream()
+                .map(item -> PostMedia.builder()
+                        .post(post)
+                        .fileKey(item.fileKey())
+                        .url(item.url())
+                        .thumbnailUrl(item.thumbnailUrl())
+                        .contentType(item.contentType())
+                        .fileSizeBytes(item.fileSizeBytes())
+                        .width(item.width())
+                        .height(item.height())
+                        .displayOrder(item.displayOrder() != null ? item.displayOrder() : 0)
+                        .createdAt(Instant.now())
+                        .build())
+                .toList();
+
+        return postMediaRepository.saveAll(mediaEntities);
     }
 
     /**
@@ -133,9 +162,8 @@ public class PostService {
     }
 
     /**
-     * Monta as respostas de uma página inteira com duas consultas — os mapas de todos os
-     * posts e os perfis de todos os autores — em vez de duas por post. Sem isso, o custo
-     * de abrir o feed cresce junto com o tamanho da página.
+     * Monta as respostas de uma página inteira com consultas em lote — os mapas, as mídias e os
+     * perfis de todos os autores — em vez de N consultas por post.
      */
     private Page<PostResponse> toResponsePage(Page<Post> postsPage) {
         List<Post> posts = postsPage.getContent();
@@ -148,14 +176,18 @@ public class PostService {
                 : postMapRepository.findByPostIdIn(postIds).stream()
                         .collect(Collectors.groupingBy(postMap -> postMap.getPost().getId()));
 
+        Map<UUID, List<PostMedia>> mediaByPost = postIds.isEmpty()
+                ? Map.of()
+                : postMediaRepository.findByPostIdInOrderByDisplayOrderAsc(postIds).stream()
+                        .collect(Collectors.groupingBy(postMedia -> postMedia.getPost().getId()));
+
         Map<UUID, GamerProfile> profilesByAuthor = gamerProfileFinder.findAllByUserIds(authorIds).stream()
                 .collect(Collectors.toMap(profile -> profile.getUser().getId(), profile -> profile));
 
         return postsPage.map(post -> PostMapper.toResponse(
                 post,
                 mapsByPost.getOrDefault(post.getId(), List.of()),
-                // Autor sem perfil no lote cai no finder unitário só pra continuar
-                // falhando do mesmo jeito de antes, em vez de estourar dentro do mapper.
+                mediaByPost.getOrDefault(post.getId(), List.of()),
                 profilesByAuthor.computeIfAbsent(
                         post.getAuthor().getId(),
                         gamerProfileFinder::findProfileByUserId
@@ -189,9 +221,10 @@ public class PostService {
         postPermissionService.validateViewPost(user, post);
 
         List<PostMap> postMaps = postMapRepository.findByPostId(postId);
+        List<PostMedia> postMedias = postMediaRepository.findByPostIdOrderByDisplayOrderAsc(postId);
 
         GamerProfile gamerProfile = gamerProfileFinder.findProfileByUserId(post.getAuthor().getId());
-        return PostMapper.toResponse(post, postMaps, gamerProfile);
+        return PostMapper.toResponse(post, postMaps, postMedias, gamerProfile);
     }
 
     /**
@@ -219,6 +252,10 @@ public class PostService {
         User user = userFinder.findProfileByUserId(userId);
         User profileOwner = userFinder.findProfileByUserId(profileId);
 
+        if (userId.equals(profileId)) {
+            return getMyPosts(profileId, pageable);
+        }
+
         profilePermissionService.validateViewPosts(user, profileOwner);
 
         if (!postPermissionService.canViewAuthorPosts(user, profileOwner)) {
@@ -236,11 +273,51 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
+    public Page<PostResponse> getProfileMediaPosts(UUID profileId, Pageable pageable, UUID userId) {
+        User user = userFinder.findProfileByUserId(userId);
+        User profileOwner = userFinder.findProfileByUserId(profileId);
+
+        if (userId.equals(profileId)) {
+            return getMyMediaPosts(profileId, pageable);
+        }
+
+        profilePermissionService.validateViewPosts(user, profileOwner);
+
+        if (!postPermissionService.canViewAuthorPosts(user, profileOwner)) {
+            throw new ForbiddenException("User does not have permission to view this user's posts.");
+        }
+
+        Page<Post> postsPage = postRepository.findMediaPostsByAuthorIdAndVisibilityInAndStatus(
+                profileOwner.getId(),
+                List.of(PostVisibility.PUBLIC),
+                PostStatus.ACTIVE,
+                pageable
+        );
+
+        return toResponsePage(postsPage);
+    }
+
+    @Transactional(readOnly = true)
     public Page<PostResponse> getMyPosts(UUID authorId, Pageable pageable) {
         User user = userFinder.findProfileByUserId(authorId);
         userChecker.checkActive(user);
 
         Page<Post> postsPage = postRepository.findByAuthorIdAndVisibilityInAndStatusInAndCommunityIsNull(
+                authorId,
+                List.of(PostVisibility.PUBLIC, PostVisibility.PRIVATE),
+                List.of(PostStatus.ACTIVE, PostStatus.HIDDEN),
+                pageable
+        );
+
+        return toResponsePage(postsPage);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PostResponse> getMyMediaPosts(UUID authorId, Pageable pageable) {
+        User user = userFinder.findProfileByUserId(authorId);
+        userChecker.checkActive(user);
+
+        Page<Post> postsPage = postRepository.findMyMediaPosts(
                 authorId,
                 List.of(PostVisibility.PUBLIC, PostVisibility.PRIVATE),
                 List.of(PostStatus.ACTIVE, PostStatus.HIDDEN),

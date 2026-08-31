@@ -26,11 +26,11 @@ public class GamerProfileMapper {
         }
 
         if (request.avatarUrl() != null) {
-            profile.setAvatarUrl(request.avatarUrl().trim());
+            profile.setAvatarUrl(request.avatarUrl().trim().isEmpty() ? null : request.avatarUrl().trim());
         }
 
         if (request.bannerUrl() != null) {
-            profile.setBannerUrl(request.bannerUrl().trim());
+            profile.setBannerUrl(request.bannerUrl().trim().isEmpty() ? null : request.bannerUrl().trim());
         }
 
         if (request.country() != null) {

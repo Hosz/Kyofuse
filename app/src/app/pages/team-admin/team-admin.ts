@@ -5,6 +5,8 @@ import { ModalComponent } from '../../components/shared/modal/modal';
 import { TeamService } from '../../core/services/teams/team.service';
 import { TeamMemberService } from '../../core/services/teams/team-member.service';
 import { TeamInviteService } from '../../core/services/teams/team-invite.service';
+import { MediaService } from '../../core/services/media/media.service';
+import { ToastService } from '../../core/services/ui/toast.service';
 import { TeamResponse, UpdateTeamRequest } from '../../models/teams/team.model';
 import { TeamMemberEditRequest, TeamMemberResponse } from '../../models/teams/team-member.model';
 import { PLAYER_ROLE_OPTIONS, PlayerRole } from '../../shared/models/profile-options.model';
@@ -20,6 +22,7 @@ import { gamerProfileResponse } from '../../models/profile/gamer-profile.model';
 import { FALLBACK_AVATAR_URL } from '../../shared/utils/format.util';
 import { TeamMemberRowComponent } from '../../components/team/team-member-row/team-member-row';
 import { TeamMemberModalComponent } from '../../components/team/team-member-modal/team-member-modal';
+import { getCountryFlagUrl, getCountryOptions } from '../../shared/models/location-options.model';
 
 type SectionId = 'geral' | 'requisitos' | 'papeis' | 'membros' | 'recrutamento';
 
@@ -48,6 +51,8 @@ export class TeamAdminComponent {
   private teamService = inject(TeamService);
   private teamMemberService = inject(TeamMemberService);
   private teamInviteService = inject(TeamInviteService);
+  private mediaService = inject(MediaService);
+  private toastService = inject(ToastService);
   private observer?: IntersectionObserver;
 
   readonly roleOptions = PLAYER_ROLE_OPTIONS;
@@ -68,13 +73,63 @@ export class TeamAdminComponent {
   loading = signal(true);
   notFound = signal(false);
   saving = signal(false);
+  uploadingAvatar = signal(false);
+  uploadingBanner = signal(false);
   error = signal<string | null>(null);
+
+  onAvatarFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    this.uploadingAvatar.set(true);
+    this.mediaService.uploadImage(file).subscribe({
+      next: (res) => {
+        this.avatarUrl.set(res.url);
+        this.uploadingAvatar.set(false);
+        this.toastService.info('Escudo carregado. Clique em Salvar para aplicar.');
+      },
+      error: (err) => {
+        console.error('Failed to upload team avatar:', err);
+        this.toastService.error('Erro ao enviar o escudo do time.');
+        this.uploadingAvatar.set(false);
+      },
+    });
+  }
+
+  removeAvatar(): void {
+    this.avatarUrl.set('');
+  }
+
+  onBannerFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    this.uploadingBanner.set(true);
+    this.mediaService.uploadImage(file).subscribe({
+      next: (res) => {
+        this.bannerUrl.set(res.url);
+        this.uploadingBanner.set(false);
+        this.toastService.info('Banner carregado. Clique em Salvar para aplicar.');
+      },
+      error: (err) => {
+        console.error('Failed to upload team banner:', err);
+        this.toastService.error('Erro ao enviar o banner do time.');
+        this.uploadingBanner.set(false);
+      },
+    });
+  }
+
+  removeBanner(): void {
+    this.bannerUrl.set('');
+  }
 
   name = signal('');
   description = signal('');
   avatarUrl = signal('');
   bannerUrl = signal('');
   region = signal('');
+  readonly countryOptions = getCountryOptions();
+  readonly flagUrl = computed(() => getCountryFlagUrl(this.region()));
   minPremierRating = signal<number | null>(null);
   maxPremierRating = signal<number | null>(null);
   minFaceitLevel = signal<number | null>(null);

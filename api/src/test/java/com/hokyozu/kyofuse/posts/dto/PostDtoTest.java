@@ -35,13 +35,13 @@ class PostDtoTest {
     }
 
     @Test
-    void createPostRequestRejectsBlankContentAndNullEnums() {
-        CreatePostRequest request = new CreatePostRequest("", null, null, null);
+    void createPostRequestRejectsNullEnums() {
+        CreatePostRequest request = new CreatePostRequest("content", null, null, null);
 
         Set<ConstraintViolation<CreatePostRequest>> violations = validator.validate(request);
 
         assertThat(violations).extracting(violation -> violation.getPropertyPath().toString())
-                .contains("content", "postType", "visibility");
+                .containsExactlyInAnyOrder("postType", "visibility");
     }
 
     @Test

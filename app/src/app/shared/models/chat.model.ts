@@ -26,12 +26,19 @@ export interface ChatParticipant {
  */
 export type MessageRelationship = 'mutual' | 'request-received' | 'request-sent' | 'declined';
 
+import { MessageMediaResponse } from '../../models/media/message-media-response.model';
+
 export interface ChatMessage {
   id: string;
   author: 'me' | 'them';
   content: string;
-  /** Texto relativo já formatado ("5min", "2h") exibido embaixo do balão. */
+  media?: MessageMediaResponse[];
+  /** Texto relativo ("5min", "2h") */
   timestamp: string;
+  /** Hora e minuto exatos ("21:45") */
+  exactTime: string;
+  /** Data e hora completas para tooltip ao passar o mouse */
+  tooltipTime: string;
   /** ISO cru — usado para agrupar mensagens seguidas do mesmo autor. */
   createdAt: string;
   read?: boolean;
@@ -46,12 +53,14 @@ export interface ChatMessage {
  */
 export interface ChatMessageGroup {
   key: string;
+  dayDivider?: string;
   author: 'me' | 'them';
   senderUsername?: string;
   senderNickname?: string;
   senderAvatarUrl?: string;
   messages: ChatMessage[];
-  /** Horário do bloco: o da última mensagem dele. */
+  /** Horário do bloco: hora e minuto da última mensagem dele. */
+  timeFormatted: string;
   timestamp: string;
 }
 

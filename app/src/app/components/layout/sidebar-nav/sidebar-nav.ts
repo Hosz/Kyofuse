@@ -17,11 +17,12 @@ export class SidebarNavComponent {
   navItems = input<NavItem[]>([
     { icon: 'home', label: 'Página Inicial', route: '/home' },
     { icon: 'notifications', label: 'Notificações', route: '/notificacoes' },
-    { icon: 'explore', label: 'Descobrir', route: '/explore' },
+    { icon: 'emoji_events', label: 'Torneios', route: '/torneios' },
     { icon: 'chat_bubble', label: 'Conversas', route: '/chats' },
     { icon: 'person', label: 'Perfil', route: '/perfil' },
     { icon: 'groups', label: 'Times', route: '/times' },
     { icon: 'group', label: 'Comunidade', route: '/comunidade' },
+    { icon: 'route', label: 'Roadmap', route: '/roadmap' },
     { icon: 'settings', label: 'Configurações', route: '/configuracoes' },
   ]);
 

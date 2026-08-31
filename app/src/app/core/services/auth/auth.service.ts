@@ -62,9 +62,24 @@ export class AuthService {
       }));
   }
 
-  public redirectToSteam(): void {
-    const returnUrl = `${window.location.origin}/auth/steam/callback`;
+  public redirectToSteam(action: 'login' | 'link' = 'login'): void {
+    const returnUrl = `${window.location.origin}/auth/steam/callback?action=${action}`;
     window.location.href = `${this.url}/steam?returnUrl=${encodeURIComponent(returnUrl)}`;
+  }
+
+  public openSteamPopup(action: 'login' | 'link' = 'login'): Window | null {
+    const width = 800;
+    const height = 650;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+    const returnUrl = `${window.location.origin}/auth/steam/callback?action=${action}&popup=true`;
+    const steamUrl = `${this.url}/steam?returnUrl=${encodeURIComponent(returnUrl)}`;
+
+    return window.open(
+      steamUrl,
+      'SteamAuthPopup',
+      `width=${width},height=${height},left=${left},top=${top},status=no,resizable=yes,toolbar=no,menubar=no,scrollbars=yes`
+    );
   }
 
   public verifyEmail(token: string): Observable<authResponse> {

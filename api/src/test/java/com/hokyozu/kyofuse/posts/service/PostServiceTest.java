@@ -16,6 +16,7 @@ import com.hokyozu.kyofuse.posts.enums.PostType;
 import com.hokyozu.kyofuse.posts.enums.PostVisibility;
 import com.hokyozu.kyofuse.posts.finder.PostFinder;
 import com.hokyozu.kyofuse.posts.repository.PostMapRepository;
+import com.hokyozu.kyofuse.posts.repository.PostMediaRepository;
 import com.hokyozu.kyofuse.posts.repository.PostRepository;
 import com.hokyozu.kyofuse.posts.validator.DeletePostValidator;
 import com.hokyozu.kyofuse.posts.validator.PostMapsValidator;
@@ -103,6 +104,9 @@ class PostServiceTest {
 
     @Mock
     private UserFollowRepository userFollowRepository;
+
+    @Mock
+    private PostMediaRepository postMediaRepository;
 
     @InjectMocks
     private PostService postService;
@@ -305,6 +309,39 @@ class PostServiceTest {
     }
 
     @Test
+    void getProfileMediaPostsReturnsPublicActivePostsWithMedia() {
+        UUID authorId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Pageable pageable = PageRequest.of(1, 10);
+        Post post = post(UUID.randomUUID(), authorId, PostVisibility.PUBLIC, PostStatus.ACTIVE);
+        User viewer = User.builder().id(userId).build();
+        when(userFinder.findProfileByUserId(userId)).thenReturn(viewer);
+        when(userFinder.findProfileByUserId(authorId)).thenReturn(post.getAuthor());
+        when(postPermissionService.canViewAuthorPosts(viewer, post.getAuthor())).thenReturn(true);
+        when(postRepository.findMediaPostsByAuthorIdAndVisibilityInAndStatus(
+                authorId,
+                List.of(PostVisibility.PUBLIC),
+                PostStatus.ACTIVE,
+                pageable
+        )).thenReturn(new PageImpl<>(List.of(post), pageable, 1));
+        when(postMapRepository.findByPostIdIn(List.of(post.getId()))).thenReturn(List.of());
+        when(gamerProfileFinder.findAllByUserIds(List.of(authorId))).thenReturn(List.of(profileOf(post.getAuthor())));
+
+        Page<PostResponse> response = postService.getProfileMediaPosts(authorId, pageable, userId);
+
+        verify(postRepository).findMediaPostsByAuthorIdAndVisibilityInAndStatus(
+                authorId,
+                List.of(PostVisibility.PUBLIC),
+                PostStatus.ACTIVE,
+                pageable
+        );
+        assertThat(response.getContent()).singleElement()
+                .satisfies(postResponse -> {
+                    assertThat(postResponse.id()).isEqualTo(post.getId());
+                });
+    }
+
+    @Test
     void getMyPostsIncludesOwnPublicPrivateActiveAndHiddenPosts() {
         UUID authorId = UUID.randomUUID();
         Pageable pageable = PageRequest.of(0, 5);
@@ -334,6 +371,39 @@ class PostServiceTest {
         assertThat(response.getContent()).singleElement()
                 .extracting(PostResponse::postStatus)
                 .isEqualTo(PostStatus.HIDDEN);
+    }
+
+    @Test
+    void getMyMediaPostsIncludesOwnPublicPrivateActiveAndHiddenMediaPosts() {
+        UUID authorId = UUID.randomUUID();
+        Pageable pageable = PageRequest.of(0, 5);
+        Post mediaPost = post(UUID.randomUUID(), authorId, PostVisibility.PRIVATE, PostStatus.ACTIVE);
+        when(userFinder.findProfileByUserId(authorId)).thenReturn(mediaPost.getAuthor());
+        when(postRepository.findMyMediaPosts(
+                eq(authorId),
+                anyList(),
+                anyList(),
+                eq(pageable)
+        )).thenReturn(new PageImpl<>(List.of(mediaPost), pageable, 1));
+        when(postMapRepository.findByPostIdIn(List.of(mediaPost.getId()))).thenReturn(List.of());
+        when(gamerProfileFinder.findAllByUserIds(List.of(authorId))).thenReturn(List.of(profileOf(mediaPost.getAuthor())));
+
+        Page<PostResponse> response = postService.getMyMediaPosts(authorId, pageable);
+
+        ArgumentCaptor<List<PostVisibility>> visibilityCaptor = visibilityListCaptor();
+        ArgumentCaptor<List<PostStatus>> statusCaptor = statusListCaptor();
+        verify(postRepository).findMyMediaPosts(
+                eq(authorId),
+                visibilityCaptor.capture(),
+                statusCaptor.capture(),
+                eq(pageable)
+        );
+        assertThat(visibilityCaptor.getValue()).containsExactly(PostVisibility.PUBLIC, PostVisibility.PRIVATE);
+        assertThat(statusCaptor.getValue()).containsExactly(PostStatus.ACTIVE, PostStatus.HIDDEN);
+        assertThat(response.getContent()).singleElement()
+                .satisfies(postResponse -> {
+                    assertThat(postResponse.id()).isEqualTo(mediaPost.getId());
+                });
     }
 
     @Test

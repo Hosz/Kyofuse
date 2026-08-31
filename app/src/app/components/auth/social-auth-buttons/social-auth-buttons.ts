@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, ViewChild, output } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, ViewChild, input, output } from '@angular/core';
 import { GOOGLE_CLIENT_ID } from '../../../core/config/google-auth.config';
 
 declare const google: any;
@@ -11,6 +11,9 @@ declare const google: any;
 })
 export class SocialAuthButtonsComponent implements AfterViewInit {
   @ViewChild('googleBtnContainer') googleBtnContainer?: ElementRef<HTMLDivElement>;
+
+  loading = input(false);
+  disabled = input(false);
 
   googleCredential = output<string>();
   steamClick = output<void>();

@@ -6,10 +6,13 @@ import com.hokyozu.kyofuse.profiles.service.GamerProfileService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.UUID;
 
 @RestController
@@ -25,6 +28,26 @@ public class GamerProfileController {
         UUID userId = UUID.fromString(jwt.getSubject());
 
         return gamerProfileService.editProfile(userId, request);
+    }
+
+    @PostMapping(value = "/me/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    public GamerProfileResponse uploadAvatar(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam("file") MultipartFile file
+    ) throws IOException {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return gamerProfileService.uploadAvatar(userId, file);
+    }
+
+    @PostMapping(value = "/me/banner", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    public GamerProfileResponse uploadBanner(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam("file") MultipartFile file
+    ) throws IOException {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return gamerProfileService.uploadBanner(userId, file);
     }
 
     @GetMapping("/me")

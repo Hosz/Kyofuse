@@ -21,6 +21,7 @@ export interface authMeResponse {
   username: string;
   role: string;
   totpEnabled: boolean;
+  profileSetupStatus: string;
 }
 
 export interface mfaRequiredResponse {

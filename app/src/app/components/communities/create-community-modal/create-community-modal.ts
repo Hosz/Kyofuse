@@ -1,6 +1,7 @@
 import { Component, inject, input, output, signal } from '@angular/core';
 import { ModalComponent } from '../../shared/modal/modal';
 import { CommunityService } from '../../../core/services/communities/community.service';
+import { MediaService } from '../../../core/services/media/media.service';
 import { CommunityResponse, CommunityVisibility } from '../../../models/communities/community.model';
 import { toSlug } from '../../../shared/utils/format.util';
 
@@ -17,6 +18,7 @@ export class CreateCommunityModalComponent {
   created = output<CommunityResponse>();
 
   private communityService = inject(CommunityService);
+  private mediaService = inject(MediaService);
 
   name = signal('');
   slug = signal('');
@@ -25,6 +27,8 @@ export class CreateCommunityModalComponent {
   bannerUrl = signal('');
   visibility = signal<CommunityVisibility>('PUBLIC');
 
+  uploadingAvatar = signal(false);
+  uploadingBanner = signal(false);
   saving = signal(false);
   error = signal<string | null>(null);
 
@@ -40,6 +44,48 @@ export class CreateCommunityModalComponent {
   onSlugChange(value: string): void {
     this.slugTouched = true;
     this.slug.set(value);
+  }
+
+  onAvatarFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    this.uploadingAvatar.set(true);
+    this.mediaService.uploadImage(file).subscribe({
+      next: (res) => {
+        this.avatarUrl.set(res.url);
+        this.uploadingAvatar.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to upload avatar:', err);
+        this.uploadingAvatar.set(false);
+      },
+    });
+  }
+
+  onBannerFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    this.uploadingBanner.set(true);
+    this.mediaService.uploadImage(file).subscribe({
+      next: (res) => {
+        this.bannerUrl.set(res.url);
+        this.uploadingBanner.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to upload banner:', err);
+        this.uploadingBanner.set(false);
+      },
+    });
+  }
+
+  removeAvatar(): void {
+    this.avatarUrl.set('');
+  }
+
+  removeBanner(): void {
+    this.bannerUrl.set('');
   }
 
   onClose(): void {
@@ -68,15 +114,15 @@ export class CreateCommunityModalComponent {
         visibility: this.visibility(),
       })
       .subscribe({
-        next: (community) => {
+        next: (response) => {
           this.saving.set(false);
+          this.created.emit(response);
           this.reset();
-          this.created.emit(community);
         },
         error: (error) => {
           console.error('Failed to create community:', error);
           this.saving.set(false);
-          this.error.set(error?.error?.message ?? 'Não foi possível criar a comunidade. Confira os dados informados.');
+          this.error.set('Não foi possível criar a comunidade. Verifique os dados.');
         },
       });
   }

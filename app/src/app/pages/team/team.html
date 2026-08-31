@@ -59,7 +59,15 @@
                     <div class="flex flex-wrap items-center gap-x-5 gap-y-1 text-label-sm text-on-surface-variant">
                       @if (team()!.region) {
                         <span class="flex items-center gap-1.5">
-                          <span class="material-symbols-outlined text-[16px]">location_on</span>
+                          @if (flagUrl()) {
+                            <img
+                              [src]="flagUrl()!"
+                              [alt]="team()!.region!"
+                              class="h-3.5 w-5 rounded-[2px] object-cover shadow-xs"
+                            />
+                          } @else {
+                            <span class="material-symbols-outlined text-[16px]">location_on</span>
+                          }
                           {{ team()!.region }}
                         </span>
                       }
@@ -106,9 +114,9 @@
                 } @else {
                   <button
                     type="button"
-                    disabled
-                    title="Solicitar entrada ainda não está disponível"
-                    class="flex cursor-not-allowed items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-primary-container px-4 py-2 text-label-sm font-bold text-on-primary-container opacity-60"
+                    (click)="onApplyToTeam()"
+                    class="flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-primary-container px-4 py-2 text-label-sm font-bold text-on-primary-container transition-all hover:brightness-110 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
+                    title="Solicitar entrada (Em breve)"
                   >
                     <span class="material-symbols-outlined text-[16px]">how_to_reg</span>
                     Solicitar Entrada

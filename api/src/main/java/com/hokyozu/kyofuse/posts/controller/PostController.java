@@ -66,6 +66,17 @@ public class PostController {
         return postService.getProfilePosts(profileId, pageable, userId);
     }
 
+    @GetMapping("/profile/{profileId}/media")
+    public Page<PostResponse> getProfileMediaPosts(@AuthenticationPrincipal Jwt jwt,
+                                                  @PathVariable UUID profileId,
+                                                  @RequestParam(defaultValue = "0") @Min(0) int page,
+                                                  @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
+        Pageable pageable = defaultPageable(page, size);
+        UUID userId = UUID.fromString(jwt.getSubject());
+
+        return postService.getProfileMediaPosts(profileId, pageable, userId);
+    }
+
     @PostMapping("/community/{communityId}/post")
     @ResponseStatus(HttpStatus.CREATED)
     public PostResponse postInCommunity(@AuthenticationPrincipal Jwt jwt,
@@ -102,6 +113,16 @@ public class PostController {
         Pageable pageable = defaultPageable(page, size);
 
         return postService.getMyPosts(userId, pageable);
+    }
+
+    @GetMapping("/posts/me/media")
+    public Page<PostResponse> getMyMediaPosts(@AuthenticationPrincipal Jwt jwt,
+                                             @RequestParam(defaultValue = "0") @Min(0) int page,
+                                             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        Pageable pageable = defaultPageable(page, size);
+
+        return postService.getMyMediaPosts(userId, pageable);
     }
 
     private Pageable defaultPageable(int page, int size) {

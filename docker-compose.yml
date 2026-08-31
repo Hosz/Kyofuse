@@ -130,6 +130,45 @@ services:
         limits:
           memory: 768M
 
+  # ---------------------------------------------------------------------------
+  # MinIO — S3-compatible Object Storage for local file/image uploads
+  # ---------------------------------------------------------------------------
+  minio:
+    image: minio/minio:latest
+    container_name: kyofuse-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${STORAGE_ACCESS_KEY:-kyofuse_storage_user}
+      MINIO_ROOT_PASSWORD: ${STORAGE_SECRET_KEY:-kyofuse_storage_secret}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - kyofuse_minio_data:/data
+    networks:
+      - kyofuse-internal
+      - kyofuse-public
+
+  # ---------------------------------------------------------------------------
+  # MinIO Init — Creates the default bucket and sets public download access
+  # ---------------------------------------------------------------------------
+  minio-init:
+    image: minio/mc:latest
+    container_name: kyofuse-minio-init
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 2;
+      /usr/bin/mc alias set myminio http://minio:9000 ${STORAGE_ACCESS_KEY:-kyofuse_storage_user} ${STORAGE_SECRET_KEY:-kyofuse_storage_secret};
+      /usr/bin/mc mb myminio/${STORAGE_BUCKET:-kyofuse-media} --ignore-existing;
+      /usr/bin/mc anonymous set download myminio/${STORAGE_BUCKET:-kyofuse-media};
+      exit 0;
+      "
+    networks:
+      - kyofuse-internal
+
 # =============================================================================
 # Networks
 #
@@ -164,3 +203,4 @@ volumes:
   #   docker run --rm -v kyofuse_kyofuse_postgres_data:/from \
   #     -v kyofuse_postgres_data:/to alpine cp -a /from/. /to/
   kyofuse_postgres_data:
+  kyofuse_minio_data:

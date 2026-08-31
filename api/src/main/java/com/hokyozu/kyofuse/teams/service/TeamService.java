@@ -6,7 +6,11 @@ import com.hokyozu.kyofuse.communities.service.CommunityService;
 import com.hokyozu.kyofuse.profiles.enums.PlayerRole;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.shared.exception.ConflictException;
+import com.hokyozu.kyofuse.shared.exception.ForbiddenException;
 import com.hokyozu.kyofuse.shared.exception.NotFoundException;
+import com.hokyozu.kyofuse.storage.service.ImageProcessingService;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
 import com.hokyozu.kyofuse.teams.dto.request.TeamFilter;
 import com.hokyozu.kyofuse.teams.dto.request.TeamRequest;
 import com.hokyozu.kyofuse.teams.dto.request.UpdateTeamRequest;
@@ -59,11 +63,40 @@ public class TeamService {
 
     private final CommunityService communityService;
     private final ConversationService conversationService;
+    private final ImageProcessingService imageProcessingService;
 
     private final TeamRepository teamRepository;
     private final TeamRequiredRoleRepository teamRequiredRoleRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final GamerProfileRepository gamerProfileRepository;
+
+    @Transactional
+    public TeamResponse uploadAvatar(UUID userId, UUID teamId, MultipartFile file) throws IOException {
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
+        Team team = teamFinder.findTeamById(teamId);
+        if (!team.getOwner().getId().equals(userId)) {
+            throw new ForbiddenException("Only the owner can update the team avatar");
+        }
+        String avatarUrl = imageProcessingService.processAndUploadAvatar(teamId, "teams", file);
+        team.setAvatarUrl(avatarUrl);
+        teamRepository.save(team);
+        return detailTeam(teamId);
+    }
+
+    @Transactional
+    public TeamResponse uploadBanner(UUID userId, UUID teamId, MultipartFile file) throws IOException {
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
+        Team team = teamFinder.findTeamById(teamId);
+        if (!team.getOwner().getId().equals(userId)) {
+            throw new ForbiddenException("Only the owner can update the team banner");
+        }
+        String bannerUrl = imageProcessingService.processAndUploadBanner(teamId, "teams", file);
+        team.setBannerUrl(bannerUrl);
+        teamRepository.save(team);
+        return detailTeam(teamId);
+    }
 
     @Transactional
     public TeamResponse createTeams(@Valid TeamRequest request, UUID userId) {
@@ -150,40 +183,6 @@ public class TeamService {
 
         if (updateTeamRequest.status() == TeamStatus.INACTIVE) {
             throw new BadRequestException("Use o endpoint de inativação para inativar o time.");
-        }
-
-        if (updateTeamRequest.name() != null && updateTeamRequest.name().strip().isBlank()) {
-            throw new BadRequestException("O nome do time não pode ser vazio.");
-        } else if (Objects.equals(team.getName(), updateTeamRequest.name())) {
-            throw new BadRequestException("O nome do time não foi alterado.");
-        }
-
-        if (updateTeamRequest.description() != null && updateTeamRequest.description().strip().isBlank()) {
-            throw new BadRequestException("A descrição do time não pode ser vazio.");
-        } else if (Objects.equals(team.getDescription(), updateTeamRequest.description())) {
-            throw new BadRequestException("A descrição do time não foi alterada.");
-        }
-
-        if (updateTeamRequest.region() != null && updateTeamRequest.region().strip().isBlank()) {
-            throw new BadRequestException("A região do time não pode ser vazio.");
-        } else if (Objects.equals(team.getRegion(), updateTeamRequest.region()) && updateTeamRequest.region() != null ) {
-            throw new BadRequestException("A região do time não foi alterada.");
-        }
-
-        if (updateTeamRequest.status() != null && updateTeamRequest.status().equals(team.getStatus())) {
-            throw new BadRequestException("O status do time não foi alterado.");
-        }
-        if (updateTeamRequest.minGcRank() != null && updateTeamRequest.minGcRank().equals(team.getMinGcRank())) {
-            throw new BadRequestException("O minGcRank do time não foi alterado.");
-        }
-        if (updateTeamRequest.maxGcRank() != null && updateTeamRequest.maxGcRank().equals(team.getMaxGcRank())) {
-            throw new BadRequestException("O maxGcRank do time não foi alterado.");
-        }
-        if (updateTeamRequest.minFaceitLevel() != null && updateTeamRequest.minFaceitLevel().equals(team.getMinFaceitLevel())) {
-            throw new BadRequestException("O minFaceitLevel do time não foi alterado.");
-        }
-        if (updateTeamRequest.maxFaceitLevel() != null && updateTeamRequest.maxFaceitLevel().equals(team.getMaxFaceitLevel())) {
-            throw new BadRequestException("O maxFaceitLevel do time não foi alterado.");
         }
 
         TeamMapper.toUpdate(team, updateTeamRequest);

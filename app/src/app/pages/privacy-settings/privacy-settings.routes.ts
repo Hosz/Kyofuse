@@ -9,7 +9,17 @@ export const PRIVACY_SETTINGS_ROUTES: Routes = [
       import('./privacy-settings-shell').then((m) => m.PrivacySettingsShellComponent),
     title: 'Kyofuse | Configurações',
     children: [
-      { path: '', redirectTo: 'perfil', pathMatch: 'full' },
+      { path: '', redirectTo: 'conta', pathMatch: 'full' },
+      {
+        path: 'conta',
+        loadComponent: () =>
+          import('./sections/account-settings/account-settings').then((m) => m.AccountSettingsSectionComponent),
+      },
+      {
+        path: 'senha',
+        loadComponent: () =>
+          import('./sections/password-settings/password-settings').then((m) => m.PasswordSettingsSectionComponent),
+      },
       {
         path: 'perfil',
         loadComponent: () =>
