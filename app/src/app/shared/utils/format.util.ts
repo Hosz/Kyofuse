@@ -1,5 +1,4 @@
-export const FALLBACK_AVATAR_URL =
-  'https://www.shutterstock.com/image-vector/blank-avatar-photo-place-holder-600nw-1114445501.jpg';
+export const FALLBACK_AVATAR_URL = '/assets/profile/profile-image-default.png';
 
 /**
  * Deriva um slug a partir de um nome livre, no formato que o backend exige

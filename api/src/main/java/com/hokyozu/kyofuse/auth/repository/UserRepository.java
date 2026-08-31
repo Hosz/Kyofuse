@@ -23,4 +23,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsBySteamId(String steamId);
 
     boolean existsByGoogleId(String googleId);
+
+    Optional<User> findByUsername(String username);
 }

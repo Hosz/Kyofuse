@@ -4,7 +4,7 @@
 >
   <div class="flex items-start gap-3">
     <a
-      [routerLink]="['/perfil', post().author.id]"
+      [routerLink]="['/perfil', post().author.handle]"
       (click)="$event.stopPropagation()"
       class="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
     >
@@ -19,7 +19,7 @@
       <div class="flex items-center justify-between gap-3">
         <div class="flex flex-wrap items-center gap-2 text-body-md">
           <a
-            [routerLink]="['/perfil', post().author.id]"
+            [routerLink]="['/perfil', post().author.handle]"
             (click)="$event.stopPropagation()"
             class="rounded font-bold text-on-surface hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
             >{{ post().author.name }}</a

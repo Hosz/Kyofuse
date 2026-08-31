@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { ConversationService } from '../../core/services/chat/conversation.service';
 import { CommunityService } from '../../core/services/communities/community.service';
@@ -21,6 +21,8 @@ import { FeedTab, Comment, Post } from '../../shared/models/social.model';
 import { ProfileRankStats, ProfileViewMode } from '../../shared/models/profile.model';
 import { ProfileService } from '../../core/services/profile/profile.service';
 import { gamerProfileResponse } from '../../models/profile/gamer-profile.model';
+import { AuthService } from '../../core/services/auth/auth.service';
+import { CurrentUserService } from '../../core/services/profile/current-user.service';
 import { PostsService } from '../../core/services/posts/posts.service';
 import { CommentsService } from '../../core/services/comments/comments.service';
 import { FollowService } from '../../core/services/follow/follow.service';
@@ -79,12 +81,14 @@ const EMPTY_PROFILE: gamerProfileResponse = {
   styleUrl: './profile.css',
 })
 export class ProfileComponent {
-  /** Vinculado automaticamente ao parâmetro de rota :userId (withComponentInputBinding).
+  /** Vinculado automaticamente ao parâmetro de rota :username (withComponentInputBinding).
    * Ausente = visualizando o próprio perfil. */
-  userId = input<string | null>(null);
+  username = input<string | null>(null);
 
   viewMode = signal<ProfileViewMode>('owner');
 
+  authService = inject(AuthService);
+  currentUser = inject(CurrentUserService);
   profileService = inject(ProfileService);
   postService = inject(PostsService);
   commentsService = inject(CommentsService);
@@ -165,13 +169,76 @@ export class ProfileComponent {
       : 'Esse perfil não publicou nenhuma mídia ainda.',
   );
 
-  ngOnInit(): void {
-    const targetUserId = this.userId();
-    if (targetUserId) {
-      this.loadOtherProfile(targetUserId);
-    } else {
-      this.loadOwnProfile();
-    }
+  constructor() {
+    effect(() => {
+      const targetUsername = this.username();
+      this.loadProfileForUser(targetUsername);
+    });
+  }
+
+  private resetState(): void {
+    this.profile.set(EMPTY_PROFILE);
+    this.viewMode.set('owner');
+    this.contentRestricted.set(false);
+    this.posts.set([]);
+    this.postsCount.set(0);
+    this.postsPage.set(0);
+    this.postsLastPage.set(true);
+    this.postsLoadingMore.set(false);
+    this.followersCount.set(0);
+    this.followingCount.set(0);
+    this.friendsCount.set(0);
+    this.viewerIsFollowing.set(false);
+    this.followActionPending.set(false);
+    this.friendRequestSent.set(false);
+    this.friendRequestPending.set(false);
+    this.sentFriendRequestId = null;
+    this.mediaPosts.set([]);
+    this.mediaPostsLoaded = false;
+    this.mediaPostsPage.set(0);
+    this.mediaPostsLastPage.set(true);
+    this.mediaPostsLoadingMore.set(false);
+    this.replies.set([]);
+    this.repliesLoaded = false;
+    this.repliesPage.set(0);
+    this.repliesLastPage.set(true);
+    this.repliesLoadingMore.set(false);
+    this.communities.set([]);
+    this.teams.set([]);
+  }
+
+  private loadProfileForUser(targetUsername: string | null): void {
+    this.authService.me().subscribe({
+      next: (me) => {
+        const isMe = !targetUsername || (!!me?.username && targetUsername.toLowerCase() === me.username.toLowerCase());
+        if (isMe) {
+          if (
+            this.viewMode() === 'owner' &&
+            this.profile().username &&
+            targetUsername &&
+            this.profile().username.toLowerCase() === targetUsername.toLowerCase()
+          ) {
+            return;
+          }
+          this.resetState();
+          this.loadOwnProfile();
+          if (!targetUsername && me?.username) {
+            this.router.navigate(['/perfil', me.username], { replaceUrl: true });
+          }
+        } else {
+          this.resetState();
+          this.loadOtherProfile(targetUsername!);
+        }
+      },
+      error: () => {
+        this.resetState();
+        if (targetUsername) {
+          this.loadOtherProfile(targetUsername);
+        } else {
+          this.loadOwnProfile();
+        }
+      },
+    });
   }
 
   rankStats = computed<ProfileRankStats>(() => ({
@@ -213,7 +280,7 @@ export class ProfileComponent {
   }
 
   onToggleFollow(): void {
-    const targetUserId = this.userId();
+    const targetUserId = this.profile().userId;
     if (!targetUserId || this.followActionPending()) return;
 
     const wasFollowing = this.viewerIsFollowing();
@@ -235,7 +302,7 @@ export class ProfileComponent {
   }
 
   onToggleFriendRequest(): void {
-    const targetUserId = this.userId();
+    const targetUserId = this.profile().userId;
     if (!targetUserId || this.friendRequestPending()) return;
 
     this.friendRequestPending.set(true);
@@ -340,7 +407,7 @@ export class ProfileComponent {
   }
 
   onAuthorBlocked(authorId: string): void {
-    if (authorId === this.userId()) {
+    if (authorId === this.profile().userId) {
       this.router.navigateByUrl('/home');
       return;
     }
@@ -372,6 +439,7 @@ export class ProfileComponent {
     this.profileService.myProfile().subscribe({
       next: (response) => {
         this.profile.set(response);
+        this.currentUser.setProfile(response);
         this.loadMemberships(response.userId);
       },
       error: (error) => console.error('Failed to fetch my profile:', error),
@@ -401,14 +469,18 @@ export class ProfileComponent {
     });
   }
 
-  private loadOtherProfile(targetUserId: string): void {
-    this.profileService.userProfile(targetUserId).subscribe({
+  private loadOtherProfile(targetUsername: string): void {
+    this.profileService.userProfile(targetUsername).subscribe({
       next: (response) => {
+        if (this.currentUser.isMe(response.userId) || this.currentUser.isMe(response.username)) {
+          this.loadOwnProfile();
+          return;
+        }
         this.profile.set(response);
         this.viewMode.set('visitor');
-        this.loadFollowState(targetUserId);
-        this.loadOtherProfileExtras(targetUserId);
-        this.loadMemberships(targetUserId);
+        this.loadFollowState(response.userId);
+        this.loadOtherProfileExtras(response.userId);
+        this.loadMemberships(response.userId);
       },
       error: (error) => {
         // Depois que perfil privado passou a ser visível, um 403 aqui significa bloqueio.
@@ -482,8 +554,8 @@ export class ProfileComponent {
   }
 
   private loadMediaPosts(page: number): void {
-    const targetUserId = this.userId();
-    const request = targetUserId
+    const targetUserId = this.profile().userId;
+    const request = this.viewMode() !== 'owner' && targetUserId
       ? this.postService.getProfileMediaPosts(targetUserId, page)
       : this.postService.getMyMediaPosts(page);
 
@@ -509,8 +581,10 @@ export class ProfileComponent {
   }
 
   private loadPosts(page: number): void {
-    const targetUserId = this.userId();
-    const request = targetUserId ? this.postService.getProfilePosts(targetUserId, page) : this.postService.getMyPosts(page);
+    const targetUserId = this.profile().userId;
+    const request = this.viewMode() !== 'owner' && targetUserId
+      ? this.postService.getProfilePosts(targetUserId, page)
+      : this.postService.getMyPosts(page);
 
     request.subscribe({
       next: (response) => {
@@ -540,7 +614,7 @@ export class ProfileComponent {
   }
 
   private loadReplies(page: number): void {
-    const targetUserId = this.userId() ?? this.profile().userId;
+    const targetUserId = this.profile().userId;
     if (!targetUserId) {
       this.repliesLoading.set(false);
       this.repliesLoadingMore.set(false);

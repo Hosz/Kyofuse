@@ -1,10 +1,11 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, inject, input, output, signal } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { ConfirmDialogComponent } from '../confirm-dialog/confirm-dialog';
 import { ModalComponent } from '../modal/modal';
 import { BlockService } from '../../../core/services/block/block.service';
 import { FollowService } from '../../../core/services/follow/follow.service';
 import { FriendshipService } from '../../../core/services/friendship/friendship.service';
+import { CurrentUserService } from '../../../core/services/profile/current-user.service';
 
 @Component({
   selector: 'app-user-options-menu',
@@ -55,6 +56,9 @@ export class UserOptionsMenuComponent {
   private blockService = inject(BlockService);
   private followService = inject(FollowService);
   private friendshipService = inject(FriendshipService);
+  private currentUser = inject(CurrentUserService);
+
+  effectiveCanBlock = computed(() => this.canBlock() && !this.currentUser.isMe(this.userId()));
 
   menuOpen = signal(false);
   confirmOpen = signal(false);

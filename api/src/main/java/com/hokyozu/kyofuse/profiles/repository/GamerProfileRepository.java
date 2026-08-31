@@ -1,16 +1,20 @@
 package com.hokyozu.kyofuse.profiles.repository;
 
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
+import com.hokyozu.kyofuse.teams.entity.Team;
 import com.hokyozu.kyofuse.users.enums.UserStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface GamerProfileRepository extends JpaRepository<GamerProfile, UUID> {
+public interface GamerProfileRepository extends JpaRepository<GamerProfile, UUID>, JpaSpecificationExecutor<GamerProfile> {
     Optional<GamerProfile> findByUserId(UUID userId);
 
     List<GamerProfile> findByUserIdIn(List<UUID> userIds);
@@ -18,4 +22,10 @@ public interface GamerProfileRepository extends JpaRepository<GamerProfile, UUID
     /** Jogadores anunciando que procuram time, fora os ids excluídos (quem já está no time). */
     Page<GamerProfile> findByLookingForTeamTrueAndUser_StatusAndUserIdNotIn(
             UserStatus status, List<UUID> excludedUserIds, Pageable pageable);
+
+    Optional<GamerProfile> findByUserUsername(String username);
+
+    @Override
+    @EntityGraph(attributePaths = "user")
+    Page<GamerProfile> findAll(Specification<GamerProfile> specification, Pageable pageable);
 }

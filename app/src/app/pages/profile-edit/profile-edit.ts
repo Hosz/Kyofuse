@@ -46,9 +46,11 @@ const MAP_ACCENT_HUE: Record<Cs2Map, number> = {
   WARDEN: 20,
 };
 
+import { RoleIconComponent } from '../../components/shared/role-icon/role-icon';
+
 @Component({
   selector: 'app-profile-edit',
-  imports: [RouterLink, AppSidebarComponent],
+  imports: [RouterLink, AppSidebarComponent, RoleIconComponent],
   templateUrl: './profile-edit.html',
   styleUrl: './profile-edit.css',
 })
@@ -213,11 +215,38 @@ export class ProfileEditComponent implements OnDestroy {
   }
 
   selectMainRole(role: PlayerRole): void {
-    this.mainRole.set(this.mainRole() === role ? '' : role);
+    if (this.mainRole() === role) {
+      if (this.secondaryRole()) {
+        this.mainRole.set(this.secondaryRole());
+        this.secondaryRole.set('');
+        this.toastService.info('O papel secundário assumiu o lugar de papel principal.');
+      } else {
+        this.mainRole.set('');
+      }
+    } else {
+      this.mainRole.set(role);
+      if (this.secondaryRole() === role) {
+        this.secondaryRole.set('');
+        this.toastService.info('O papel secundário foi desmarcado pois não pode ser igual ao principal.');
+      }
+    }
   }
 
   selectSecondaryRole(role: PlayerRole): void {
-    this.secondaryRole.set(this.secondaryRole() === role ? '' : role);
+    if (this.secondaryRole() === role) {
+      this.secondaryRole.set('');
+    } else {
+      if (this.mainRole() === role) {
+        this.toastService.info('O papel secundário não pode ser igual ao papel principal.');
+        return;
+      }
+      if (!this.mainRole()) {
+        this.mainRole.set(role);
+        this.toastService.info('Papel definido como principal.');
+        return;
+      }
+      this.secondaryRole.set(role);
+    }
   }
 
   selectPlaystyle(style: Playstyle): void {
@@ -268,6 +297,13 @@ export class ProfileEditComponent implements OnDestroy {
       return;
     }
 
+    if (this.mainRole() && this.secondaryRole() && this.mainRole() === this.secondaryRole()) {
+      this.error.set('O papel principal e o papel secundário não podem ser iguais.');
+      this.toastService.error('O papel principal e o papel secundário não podem ser iguais.');
+      this.scrollToSection('competitivo');
+      return;
+    }
+
     this.saving.set(true);
     this.error.set(null);
 
@@ -279,12 +315,12 @@ export class ProfileEditComponent implements OnDestroy {
       country: this.country().trim(),
       city: this.city().trim(),
       state: this.state().trim(),
-      mainRole: this.mainRole() || undefined,
-      secondaryRole: this.secondaryRole() || undefined,
+      mainRole: this.mainRole() ? (this.mainRole() as PlayerRole) : null,
+      secondaryRole: this.secondaryRole() ? (this.secondaryRole() as PlayerRole) : null,
       premierRating: this.premierRating() ?? undefined,
       faceitLevel: this.faceitLevel() ?? undefined,
       gcRank: this.gcRank() ?? undefined,
-      playstyle: this.playstyle() || undefined,
+      playstyle: this.playstyle() ? (this.playstyle() as Playstyle) : null,
       lookingForTeam: this.lookingForTeam(),
       lookingForDuo: this.lookingForDuo(),
       favoriteMaps: this.favoriteMaps(),

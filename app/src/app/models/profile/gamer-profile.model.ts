@@ -32,3 +32,8 @@ export interface gamerProfileCard {
     city?: string;
     state?: string;
 }
+
+export interface ProfileFilter {
+    username?: string;
+    status?: string;
+}

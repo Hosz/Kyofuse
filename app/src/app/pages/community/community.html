@@ -57,7 +57,7 @@
                     <span class="text-label-sm text-on-surface-variant">
                       Dono:
                       <a
-                        [routerLink]="['/perfil', community()!.ownerId]"
+                        [routerLink]="['/perfil', community()!.ownerUsername]"
                         class="font-semibold text-primary hover:underline"
                       >&#64;{{ community()!.ownerUsername }}</a>
                     </span>
@@ -325,7 +325,7 @@
               <div class="flex flex-col gap-3">
                 @for (post of posts(); track post.id) {
                   <article class="flex flex-col gap-3 rounded-lg border border-outline-variant p-lg">
-                    <a [routerLink]="['/perfil', post.author.id]" class="flex items-center gap-3">
+                    <a [routerLink]="['/perfil', post.author.handle]" class="flex items-center gap-3">
                       <img [src]="post.author.avatarUrl" [alt]="post.author.name" class="h-9 w-9 shrink-0 rounded-full object-cover" />
                       <span class="flex min-w-0 flex-col">
                         <span class="truncate text-body-sm font-semibold text-on-surface hover:underline">{{ post.author.name }}</span>

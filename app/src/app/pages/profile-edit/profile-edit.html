@@ -305,14 +305,15 @@
                     <button
                       type="button"
                       (click)="selectMainRole(option.value)"
-                      class="cursor-pointer rounded-full border px-3 py-1.5 text-label-sm font-semibold transition-colors"
+                      class="flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-label-sm font-semibold transition-colors"
                       [class]="
                         mainRole() === option.value
-                          ? 'border-primary text-primary'
+                          ? 'border-primary text-primary bg-primary/10'
                           : 'border-outline-variant text-on-surface-variant hover:text-on-surface'
                       "
                     >
-                      {{ option.label }}
+                      <app-role-icon [role]="option.value" size="sm" [colored]="true" />
+                      <span>{{ option.label }}</span>
                     </button>
                   }
                 </div>
@@ -327,14 +328,17 @@
                     <button
                       type="button"
                       (click)="selectSecondaryRole(option.value)"
-                      class="cursor-pointer rounded-full border px-3 py-1.5 text-label-sm font-semibold transition-colors"
+                      [disabled]="mainRole() === option.value"
+                      [title]="mainRole() === option.value ? 'Papel já selecionado como principal' : ''"
+                      class="flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-label-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40"
                       [class]="
                         secondaryRole() === option.value
-                          ? 'border-primary text-primary'
+                          ? 'border-primary text-primary bg-primary/10'
                           : 'border-outline-variant text-on-surface-variant hover:text-on-surface'
                       "
                     >
-                      {{ option.label }}
+                      <app-role-icon [role]="option.value" size="sm" [colored]="true" />
+                      <span>{{ option.label }}</span>
                     </button>
                   }
                 </div>

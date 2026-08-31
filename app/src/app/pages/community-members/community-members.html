@@ -51,7 +51,7 @@
               <div class="flex flex-col gap-1">
                 @for (member of group.members; track member.id) {
                   <a
-                    [routerLink]="['/perfil', member.memberId]"
+                    [routerLink]="['/perfil', member.memberUsername]"
                     class="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-surface-container-high"
                   >
                     <img

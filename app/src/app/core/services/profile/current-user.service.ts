@@ -1,10 +1,11 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { ProfileService } from './profile.service';
 import { AuthService } from '../auth/auth.service';
+import { gamerProfileResponse } from '../../../models/profile/gamer-profile.model';
 
 /**
- * Id do usuário logado, buscado uma vez e compartilhado. Vários componentes precisam
- * saber "sou eu?" (apagar post, ações de admin) e antes disso cada um chamava
+ * Id e username do usuário logado, buscado uma vez e compartilhado. Vários componentes precisam
+ * saber "sou eu?" (apagar post, ações de dono, ocultar botão de bloquear) e antes disso cada um chamava
  * /profile/me por conta própria.
  */
 @Injectable({ providedIn: 'root' })
@@ -13,6 +14,7 @@ export class CurrentUserService {
   private authService = inject(AuthService);
 
   private id = signal<string | null>(null);
+  private username = signal<string | null>(null);
   private requested = false;
 
   readonly userId = computed(() => {
@@ -20,21 +22,47 @@ export class CurrentUserService {
     return this.id();
   });
 
-  isMe(userId: string | null | undefined): boolean {
-    const myId = this.userId();
-    return !!myId && !!userId && myId === userId;
+  readonly userUsername = computed(() => {
+    this.ensureLoaded();
+    return this.username();
+  });
+
+  isMe(userIdOrUsername: string | null | undefined): boolean {
+    if (!userIdOrUsername) return false;
+    this.ensureLoaded();
+    const myId = this.id();
+    const myUsername = this.username();
+    return (
+      (!!myId && myId === userIdOrUsername) ||
+      (!!myUsername && myUsername.toLowerCase() === userIdOrUsername.toLowerCase())
+    );
+  }
+
+  setProfile(profile: gamerProfileResponse | { userId?: string; username?: string }): void {
+    if (profile.userId) this.id.set(profile.userId);
+    if (profile.username) this.username.set(profile.username);
   }
 
   private ensureLoaded(): void {
-    if (this.requested || !this.authService.isAuthenticated()) return;
+    if (this.requested && (this.id() || this.username())) return;
     this.requested = true;
 
     this.profileService.myProfile().subscribe({
-      next: (profile) => this.id.set(profile.userId),
-      error: (error) => {
-        console.error('Failed to fetch current user:', error);
-        // Libera uma nova tentativa: sem o id, ações de dono ficam escondidas.
-        this.requested = false;
+      next: (profile) => {
+        this.id.set(profile.userId);
+        this.username.set(profile.username);
+      },
+      error: () => {
+        // Fallback pra authService.me se myProfile falhar
+        this.authService.me().subscribe({
+          next: (me) => {
+            this.id.set(me.userId);
+            this.username.set(me.username);
+          },
+          error: () => {
+            this.requested = false;
+          },
+        });
       },
     });
   }

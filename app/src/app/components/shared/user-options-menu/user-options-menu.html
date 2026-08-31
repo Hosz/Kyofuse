@@ -95,7 +95,7 @@
       Desfazer amizade
     </button>
   }
-  @if (canBlock()) {
+  @if (effectiveCanBlock()) {
     <button
       type="button"
       (click)="openBlockConfirm()"

@@ -24,4 +24,9 @@ public class UserFinder {
     public List<User> findAllByIds(List<UUID> ids) {
         return ids.isEmpty() ? List.of() : userRepository.findAllById(ids);
     }
+
+    public User findProfileByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new BadRequestException("User not found for username: " + username));
+    }
 }

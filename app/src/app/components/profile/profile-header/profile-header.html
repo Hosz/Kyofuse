@@ -11,7 +11,7 @@
     <div class="flex flex-col gap-lg lg:flex-row lg:items-start lg:justify-between">
       <div class="flex min-w-0 flex-col gap-lg sm:flex-row lg:flex-1">
         <img
-          [src]="profile().avatarUrl"
+          [src]="profile().avatarUrl || fallbackAvatar"
           [alt]="profile().nickname"
           class="relative z-10 -mt-16 h-28 w-28 shrink-0 rounded-xl border-4 border-surface-container-low bg-surface-container-low object-cover shadow-lg sm:-mt-20"
         />
@@ -32,7 +32,33 @@
                 />
               }
             </div>
-            <span class="text-body-sm text-on-surface-variant">&#64;{{ handle() }}</span>
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-body-sm text-on-surface-variant">&#64;{{ handle() }}</span>
+              @if (mainRoleLabel() || secondaryRoleLabel()) {
+                <span class="text-outline-variant select-none text-[12px]">&bull;</span>
+                <div class="flex flex-wrap items-center gap-2">
+                  @if (mainRoleLabel()) {
+                    <span
+                      class="inline-flex items-center gap-1.5 rounded-lg bg-surface-container-high/80 px-2.5 py-1 text-label-xs font-semibold text-on-surface ring-1 ring-inset ring-outline-variant/40"
+                      title="Função Principal"
+                    >
+                      <app-role-icon [role]="profile().mainRole" size="sm" [colored]="true" class="shrink-0" />
+                      <span>{{ mainRoleLabel() }}</span>
+                    </span>
+                  }
+                  @if (secondaryRoleLabel()) {
+                    <span
+                      class="inline-flex items-center gap-1.5 rounded-lg bg-surface-container-high/50 px-2.5 py-1 text-label-xs text-on-surface-variant/90 ring-1 ring-inset ring-outline-variant/30"
+                      title="Função Secundária (Sub Role)"
+                    >
+                      <app-role-icon [role]="profile().secondaryRole" size="sm" [colored]="true" class="shrink-0 opacity-85" />
+                      <span class="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant/60">Sub:</span>
+                      <span>{{ secondaryRoleLabel() }}</span>
+                    </span>
+                  }
+                </div>
+              }
+            </div>
           </div>
 
           @if (profile().bio) {

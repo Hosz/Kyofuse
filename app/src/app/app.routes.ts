@@ -84,7 +84,7 @@ export const routes: Routes = [
     title: 'Kyofuse | Editar perfil',
   },
   {
-    path: 'perfil/:userId',
+    path: 'perfil/:username',
     canActivate: [authGuard, profileSetupGuard],
     loadComponent: () =>
       import('./pages/profile/profile').then((m) => m.ProfileComponent),

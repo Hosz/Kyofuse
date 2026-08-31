@@ -1,10 +1,10 @@
 <div class="flex items-center gap-3 border-t border-outline-variant px-md pt-md">
   <a
-    routerLink="/perfil"
+    [routerLink]="['/perfil', user().username]"
     class="flex flex-1 items-center gap-3 rounded-lg transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
   >
     <img
-      [src]="user().avatarUrl"
+      [src]="user().avatarUrl || fallbackAvatar"
       [alt]="user().nickname"
       class="h-11 w-11 rounded-full object-cover"
     />

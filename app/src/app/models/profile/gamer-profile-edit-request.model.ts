@@ -8,12 +8,12 @@ export interface GamerProfileEditRequest {
   country?: string;
   city?: string;
   state?: string;
-  mainRole?: PlayerRole;
-  secondaryRole?: PlayerRole;
-  premierRating?: number;
-  faceitLevel?: number;
-  gcRank?: number;
-  playstyle?: Playstyle;
+  mainRole?: PlayerRole | null;
+  secondaryRole?: PlayerRole | null;
+  premierRating?: number | null;
+  faceitLevel?: number | null;
+  gcRank?: number | null;
+  playstyle?: Playstyle | null;
   lookingForTeam?: boolean;
   lookingForDuo?: boolean;
   favoriteMaps?: Cs2Map[];

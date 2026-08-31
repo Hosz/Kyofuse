@@ -126,6 +126,7 @@ docker-compose.*.override.yml
 dump.sql
 db_snapshot.sql
 *.sql.gz
+seed.sql
 
 # Archives and generated bundles
 *.tgz

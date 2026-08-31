@@ -28,6 +28,14 @@ export const PLAYER_ROLE_OPTIONS: { value: PlayerRole; label: string }[] = [
   { value: 'FLEX', label: 'Flex' },
 ];
 
+export function getPlayerRoleLabel(role: PlayerRole | string | null | undefined): string | null {
+  if (!role) return null;
+  const found = PLAYER_ROLE_OPTIONS.find(
+    (opt) => opt.value === role || opt.label.toLowerCase() === role.toLowerCase(),
+  );
+  return found ? found.label : role;
+}
+
 export const PLAYSTYLE_OPTIONS: { value: Playstyle; label: string }[] = [
   { value: 'CASUAL', label: 'Casual' },
   { value: 'COMPETITIVE', label: 'Competitivo' },

@@ -18,13 +18,62 @@
         <app-feed-tabs [tabs]="tabs()" (tabSelected)="onTabSelected($event)" />
 
         @if (activeTab() === 'profiles') {
-          <div class="flex flex-col items-center gap-2 rounded-xl border border-outline-variant bg-surface-container-low py-16 text-center">
-            <span class="material-symbols-outlined text-[28px] text-on-surface-variant">hourglass_top</span>
-            <p class="text-body-sm font-semibold text-on-surface">Em breve</p>
-            <p class="max-w-[24rem] text-label-sm text-on-surface-variant">
-              A busca de perfis por nome ainda está em desenvolvimento.
+          @if (profilesLoading()) {
+            <p class="py-8 text-center text-body-sm text-on-surface-variant">Buscando perfis...</p>
+          } @else if (profiles().length === 0) {
+            <p class="py-8 text-center text-body-sm text-on-surface-variant">
+              {{ query() ? 'Nenhum perfil encontrado para essa busca.' : 'Nenhum resultado para mostrar.' }}
             </p>
-          </div>
+          } @else {
+            <p class="text-label-sm text-on-surface-variant">{{ profilesTotal() }} perfil(is) encontrado(s)</p>
+
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              @for (profile of profiles(); track profile.id) {
+                <a
+                  [routerLink]="['/perfil', profile.username]"
+                  class="flex items-center gap-3 rounded-xl border border-outline-variant bg-surface-container p-lg transition-colors hover:border-primary"
+                >
+                  <div class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-container-highest">
+                    <img [src]="profile.avatarUrl || fallbackAvatar" [alt]="profile.nickname || profile.username" class="h-full w-full object-cover" />
+                  </div>
+                  <div class="flex min-w-0 flex-1 flex-col">
+                    <span class="truncate text-body-md font-bold text-on-surface">{{ profile.nickname || profile.username }}</span>
+                    <span class="truncate text-label-sm text-on-surface-variant">&#64;{{ profile.username }}</span>
+                    @if (profile.mainRole) {
+                      <span class="mt-1 flex items-center gap-1.5 truncate text-label-sm font-medium text-on-surface">
+                        <app-role-icon [role]="profile.mainRole" size="xs" [colored]="true" />
+                        <span>{{ roleLabel(profile.mainRole) }}</span>
+                      </span>
+                    }
+                  </div>
+                </a>
+              }
+            </div>
+
+            @if (profilesTotalPages() > 1) {
+              <div class="flex items-center justify-center gap-2 pt-2">
+                <button
+                  type="button"
+                  (click)="goToProfilesPage(profilesPage() - 1)"
+                  [disabled]="profilesPage() === 0"
+                  class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-outline-variant text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+                </button>
+                <span class="text-label-sm text-on-surface-variant">
+                  Página {{ profilesPage() + 1 }} de {{ profilesTotalPages() }}
+                </span>
+                <button
+                  type="button"
+                  (click)="goToProfilesPage(profilesPage() + 1)"
+                  [disabled]="profilesPage() + 1 >= profilesTotalPages()"
+                  class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-outline-variant text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+                </button>
+              </div>
+            }
+          }
         } @else {
           @if (teamsLoading()) {
             <p class="py-8 text-center text-body-sm text-on-surface-variant">Buscando times...</p>
@@ -62,7 +111,7 @@
               <div class="flex items-center justify-center gap-2 pt-2">
                 <button
                   type="button"
-                  (click)="goToPage(teamsPage() - 1)"
+                  (click)="goToTeamsPage(teamsPage() - 1)"
                   [disabled]="teamsPage() === 0"
                   class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-outline-variant text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-40"
                 >
@@ -73,7 +122,7 @@
                 </span>
                 <button
                   type="button"
-                  (click)="goToPage(teamsPage() + 1)"
+                  (click)="goToTeamsPage(teamsPage() + 1)"
                   [disabled]="teamsPage() + 1 >= teamsTotalPages()"
                   class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-outline-variant text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-40"
                 >

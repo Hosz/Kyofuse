@@ -162,7 +162,7 @@
 <app-user-list-modal
   title="Seguidores"
   type="followers"
-  [profileUserId]="userId()"
+  [profileUserId]="viewMode() === 'owner' ? null : profile().userId"
   [manageable]="viewMode() === 'owner'"
   [open]="activeModal() === 'followers'"
   (closed)="closeModal()"
@@ -170,7 +170,7 @@
 <app-user-list-modal
   title="Seguindo"
   type="following"
-  [profileUserId]="userId()"
+  [profileUserId]="viewMode() === 'owner' ? null : profile().userId"
   [manageable]="viewMode() === 'owner'"
   [open]="activeModal() === 'following'"
   (closed)="closeModal()"
@@ -178,7 +178,7 @@
 <app-user-list-modal
   title="Amigos"
   type="friends"
-  [profileUserId]="userId()"
+  [profileUserId]="viewMode() === 'owner' ? null : profile().userId"
   [manageable]="viewMode() === 'owner'"
   [open]="activeModal() === 'friends'"
   (closed)="closeModal()"

@@ -37,9 +37,11 @@ const ROLE_ACCENT_HUE: Record<PlayerRole, number> = {
   FLEX: 190,
 };
 
+import { RoleIconComponent } from '../../components/shared/role-icon/role-icon';
+
 @Component({
   selector: 'app-team-admin',
-  imports: [RouterLink, AppSidebarComponent, ModalComponent, ConfirmDialogComponent, TeamMemberRowComponent, TeamMemberModalComponent],
+  imports: [RouterLink, AppSidebarComponent, ModalComponent, ConfirmDialogComponent, TeamMemberRowComponent, TeamMemberModalComponent, RoleIconComponent],
   templateUrl: './team-admin.html',
   styleUrl: './team-admin.css',
 })

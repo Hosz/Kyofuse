@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { gamerProfileCard, gamerProfileResponse } from '../../../models/profile/gamer-profile.model';
 import { ProfileService } from '../../../core/services/profile/profile.service';
 import { getCountryFlagUrl } from '../../../shared/models/location-options.model';
+import { FALLBACK_AVATAR_URL } from '../../../shared/utils/format.util';
 
 @Component({
   selector: 'app-user-profile-card',
@@ -11,6 +12,7 @@ import { getCountryFlagUrl } from '../../../shared/models/location-options.model
   styleUrl: './user-profile-card.css',
 })
 export class UserProfileCardComponent {
+  readonly fallbackAvatar = FALLBACK_AVATAR_URL;
   userService = inject(ProfileService);
   user = signal<gamerProfileCard>({
     nickname: '',
