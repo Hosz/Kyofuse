@@ -12,6 +12,13 @@ export const routes: Routes = [
     title: 'Kyofuse | Acesso',
   },
   {
+    path: 'auth',
+    canActivate: [guestGuard],
+    loadComponent: () =>
+      import('./pages/auth/auth').then((m) => m.AuthComponent),
+    title: 'Kyofuse | Acesso',
+  },
+  {
     path: 'recuperar-senha',
     canActivate: [guestGuard],
     loadComponent: () =>
@@ -66,8 +73,15 @@ export const routes: Routes = [
     title: 'Kyofuse | Roadmap de Desenvolvimento',
   },
   {
+    path: 'explorar',
+    canActivate: [authGuard, profileSetupGuard],
+    loadComponent: () =>
+      import('./pages/search-results/search-results').then((m) => m.SearchResultsComponent),
+    title: 'Kyofuse | Explorar',
+  },
+  {
     path: 'explore',
-    redirectTo: 'roadmap',
+    redirectTo: 'explorar',
   },
   {
     path: 'perfil',

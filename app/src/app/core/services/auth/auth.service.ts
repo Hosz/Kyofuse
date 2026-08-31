@@ -4,10 +4,11 @@ import { inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { registerRequest } from '../../../models/auth/register-form.model';
 import { loginRequest } from '../../../models/auth/login-form.model';
-import { authMeResponse, authResponse, isMfaRequired, loginResult, RegisterResponse, RequestFail } from '../../../models/auth/auth-response.model';
+import { authMeResponse, authResponse, isMfaRequired, isReactivationRequired, loginResult, RegisterResponse, RequestFail } from '../../../models/auth/auth-response.model';
 import { mfaVerifyRequest } from '../../../models/auth/mfa.model';
 import { ForgotPasswordRequest, ResetPasswordRequest } from '../../../models/auth/password-reset.model';
 import { Observable, catchError, finalize, map, of, shareReplay, tap } from 'rxjs';
+import { AccountManagerService } from './account-manager.service';
 
 /**
  * Access token e refresh token vivem em cookies HttpOnly (setados pela API): o JS nunca
@@ -23,6 +24,7 @@ export class AuthService {
   api = API_URL;
   private url = `${this.api}/api/auth`;
   private http = inject(HttpClient);
+  private accountManager = inject(AccountManagerService);
 
   private readonly authenticated = signal(false);
   private logoutInProgress = false;
@@ -33,13 +35,20 @@ export class AuthService {
     return this.http.post<RegisterResponse>(`${this.url}/register`, request);
   }
 
-  /** Se a conta tiver 2FA ativo, o backend responde com um desafio (mfaRequired) em vez
-   * de autenticar de vez — os cookies de sessão só são setados depois de verifyMfa(). */
+  /** Se a conta tiver 2FA ativo ou estiver inativa, o backend responde com mfaRequired ou reactivationRequired
+   * em vez de autenticar de vez — os cookies de sessão só são setados após confirmação. */
   public login(request: loginRequest): Observable<loginResult> {
     return this.http.post<loginResult>(`${this.url}/login`, request, { withCredentials: true })
       .pipe(tap((result) => {
-        if (!isMfaRequired(result)) {
+        if (!isMfaRequired(result) && !isReactivationRequired(result)) {
           this.authenticated.set(true);
+          this.accountManager.registerOrUpdateAccount({
+            userId: result.userId,
+            username: result.username,
+            email: result.email,
+            role: result.role,
+            switchToken: result.switchToken,
+          });
         }
       }));
   }
@@ -47,8 +56,15 @@ export class AuthService {
   public loginWithGoogle(idToken: string): Observable<loginResult> {
     return this.http.post<loginResult>(`${this.url}/google`, { idToken }, { withCredentials: true })
       .pipe(tap((result) => {
-        if (!isMfaRequired(result)) {
+        if (!isMfaRequired(result) && !isReactivationRequired(result)) {
           this.authenticated.set(true);
+          this.accountManager.registerOrUpdateAccount({
+            userId: result.userId,
+            username: result.username,
+            email: result.email,
+            role: result.role,
+            switchToken: result.switchToken,
+          });
         }
       }));
   }
@@ -56,10 +72,37 @@ export class AuthService {
   public loginWithSteam(openIdParams: Record<string, string>): Observable<loginResult> {
     return this.http.post<loginResult>(`${this.url}/steam`, openIdParams, { withCredentials: true })
       .pipe(tap((result) => {
-        if (!isMfaRequired(result)) {
+        if (!isMfaRequired(result) && !isReactivationRequired(result)) {
           this.authenticated.set(true);
+          this.accountManager.registerOrUpdateAccount({
+            userId: result.userId,
+            username: result.username,
+            email: result.email,
+            role: result.role,
+            switchToken: result.switchToken,
+          });
         }
       }));
+  }
+
+  public confirmReactivation(reactivationToken: string, code: string): Observable<loginResult> {
+    return this.http.post<loginResult>(`${this.url}/reactivate/confirm`, { reactivationToken, code }, { withCredentials: true })
+      .pipe(tap((result) => {
+        if (!isMfaRequired(result) && !isReactivationRequired(result)) {
+          this.authenticated.set(true);
+          this.accountManager.registerOrUpdateAccount({
+            userId: result.userId,
+            username: result.username,
+            email: result.email,
+            role: result.role,
+            switchToken: result.switchToken,
+          });
+        }
+      }));
+  }
+
+  public resendReactivationCode(reactivationToken: string): Observable<void> {
+    return this.http.post<void>(`${this.url}/reactivate/resend`, { reactivationToken });
   }
 
   public redirectToSteam(action: 'login' | 'link' = 'login'): void {
@@ -84,7 +127,16 @@ export class AuthService {
 
   public verifyEmail(token: string): Observable<authResponse> {
     return this.http.post<authResponse>(`${this.url}/verify-email`, { token }, { withCredentials: true })
-      .pipe(tap(() => this.authenticated.set(true)));
+      .pipe(tap((result) => {
+        this.authenticated.set(true);
+        this.accountManager.registerOrUpdateAccount({
+          userId: result.userId,
+          username: result.username,
+          email: result.email,
+          role: result.role,
+          switchToken: result.switchToken,
+        });
+      }));
   }
 
   public validateEmailVerificationToken(token: string): Observable<void> {
@@ -99,7 +151,16 @@ export class AuthService {
 
   public verifyMfa(request: mfaVerifyRequest): Observable<authResponse> {
     return this.http.post<authResponse>(`${this.url}/2fa/verify`, request, { withCredentials: true })
-      .pipe(tap(() => this.authenticated.set(true)));
+      .pipe(tap((result) => {
+        this.authenticated.set(true);
+        this.accountManager.registerOrUpdateAccount({
+          userId: result.userId,
+          username: result.username,
+          email: result.email,
+          role: result.role,
+          switchToken: result.switchToken,
+        });
+      }));
   }
 
   public forgotPassword(request: ForgotPasswordRequest): Observable<void> {
@@ -195,6 +256,18 @@ export class AuthService {
   /** Estado conhecido em memória, sem chamar a API. Use checkSession() quando precisar de certeza. */
   public isAuthenticated(): boolean {
     return this.authenticated();
+  }
+
+  public switchAccount(targetUserId: string): Observable<authResponse> {
+    return this.accountManager.switchAccount(targetUserId).pipe(
+      tap(() => {
+        this.authenticated.set(true);
+      })
+    );
+  }
+
+  public disconnectAccount(targetUserId: string): Observable<void> {
+    return this.accountManager.disconnectAccount(targetUserId);
   }
 
   public clearSession(): void {

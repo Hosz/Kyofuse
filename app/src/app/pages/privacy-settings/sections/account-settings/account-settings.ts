@@ -6,11 +6,13 @@ import { UserAccountResponse } from '../../../../models/account/user-account.mod
 import { SkeletonComponent } from '../../../../components/shared/skeleton/skeleton';
 import { GOOGLE_CLIENT_ID } from '../../../../core/config/google-auth.config';
 
+import { RouterLink } from '@angular/router';
+
 declare const google: any;
 
 @Component({
   selector: 'app-account-settings',
-  imports: [FormsModule, SkeletonComponent],
+  imports: [FormsModule, SkeletonComponent, RouterLink],
   templateUrl: './account-settings.html',
   styleUrl: './account-settings.css',
 })

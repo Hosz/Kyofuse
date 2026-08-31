@@ -22,14 +22,14 @@ public class TeamInviteController {
 
     private final TeamInviteService teamInviteService;
 
-    @PostMapping("/{teamId}/invite/{receiverId}")
+    @PostMapping("/{teamId}/invite/{receiverUsername}")
     public TeamInviteResponse inviteUser(@PathVariable UUID teamId,
-                                         @PathVariable UUID receiverId,
+                                         @PathVariable String receiverUsername,
                                          @AuthenticationPrincipal Jwt jwt,
                                          @Valid @RequestBody TeamInviteRequest request) {
 
         UUID userId = UUID.fromString(jwt.getSubject());
-        return teamInviteService.inviteUser(userId, teamId, receiverId, request);
+        return teamInviteService.inviteUser(userId, teamId, receiverUsername, request);
     }
 
     @GetMapping("/{teamId}/invites")

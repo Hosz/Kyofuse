@@ -1,6 +1,7 @@
 import { HttpErrorResponse, HttpInterceptorFn } from "@angular/common/http";
 import { inject } from "@angular/core";
 import { AuthService } from "../services/auth/auth.service";
+import { AccountManagerService } from "../services/auth/account-manager.service";
 import { catchError, switchMap, throwError } from "rxjs";
 
 /**
@@ -21,12 +22,21 @@ const PUBLIC_AUTH_PATHS = [
     '/api/auth/refresh',
     '/api/auth/logout',
     '/api/auth/2fa/verify',
+    '/api/auth/switch-account',
+    '/api/auth/disconnect-account',
 ];
 
 export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
     const authService = inject(AuthService);
+    const accountManager = inject(AccountManagerService);
 
-    const request = req.clone({ withCredentials: true });
+    const deviceId = accountManager.getDeviceId();
+    const headers = req.headers.has('X-Device-Id') ? req.headers : req.headers.set('X-Device-Id', deviceId);
+
+    const request = req.clone({
+        withCredentials: true,
+        headers,
+    });
 
     if (PUBLIC_AUTH_PATHS.some((path) => request.url.includes(path))) {
         return next(request);

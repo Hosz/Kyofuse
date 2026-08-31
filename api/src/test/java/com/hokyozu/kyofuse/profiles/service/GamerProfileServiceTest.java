@@ -145,6 +145,48 @@ class GamerProfileServiceTest {
     }
 
     @Test
+    void editProfilePromotesPendingStatusToPartialWhenMinimalFieldsUpdated() {
+        UUID userId = UUID.randomUUID();
+        UUID profileId = UUID.randomUUID();
+        User user = User.builder().id(userId).username("old").build();
+        GamerProfile profile = GamerProfile.builder()
+                .id(profileId)
+                .user(user)
+                .nickname("old")
+                .setupStatus(GamerProfileSetupStatus.PENDING)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+        GamerProfileRequest request = new GamerProfileRequest(
+                "newNick",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                List.of()
+        );
+
+        when(gamerProfileFinder.findProfileByUserId(userId)).thenReturn(profile);
+        when(setupStatusResolverService.resolve(profile)).thenReturn(GamerProfileSetupStatus.PENDING);
+        when(gamerProfileRepository.save(profile)).thenReturn(profile);
+        when(favoriteMapRepository.findByProfile_Id(profileId)).thenReturn(List.of());
+
+        GamerProfileResponse response = service.editProfile(userId, request);
+
+        assertThat(profile.getSetupStatus()).isEqualTo(GamerProfileSetupStatus.PARTIAL);
+    }
+
+    @Test
     void editProfileThrowsWhenNicknameIsBlank() {
         GamerProfileRequest request = new GamerProfileRequest(
                 "   ",

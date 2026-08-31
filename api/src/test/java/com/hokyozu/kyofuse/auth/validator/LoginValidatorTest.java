@@ -68,7 +68,7 @@ class LoginValidatorTest {
     }
 
     @Test
-    void validateThrowsWhenUserIsNotActive() {
+    void validateThrowsWhenUserIsBanned() {
         User user = User.builder()
                 .passwordHash("hash")
                 .status(UserStatus.BANNED)
@@ -79,6 +79,6 @@ class LoginValidatorTest {
 
         assertThatThrownBy(() -> validator.validate(user, request))
                 .isInstanceOf(UnauthorizedException.class)
-                .hasMessage("Usuário não está ativo.");
+                .hasMessage("Sua conta foi suspensa.");
     }
 }

@@ -47,4 +47,12 @@ export class UserAccountService {
   unlinkSteam(): Observable<UserAccountResponse> {
     return this.http.delete<UserAccountResponse>(`${this.baseUrl}/social/steam`);
   }
+
+  deactivateAccount(request: import('../../../models/account/user-account.model').DeactivateAccountRequest): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/deactivate`, request);
+  }
+
+  scheduleDeletion(request: import('../../../models/account/user-account.model').ScheduleDeletionRequest): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/schedule-deletion`, request);
+  }
 }

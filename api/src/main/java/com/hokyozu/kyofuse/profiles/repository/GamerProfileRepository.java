@@ -9,7 +9,10 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -28,4 +31,21 @@ public interface GamerProfileRepository extends JpaRepository<GamerProfile, UUID
     @Override
     @EntityGraph(attributePaths = "user")
     Page<GamerProfile> findAll(Specification<GamerProfile> specification, Pageable pageable);
+
+    @EntityGraph(attributePaths = "user")
+    @Query("""
+        SELECT gp FROM GamerProfile gp
+        JOIN gp.user u
+        WHERE u.status = :status
+          AND u.id NOT IN :excludedUserIds
+        ORDER BY
+          CASE WHEN gp.lookingForTeam = true OR gp.lookingForDuo = true THEN 0 ELSE 1 END,
+          gp.premierRating DESC NULLS LAST,
+          gp.createdAt DESC
+    """)
+    Page<GamerProfile> findSuggestions(
+            @Param("status") UserStatus status,
+            @Param("excludedUserIds") Collection<UUID> excludedUserIds,
+            Pageable pageable
+    );
 }

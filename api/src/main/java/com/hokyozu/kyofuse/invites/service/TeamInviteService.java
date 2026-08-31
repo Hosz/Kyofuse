@@ -52,9 +52,9 @@ public class TeamInviteService {
     private final NotificationService notificationService;
 
     @Transactional
-    public TeamInviteResponse inviteUser(UUID userId, UUID teamId, UUID receiverId, TeamInviteRequest request) {
+    public TeamInviteResponse inviteUser(UUID userId, UUID teamId, String receiverUsername, TeamInviteRequest request) {
         User user = userFinder.findProfileByUserId(userId);
-        User receiver = userFinder.findProfileByUserId(receiverId);
+        User receiver = userFinder.findProfileByUsername(receiverUsername);
         Team team = teamFinder.findTeamById(teamId);
 
         userChecker.checkActive(user);
@@ -62,7 +62,7 @@ public class TeamInviteService {
         teamChecker.checkInactive(team);
         teamChecker.checkUserIsOwner(team, user);
 
-        if (receiverId.equals(team.getOwner().getId())) {
+        if (receiver.getId().equals(team.getOwner().getId())) {
             throw new BadRequestException("You cannot invite the team owner.");
         }
 
@@ -74,7 +74,7 @@ public class TeamInviteService {
             throw new BadRequestException("The user is already a member of the team.");
         }
 
-        if (userId == receiverId) {
+        if (userId == receiver.getId()) {
             throw new BadRequestException("You cannot invite yourself to a team.");
         }
 

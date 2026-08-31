@@ -21,6 +21,11 @@ export const PRIVACY_SETTINGS_ROUTES: Routes = [
           import('./sections/password-settings/password-settings').then((m) => m.PasswordSettingsSectionComponent),
       },
       {
+        path: 'gerenciamento',
+        loadComponent: () =>
+          import('./sections/account-management/account-management').then((m) => m.AccountManagementSectionComponent),
+      },
+      {
         path: 'perfil',
         loadComponent: () =>
           import('./sections/profile-visibility/profile-visibility').then((m) => m.ProfileVisibilitySectionComponent),

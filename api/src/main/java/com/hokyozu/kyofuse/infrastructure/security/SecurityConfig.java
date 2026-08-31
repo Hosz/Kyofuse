@@ -61,6 +61,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/reset-password").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auth/steam").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/steam").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/switch-account").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/disconnect-account").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/reactivate/confirm").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/reactivate/resend").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 ->

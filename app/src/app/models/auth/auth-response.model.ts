@@ -13,6 +13,7 @@ export interface authResponse {
   email: string;
   username: string;
   role: string;
+  switchToken?: string;
 }
 
 export interface authMeResponse {
@@ -29,11 +30,23 @@ export interface mfaRequiredResponse {
   mfaToken: string;
 }
 
-/** Resultado de POST /api/auth/login: ou autentica de vez, ou pede o código de 2FA. */
-export type loginResult = authResponse | mfaRequiredResponse;
+export interface reactivationRequiredResponse {
+  reactivationRequired: true;
+  reactivationToken: string;
+  maskedEmail: string;
+  scheduledDeletion: boolean;
+  scheduledDeletionDate?: string;
+}
+
+/** Resultado de POST /api/auth/login: ou autentica de vez, ou pede o código de 2FA, ou reativação de conta. */
+export type loginResult = authResponse | mfaRequiredResponse | reactivationRequiredResponse;
 
 export function isMfaRequired(result: loginResult): result is mfaRequiredResponse {
   return (result as mfaRequiredResponse).mfaRequired === true;
+}
+
+export function isReactivationRequired(result: loginResult): result is reactivationRequiredResponse {
+  return (result as reactivationRequiredResponse).reactivationRequired === true;
 }
 
 export interface RegisterResponse {

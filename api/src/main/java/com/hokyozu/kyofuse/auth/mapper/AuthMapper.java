@@ -3,6 +3,7 @@ package com.hokyozu.kyofuse.auth.mapper;
 import com.hokyozu.kyofuse.auth.dto.request.RegisterRequest;
 import com.hokyozu.kyofuse.auth.dto.response.AuthResponse;
 import com.hokyozu.kyofuse.auth.dto.response.RegisterResponse;
+import com.hokyozu.kyofuse.auth.dto.response.SwitchAccountResponse;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.enums.UserRole;
 import com.hokyozu.kyofuse.users.enums.UserStatus;
@@ -70,11 +71,26 @@ public class AuthMapper {
     }
 
     public static AuthResponse toResponse(User user) {
+        return toResponse(user, null);
+    }
+
+    public static AuthResponse toResponse(User user, String switchToken) {
         return new AuthResponse(
                 user.getId(),
                 user.getEmail(),
                 user.getUsername(),
-                user.getRole().name()
+                user.getRole().name(),
+                switchToken
+        );
+    }
+
+    public static SwitchAccountResponse toSwitchResponse(User user, String switchToken) {
+        return new SwitchAccountResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getUsername(),
+                user.getRole().name(),
+                switchToken
         );
     }
 

@@ -59,6 +59,9 @@ class AuthServiceTest {
     private RefreshTokenService refreshTokenService;
 
     @Mock
+    private com.hokyozu.kyofuse.infrastructure.security.jwt.AccountSwitchService accountSwitchService;
+
+    @Mock
     private GamerProfileService gamerProfileService;
 
     @Mock
@@ -100,6 +103,11 @@ class AuthServiceTest {
     @Mock
     private com.hokyozu.kyofuse.infrastructure.security.steam.SteamService steamService;
 
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+
+    @Mock
+    private AccountReactivationService accountReactivationService;
 
     @InjectMocks
     private AuthService authService;
@@ -200,6 +208,31 @@ class AuthServiceTest {
         assertThat(result.refreshToken()).isEqualTo("refresh-token");
         assertThat(result.user().getId()).isEqualTo(user.getId());
         assertThat(result.user().getEmail()).isEqualTo(user.getEmail());
+    }
+
+    @Test
+    void loginReturnsReactivationRequiredWhenAccountIsInactive() {
+        LoginRequest request = new LoginRequest("hideo", "password123");
+        User inactiveUser = User.builder()
+                .id(UUID.randomUUID())
+                .email("hideo@example.com")
+                .username("hideo")
+                .role(UserRole.USER)
+                .status(UserStatus.INACTIVE)
+                .deactivatedAt(Instant.now())
+                .emailVerified(true)
+                .build();
+
+        when(loginFinderValidator.validate(request)).thenReturn(inactiveUser);
+        when(accountReactivationService.createAndSendReactivationCode(inactiveUser))
+                .thenReturn(new com.hokyozu.kyofuse.auth.dto.response.ReactivationRequiredResponse("react-token", "h***o@example.com", false, null));
+
+        AuthService.LoginOutcome outcome = authService.login(request, CLIENT_IP);
+
+        assertThat(outcome).isInstanceOf(AuthService.LoginOutcome.ReactivationRequired.class);
+        AuthService.LoginOutcome.ReactivationRequired react = (AuthService.LoginOutcome.ReactivationRequired) outcome;
+        assertThat(react.reactivationToken()).isEqualTo("react-token");
+        assertThat(react.maskedEmail()).isEqualTo("h***o@example.com");
     }
 
     @Test
@@ -517,5 +550,77 @@ class AuthServiceTest {
         authService.logout(" ");
 
         verify(refreshTokenService, never()).revoke(any());
+    }
+
+    @Test
+    void switchAccountSuccessfullyRotatesAndIssuesNewTokens() {
+        UUID userId = UUID.randomUUID();
+        User user = User.builder()
+                .id(userId)
+                .email("player@example.com")
+                .username("player")
+                .status(UserStatus.ACTIVE)
+                .build();
+
+        com.hokyozu.kyofuse.auth.dto.request.SwitchAccountRequest request =
+                new com.hokyozu.kyofuse.auth.dto.request.SwitchAccountRequest(userId, "raw-switch-token", "device-1");
+
+        when(accountSwitchService.validateAndRotate(userId, "raw-switch-token", "device-1"))
+                .thenReturn(new com.hokyozu.kyofuse.infrastructure.security.jwt.AccountSwitchService.SwitchValidationResult(user, "new-rotated-switch-token"));
+        when(jwtService.generateToken(user)).thenReturn("new-access-jwt");
+        when(refreshTokenService.issue(user)).thenReturn(new RefreshTokenService.IssuedToken("new-refresh-raw", Instant.now().plusSeconds(3600)));
+
+        AuthService.AuthResult result = authService.switchAccount(request, "127.0.0.1", "Mozilla");
+
+        assertThat(result.user()).isEqualTo(user);
+        assertThat(result.accessToken()).isEqualTo("new-access-jwt");
+        assertThat(result.refreshToken()).isEqualTo("new-refresh-raw");
+        assertThat(result.switchToken()).isEqualTo("new-rotated-switch-token");
+        verify(rateLimiterService).recordSuccess("switch:ip:127.0.0.1");
+    }
+
+    @Test
+    void switchAccountRejectsInactiveUser() {
+        UUID userId = UUID.randomUUID();
+        User inactiveUser = User.builder()
+                .id(userId)
+                .email("banned@example.com")
+                .username("banned")
+                .status(UserStatus.BANNED)
+                .build();
+
+        com.hokyozu.kyofuse.auth.dto.request.SwitchAccountRequest request =
+                new com.hokyozu.kyofuse.auth.dto.request.SwitchAccountRequest(userId, "raw-switch-token", "device-1");
+
+        when(accountSwitchService.validateAndRotate(userId, "raw-switch-token", "device-1"))
+                .thenReturn(new com.hokyozu.kyofuse.infrastructure.security.jwt.AccountSwitchService.SwitchValidationResult(inactiveUser, "new-token"));
+
+        assertThatThrownBy(() -> authService.switchAccount(request, "127.0.0.1", "Mozilla"))
+                .isInstanceOf(UnauthorizedException.class)
+                .hasMessageContaining("não está ativo");
+    }
+
+    @Test
+    void disconnectAccountDelegatesToAccountSwitchService() {
+        UUID userId = UUID.randomUUID();
+        com.hokyozu.kyofuse.auth.dto.request.DisconnectAccountRequest request =
+                new com.hokyozu.kyofuse.auth.dto.request.DisconnectAccountRequest(userId, "device-1");
+
+        authService.disconnectAccount(request);
+
+        verify(accountSwitchService).revokeSession(userId, "device-1");
+    }
+
+    @Test
+    void generateSwitchTokenCreatesSessionForUser() {
+        UUID userId = UUID.randomUUID();
+        User user = User.builder().id(userId).username("player").build();
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(accountSwitchService.createOrUpdateSession(user, "device-1")).thenReturn("generated-token");
+
+        String token = authService.generateSwitchToken(userId, "device-1");
+
+        assertThat(token).isEqualTo("generated-token");
     }
 }

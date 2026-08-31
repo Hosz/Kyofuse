@@ -59,6 +59,18 @@ class AuthControllerTest {
     @Mock
     private com.hokyozu.kyofuse.profiles.repository.GamerProfileRepository gamerProfileRepository;
 
+    @Mock
+    private com.hokyozu.kyofuse.infrastructure.client.ClientIpResolver clientIpResolver;
+
+    @Mock
+    private com.hokyozu.kyofuse.auth.service.AccountReactivationService accountReactivationService;
+
+    @Mock
+    private com.hokyozu.kyofuse.auth.repository.UserRepository userRepository;
+
+    @Mock
+    private com.hokyozu.kyofuse.infrastructure.security.totp.MfaTokenService mfaTokenService;
+
     @InjectMocks
     private AuthController controller;
 
@@ -69,6 +81,7 @@ class AuthControllerTest {
         MockHttpServletRequest httpRequest = new MockHttpServletRequest();
         httpRequest.setRemoteAddr("203.0.113.10");
 
+        when(clientIpResolver.resolve(httpRequest)).thenReturn("203.0.113.10");
         when(authService.register(request, "203.0.113.10")).thenReturn(user);
 
         RegisterResponse response = controller.register(request, httpRequest);
@@ -107,7 +120,8 @@ class AuthControllerTest {
         httpRequest.setRemoteAddr("203.0.113.10");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        when(authService.loginWithGoogle("google-id-token", "203.0.113.10"))
+        when(clientIpResolver.resolve(httpRequest)).thenReturn("203.0.113.10");
+        when(authService.loginWithGoogle("google-id-token", "203.0.113.10", null, null))
                 .thenReturn(new AuthService.LoginOutcome.Authenticated(result));
         stubCookies();
 
@@ -115,7 +129,7 @@ class AuthControllerTest {
 
         AuthResponse authResponse = (AuthResponse) responseEntity.getBody();
         assertThat(authResponse.userId()).isEqualTo(user.getId());
-        verify(authService).loginWithGoogle("google-id-token", "203.0.113.10");
+        verify(authService).loginWithGoogle("google-id-token", "203.0.113.10", null, null);
         assertThat(response.getCookies()).extracting("name")
                 .containsExactlyInAnyOrder(AuthCookieService.ACCESS_TOKEN_COOKIE, AuthCookieService.REFRESH_TOKEN_COOKIE);
     }
@@ -140,7 +154,8 @@ class AuthControllerTest {
         httpRequest.setRemoteAddr("203.0.113.10");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        when(authService.loginWithSteam(openIdParams, "203.0.113.10"))
+        when(clientIpResolver.resolve(httpRequest)).thenReturn("203.0.113.10");
+        when(authService.loginWithSteam(openIdParams, "203.0.113.10", null, null))
                 .thenReturn(new AuthService.LoginOutcome.Authenticated(result));
         stubCookies();
 
@@ -148,7 +163,7 @@ class AuthControllerTest {
 
         AuthResponse authResponse = (AuthResponse) responseEntity.getBody();
         assertThat(authResponse.userId()).isEqualTo(user.getId());
-        verify(authService).loginWithSteam(openIdParams, "203.0.113.10");
+        verify(authService).loginWithSteam(openIdParams, "203.0.113.10", null, null);
         assertThat(response.getCookies()).extracting("name")
                 .containsExactlyInAnyOrder(AuthCookieService.ACCESS_TOKEN_COOKIE, AuthCookieService.REFRESH_TOKEN_COOKIE);
     }
@@ -162,14 +177,15 @@ class AuthControllerTest {
         httpRequest.setRemoteAddr("203.0.113.10");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        when(authService.login(request, "203.0.113.10")).thenReturn(new AuthService.LoginOutcome.Authenticated(result));
+        when(clientIpResolver.resolve(httpRequest)).thenReturn("203.0.113.10");
+        when(authService.login(request, "203.0.113.10", null, null)).thenReturn(new AuthService.LoginOutcome.Authenticated(result));
         stubCookies();
 
         ResponseEntity<?> responseEntity = controller.login(request, httpRequest, response);
 
         AuthResponse authResponse = (AuthResponse) responseEntity.getBody();
         assertThat(authResponse.userId()).isEqualTo(user.getId());
-        verify(authService).login(request, "203.0.113.10");
+        verify(authService).login(request, "203.0.113.10", null, null);
         assertThat(response.getCookies()).extracting("name")
                 .containsExactlyInAnyOrder(AuthCookieService.ACCESS_TOKEN_COOKIE, AuthCookieService.REFRESH_TOKEN_COOKIE);
     }
@@ -181,7 +197,8 @@ class AuthControllerTest {
         httpRequest.setRemoteAddr("203.0.113.10");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        when(authService.login(request, "203.0.113.10"))
+        when(clientIpResolver.resolve(httpRequest)).thenReturn("203.0.113.10");
+        when(authService.login(request, "203.0.113.10", null, null))
                 .thenReturn(new AuthService.LoginOutcome.MfaRequired("mfa-token"));
 
         ResponseEntity<?> responseEntity = controller.login(request, httpRequest, response);
@@ -233,12 +250,23 @@ class AuthControllerTest {
                 "totpEnabled", true
         ));
 
+        User user = User.builder()
+                .id(userId)
+                .email("john@example.com")
+                .username("john")
+                .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
+                .totpEnabled(true)
+                .build();
+        when(userRepository.findById(userId)).thenReturn(java.util.Optional.of(user));
+
         com.hokyozu.kyofuse.profiles.entity.GamerProfile profile = com.hokyozu.kyofuse.profiles.entity.GamerProfile.builder()
                 .setupStatus(com.hokyozu.kyofuse.profiles.enums.GamerProfileSetupStatus.COMPLETED)
                 .build();
         when(gamerProfileRepository.findByUserId(userId)).thenReturn(java.util.Optional.of(profile));
 
-        AuthMeResponse response = controller.me(jwt);
+        MockHttpServletResponse httpResponse = new MockHttpServletResponse();
+        AuthMeResponse response = controller.me(jwt, httpResponse);
 
         assertThat(response.userId()).isEqualTo(userId);
         assertThat(response.email()).isEqualTo("john@example.com");
@@ -246,6 +274,77 @@ class AuthControllerTest {
         assertThat(response.role()).isEqualTo("USER");
         assertThat(response.totpEnabled()).isTrue();
         assertThat(response.profileSetupStatus()).isEqualTo("COMPLETED");
+    }
+
+    @Test
+    void meThrowsWhenUserIsInactiveAndClearsCookies() {
+        UUID userId = UUID.randomUUID();
+        Jwt jwt = jwt(userId, Map.of("email", "john@example.com"));
+
+        User user = User.builder()
+                .id(userId)
+                .email("john@example.com")
+                .username("john")
+                .role(UserRole.USER)
+                .status(UserStatus.INACTIVE)
+                .build();
+        when(userRepository.findById(userId)).thenReturn(java.util.Optional.of(user));
+        when(authCookieService.buildExpiredAccessTokenCookie()).thenReturn(ResponseCookie.from(AuthCookieService.ACCESS_TOKEN_COOKIE, "").build());
+        when(authCookieService.buildExpiredRefreshTokenCookie()).thenReturn(ResponseCookie.from(AuthCookieService.REFRESH_TOKEN_COOKIE, "").build());
+
+        MockHttpServletResponse httpResponse = new MockHttpServletResponse();
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> controller.me(jwt, httpResponse))
+                .isInstanceOf(com.hokyozu.kyofuse.shared.exception.UnauthorizedException.class);
+    }
+
+    @Test
+    void switchAccountDelegatesToAuthServiceAndSetsCookies() {
+        User user = user();
+        com.hokyozu.kyofuse.auth.dto.request.SwitchAccountRequest request =
+                new com.hokyozu.kyofuse.auth.dto.request.SwitchAccountRequest(user.getId(), "switch-token", "device-1");
+        AuthService.AuthResult result = new AuthService.AuthResult(user, "access-token", "refresh-token", Instant.now(), "new-switch-token");
+        MockHttpServletRequest httpRequest = new MockHttpServletRequest();
+        httpRequest.setRemoteAddr("203.0.113.10");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        when(clientIpResolver.resolve(httpRequest)).thenReturn("203.0.113.10");
+        when(authService.switchAccount(request, "203.0.113.10", null)).thenReturn(result);
+        stubCookies();
+
+        ResponseEntity<com.hokyozu.kyofuse.auth.dto.response.SwitchAccountResponse> responseEntity =
+                controller.switchAccount(request, httpRequest, response);
+
+        assertThat(responseEntity.getBody()).isNotNull();
+        assertThat(responseEntity.getBody().userId()).isEqualTo(user.getId());
+        assertThat(responseEntity.getBody().switchToken()).isEqualTo("new-switch-token");
+        assertThat(response.getCookies()).extracting("name")
+                .containsExactlyInAnyOrder(AuthCookieService.ACCESS_TOKEN_COOKIE, AuthCookieService.REFRESH_TOKEN_COOKIE);
+    }
+
+    @Test
+    void disconnectAccountDelegatesToAuthService() {
+        com.hokyozu.kyofuse.auth.dto.request.DisconnectAccountRequest request =
+                new com.hokyozu.kyofuse.auth.dto.request.DisconnectAccountRequest(UUID.randomUUID(), "device-1");
+
+        controller.disconnectAccount(request);
+
+        verify(authService).disconnectAccount(request);
+    }
+
+    @Test
+    void getSwitchTokenReturnsSwitchTokenWhenDeviceIdPresent() {
+        UUID userId = UUID.randomUUID();
+        Jwt jwt = jwt(userId, Map.of("email", "john@example.com", "username", "john", "role", "USER"));
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("X-Device-Id", "device-123");
+
+        when(authService.generateSwitchToken(userId, "device-123")).thenReturn("generated-switch-token");
+
+        ResponseEntity<Map<String, String>> response = controller.getSwitchToken(jwt, request);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(200);
+        assertThat(response.getBody()).containsEntry("switchToken", "generated-switch-token");
     }
 
     private void stubCookies() {

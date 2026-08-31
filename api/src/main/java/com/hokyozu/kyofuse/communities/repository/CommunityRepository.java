@@ -19,4 +19,6 @@ public interface CommunityRepository extends JpaRepository<Community, UUID> {
     Page<Community> findAllByStatusAndNameContainingIgnoreCase(CommunityStatus communityStatus, String name, Pageable pageable);
 
     Optional<Community> findByTeamId(UUID teamId);
+
+    java.util.List<Community> findAllByOwner(com.hokyozu.kyofuse.users.entity.User owner);
 }

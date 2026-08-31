@@ -3,6 +3,7 @@ package com.hokyozu.kyofuse.users.service;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.hokyozu.kyofuse.auth.repository.UserRepository;
 import com.hokyozu.kyofuse.auth.service.EmailVerificationService;
+import com.hokyozu.kyofuse.infrastructure.security.jwt.AccountSwitchSessionRepository;
 import com.hokyozu.kyofuse.infrastructure.security.oauth.GoogleTokenVerifierService;
 import com.hokyozu.kyofuse.infrastructure.security.crypto.EmailCipherService;
 import com.hokyozu.kyofuse.infrastructure.security.steam.SteamService;
@@ -37,6 +38,9 @@ public class UserAccountService {
     private final EmailVerificationService emailVerificationService;
     private final GoogleTokenVerifierService googleTokenVerifierService;
     private final SteamService steamService;
+    private final AccountSwitchSessionRepository accountSwitchSessionRepository;
+    private final com.hokyozu.kyofuse.infrastructure.security.jwt.RefreshTokenRepository refreshTokenRepository;
+    private final AccountSuccessionService accountSuccessionService;
 
     @Transactional(readOnly = true)
     public UserAccountResponse getAccount(UUID userId) {
@@ -125,6 +129,8 @@ public class UserAccountService {
         user.setHasCustomPassword(true);
         user.setUpdatedAt(Instant.now());
         userRepository.save(user);
+
+        accountSwitchSessionRepository.deleteAllByUserId(userId);
     }
 
     @Transactional
@@ -231,6 +237,56 @@ public class UserAccountService {
         userRepository.save(user);
 
         return UserAccountMapper.toResponse(user);
+    }
+
+    @Transactional
+    public void deactivateAccount(UUID userId, com.hokyozu.kyofuse.users.dto.request.DeactivateAccountRequest request) {
+        User user = userFinder.findProfileByUserId(userId);
+
+        if (user.isHasCustomPassword()) {
+            if (request.password() == null || request.password().isBlank()) {
+                throw new BadRequestException("Informe sua senha para confirmar a desativação da conta.");
+            }
+            if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+                throw new UnauthorizedException("Senha incorreta.");
+            }
+        }
+
+        user.setStatus(com.hokyozu.kyofuse.users.enums.UserStatus.INACTIVE);
+        user.setDeactivatedAt(Instant.now());
+        user.setDeletionScheduledAt(null);
+        user.setUpdatedAt(Instant.now());
+        userRepository.save(user);
+
+        accountSuccessionService.handleOwnershipTransferAndDemotion(user);
+
+        accountSwitchSessionRepository.deleteAllByUserId(userId);
+        refreshTokenRepository.deleteAllByUser(user);
+    }
+
+    @Transactional
+    public void scheduleDeletion(UUID userId, com.hokyozu.kyofuse.users.dto.request.ScheduleDeletionRequest request) {
+        User user = userFinder.findProfileByUserId(userId);
+
+        if (user.isHasCustomPassword()) {
+            if (request.password() == null || request.password().isBlank()) {
+                throw new BadRequestException("Informe sua senha para confirmar a exclusão da conta.");
+            }
+            if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+                throw new UnauthorizedException("Senha incorreta.");
+            }
+        }
+
+        user.setStatus(com.hokyozu.kyofuse.users.enums.UserStatus.INACTIVE);
+        user.setDeactivatedAt(Instant.now());
+        user.setDeletionScheduledAt(Instant.now().plus(7, java.time.temporal.ChronoUnit.DAYS));
+        user.setUpdatedAt(Instant.now());
+        userRepository.save(user);
+
+        accountSuccessionService.handleOwnershipTransferAndDemotion(user);
+
+        accountSwitchSessionRepository.deleteAllByUserId(userId);
+        refreshTokenRepository.deleteAllByUser(user);
     }
 
     private boolean isSyntheticSteamEmail(String email) {

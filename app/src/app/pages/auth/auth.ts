@@ -1,5 +1,6 @@
-import { Component, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { AuthHeroComponent } from '../../components/auth/auth-hero/auth-hero';
 import { AuthTabsComponent } from '../../components/auth/auth-tabs/auth-tabs';
 import { ForgotPasswordFormComponent } from '../../components/auth/forgot-password-form/forgot-password-form';
@@ -10,12 +11,13 @@ import { SocialAuthButtonsComponent } from '../../components/auth/social-auth-bu
 import { AuthTabId } from '../../shared/models/auth.model';
 import { registerRequest } from '../../models/auth/register-form.model';
 import { loginRequest } from '../../models/auth/login-form.model';
-import { isMfaRequired } from '../../models/auth/auth-response.model';
+import { isMfaRequired, isReactivationRequired } from '../../models/auth/auth-response.model';
 import { AuthService } from '../../core/services/auth/auth.service';
 
 @Component({
   selector: 'app-auth',
   imports: [
+    FormsModule,
     AuthHeroComponent,
     AuthTabsComponent,
     ForgotPasswordFormComponent,
@@ -27,10 +29,12 @@ import { AuthService } from '../../core/services/auth/auth.service';
   templateUrl: './auth.html',
   styleUrl: './auth.css',
 })
-export class AuthComponent {
+export class AuthComponent implements OnInit {
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
 
+  isAddAccount = signal(false);
   activeTab = signal<AuthTabId>('login');
 
   isLoggingIn = signal(false);
@@ -52,11 +56,33 @@ export class AuthComponent {
   mfaSubmitting = signal(false);
   mfaError = signal<string | null>(null);
 
+  /** Reativação de Conta */
+  reactivationToken = signal<string | null>(null);
+  reactivationMaskedEmail = signal('');
+  reactivationScheduledDeletion = signal(false);
+  reactivationScheduledDate = signal<string | null>(null);
+  reactivationCode = signal('');
+  reactivationSubmitting = signal(false);
+  reactivationError = signal<string | null>(null);
+  resendingReactivation = signal(false);
+  resendReactivationSuccess = signal(false);
+  resendReactivationError = signal<string | null>(null);
+
   /** Controle de exibição do formulário de Esqueci a Senha */
   isForgotPassword = signal(false);
   forgotPasswordSubmitting = signal(false);
   forgotPasswordError = signal<string | null>(null);
   forgotPasswordSuccess = signal(false);
+
+  ngOnInit(): void {
+    this.route.queryParams.subscribe((params) => {
+      this.isAddAccount.set(params['addAccount'] === 'true');
+    });
+  }
+
+  cancelAddAccount(): void {
+    this.router.navigateByUrl('/home');
+  }
 
   onTabSelected(tab: AuthTabId): void {
     this.activeTab.set(tab);
@@ -86,6 +112,16 @@ export class AuthComponent {
           return;
         }
 
+        if (isReactivationRequired(result)) {
+          this.reactivationError.set(null);
+          this.reactivationCode.set('');
+          this.reactivationToken.set(result.reactivationToken);
+          this.reactivationMaskedEmail.set(result.maskedEmail);
+          this.reactivationScheduledDeletion.set(result.scheduledDeletion);
+          this.reactivationScheduledDate.set(result.scheduledDeletionDate ?? null);
+          return;
+        }
+
         this.router.navigateByUrl('/home');
       },
       error: (error) => {
@@ -108,6 +144,16 @@ export class AuthComponent {
         if (isMfaRequired(result)) {
           this.mfaError.set(null);
           this.mfaToken.set(result.mfaToken);
+          return;
+        }
+
+        if (isReactivationRequired(result)) {
+          this.reactivationError.set(null);
+          this.reactivationCode.set('');
+          this.reactivationToken.set(result.reactivationToken);
+          this.reactivationMaskedEmail.set(result.maskedEmail);
+          this.reactivationScheduledDeletion.set(result.scheduledDeletion);
+          this.reactivationScheduledDate.set(result.scheduledDeletionDate ?? null);
           return;
         }
 
@@ -152,6 +198,15 @@ export class AuthComponent {
         if (data.mfaToken) {
           this.mfaError.set(null);
           this.mfaToken.set(data.mfaToken);
+          return;
+        }
+        if (data.reactivationToken) {
+          this.reactivationError.set(null);
+          this.reactivationCode.set('');
+          this.reactivationToken.set(data.reactivationToken);
+          this.reactivationMaskedEmail.set(data.maskedEmail);
+          this.reactivationScheduledDeletion.set(data.scheduledDeletion);
+          this.reactivationScheduledDate.set(data.scheduledDeletionDate ?? null);
           return;
         }
         this.router.navigateByUrl('/home');
@@ -311,5 +366,61 @@ export class AuthComponent {
         );
       },
     });
+  }
+
+  onConfirmReactivation(): void {
+    const token = this.reactivationToken();
+    const code = this.reactivationCode().trim();
+    if (!token || code.length !== 6 || this.reactivationSubmitting()) return;
+
+    this.reactivationSubmitting.set(true);
+    this.reactivationError.set(null);
+
+    this.authService.confirmReactivation(token, code).subscribe({
+      next: (result) => {
+        this.reactivationSubmitting.set(false);
+        if (isMfaRequired(result)) {
+          this.reactivationToken.set(null);
+          this.mfaError.set(null);
+          this.mfaToken.set(result.mfaToken);
+          return;
+        }
+
+        this.reactivationToken.set(null);
+        this.router.navigateByUrl('/home');
+      },
+      error: (err) => {
+        this.reactivationSubmitting.set(false);
+        this.reactivationError.set(err?.error?.message ?? 'Código de verificação incorreto ou expirado.');
+      },
+    });
+  }
+
+  onResendReactivationCode(): void {
+    const token = this.reactivationToken();
+    if (!token || this.resendingReactivation()) return;
+
+    this.resendingReactivation.set(true);
+    this.resendReactivationError.set(null);
+    this.resendReactivationSuccess.set(false);
+
+    this.authService.resendReactivationCode(token).subscribe({
+      next: () => {
+        this.resendingReactivation.set(false);
+        this.resendReactivationSuccess.set(true);
+        setTimeout(() => this.resendReactivationSuccess.set(false), 4000);
+      },
+      error: (err) => {
+        this.resendingReactivation.set(false);
+        this.resendReactivationError.set(err?.error?.message ?? 'Falha ao reenviar código de reativação.');
+      },
+    });
+  }
+
+  onCancelReactivation(): void {
+    this.reactivationToken.set(null);
+    this.reactivationCode.set('');
+    this.reactivationError.set(null);
+    this.reactivationSubmitting.set(false);
   }
 }

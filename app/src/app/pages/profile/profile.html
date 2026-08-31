@@ -192,7 +192,7 @@
 <app-entity-list-modal title="Times" [open]="activeModal() === 'teams'" [items]="teams()" (closed)="closeModal()" />
 <app-invite-modal
   [open]="activeModal() === 'invite'"
-  [targetName]="profile().nickname"
-  [targetUserId]="profile().userId"
+  [targetName]="profile().nickname || profile().username"
+  [targetUsername]="profile().username"
   (closed)="closeModal()"
 />

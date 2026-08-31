@@ -25,4 +25,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsByGoogleId(String googleId);
 
     Optional<User> findByUsername(String username);
+
+    java.util.List<User> findByStatusAndDeactivatedAtBeforeAndDeletionScheduledAtIsNull(com.hokyozu.kyofuse.users.enums.UserStatus status, java.time.Instant cutoff);
+
+    java.util.List<User> findByStatusAndDeletionScheduledAtBefore(com.hokyozu.kyofuse.users.enums.UserStatus status, java.time.Instant cutoff);
 }

@@ -1,10 +1,12 @@
 package com.hokyozu.kyofuse.relationships.follow.controller;
 
+import com.hokyozu.kyofuse.profiles.dto.response.GamerProfileResponse;
 import com.hokyozu.kyofuse.relationships.follow.dto.response.UserFollowResponse;
 import com.hokyozu.kyofuse.relationships.follow.service.UserFollowService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -121,5 +123,14 @@ public class UserFollowController {
 
         UUID userId = UUID.fromString(jwt.getSubject());
         return userFollowService.acceptFollowRequest(userId, requestId);
+    }
+
+    @GetMapping("/suggestions")
+    public Page<GamerProfileResponse> getFollowSuggestions(
+            @AuthenticationPrincipal Jwt jwt,
+            @PageableDefault(size = 5) Pageable pageable) {
+
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return userFollowService.getFollowSuggestions(userId, pageable);
     }
 }

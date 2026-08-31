@@ -20,4 +20,6 @@ public interface TeamRepository extends JpaRepository<Team, UUID>, JpaSpecificat
     Page<Team> findAll(Specification<Team> specification, Pageable pageable);
 
     Page<Team> findByIdIn(Collection<UUID> ids, Pageable pageable);
+
+    java.util.List<Team> findAllByOwner(com.hokyozu.kyofuse.users.entity.User owner);
 }

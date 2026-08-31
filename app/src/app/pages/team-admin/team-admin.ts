@@ -1,10 +1,11 @@
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, computed, HostListener, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AppSidebarComponent } from '../../components/layout/app-sidebar/app-sidebar';
 import { ModalComponent } from '../../components/shared/modal/modal';
 import { TeamService } from '../../core/services/teams/team.service';
 import { TeamMemberService } from '../../core/services/teams/team-member.service';
 import { TeamInviteService } from '../../core/services/teams/team-invite.service';
+import { ProfileService } from '../../core/services/profile/profile.service';
 import { MediaService } from '../../core/services/media/media.service';
 import { ToastService } from '../../core/services/ui/toast.service';
 import { TeamResponse, UpdateTeamRequest } from '../../models/teams/team.model';
@@ -53,9 +54,11 @@ export class TeamAdminComponent {
   private teamService = inject(TeamService);
   private teamMemberService = inject(TeamMemberService);
   private teamInviteService = inject(TeamInviteService);
+  private profileService = inject(ProfileService);
   private mediaService = inject(MediaService);
   private toastService = inject(ToastService);
   private observer?: IntersectionObserver;
+  private inviteSearchDebounce?: ReturnType<typeof setTimeout>;
 
   readonly roleOptions = PLAYER_ROLE_OPTIONS;
   readonly memberTypeOptions = TEAM_MEMBER_TYPE_OPTIONS;
@@ -148,13 +151,78 @@ export class TeamAdminComponent {
   membersLoadingMore = signal(false);
   hasMoreMembersToLoad = computed(() => !this.membersLastPage());
 
-  inviteUserId = signal('');
+  inviteUsername = signal('');
   inviteMessage = signal('');
   inviteMemberType = signal<TeamMemberType | ''>('');
   inviteRoleInTeam = signal<PlayerRole | ''>('');
   inviting = signal(false);
   inviteError = signal<string | null>(null);
   inviteSuccess = signal(false);
+
+  suggestedProfiles = signal<gamerProfileResponse[]>([]);
+  suggestionsLoading = signal(false);
+  suggestionsOpen = signal(false);
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const el = event.target as HTMLElement | null;
+    if (!el?.closest('#invite-autocomplete-container')) {
+      this.suggestionsOpen.set(false);
+    }
+  }
+
+  onInviteUsernameInput(value: string): void {
+    this.inviteUsername.set(value);
+    this.inviteError.set(null);
+    this.inviteSuccess.set(false);
+
+    const query = value.trim().replace(/^@/, '');
+    if (!query) {
+      if (this.inviteSearchDebounce) clearTimeout(this.inviteSearchDebounce);
+      this.suggestedProfiles.set([]);
+      this.suggestionsOpen.set(false);
+      this.suggestionsLoading.set(false);
+      return;
+    }
+
+    this.suggestionsOpen.set(true);
+    this.suggestionsLoading.set(true);
+
+    if (this.inviteSearchDebounce) clearTimeout(this.inviteSearchDebounce);
+    this.inviteSearchDebounce = setTimeout(() => {
+      this.profileService.listingProfiles({ username: query }, 0, 5).subscribe({
+        next: (response) => {
+          this.suggestedProfiles.set(response.content);
+          this.suggestionsLoading.set(false);
+        },
+        error: (err) => {
+          console.error('Failed to fetch profile suggestions:', err);
+          this.suggestedProfiles.set([]);
+          this.suggestionsLoading.set(false);
+        },
+      });
+    }, 250);
+  }
+
+  onInviteUsernameFocus(): void {
+    const query = this.inviteUsername().trim().replace(/^@/, '');
+    if (query) {
+      this.suggestionsOpen.set(true);
+      if (this.suggestedProfiles().length === 0 && !this.suggestionsLoading()) {
+        this.onInviteUsernameInput(this.inviteUsername());
+      }
+    }
+  }
+
+  selectSuggestedProfile(profile: gamerProfileResponse): void {
+    this.inviteUsername.set(profile.username);
+    this.suggestionsOpen.set(false);
+    this.suggestedProfiles.set([]);
+  }
+
+  closeSuggestions(): void {
+    this.suggestionsOpen.set(false);
+  }
 
   removeConfirmMember = signal<TeamMemberResponse | null>(null);
   removing = signal(false);
@@ -197,9 +265,9 @@ export class TeamAdminComponent {
     this.loadLookingForTeam(this.lookingPage() + 1);
   }
 
-  /** Reaproveita o convite por id que já existe no formulário acima. */
+  /** Reaproveita o convite por username no formulário acima. */
   invitePlayer(profile: gamerProfileResponse): void {
-    this.inviteUserId.set(profile.userId);
+    this.inviteUsername.set(profile.username);
     this.inviteMember();
   }
 
@@ -237,6 +305,7 @@ export class TeamAdminComponent {
 
   ngOnDestroy(): void {
     this.observer?.disconnect();
+    if (this.inviteSearchDebounce) clearTimeout(this.inviteSearchDebounce);
   }
 
   private setupSectionObserver(): void {
@@ -325,15 +394,16 @@ export class TeamAdminComponent {
 
   inviteMember(): void {
     const teamId = this.teamId();
-    const userId = this.inviteUserId().trim();
-    if (!teamId || !userId || this.inviting()) return;
+    const username = this.inviteUsername().trim().replace(/^@/, '');
+    if (!teamId || !username || this.inviting()) return;
 
     this.inviting.set(true);
     this.inviteError.set(null);
     this.inviteSuccess.set(false);
+    this.suggestionsOpen.set(false);
 
     this.teamInviteService
-      .inviteUser(teamId, userId, {
+      .inviteUser(teamId, username, {
         message: this.inviteMessage().trim() || undefined,
         proposedMemberType: this.inviteMemberType() || undefined,
         proposedRoleInTeam: this.inviteRoleInTeam() || undefined,
@@ -342,7 +412,8 @@ export class TeamAdminComponent {
         next: () => {
           this.inviting.set(false);
           this.inviteSuccess.set(true);
-          this.inviteUserId.set('');
+          this.inviteUsername.set('');
+          this.suggestedProfiles.set([]);
           this.inviteMessage.set('');
           this.inviteMemberType.set('');
           this.inviteRoleInTeam.set('');
@@ -350,7 +421,7 @@ export class TeamAdminComponent {
         error: (error) => {
           console.error('Failed to invite member:', error);
           this.inviting.set(false);
-          this.inviteError.set('Não foi possível enviar o convite. Confira o ID informado.');
+          this.inviteError.set(error?.error?.message ?? 'Não foi possível enviar o convite. Confira o usuário informado.');
         },
       });
   }

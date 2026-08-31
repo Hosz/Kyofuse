@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { UserAccountService } from '../../core/services/account/user-account.service';
 import { ProfileService } from '../../core/services/profile/profile.service';
 import { MediaService } from '../../core/services/media/media.service';
+import { AccountManagerService } from '../../core/services/auth/account-manager.service';
 import { FALLBACK_AVATAR_URL } from '../../shared/utils/format.util';
 import { UserAccountResponse } from '../../models/account/user-account.model';
 import { gamerProfileResponse } from '../../models/profile/gamer-profile.model';
@@ -22,6 +23,7 @@ export class ProfileSetupComponent implements OnInit {
   private readonly userAccountService = inject(UserAccountService);
   private readonly profileService = inject(ProfileService);
   private readonly mediaService = inject(MediaService);
+  private readonly accountManager = inject(AccountManagerService);
 
   account = signal<UserAccountResponse | null>(null);
   profile = signal<gamerProfileResponse | null>(null);
@@ -136,16 +138,25 @@ export class ProfileSetupComponent implements OnInit {
         await firstValueFrom(this.userAccountService.updateUsername({ username: rawUsername }));
       }
       
-      await firstValueFrom(this.profileService.editProfile({
+      const updatedProfile = await firstValueFrom(this.profileService.editProfile({
         nickname: rawNickname,
         avatarUrl: this.avatarLoadError() ? undefined : this.avatarUrl().trim() || undefined,
       }));
 
+      this.accountManager.registerOrUpdateAccount({
+        userId: updatedProfile.userId,
+        username: rawUsername,
+        nickname: updatedProfile.nickname,
+        avatarUrl: updatedProfile.avatarUrl,
+        country: updatedProfile.country,
+      });
+
       await this.router.navigate(['/home']);
     } catch (error: any) {
       console.error('Erro ao salvar perfil:', error);
-      this.saving.set(false);
       this.errorMessage.set(error?.error?.message ?? 'Falha ao salvar as alterações. Verifique os dados informados.');
+    } finally {
+      this.saving.set(false);
     }
   }
 
@@ -154,14 +165,24 @@ export class ProfileSetupComponent implements OnInit {
     this.errorMessage.set(null);
     try {
       const currentNickname = this.nickname().trim() || this.account()?.username || 'Player';
-      await firstValueFrom(this.profileService.editProfile({
+      const updatedProfile = await firstValueFrom(this.profileService.editProfile({
         nickname: currentNickname,
       }));
+
+      this.accountManager.registerOrUpdateAccount({
+        userId: updatedProfile.userId,
+        username: this.account()?.username || '',
+        nickname: updatedProfile.nickname,
+        avatarUrl: updatedProfile.avatarUrl,
+        country: updatedProfile.country,
+      });
+
       await this.router.navigate(['/home']);
     } catch (error: any) {
       console.error('Erro ao pular configuração:', error);
-      this.saving.set(false);
       this.errorMessage.set(error?.error?.message ?? 'Falha ao concluir a configuração.');
+    } finally {
+      this.saving.set(false);
     }
   }
 }

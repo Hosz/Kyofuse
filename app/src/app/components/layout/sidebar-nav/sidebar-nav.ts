@@ -16,6 +16,7 @@ export class SidebarNavComponent {
 
   navItems = input<NavItem[]>([
     { icon: 'home', label: 'Página Inicial', route: '/home' },
+    { icon: 'explore', label: 'Explorar', route: '/explorar' },
     { icon: 'notifications', label: 'Notificações', route: '/notificacoes' },
     { icon: 'emoji_events', label: 'Torneios', route: '/torneios' },
     { icon: 'chat_bubble', label: 'Conversas', route: '/chats' },

@@ -4,8 +4,13 @@ import com.hokyozu.kyofuse.notifications.dto.request.CreateNotificationRequest;
 import com.hokyozu.kyofuse.notifications.enums.NotificationTargetType;
 import com.hokyozu.kyofuse.notifications.enums.NotificationType;
 import com.hokyozu.kyofuse.notifications.service.NotificationService;
+import com.hokyozu.kyofuse.profiles.dto.response.GamerProfileResponse;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
+import com.hokyozu.kyofuse.profiles.entity.GamerProfileFavoriteMap;
 import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
+import com.hokyozu.kyofuse.profiles.mapper.GamerProfileMapper;
+import com.hokyozu.kyofuse.profiles.repository.GamerProfileFavoriteMapRepository;
+import com.hokyozu.kyofuse.profiles.repository.GamerProfileRepository;
 import com.hokyozu.kyofuse.relationships.block.repository.UserBlockRepository;
 import com.hokyozu.kyofuse.relationships.follow.dto.response.UserFollowResponse;
 import com.hokyozu.kyofuse.relationships.follow.entity.UserFollow;
@@ -21,6 +26,7 @@ import com.hokyozu.kyofuse.relationships.privacy.repository.UserPrivacySettingsR
 import com.hokyozu.kyofuse.shared.exception.ForbiddenException;
 import com.hokyozu.kyofuse.shared.exception.NotFoundException;
 import com.hokyozu.kyofuse.users.entity.User;
+import com.hokyozu.kyofuse.users.enums.UserStatus;
 import com.hokyozu.kyofuse.users.finder.UserFinder;
 import com.hokyozu.kyofuse.users.service.UserChecker;
 import lombok.RequiredArgsConstructor;
@@ -29,8 +35,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -46,6 +56,8 @@ public class UserFollowService {
     private final UserFollowRepository userFollowRepository;
     private final FollowPermissionService followPermissionService;
     private final GamerProfileFinder gamerProfileFinder;
+    private final GamerProfileRepository gamerProfileRepository;
+    private final GamerProfileFavoriteMapRepository gamerProfileFavoriteMapRepository;
 
     @Transactional
     public UserFollowResponse followUser(UUID userId, UUID userFollowId) {
@@ -248,5 +260,33 @@ public class UserFollowService {
     public Long showFollowingQuantity(UUID userIdFollowing) {
         User user = userFinder.findProfileByUserId(userIdFollowing);
         return userFollowRepository.countByFollower(user);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<GamerProfileResponse> getFollowSuggestions(UUID userId, Pageable pageable) {
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
+
+        Set<UUID> excludedUserIds = new HashSet<>();
+        excludedUserIds.add(userId);
+        excludedUserIds.addAll(userFollowRepository.findFollowedIdsByFollower(user));
+        excludedUserIds.addAll(userBlockRepository.findBlockedIdsByBlocker(user));
+        excludedUserIds.addAll(userBlockRepository.findBlockerIdsByBlocked(user));
+
+        Page<GamerProfile> profiles = gamerProfileRepository.findSuggestions(
+                UserStatus.ACTIVE, excludedUserIds, pageable);
+
+        List<UUID> profileIds = profiles.stream().map(GamerProfile::getId).toList();
+        List<GamerProfileFavoriteMap> maps = profileIds.isEmpty()
+                ? List.of()
+                : gamerProfileFavoriteMapRepository.findByProfile_IdIn(profileIds);
+
+        Map<UUID, List<GamerProfileFavoriteMap>> mapsByProfile = maps.stream()
+                .collect(Collectors.groupingBy(map -> map.getProfile().getId()));
+
+        return profiles.map(profile -> GamerProfileMapper.toResponse(
+                profile,
+                mapsByProfile.getOrDefault(profile.getId(), List.of())
+        ));
     }
 }

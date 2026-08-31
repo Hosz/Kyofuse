@@ -17,6 +17,7 @@ export class PrivacySettingsShellComponent {
   readonly accountSections = [
     { path: 'conta', label: 'Dados da Conta', icon: 'manage_accounts' },
     { path: 'senha', label: 'Alteração de Senha', icon: 'lock_reset' },
+    { path: 'gerenciamento', label: 'Gerenciamento da Conta', icon: 'dangerous' },
   ];
 
   readonly sections = [
@@ -30,6 +31,10 @@ export class PrivacySettingsShellComponent {
   readonly securitySections = [
     { path: 'seguranca', label: 'Autenticação em Duas Etapas', icon: 'security' },
   ];
+
+  get allSections() {
+    return [...this.accountSections, ...this.sections, ...this.securitySections];
+  }
 
   ngOnInit(): void {
     this.store.load();

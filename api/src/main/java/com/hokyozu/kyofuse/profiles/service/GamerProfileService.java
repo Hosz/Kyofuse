@@ -6,6 +6,7 @@ import com.hokyozu.kyofuse.profiles.dto.response.GamerProfileResponse;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfileFavoriteMap;
 import com.hokyozu.kyofuse.profiles.enums.Cs2Map;
+import com.hokyozu.kyofuse.profiles.enums.GamerProfileSetupStatus;
 import com.hokyozu.kyofuse.profiles.enums.PlayerRole;
 import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import com.hokyozu.kyofuse.profiles.mapper.GamerProfileMapper;
@@ -114,7 +115,11 @@ public class GamerProfileService {
         profile.setSecondaryRole(newSecondary);
 
         updateFavoriteMapsService.execute(profile, request.favoriteMaps());
-        profile.setSetupStatus(setupStatusResolverService.resolve(profile));
+        GamerProfileSetupStatus newStatus = setupStatusResolverService.resolve(profile);
+        if (newStatus == GamerProfileSetupStatus.PENDING) {
+            newStatus = GamerProfileSetupStatus.PARTIAL;
+        }
+        profile.setSetupStatus(newStatus);
 
         GamerProfile savedProfile = gamerProfileRepository.save(profile);
         List<GamerProfileFavoriteMap> favoriteMaps =

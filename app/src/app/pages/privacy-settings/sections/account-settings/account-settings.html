@@ -1,10 +1,15 @@
-<section class="flex flex-col gap-lg rounded-xl border border-outline-variant bg-surface-container-low p-lg">
-  <div class="flex items-center justify-between border-b border-outline-variant pb-3">
-    <div class="flex items-center gap-2">
-      <span class="material-symbols-outlined text-primary">manage_accounts</span>
-      <h2 class="text-title-md font-bold text-on-surface">Dados da Conta</h2>
+<section class="flex flex-col gap-6 rounded-2xl border border-outline-variant bg-surface-container-low p-6 sm:p-8 shadow-sm">
+  <div class="flex items-center justify-between border-b border-outline-variant pb-4">
+    <div class="flex items-center gap-3">
+      <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <span class="material-symbols-outlined text-[24px]">manage_accounts</span>
+      </div>
+      <div class="flex flex-col">
+        <h2 class="text-title-lg font-bold text-on-surface">Dados da Conta</h2>
+        <span class="text-body-sm text-on-surface-variant">Gerencie seu nome de usuário, e-mail e vínculos de autenticação externa.</span>
+      </div>
     </div>
-    <span class="rounded-md border border-outline-variant px-2 py-1 text-label-sm text-on-surface-variant">Conta</span>
+    <span class="rounded-full border border-outline-variant bg-surface-container px-3 py-1 text-label-sm font-semibold text-on-surface-variant">Conta</span>
   </div>
 
   @if (loading()) {
@@ -14,7 +19,7 @@
   } @else if (account(); as acc) {
     <div class="flex flex-col divide-y divide-outline-variant">
       <!-- USERNAME -->
-      <div class="flex flex-col gap-3 py-4 first:pt-0">
+      <div class="flex flex-col gap-3 py-5 first:pt-0">
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div class="flex flex-col">
             <span class="text-body-md font-semibold text-on-surface">Nome de Usuário</span>
@@ -23,11 +28,11 @@
 
           @if (!editingUsername()) {
             <div class="flex items-center gap-3">
-              <span class="font-mono text-body-sm font-semibold text-on-surface">&#64;{{ acc.username }}</span>
+              <span class="font-mono text-body-md font-bold text-primary">&#64;{{ acc.username }}</span>
               <button
                 type="button"
                 (click)="toggleEditUsername()"
-                class="cursor-pointer rounded-full border border-outline-variant px-3 py-1.5 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high"
+                class="cursor-pointer rounded-full border border-outline-variant px-4 py-1.5 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high"
               >
                 Alterar
               </button>
@@ -36,16 +41,16 @@
         </div>
 
         @if (editingUsername()) {
-          <div class="flex flex-col gap-3 rounded-lg border border-outline-variant bg-surface-container p-4">
-            <label class="flex flex-col gap-1.5">
-              <span class="text-label-sm font-semibold text-on-surface-variant">Novo nome de usuário</span>
+          <div class="flex flex-col gap-4 rounded-2xl border border-outline-variant bg-surface-container p-5 max-w-xl">
+            <label class="flex flex-col gap-2">
+              <span class="text-label-sm font-semibold text-on-surface">Novo nome de usuário</span>
               <div class="relative flex items-center">
-                <span class="absolute left-3 text-body-sm text-on-surface-variant">&#64;</span>
+                <span class="absolute left-3.5 text-body-md text-on-surface-variant">&#64;</span>
                 <input
                   type="text"
                   [(ngModel)]="newUsername"
                   placeholder="novo_username"
-                  class="w-full rounded-lg border border-outline-variant bg-surface-container-low py-2.5 pl-7 pr-3 text-body-sm text-on-surface outline-none focus:border-primary"
+                  class="w-full rounded-xl border border-outline-variant bg-surface-container-low py-3 pl-8 pr-4 text-body-sm text-on-surface outline-none focus:border-primary"
                 />
               </div>
             </label>
@@ -116,7 +121,7 @@
                 <button
                   type="button"
                   (click)="toggleEditEmail()"
-                  class="cursor-pointer rounded-full border border-outline-variant px-3 py-1.5 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high"
+                  class="cursor-pointer rounded-full border border-outline-variant px-4 py-1.5 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high"
                 >
                   {{ acc.isSyntheticEmail ? 'Adicionar e-mail' : 'Alterar' }}
                 </button>
@@ -126,31 +131,34 @@
         </div>
 
         @if (editingEmail() && !acc.hasGoogle) {
-          <div class="flex flex-col gap-3 rounded-lg border border-outline-variant bg-surface-container p-4">
-            <label class="flex flex-col gap-1.5">
-              <span class="text-label-sm font-semibold text-on-surface-variant">Novo endereço de e-mail</span>
+          <div class="flex flex-col gap-4 rounded-2xl border border-outline-variant bg-surface-container p-5 max-w-xl">
+            <label class="flex flex-col gap-2">
+              <span class="text-label-sm font-semibold text-on-surface">Novo endereço de e-mail</span>
               <input
                 type="email"
                 [(ngModel)]="newEmail"
                 placeholder="seu@novoemail.com"
-                class="w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                class="w-full rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 text-body-sm text-on-surface outline-none focus:border-primary"
               />
             </label>
 
             @if (acc.hasPassword) {
-              <label class="flex flex-col gap-1.5">
-                <span class="text-label-sm font-semibold text-on-surface-variant">Senha atual (para confirmação)</span>
+              <label class="flex flex-col gap-2">
+                <span class="text-label-sm font-semibold text-on-surface">Senha atual (para confirmação)</span>
                 <input
                   type="password"
                   [(ngModel)]="emailCurrentPassword"
                   placeholder="Sua senha atual"
-                  class="w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                  class="w-full rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 text-body-sm text-on-surface outline-none focus:border-primary"
                 />
               </label>
             }
 
             @if (emailError()) {
-              <p class="text-label-sm text-error">{{ emailError() }}</p>
+              <div class="rounded-xl border border-error/20 bg-error/10 p-3 text-label-sm text-error flex items-start gap-2">
+                <span class="material-symbols-outlined text-[18px] shrink-0">error</span>
+                <span>{{ emailError() }}</span>
+              </div>
             }
 
             <div class="flex items-center gap-2 pt-1">
@@ -158,7 +166,7 @@
                 type="button"
                 (click)="toggleEditEmail()"
                 [disabled]="savingEmail()"
-                class="cursor-pointer rounded-full border border-outline-variant px-3.5 py-1.5 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:opacity-50"
+                class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:opacity-50"
               >
                 Cancelar
               </button>
@@ -166,7 +174,7 @@
                 type="button"
                 (click)="saveEmail()"
                 [disabled]="savingEmail() || !newEmail().trim()"
-                class="cursor-pointer rounded-full bg-secondary-fixed px-4 py-1.5 text-label-sm font-bold text-on-secondary transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                class="cursor-pointer rounded-full bg-primary-container px-5 py-2 text-label-sm font-bold text-on-primary-container transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {{ savingEmail() ? 'Salvando...' : (acc.isSyntheticEmail ? 'Cadastrar e-mail' : 'Salvar e-mail') }}
               </button>
@@ -288,5 +296,25 @@
         </ul>
       </div>
     }
+
+    <!-- LINK PARA GERENCIAMENTO E STATUS DA CONTA -->
+    <div class="mt-4 flex flex-col gap-3 rounded-2xl border border-outline-variant bg-surface-container/30 p-6 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex items-center gap-3.5">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-error/10 text-error">
+          <span class="material-symbols-outlined text-[22px]">dangerous</span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-body-md font-semibold text-on-surface">Gerenciamento e Status da Conta</span>
+          <span class="text-label-sm text-on-surface-variant">Deseja pausar suas atividades temporariamente ou excluir sua conta? Acesse a área dedicada.</span>
+        </div>
+      </div>
+
+      <a
+        routerLink="/configuracoes/gerenciamento"
+        class="cursor-pointer whitespace-nowrap rounded-full border border-outline-variant bg-surface-container px-4 py-2 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high hover:text-error"
+      >
+        Acessar Gerenciamento
+      </a>
+    </div>
   }
 </section>

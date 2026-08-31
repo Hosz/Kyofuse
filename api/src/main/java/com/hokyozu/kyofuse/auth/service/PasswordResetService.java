@@ -5,6 +5,7 @@ import com.hokyozu.kyofuse.auth.mapper.PasswordResetTokenMapper;
 import com.hokyozu.kyofuse.auth.repository.PasswordResetTokenRepository;
 import com.hokyozu.kyofuse.auth.repository.UserRepository;
 import com.hokyozu.kyofuse.infrastructure.security.crypto.EmailCipherService;
+import com.hokyozu.kyofuse.infrastructure.security.jwt.AccountSwitchSessionRepository;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.RefreshTokenRepository;
 import com.hokyozu.kyofuse.infrastructure.security.ratelimit.RateLimitPolicies;
 import com.hokyozu.kyofuse.infrastructure.security.ratelimit.RateLimiterService;
@@ -32,6 +33,7 @@ public class PasswordResetService {
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository tokenRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final AccountSwitchSessionRepository accountSwitchSessionRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailCipherService emailCipherService;
     private final MailService mailService;
@@ -102,6 +104,7 @@ public class PasswordResetService {
         tokenRepository.save(resetToken);
 
         refreshTokenRepository.deleteAllByUser(user);
+        accountSwitchSessionRepository.deleteAllByUserId(user.getId());
     }
 
     private String hashToken(String rawToken) {

@@ -42,6 +42,9 @@ class PasswordResetServiceTest {
     private RefreshTokenRepository refreshTokenRepository;
 
     @Mock
+    private com.hokyozu.kyofuse.infrastructure.security.jwt.AccountSwitchSessionRepository accountSwitchSessionRepository;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
 
     @Mock

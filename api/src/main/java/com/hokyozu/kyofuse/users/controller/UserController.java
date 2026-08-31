@@ -22,6 +22,7 @@ import java.util.UUID;
 public class UserController {
 
     private final UserAccountService userAccountService;
+    private final com.hokyozu.kyofuse.infrastructure.security.jwt.AuthCookieService authCookieService;
 
     @GetMapping("/me/account")
     public UserAccountResponse getAccount(@AuthenticationPrincipal Jwt jwt) {
@@ -77,5 +78,32 @@ public class UserController {
     @DeleteMapping("/me/social/steam")
     public UserAccountResponse unlinkSteam(@AuthenticationPrincipal Jwt jwt) {
         return userAccountService.unlinkSteam(UUID.fromString(jwt.getSubject()));
+    }
+
+    @PostMapping("/me/deactivate")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deactivateAccount(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody @Valid com.hokyozu.kyofuse.users.dto.request.DeactivateAccountRequest request,
+            jakarta.servlet.http.HttpServletResponse response
+    ) {
+        userAccountService.deactivateAccount(UUID.fromString(jwt.getSubject()), request);
+        clearAuthCookies(response);
+    }
+
+    @PostMapping("/me/schedule-deletion")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void scheduleDeletion(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody @Valid com.hokyozu.kyofuse.users.dto.request.ScheduleDeletionRequest request,
+            jakarta.servlet.http.HttpServletResponse response
+    ) {
+        userAccountService.scheduleDeletion(UUID.fromString(jwt.getSubject()), request);
+        clearAuthCookies(response);
+    }
+
+    private void clearAuthCookies(jakarta.servlet.http.HttpServletResponse response) {
+        response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, authCookieService.buildExpiredAccessTokenCookie().toString());
+        response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, authCookieService.buildExpiredRefreshTokenCookie().toString());
     }
 }

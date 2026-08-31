@@ -26,3 +26,14 @@ export interface ChangePasswordRequest {
   currentPassword?: string;
   newPassword: string;
 }
+
+export interface DeactivateAccountRequest {
+  password?: string;
+  reason?: string;
+}
+
+export interface ScheduleDeletionRequest {
+  password?: string;
+  reason?: string;
+}
+

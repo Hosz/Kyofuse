@@ -3,10 +3,12 @@ package com.hokyozu.kyofuse.auth.controller;
 import com.hokyozu.kyofuse.auth.dto.request.*;
 import com.hokyozu.kyofuse.auth.dto.response.*;
 import com.hokyozu.kyofuse.auth.mapper.AuthMapper;
+import com.hokyozu.kyofuse.auth.service.AccountReactivationService;
 import com.hokyozu.kyofuse.auth.service.AuthService;
 import com.hokyozu.kyofuse.auth.service.EmailVerificationService;
 import com.hokyozu.kyofuse.auth.service.PasswordResetService;
 import com.hokyozu.kyofuse.auth.service.TwoFactorAuthService;
+import com.hokyozu.kyofuse.infrastructure.client.ClientIpResolver;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.AuthCookieService;
 import com.hokyozu.kyofuse.infrastructure.security.steam.SteamService;
 import com.hokyozu.kyofuse.profiles.repository.GamerProfileRepository;
@@ -37,6 +39,10 @@ public class AuthController {
     private final EmailVerificationService emailVerificationService;
     private final SteamService steamService;
     private final GamerProfileRepository gamerProfileRepository;
+    private final ClientIpResolver clientIpResolver;
+    private final AccountReactivationService accountReactivationService;
+    private final com.hokyozu.kyofuse.auth.repository.UserRepository userRepository;
+    private final com.hokyozu.kyofuse.infrastructure.security.totp.MfaTokenService mfaTokenService;
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
@@ -56,7 +62,7 @@ public class AuthController {
         AuthService.AuthResult result = authService.verifyEmail(request.token());
         applyAuthCookies(response, result);
 
-        return AuthMapper.toResponse(result.user());
+        return AuthMapper.toResponse(result.user(), result.switchToken());
     }
 
     @GetMapping("/verify-email/validate")
@@ -80,14 +86,21 @@ public class AuthController {
             HttpServletRequest httpRequest,
             HttpServletResponse response
     ) {
-        AuthService.LoginOutcome outcome = authService.login(request, clientIp(httpRequest));
+        AuthService.LoginOutcome outcome = authService.login(request, clientIp(httpRequest), userAgent(httpRequest), deviceId(httpRequest));
 
         return switch (outcome) {
             case AuthService.LoginOutcome.MfaRequired mfaRequired ->
                     ResponseEntity.ok(new MfaRequiredResponse(mfaRequired.mfaToken()));
+            case AuthService.LoginOutcome.ReactivationRequired reactivationRequired ->
+                    ResponseEntity.ok(new com.hokyozu.kyofuse.auth.dto.response.ReactivationRequiredResponse(
+                            reactivationRequired.reactivationToken(),
+                            reactivationRequired.maskedEmail(),
+                            reactivationRequired.scheduledDeletion(),
+                            reactivationRequired.scheduledDeletionDate()
+                    ));
             case AuthService.LoginOutcome.Authenticated authenticated -> {
                 applyAuthCookies(response, authenticated.result());
-                yield ResponseEntity.ok(AuthMapper.toResponse(authenticated.result().user()));
+                yield ResponseEntity.ok(AuthMapper.toResponse(authenticated.result().user(), authenticated.result().switchToken()));
             }
         };
     }
@@ -98,14 +111,21 @@ public class AuthController {
             HttpServletRequest httpRequest,
             HttpServletResponse response
     ) {
-        AuthService.LoginOutcome outcome = authService.loginWithGoogle(request.idToken(), clientIp(httpRequest));
+        AuthService.LoginOutcome outcome = authService.loginWithGoogle(request.idToken(), clientIp(httpRequest), userAgent(httpRequest), deviceId(httpRequest));
 
         return switch (outcome) {
             case AuthService.LoginOutcome.MfaRequired mfaRequired ->
                     ResponseEntity.ok(new MfaRequiredResponse(mfaRequired.mfaToken()));
+            case AuthService.LoginOutcome.ReactivationRequired reactivationRequired ->
+                    ResponseEntity.ok(new com.hokyozu.kyofuse.auth.dto.response.ReactivationRequiredResponse(
+                            reactivationRequired.reactivationToken(),
+                            reactivationRequired.maskedEmail(),
+                            reactivationRequired.scheduledDeletion(),
+                            reactivationRequired.scheduledDeletionDate()
+                    ));
             case AuthService.LoginOutcome.Authenticated authenticated -> {
                 applyAuthCookies(response, authenticated.result());
-                yield ResponseEntity.ok(AuthMapper.toResponse(authenticated.result().user()));
+                yield ResponseEntity.ok(AuthMapper.toResponse(authenticated.result().user(), authenticated.result().switchToken()));
             }
         };
     }
@@ -124,27 +144,93 @@ public class AuthController {
             HttpServletRequest httpRequest,
             HttpServletResponse response
     ) {
-        AuthService.LoginOutcome outcome = authService.loginWithSteam(openIdParams, clientIp(httpRequest));
+        AuthService.LoginOutcome outcome = authService.loginWithSteam(openIdParams, clientIp(httpRequest), userAgent(httpRequest), deviceId(httpRequest));
 
         return switch (outcome) {
             case AuthService.LoginOutcome.MfaRequired mfaRequired ->
                     ResponseEntity.ok(new MfaRequiredResponse(mfaRequired.mfaToken()));
+            case AuthService.LoginOutcome.ReactivationRequired reactivationRequired ->
+                    ResponseEntity.ok(new com.hokyozu.kyofuse.auth.dto.response.ReactivationRequiredResponse(
+                            reactivationRequired.reactivationToken(),
+                            reactivationRequired.maskedEmail(),
+                            reactivationRequired.scheduledDeletion(),
+                            reactivationRequired.scheduledDeletionDate()
+                    ));
             case AuthService.LoginOutcome.Authenticated authenticated -> {
                 applyAuthCookies(response, authenticated.result());
-                yield ResponseEntity.ok(AuthMapper.toResponse(authenticated.result().user()));
+                yield ResponseEntity.ok(AuthMapper.toResponse(authenticated.result().user(), authenticated.result().switchToken()));
             }
         };
+    }
+
+    @PostMapping("/reactivate/confirm")
+    public ResponseEntity<?> confirmReactivation(
+            @RequestBody @Valid com.hokyozu.kyofuse.auth.dto.request.ConfirmReactivationRequest request,
+            HttpServletRequest httpRequest,
+            HttpServletResponse response
+    ) {
+        User user = accountReactivationService.confirmReactivation(request.reactivationToken(), request.code());
+        if (user.isTotpEnabled()) {
+            return ResponseEntity.ok(new MfaRequiredResponse(mfaTokenService.generate(user)));
+        }
+        AuthService.AuthResult result = authService.issueTokens(user, deviceId(httpRequest));
+        applyAuthCookies(response, result);
+        authService.publishLoginSuccess(user, clientIp(httpRequest), userAgent(httpRequest));
+        return ResponseEntity.ok(AuthMapper.toResponse(result.user(), result.switchToken()));
+    }
+
+    @PostMapping("/reactivate/resend")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resendReactivationCode(
+            @RequestBody @Valid com.hokyozu.kyofuse.auth.dto.request.ResendReactivationCodeRequest request
+    ) {
+        accountReactivationService.resendReactivationCode(request.reactivationToken());
     }
 
     @PostMapping("/2fa/verify")
     public AuthResponse verifyMfa(
             @RequestBody @Valid MfaVerifyRequest request,
+            HttpServletRequest httpRequest,
             HttpServletResponse response
     ) {
-        AuthService.AuthResult result = authService.verifyMfa(request.mfaToken(), request.code());
+        AuthService.AuthResult result = authService.verifyMfa(request.mfaToken(), request.code(), clientIp(httpRequest), userAgent(httpRequest), deviceId(httpRequest));
         applyAuthCookies(response, result);
 
-        return AuthMapper.toResponse(result.user());
+        return AuthMapper.toResponse(result.user(), result.switchToken());
+    }
+
+    @PostMapping("/switch-account")
+    public ResponseEntity<SwitchAccountResponse> switchAccount(
+            @RequestBody @Valid SwitchAccountRequest request,
+            HttpServletRequest httpRequest,
+            HttpServletResponse response
+    ) {
+        AuthService.AuthResult result = authService.switchAccount(request, clientIp(httpRequest), userAgent(httpRequest));
+        applyAuthCookies(response, result);
+
+        return ResponseEntity.ok(AuthMapper.toSwitchResponse(result.user(), result.switchToken()));
+    }
+
+    @PostMapping("/disconnect-account")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void disconnectAccount(
+            @RequestBody @Valid DisconnectAccountRequest request
+    ) {
+        authService.disconnectAccount(request);
+    }
+
+    @PostMapping("/switch-token")
+    public ResponseEntity<Map<String, String>> getSwitchToken(
+            @AuthenticationPrincipal Jwt jwt,
+            HttpServletRequest httpRequest
+    ) {
+        String deviceId = deviceId(httpRequest);
+        if (deviceId == null || deviceId.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        UUID userId = UUID.fromString(jwt.getSubject());
+        String switchToken = authService.generateSwitchToken(userId, deviceId);
+        return ResponseEntity.ok(Map.of("switchToken", switchToken));
     }
 
     @PostMapping("/2fa/setup")
@@ -177,7 +263,7 @@ public class AuthController {
         AuthService.AuthResult result = authService.refresh(refreshToken);
         applyAuthCookies(response, result);
 
-        return AuthMapper.toResponse(result.user());
+        return AuthMapper.toResponse(result.user(), result.switchToken());
     }
 
     @PostMapping("/logout")
@@ -191,18 +277,26 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public AuthMeResponse me(@AuthenticationPrincipal Jwt jwt) {
+    public AuthMeResponse me(@AuthenticationPrincipal Jwt jwt, HttpServletResponse response) {
         UUID userId = UUID.fromString(jwt.getSubject());
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new com.hokyozu.kyofuse.shared.exception.UnauthorizedException("Usuário não encontrado."));
+
+        if (user.getStatus() == com.hokyozu.kyofuse.users.enums.UserStatus.INACTIVE) {
+            clearAuthCookies(response);
+            throw new com.hokyozu.kyofuse.shared.exception.UnauthorizedException("Conta inativa.");
+        }
+
         String profileSetupStatus = gamerProfileRepository.findByUserId(userId)
                 .map(profile -> profile.getSetupStatus().name())
                 .orElse("PENDING");
 
         return new AuthMeResponse(
                 userId,
-                jwt.getClaimAsString("email"),
-                jwt.getClaimAsString("username"),
-                jwt.getClaimAsString("role"),
-                Boolean.TRUE.equals(jwt.getClaim("totpEnabled")),
+                user.getEmail(),
+                user.getUsername(),
+                user.getRole().name(),
+                user.isTotpEnabled(),
                 profileSetupStatus
         );
     }
@@ -226,7 +320,15 @@ public class AuthController {
     }
 
     private String clientIp(HttpServletRequest request) {
-        return request.getRemoteAddr();
+        return clientIpResolver.resolve(request);
+    }
+
+    private String userAgent(HttpServletRequest request) {
+        return request != null ? request.getHeader("User-Agent") : null;
+    }
+
+    private String deviceId(HttpServletRequest request) {
+        return request != null ? request.getHeader("X-Device-Id") : null;
     }
 
     private void applyAuthCookies(HttpServletResponse response, AuthService.AuthResult result) {

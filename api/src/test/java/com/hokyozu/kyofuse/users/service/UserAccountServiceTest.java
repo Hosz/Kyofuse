@@ -57,6 +57,14 @@ class UserAccountServiceTest {
     @Mock
     private SteamService steamService;
 
+    @Mock
+    private com.hokyozu.kyofuse.infrastructure.security.jwt.AccountSwitchSessionRepository accountSwitchSessionRepository;
+
+    @Mock
+    private com.hokyozu.kyofuse.infrastructure.security.jwt.RefreshTokenRepository refreshTokenRepository;
+
+    @Mock
+    private AccountSuccessionService accountSuccessionService;
 
     @InjectMocks
     private UserAccountService userAccountService;
@@ -257,5 +265,39 @@ class UserAccountServiceTest {
                 .hasMessageContaining("e-mail próprio");
 
         verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void deactivateAccountSuccess() {
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
+        when(passwordEncoder.matches("myPassword", user.getPasswordHash())).thenReturn(true);
+
+        userAccountService.deactivateAccount(userId, new com.hokyozu.kyofuse.users.dto.request.DeactivateAccountRequest("myPassword", "Pausing gaming"));
+
+        assertThat(user.getStatus()).isEqualTo(com.hokyozu.kyofuse.users.enums.UserStatus.INACTIVE);
+        assertThat(user.getDeactivatedAt()).isNotNull();
+        assertThat(user.getDeletionScheduledAt()).isNull();
+
+        verify(accountSuccessionService).handleOwnershipTransferAndDemotion(user);
+        verify(accountSwitchSessionRepository).deleteAllByUserId(userId);
+        verify(refreshTokenRepository).deleteAllByUser(user);
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void scheduleDeletionSuccess() {
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
+        when(passwordEncoder.matches("myPassword", user.getPasswordHash())).thenReturn(true);
+
+        userAccountService.scheduleDeletion(userId, new com.hokyozu.kyofuse.users.dto.request.ScheduleDeletionRequest("myPassword", "Leaving platform"));
+
+        assertThat(user.getStatus()).isEqualTo(com.hokyozu.kyofuse.users.enums.UserStatus.INACTIVE);
+        assertThat(user.getDeactivatedAt()).isNotNull();
+        assertThat(user.getDeletionScheduledAt()).isNotNull();
+
+        verify(accountSuccessionService).handleOwnershipTransferAndDemotion(user);
+        verify(accountSwitchSessionRepository).deleteAllByUserId(userId);
+        verify(refreshTokenRepository).deleteAllByUser(user);
+        verify(userRepository).save(user);
     }
 }

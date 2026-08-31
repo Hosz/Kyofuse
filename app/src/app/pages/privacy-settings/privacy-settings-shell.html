@@ -1,65 +1,82 @@
 <div class="tactical-grid flex h-screen w-full overflow-hidden bg-surface">
-  <div class="shell-container flex h-screen">
+  <div class="shell-container flex h-screen w-full">
     <app-sidebar />
 
     <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto bg-surface">
-      <div class="mx-auto flex w-full max-w-6xl gap-lg px-lg py-lg">
-        <nav class="sticky top-lg hidden w-64 shrink-0 flex-col gap-1 self-start lg:flex">
-          <p class="px-3 pb-2 text-label-sm font-semibold uppercase tracking-[0.06em] text-on-surface-variant">
+      <div class="mx-auto flex w-full max-w-7xl gap-8 px-4 py-6 sm:px-6 lg:px-8">
+        <!-- NAVEGAÇÃO LATERAL DESKTOP -->
+        <nav class="sticky top-6 hidden w-64 shrink-0 flex-col gap-1 self-start lg:flex">
+          <p class="px-3 pb-2 text-label-sm font-bold uppercase tracking-[0.08em] text-on-surface-variant">
             Conta
           </p>
           @for (section of accountSections; track section.path) {
             <a
               [routerLink]="[section.path]"
-              routerLinkActive="bg-surface-container-high text-primary"
+              routerLinkActive="bg-surface-container-high text-primary font-bold shadow-sm"
               [routerLinkActiveOptions]="{ exact: false }"
-              class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-body-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+              class="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-body-sm font-semibold text-on-surface-variant transition-all hover:bg-surface-container hover:text-on-surface"
             >
-              <span class="material-symbols-outlined text-[18px]">{{ section.icon }}</span>
-              {{ section.label }}
+              <span class="material-symbols-outlined text-[20px]">{{ section.icon }}</span>
+              <span>{{ section.label }}</span>
             </a>
           }
 
-          <p class="px-3 pb-2 pt-5 text-label-sm font-semibold uppercase tracking-[0.06em] text-on-surface-variant">
+          <p class="px-3 pb-2 pt-6 text-label-sm font-bold uppercase tracking-[0.08em] text-on-surface-variant">
             Privacidade
           </p>
           @for (section of sections; track section.path) {
             <a
               [routerLink]="[section.path]"
-              routerLinkActive="bg-surface-container-high text-primary"
+              routerLinkActive="bg-surface-container-high text-primary font-bold shadow-sm"
               [routerLinkActiveOptions]="{ exact: false }"
-              class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-body-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+              class="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-body-sm font-semibold text-on-surface-variant transition-all hover:bg-surface-container hover:text-on-surface"
             >
-              <span class="material-symbols-outlined text-[18px]">{{ section.icon }}</span>
-              {{ section.label }}
+              <span class="material-symbols-outlined text-[20px]">{{ section.icon }}</span>
+              <span>{{ section.label }}</span>
             </a>
           }
 
-          <p class="px-3 pb-2 pt-5 text-label-sm font-semibold uppercase tracking-[0.06em] text-on-surface-variant">
+          <p class="px-3 pb-2 pt-6 text-label-sm font-bold uppercase tracking-[0.08em] text-on-surface-variant">
             Segurança
           </p>
           @for (section of securitySections; track section.path) {
             <a
               [routerLink]="[section.path]"
-              routerLinkActive="bg-surface-container-high text-primary"
+              routerLinkActive="bg-surface-container-high text-primary font-bold shadow-sm"
               [routerLinkActiveOptions]="{ exact: false }"
-              class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-body-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+              class="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-body-sm font-semibold text-on-surface-variant transition-all hover:bg-surface-container hover:text-on-surface"
             >
-              <span class="material-symbols-outlined text-[18px]">{{ section.icon }}</span>
-              {{ section.label }}
+              <span class="material-symbols-outlined text-[20px]">{{ section.icon }}</span>
+              <span>{{ section.label }}</span>
             </a>
           }
         </nav>
 
-        <div class="flex min-w-0 flex-1 flex-col gap-lg pb-16">
+        <!-- PAINEL PRINCIPAL DE CONTEÚDO -->
+        <div class="flex min-w-0 flex-1 flex-col gap-6 pb-20">
           <div class="flex items-center gap-2 text-body-sm text-on-surface-variant">
             <a routerLink="/perfil" class="rounded hover:text-on-surface hover:underline">Perfil</a>
             <span class="material-symbols-outlined text-[16px]">chevron_right</span>
             <span class="font-semibold text-on-surface">Configurações</span>
           </div>
 
+          <!-- NAVEGAÇÃO MOBILE (HORIZONTAL SCROLL) -->
+          <div class="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1 lg:hidden">
+            @for (section of allSections; track section.path) {
+              <a
+                [routerLink]="[section.path]"
+                routerLinkActive="bg-primary-container text-on-primary-container font-bold"
+                [routerLinkActiveOptions]="{ exact: false }"
+                class="flex shrink-0 items-center gap-2 rounded-full border border-outline-variant bg-surface-container px-3.5 py-1.5 text-label-sm font-semibold text-on-surface-variant transition-colors hover:text-on-surface"
+              >
+                <span class="material-symbols-outlined text-[16px]">{{ section.icon }}</span>
+                <span>{{ section.label }}</span>
+              </a>
+            }
+          </div>
+
           @if (store.loading()) {
-            <div class="rounded-xl border border-outline-variant bg-surface-container-low p-lg">
+            <div class="rounded-2xl border border-outline-variant bg-surface-container-low p-8">
               <app-skeleton variant="row" [count]="4" />
             </div>
           } @else {
