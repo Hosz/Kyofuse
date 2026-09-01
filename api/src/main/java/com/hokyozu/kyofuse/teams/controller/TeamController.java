@@ -57,7 +57,7 @@ public class TeamController {
     }
 
     @GetMapping("/{teamId}")
-    public TeamResponse detailTeam(@PathVariable UUID teamId) {
+    public TeamResponse detailTeam(@PathVariable String teamId) {
         return teamService.detailTeam(teamId);
     }
 

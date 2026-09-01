@@ -28,5 +28,10 @@ public enum NotificationType {
     // pra trocar mensagens, não uma mensagem comum, e a aba de notificações separa as duas.
     MESSAGE_REQUEST,
 
+    POST_MENTION,
+    COMMENT_MENTION,
+    TEAM_MENTION,
+    COMMUNITY_MENTION,
+
     SYSTEM
 }

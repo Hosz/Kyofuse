@@ -44,16 +44,16 @@
                 Seguindo
               </button>
 
-              @for (community of pinnedCommunities(); track community.id) {
+              @for (community of pinnedCommunities(); track community.communitySlug) {
                 <button
                   type="button"
-                  (click)="selectFeed(community.id)"
+                  (click)="selectFeed(community.communitySlug)"
                   class="flex cursor-pointer items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3.5 text-label-md font-bold transition-colors"
                   [class.flex-1]="stretchTabs()"
                   [class.min-w-0]="stretchTabs()"
                   [class.justify-center]="stretchTabs()"
                   [class.shrink-0]="!stretchTabs()"
-                  [class]="activeFeed() === community.id ? 'border-primary text-on-surface' : 'border-transparent text-on-surface-variant hover:text-on-surface'"
+                  [class]="activeFeed() === community.communitySlug ? 'border-primary text-on-surface' : 'border-transparent text-on-surface-variant hover:text-on-surface'"
                 >
                   @if (community.communityAvatarUrl) {
                     <img
@@ -100,7 +100,7 @@
               Publicações de <span class="font-bold text-on-surface">{{ community.communityName }}</span>
             </span>
             <a
-              [routerLink]="['/comunidade', community.id]"
+              [routerLink]="['/comunidade', community.communitySlug]"
               class="shrink-0 cursor-pointer rounded-full border border-outline-variant px-3 py-1.5 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high"
             >
               Abrir comunidade

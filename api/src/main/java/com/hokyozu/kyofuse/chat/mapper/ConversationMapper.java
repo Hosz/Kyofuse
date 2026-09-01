@@ -52,7 +52,7 @@ public class ConversationMapper {
                 conversation.getCreatedBy().getUsername(),
                 conversation.getCommunity() != null ? conversation.getCommunity().getId() : null,
                 conversation.getCommunity() != null ? conversation.getCommunity().getName() : null,
-                conversation.getCommunity() != null ? conversation.getCommunity().getAvatarUrl() : null,
+                conversation.getCommunity() != null ? conversation.getCommunity().getAvatarUrl() != null ? conversation.getCommunity().getAvatarUrl() : "/assets/profile/community-profile-image-default.png" : null,
                 conversation.getDirectUserOne() != null ? conversation.getDirectUserOne().getId() : null,
                 conversation.getDirectUserOne() != null ? conversation.getDirectUserOne().getUsername() : null,
                 directUserOneProfile != null ? directUserOneProfile.getNickname() : null,

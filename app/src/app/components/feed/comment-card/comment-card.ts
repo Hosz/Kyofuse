@@ -1,6 +1,7 @@
 import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Comment } from '../../../shared/models/social.model';
+import { PostContentComponent } from '../../../shared/components/post-content/post-content';
 import { ReactionButtonComponent } from '../../shared/reaction-button/reaction-button';
 import { UserOptionsMenuComponent } from '../../shared/user-options-menu/user-options-menu';
 import { ReactionSummaryComponent } from '../../shared/reaction-summary/reaction-summary';
@@ -11,7 +12,7 @@ import { ToastService } from '../../../core/services/ui/toast.service';
 
 @Component({
   selector: 'app-comment-card',
-  imports: [RouterLink, ReactionButtonComponent, UserOptionsMenuComponent, ReactionSummaryComponent, ConfirmDialogComponent],
+  imports: [PostContentComponent, RouterLink, ReactionButtonComponent, UserOptionsMenuComponent, ReactionSummaryComponent, ConfirmDialogComponent],
   templateUrl: './comment-card.html',
   styleUrl: './comment-card.css',
 })

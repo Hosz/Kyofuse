@@ -1,4 +1,5 @@
 import { Component, ElementRef, ViewChild, inject, output, signal } from '@angular/core';
+import { MentionInputComponent } from '../../../shared/components/mention-input/mention-input';
 import { ProfileService } from '../../../core/services/profile/profile.service';
 import { PostsService } from '../../../core/services/posts/posts.service';
 import { MediaService } from '../../../core/services/media/media.service';
@@ -8,7 +9,7 @@ import { FALLBACK_AVATAR_URL } from '../../../shared/utils/format.util';
 
 @Component({
   selector: 'app-post-composer',
-  imports: [],
+  imports: [MentionInputComponent],
   templateUrl: './post-composer.html',
   styleUrl: './post-composer.css',
 })

@@ -14,6 +14,11 @@ public class TeamFinder {
 
     private final TeamRepository teamRepository;
 
+    public Team findTeamBySlug(String slug) {
+        return teamRepository.findBySlug(slug)
+                .orElseThrow(() -> new NotFoundException("Time não encontrado: " + slug));
+    }
+
     public Team findTeamById(UUID teamId) {
         return teamRepository.findById(teamId)
                 .orElseThrow(() -> new NotFoundException("Time não encontrado: " + teamId));

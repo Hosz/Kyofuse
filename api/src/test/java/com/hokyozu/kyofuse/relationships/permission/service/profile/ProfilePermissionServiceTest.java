@@ -1,5 +1,6 @@
 package com.hokyozu.kyofuse.relationships.permission.service.profile;
 
+import com.hokyozu.kyofuse.relationships.follow.enums.FollowStatus;
 import com.hokyozu.kyofuse.relationships.follow.repository.UserFollowRepository;
 import com.hokyozu.kyofuse.relationships.friendship.repository.UserFriendshipRepository;
 import com.hokyozu.kyofuse.relationships.privacy.entity.UserPrivacySettings;
@@ -42,8 +43,6 @@ class ProfilePermissionServiceTest {
 
     @Test
     void validateViewProfileAllowsPrivateProfileToStrangers() {
-        // Perfil privado esconde conteúdo e conexões, não a identidade: quem não segue
-        // nem é amigo continua vendo avatar, apelido e bio.
         User viewer = user("viewer");
         User owner = user("owner");
 
@@ -68,7 +67,7 @@ class ProfilePermissionServiceTest {
         User owner = user("owner");
         when(userPrivacySettingsRepository.findByUser(owner)).thenReturn(settings(ProfileVisibility.PRIVATE));
         when(userFriendshipRepository.existsByUserOneAndUserTwo(viewer, owner)).thenReturn(false);
-        when(userFollowRepository.existsByFollowerAndFollowed(viewer, owner)).thenReturn(false);
+        when(userFollowRepository.existsByFollowerAndFollowedAndStatus(viewer, owner, FollowStatus.ACTIVE)).thenReturn(false);
 
         assertThatThrownBy(() -> profilePermissionService.validateViewPosts(viewer, owner))
                 .isInstanceOf(ForbiddenException.class)
@@ -80,8 +79,7 @@ class ProfilePermissionServiceTest {
         User viewer = user("viewer");
         User owner = user("owner");
         when(userPrivacySettingsRepository.findByUser(owner)).thenReturn(settings(ProfileVisibility.PRIVATE));
-        when(userFriendshipRepository.existsByUserOneAndUserTwo(viewer, owner)).thenReturn(false);
-        when(userFollowRepository.existsByFollowerAndFollowed(viewer, owner)).thenReturn(true);
+        when(userFollowRepository.existsByFollowerAndFollowedAndStatus(viewer, owner, FollowStatus.ACTIVE)).thenReturn(true);
 
         assertThatCode(() -> profilePermissionService.validateViewPosts(viewer, owner))
                 .doesNotThrowAnyException();
@@ -103,7 +101,7 @@ class ProfilePermissionServiceTest {
         User owner = user("owner");
         when(userPrivacySettingsRepository.findByUser(owner)).thenReturn(settings(ProfileVisibility.PRIVATE));
         when(userFriendshipRepository.existsByUserOneAndUserTwo(viewer, owner)).thenReturn(false);
-        when(userFollowRepository.existsByFollowerAndFollowed(viewer, owner)).thenReturn(false);
+        when(userFollowRepository.existsByFollowerAndFollowedAndStatus(viewer, owner, FollowStatus.ACTIVE)).thenReturn(false);
 
         assertThatThrownBy(() -> profilePermissionService.validateViewFollowers(viewer, owner))
                 .isInstanceOf(ForbiddenException.class)
@@ -116,7 +114,7 @@ class ProfilePermissionServiceTest {
         User owner = user("owner");
         when(userPrivacySettingsRepository.findByUser(owner)).thenReturn(settings(ProfileVisibility.PRIVATE));
         when(userFriendshipRepository.existsByUserOneAndUserTwo(viewer, owner)).thenReturn(false);
-        when(userFollowRepository.existsByFollowerAndFollowed(viewer, owner)).thenReturn(false);
+        when(userFollowRepository.existsByFollowerAndFollowedAndStatus(viewer, owner, FollowStatus.ACTIVE)).thenReturn(false);
 
         assertThatThrownBy(() -> profilePermissionService.validateViewFriends(viewer, owner))
                 .isInstanceOf(ForbiddenException.class)
@@ -129,10 +127,11 @@ class ProfilePermissionServiceTest {
         User owner = user("owner");
         when(userPrivacySettingsRepository.findByUser(owner)).thenReturn(settings(ProfileVisibility.PRIVATE));
         when(userFriendshipRepository.existsByUserOneAndUserTwo(viewer, owner)).thenReturn(false);
-        when(userFollowRepository.existsByFollowerAndFollowed(viewer, owner)).thenReturn(false);
+        when(userFollowRepository.existsByFollowerAndFollowedAndStatus(viewer, owner, FollowStatus.ACTIVE)).thenReturn(false);
 
         assertThatThrownBy(() -> profilePermissionService.validateViewFollowing(viewer, owner))
-                .isInstanceOf(ForbiddenException.class);
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("User does not have permission to view this user's following.");
     }
 
     private User user(String username) {
@@ -142,9 +141,6 @@ class ProfilePermissionServiceTest {
     private UserPrivacySettings settings(ProfileVisibility profileVisibility) {
         return UserPrivacySettings.builder()
                 .profileVisibility(profileVisibility)
-                .followersVisibility(ProfileVisibility.PUBLIC)
-                .followingVisibility(ProfileVisibility.PUBLIC)
-                .friendsVisibility(ProfileVisibility.PUBLIC)
                 .build();
     }
 }

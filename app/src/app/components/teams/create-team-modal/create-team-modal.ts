@@ -4,7 +4,7 @@ import { TeamService } from '../../../core/services/teams/team.service';
 import { MediaService } from '../../../core/services/media/media.service';
 import { TeamRequest, TeamResponse } from '../../../models/teams/team.model';
 import { PLAYER_ROLE_OPTIONS, PlayerRole } from '../../../shared/models/profile-options.model';
-import { toSlug } from '../../../shared/utils/format.util';
+import { toSlug, TEAM_FALLBACK_AVATAR_URL } from '../../../shared/utils/format.util';
 import { getCountryFlagUrl, getCountryOptions } from '../../../shared/models/location-options.model';
 
 @Component({
@@ -42,6 +42,7 @@ export class CreateTeamModalComponent {
 
   uploadingAvatar = signal(false);
   uploadingBanner = signal(false);
+  readonly defaultAvatar = TEAM_FALLBACK_AVATAR_URL;
   saving = signal(false);
   error = signal<string | null>(null);
 

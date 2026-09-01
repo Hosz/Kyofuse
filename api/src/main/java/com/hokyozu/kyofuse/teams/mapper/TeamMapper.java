@@ -46,7 +46,7 @@ public class TeamMapper {
                 teamSaved.getOwner().getUsername(),
                 teamSaved.getName(),
                 teamSaved.getSlug(),
-                teamSaved.getAvatarUrl(),
+                teamSaved.getAvatarUrl() != null ? teamSaved.getAvatarUrl() : "/assets/profile/team-profile-image-default.png",
                 teamSaved.getBannerUrl(),
                 teamSaved.getDescription(),
                 teamSaved.getRegion(),

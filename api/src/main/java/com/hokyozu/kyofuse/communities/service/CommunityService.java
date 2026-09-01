@@ -163,9 +163,15 @@ public class CommunityService {
     }
 
     @Transactional(readOnly = true)
-    public CommunityResponse detailCommunity(UUID communityId) {
-        Community community = communityRepository.findById(communityId)
-                .orElseThrow(() -> new NotFoundException("Community not found"));
+    public CommunityResponse detailCommunity(String identifier) {
+        Community community;
+        try {
+            community = communityRepository.findById(java.util.UUID.fromString(identifier))
+                    .orElseThrow(() -> new NotFoundException("Community not found"));
+        } catch (IllegalArgumentException e) {
+            community = communityRepository.findBySlug(identifier)
+                    .orElseThrow(() -> new NotFoundException("Community not found"));
+        }
 
         if (community.getStatus() == CommunityStatus.ARCHIVED) {
             throw new NotFoundException("Community not found");

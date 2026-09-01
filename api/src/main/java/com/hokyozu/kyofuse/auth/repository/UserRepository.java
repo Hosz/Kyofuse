@@ -15,6 +15,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByEmailIndex(String emailIndex);
 
     Optional<User> findByUsernameIgnoreCase(String username);
+    @org.springframework.data.jpa.repository.Query("SELECT u FROM User u WHERE u.status = :status AND LOWER(u.username) LIKE LOWER(CONCAT('%', :query, '%'))")
+    org.springframework.data.domain.Page<User> searchActiveUsers(@org.springframework.data.repository.query.Param("query") String query, @org.springframework.data.repository.query.Param("status") com.hokyozu.kyofuse.users.enums.UserStatus status, org.springframework.data.domain.Pageable pageable);
 
     Optional<User> findBySteamId(String steamId);
 

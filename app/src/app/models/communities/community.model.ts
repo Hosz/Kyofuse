@@ -14,6 +14,7 @@ export interface CommunityResponse {
     ownerUsername: string;
     teamId: string | null;
     teamName: string | null;
+    teamSlug: string | null;
     teamAvatarUrl: string | null;
     visibility: CommunityVisibility;
     status: CommunityStatus;

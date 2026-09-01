@@ -68,9 +68,9 @@
                 </button>
               </div>
             } @else {
-              <div class="flex flex-col gap-4 rounded-2xl border border-outline-variant bg-surface-container p-6 max-w-xl">
+              <div class="flex flex-col gap-4 rounded-2xl border border-outline-variant bg-surface-container p-6 max-w-2xl">
                 <label class="flex w-full flex-col gap-2">
-                  <span class="text-label-sm font-semibold text-on-surface">Confirme sua senha atual para desativar</span>
+                  <span class="text-body-sm font-semibold text-on-surface">Confirme sua senha atual para desativar</span>
                   <input
                     type="password"
                     autocomplete="current-password"
@@ -82,7 +82,7 @@
                 </label>
 
                 @if (disableError()) {
-                  <div class="rounded-xl border border-error/20 bg-error/10 p-3 text-label-sm text-error flex items-start gap-2">
+                  <div class="rounded-xl border border-error/20 bg-error/10 p-3.5 text-body-sm text-error flex items-start gap-2">
                     <span class="material-symbols-outlined text-[18px] shrink-0">error</span>
                     <span>{{ disableError() }}</span>
                   </div>
@@ -112,7 +112,7 @@
       }
 
       @case ('setup') {
-        <div class="flex flex-col gap-6 max-w-xl">
+        <div class="flex flex-col gap-6 max-w-2xl">
           <div class="flex flex-col gap-3">
             <p class="text-body-sm text-on-surface font-semibold">
               1. Abra seu app autenticador e adicione uma conta manualmente com a chave abaixo:
@@ -130,7 +130,7 @@
               </button>
             </div>
 
-            <p class="text-label-sm text-on-surface-variant">Conta: Kyofuse &middot; Emissor: Kyofuse</p>
+            <p class="text-body-sm text-on-surface-variant">Conta: Kyofuse &middot; Emissor: Kyofuse</p>
           </div>
 
           <div class="flex flex-col gap-3">
@@ -147,7 +147,7 @@
               />
             </label>
             @if (setupError()) {
-              <div class="rounded-xl border border-error/20 bg-error/10 p-3 text-label-sm text-error flex items-start gap-2">
+              <div class="rounded-xl border border-error/20 bg-error/10 p-3.5 text-body-sm text-error flex items-start gap-2">
                 <span class="material-symbols-outlined text-[18px] shrink-0">error</span>
                 <span>{{ setupError() }}</span>
               </div>

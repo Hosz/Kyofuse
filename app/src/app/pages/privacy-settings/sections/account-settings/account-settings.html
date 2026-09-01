@@ -20,14 +20,14 @@
     <div class="flex flex-col divide-y divide-outline-variant">
       <!-- USERNAME -->
       <div class="flex flex-col gap-3 py-5 first:pt-0">
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div class="flex flex-col">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex flex-col flex-1 min-w-0 pr-4">
             <span class="text-body-md font-semibold text-on-surface">Nome de Usuário</span>
-            <span class="text-label-sm text-on-surface-variant">Seu identificador exclusivo no Kyofuse (&#64;{{ acc.username }})</span>
+            <span class="text-body-sm text-on-surface-variant leading-relaxed">Seu identificador exclusivo no Kyofuse (&#64;{{ acc.username }})</span>
           </div>
 
           @if (!editingUsername()) {
-            <div class="flex items-center gap-3">
+            <div class="flex shrink-0 items-center gap-3">
               <span class="font-mono text-body-md font-bold text-primary">&#64;{{ acc.username }}</span>
               <button
                 type="button"
@@ -41,7 +41,7 @@
         </div>
 
         @if (editingUsername()) {
-          <div class="flex flex-col gap-4 rounded-2xl border border-outline-variant bg-surface-container p-5 max-w-xl">
+          <div class="flex flex-col gap-4 rounded-2xl border border-outline-variant bg-surface-container p-5 max-w-2xl">
             <label class="flex flex-col gap-2">
               <span class="text-label-sm font-semibold text-on-surface">Novo nome de usuário</span>
               <div class="relative flex items-center">
@@ -90,20 +90,20 @@
 
       <!-- EMAIL -->
       <div class="flex flex-col gap-3 py-4">
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div class="flex flex-col">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex flex-col flex-1 min-w-0 pr-4">
             <span class="text-body-md font-semibold text-on-surface">Endereço de E-mail</span>
             @if (acc.hasGoogle) {
-              <span class="text-label-sm text-on-surface-variant">Vinculado à sua conta Google. Para alterar o e-mail, desvincule o Google.</span>
+              <span class="text-body-sm text-on-surface-variant leading-relaxed">Vinculado à sua conta Google. Para alterar o e-mail, desvincule o Google.</span>
             } @else if (acc.isSyntheticEmail) {
-              <span class="text-label-sm text-primary">Conta criada via Steam. Adicione um e-mail próprio para login tradicional.</span>
+              <span class="text-body-sm text-primary leading-relaxed">Conta criada via Steam. Adicione um e-mail próprio para login tradicional.</span>
             } @else {
-              <span class="text-label-sm text-on-surface-variant">E-mail associado para notificações e login</span>
+              <span class="text-body-sm text-on-surface-variant leading-relaxed">E-mail associado para notificações e login</span>
             }
           </div>
 
           @if (!editingEmail()) {
-            <div class="flex items-center gap-3">
+            <div class="flex shrink-0 items-center gap-3">
               <div class="flex items-center gap-1.5">
                 @if (acc.isSyntheticEmail) {
                   <span class="rounded bg-surface-container-high px-2 py-1 text-label-sm text-on-surface-variant">Sem e-mail pessoal</span>
@@ -131,7 +131,7 @@
         </div>
 
         @if (editingEmail() && !acc.hasGoogle) {
-          <div class="flex flex-col gap-4 rounded-2xl border border-outline-variant bg-surface-container p-5 max-w-xl">
+          <div class="flex flex-col gap-4 rounded-2xl border border-outline-variant bg-surface-container p-5 max-w-2xl">
             <label class="flex flex-col gap-2">
               <span class="text-label-sm font-semibold text-on-surface">Novo endereço de e-mail</span>
               <input
@@ -192,13 +192,13 @@
 
       <!-- GOOGLE ACCOUNT LINK -->
       <div class="flex flex-col gap-3 py-4">
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div class="flex flex-col">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex flex-col flex-1 min-w-0 pr-4">
             <span class="text-body-md font-semibold text-on-surface">Conta Google</span>
-            <span class="text-label-sm text-on-surface-variant">Conexão direta para login rápido via Google OAuth</span>
+            <span class="text-body-sm text-on-surface-variant leading-relaxed">Conexão direta para login rápido via Google OAuth</span>
           </div>
 
-          <div class="flex items-center gap-3">
+          <div class="flex shrink-0 items-center gap-3">
             @if (acc.hasGoogle) {
               <span class="flex items-center gap-1 rounded-md border border-tertiary/40 bg-tertiary/10 px-2.5 py-1 text-label-sm font-semibold text-tertiary">
                 <span class="material-symbols-outlined text-[16px]">check_circle</span>
@@ -221,13 +221,13 @@
 
       <!-- STEAM ACCOUNT LINK -->
       <div class="flex flex-col gap-3 py-4">
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div class="flex flex-col">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex flex-col flex-1 min-w-0 pr-4">
             <span class="text-body-md font-semibold text-on-surface">Conta Steam</span>
-            <span class="text-label-sm text-on-surface-variant">Vínculo de inventário e login via Steam OpenID</span>
+            <span class="text-body-sm text-on-surface-variant leading-relaxed">Vínculo de inventário e login via Steam OpenID</span>
           </div>
 
-          <div class="flex items-center gap-3">
+          <div class="flex shrink-0 items-center gap-3">
             @if (acc.hasSteam) {
               <span class="flex items-center gap-1 rounded-md border border-tertiary/40 bg-tertiary/10 px-2.5 py-1 text-label-sm font-semibold text-tertiary">
                 <span class="material-symbols-outlined text-[16px]">check_circle</span>
@@ -260,14 +260,14 @@
     </div>
 
     @if (socialError()) {
-      <div class="flex items-start gap-2 rounded-lg border border-error/40 bg-error/10 p-3 text-label-sm text-error">
+      <div class="flex items-start gap-2 rounded-lg border border-error/40 bg-error/10 p-3 text-body-sm text-error">
         <span class="material-symbols-outlined shrink-0 text-[18px]">error</span>
         <span>{{ socialError() }}</span>
       </div>
     }
 
     @if (socialSuccess()) {
-      <div class="flex items-center gap-2 rounded-lg border border-tertiary/40 bg-tertiary/10 p-3 text-label-sm font-semibold text-tertiary">
+      <div class="flex items-center gap-2 rounded-lg border border-tertiary/40 bg-tertiary/10 p-3 text-body-sm font-semibold text-tertiary">
         <span class="material-symbols-outlined text-[18px]">check_circle</span>
         <span>{{ socialSuccess() }}</span>
       </div>
@@ -276,14 +276,14 @@
     <!-- CARD INFORMATIVO DE REQUISITOS DE DESVINCULAÇÃO -->
     @if (acc.hasGoogle || acc.hasSteam) {
       <div class="flex flex-col gap-2 rounded-lg border border-outline-variant bg-surface-container/50 p-4">
-        <div class="flex items-center gap-2 text-label-sm font-bold text-on-surface">
+        <div class="flex items-center gap-2 text-body-md font-bold text-on-surface">
           <span class="material-symbols-outlined text-[18px] text-primary">info</span>
           Regras de Segurança para Desvinculação
         </div>
-        <p class="text-label-sm text-on-surface-variant leading-relaxed">
+        <p class="text-body-sm text-on-surface-variant leading-relaxed">
           Para desvincular contas de provedores externos (Google ou Steam), sua conta deve possuir:
         </p>
-        <ul class="flex flex-col gap-1 pl-4 text-label-sm text-on-surface-variant list-disc">
+        <ul class="flex flex-col gap-1.5 pl-4 text-body-sm text-on-surface-variant list-disc">
           <li [class.text-tertiary]="acc.hasPassword" [class.font-semibold]="acc.hasPassword">
             Senha própria cadastrada na plataforma {{ acc.hasPassword ? '✓' : '(Pendente)' }}
           </li>
@@ -298,20 +298,20 @@
     }
 
     <!-- LINK PARA GERENCIAMENTO E STATUS DA CONTA -->
-    <div class="mt-4 flex flex-col gap-3 rounded-2xl border border-outline-variant bg-surface-container/30 p-6 sm:flex-row sm:items-center sm:justify-between">
-      <div class="flex items-center gap-3.5">
+    <div class="mt-4 flex flex-col gap-4 rounded-2xl border border-outline-variant bg-surface-container/30 p-6 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex items-center gap-3.5 flex-1 min-w-0 pr-4">
         <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-error/10 text-error">
           <span class="material-symbols-outlined text-[22px]">dangerous</span>
         </div>
         <div class="flex flex-col">
           <span class="text-body-md font-semibold text-on-surface">Gerenciamento e Status da Conta</span>
-          <span class="text-label-sm text-on-surface-variant">Deseja pausar suas atividades temporariamente ou excluir sua conta? Acesse a área dedicada.</span>
+          <span class="text-body-sm text-on-surface-variant leading-relaxed">Deseja pausar suas atividades temporariamente ou excluir sua conta? Acesse a área dedicada.</span>
         </div>
       </div>
 
       <a
         routerLink="/configuracoes/gerenciamento"
-        class="cursor-pointer whitespace-nowrap rounded-full border border-outline-variant bg-surface-container px-4 py-2 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high hover:text-error"
+        class="cursor-pointer whitespace-nowrap rounded-full border border-outline-variant bg-surface-container px-4 py-2 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high hover:text-error shrink-0"
       >
         Acessar Gerenciamento
       </a>

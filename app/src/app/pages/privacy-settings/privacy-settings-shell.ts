@@ -2,7 +2,6 @@ import { Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AppSidebarComponent } from '../../components/layout/app-sidebar/app-sidebar';
 import { PrivacySettingsStore } from './privacy-settings-store';
-
 import { SkeletonComponent } from '../../components/shared/skeleton/skeleton';
 
 @Component({
@@ -22,8 +21,6 @@ export class PrivacySettingsShellComponent {
 
   readonly sections = [
     { path: 'perfil', label: 'Visibilidade do Perfil', icon: 'visibility' },
-    { path: 'conteudo', label: 'Visibilidade de Conteúdo', icon: 'article' },
-    { path: 'conexoes', label: 'Visibilidade de Conexões', icon: 'diversity_3' },
     { path: 'interacoes', label: 'Permissões de Interação', icon: 'shield_person' },
     { path: 'bloqueados', label: 'Usuários Bloqueados', icon: 'block' },
   ];

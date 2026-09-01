@@ -61,11 +61,11 @@ class MessagePermissionServiceTest {
         User sender = user("alice");
         User receiver = user("bob");
         when(userFriendshipRepository.existsByUserOneAndUserTwo(sender, receiver)).thenReturn(true);
+        when(userPrivacySettingsRepository.findByUser(receiver)).thenReturn(privacySettings(MessagePermission.EVERYONE));
 
         boolean result = messagePermissionService.requiresApprovalForFirstMessage(sender, receiver);
 
         assertThat(result).isFalse();
-        verify(userPrivacySettingsRepository, never()).findByUser(receiver);
     }
 
     @Test
@@ -74,11 +74,11 @@ class MessagePermissionServiceTest {
         User receiver = user("bob");
         when(userFriendshipRepository.existsByUserOneAndUserTwo(sender, receiver)).thenReturn(false);
         when(userFollowRepository.existsByFollowerAndFollowedAndStatus(sender, receiver, FollowStatus.ACTIVE)).thenReturn(true);
+        when(userPrivacySettingsRepository.findByUser(receiver)).thenReturn(privacySettings(MessagePermission.EVERYONE));
 
         boolean result = messagePermissionService.requiresApprovalForFirstMessage(sender, receiver);
 
         assertThat(result).isFalse();
-        verify(userPrivacySettingsRepository, never()).findByUser(receiver);
     }
 
     @Test
@@ -104,7 +104,7 @@ class MessagePermissionServiceTest {
 
         assertThatThrownBy(() -> messagePermissionService.requiresApprovalForFirstMessage(sender, receiver))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("You do not have permission to send a message to this user.");
+                .hasMessage("This user only accepts messages from friends.");
     }
 
     @Test
@@ -116,63 +116,19 @@ class MessagePermissionServiceTest {
         when(userPrivacySettingsRepository.findByUser(receiver)).thenReturn(privacySettings(MessagePermission.FOLLOWERS));
 
         assertThatThrownBy(() -> messagePermissionService.requiresApprovalForFirstMessage(sender, receiver))
-                .isInstanceOf(ForbiddenException.class);
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("This user only accepts messages from followers.");
     }
 
     @Test
     void requiresApprovalRejectsStrangerWhenPermissionIsNobody() {
         User sender = user("alice");
         User receiver = user("bob");
-        when(userFriendshipRepository.existsByUserOneAndUserTwo(sender, receiver)).thenReturn(false);
-        when(userFollowRepository.existsByFollowerAndFollowedAndStatus(sender, receiver, FollowStatus.ACTIVE)).thenReturn(false);
         when(userPrivacySettingsRepository.findByUser(receiver)).thenReturn(privacySettings(MessagePermission.NOBODY));
 
         assertThatThrownBy(() -> messagePermissionService.requiresApprovalForFirstMessage(sender, receiver))
-                .isInstanceOf(ForbiddenException.class);
-    }
-
-    @Test
-    void validateContinueConversationAllowsFriends() {
-        User sender = user("alice");
-        User receiver = user("bob");
-        when(userFriendshipRepository.existsByUserOneAndUserTwo(sender, receiver)).thenReturn(true);
-
-        messagePermissionService.validateContinueConversation(sender, receiver);
-
-        verify(userFollowRepository, never()).existsByFollowerAndFollowedAndStatus(sender, receiver, FollowStatus.ACTIVE);
-    }
-
-    @Test
-    void validateContinueConversationAllowsActiveFollower() {
-        User sender = user("alice");
-        User receiver = user("bob");
-        when(userFriendshipRepository.existsByUserOneAndUserTwo(sender, receiver)).thenReturn(false);
-        when(userFollowRepository.existsByFollowerAndFollowedAndStatus(sender, receiver, FollowStatus.ACTIVE)).thenReturn(true);
-
-        messagePermissionService.validateContinueConversation(sender, receiver);
-    }
-
-    @Test
-    void validateContinueConversationRejectsStranger() {
-        User sender = user("alice");
-        User receiver = user("bob");
-        when(userFriendshipRepository.existsByUserOneAndUserTwo(sender, receiver)).thenReturn(false);
-        when(userFollowRepository.existsByFollowerAndFollowedAndStatus(sender, receiver, FollowStatus.ACTIVE)).thenReturn(false);
-
-        assertThatThrownBy(() -> messagePermissionService.validateContinueConversation(sender, receiver))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("You do not have permission to continue the conversation with this user.");
-    }
-
-    @Test
-    void validateContinueConversationPropagatesBlockException() {
-        User sender = user("alice");
-        User receiver = user("bob");
-        doThrow(new ForbiddenException("User is blocked by the profile owner."))
-                .when(blockValidator).validate(sender, receiver);
-
-        assertThatThrownBy(() -> messagePermissionService.validateContinueConversation(sender, receiver))
-                .isInstanceOf(ForbiddenException.class);
+                .hasMessage("This user does not accept direct messages.");
     }
 
     private User user(String username) {

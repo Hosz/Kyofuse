@@ -20,7 +20,6 @@ import com.hokyozu.kyofuse.relationships.follow.repository.UserFollowRepository;
 import com.hokyozu.kyofuse.relationships.permission.service.follow.FollowPermissionService;
 import com.hokyozu.kyofuse.relationships.permission.service.profile.ProfilePermissionService;
 import com.hokyozu.kyofuse.relationships.privacy.entity.UserPrivacySettings;
-import com.hokyozu.kyofuse.relationships.privacy.enums.FollowPermission;
 import com.hokyozu.kyofuse.relationships.privacy.enums.ProfileVisibility;
 import com.hokyozu.kyofuse.relationships.privacy.repository.UserPrivacySettingsRepository;
 import com.hokyozu.kyofuse.shared.exception.ForbiddenException;
@@ -58,6 +57,7 @@ public class UserFollowService {
     private final GamerProfileFinder gamerProfileFinder;
     private final GamerProfileRepository gamerProfileRepository;
     private final GamerProfileFavoriteMapRepository gamerProfileFavoriteMapRepository;
+    private final UserPrivacySettingsRepository userPrivacySettingsRepository;
 
     @Transactional
     public UserFollowResponse followUser(UUID userId, UUID userFollowId) {
@@ -69,16 +69,24 @@ public class UserFollowService {
 
         followPermissionService.validateSendFollow(user, followedUser);
 
-        UserFollow userFollow = UserFollowMapper.toFollow(user, followedUser);
+        UserPrivacySettings settings = userPrivacySettingsRepository.findByUser(followedUser);
+        boolean isPrivate = settings != null && settings.getProfileVisibility() == ProfileVisibility.PRIVATE;
+
+        UserFollow userFollow = isPrivate
+                ? UserFollowMapper.toInvite(user, followedUser)
+                : UserFollowMapper.toFollow(user, followedUser);
+
         userFollowRepository.save(userFollow);
 
         notificationService.createNotification(
                 CreateNotificationRequest.builder()
                         .recipient(followedUser)
                         .actor(user)
-                        .type(NotificationType.FOLLOW_STARTED)
-                        .title("Novo seguidor.")
-                        .message(user.getUsername() + " começou a te seguir.")
+                        .type(isPrivate ? NotificationType.FOLLOW_REQUEST_RECEIVED : NotificationType.FOLLOW_STARTED)
+                        .title(isPrivate ? "Solicitação de seguimento." : "Novo seguidor.")
+                        .message(isPrivate
+                                ? user.getUsername() + " solicitou para te seguir."
+                                : user.getUsername() + " começou a te seguir.")
                         .targetType(NotificationTargetType.FOLLOW)
                         .targetId(followedUser.getId())
                         .metadata(Map.of(

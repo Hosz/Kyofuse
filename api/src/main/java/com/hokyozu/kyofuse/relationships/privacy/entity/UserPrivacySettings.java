@@ -31,30 +31,6 @@ public class UserPrivacySettings {
     private ProfileVisibility profileVisibility;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "posts_visibility", length = 40, nullable = false)
-    private ProfileVisibility postsVisibility;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "likes_visibility", length = 40, nullable = false)
-    private ProfileVisibility likesVisibility;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "reposts_visibility", length = 40, nullable = false)
-    private ProfileVisibility repostsVisibility;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "friends_visibility", length = 40, nullable = false)
-    private ProfileVisibility friendsVisibility;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "followers_visibility", length = 40, nullable = false)
-    private ProfileVisibility followersVisibility;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "following_visibility", length = 40, nullable = false)
-    private ProfileVisibility followingVisibility;
-
-    @Enumerated(EnumType.STRING)
     @Column(name = "message_permission", length = 40, nullable = false)
     private MessagePermission messagePermission;
 
@@ -63,16 +39,8 @@ public class UserPrivacySettings {
     private FriendRequestPermission friendRequestPermission;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "follow_permission", length = 40, nullable = false)
-    private FollowPermission followPermission;
-
-    @Enumerated(EnumType.STRING)
     @Column(name = "team_invite_permission", length = 40, nullable = false)
     private TeamInvitePermission teamInvitePermission;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "duo_invite_permission", length = 40, nullable = false)
-    private DuoInvitePermission duoInvitePermission;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;

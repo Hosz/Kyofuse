@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { AppSidebarComponent } from '../../components/layout/app-sidebar/app-sidebar';
 import { DiscoverySidebarComponent } from '../../components/discovery/discovery-sidebar/discovery-sidebar';
 import { PostCardComponent } from '../../components/feed/post-card/post-card';
+import { MentionInputComponent } from '../../shared/components/mention-input/mention-input';
 import { CommentCardComponent } from '../../components/feed/comment-card/comment-card';
 import { PostsService } from '../../core/services/posts/posts.service';
 import { CommentsService } from '../../core/services/comments/comments.service';
@@ -12,7 +13,7 @@ import { toComment, toPost } from '../../shared/utils/mappers.util';
 
 @Component({
   selector: 'app-post-detail',
-  imports: [RouterLink, FormsModule, AppSidebarComponent, DiscoverySidebarComponent, PostCardComponent, CommentCardComponent],
+  imports: [MentionInputComponent, RouterLink, FormsModule, AppSidebarComponent, DiscoverySidebarComponent, PostCardComponent, CommentCardComponent],
   templateUrl: './post-detail.html',
   styleUrl: './post-detail.css',
 })

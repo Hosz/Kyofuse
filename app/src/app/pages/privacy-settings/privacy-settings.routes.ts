@@ -30,18 +30,8 @@ export const PRIVACY_SETTINGS_ROUTES: Routes = [
         loadComponent: () =>
           import('./sections/profile-visibility/profile-visibility').then((m) => m.ProfileVisibilitySectionComponent),
       },
-      {
-        path: 'conteudo',
-        loadComponent: () =>
-          import('./sections/content-visibility/content-visibility').then((m) => m.ContentVisibilitySectionComponent),
-      },
-      {
-        path: 'conexoes',
-        loadComponent: () =>
-          import('./sections/connections-visibility/connections-visibility').then(
-            (m) => m.ConnectionsVisibilitySectionComponent,
-          ),
-      },
+      { path: 'conteudo', redirectTo: 'perfil', pathMatch: 'full' },
+      { path: 'conexoes', redirectTo: 'perfil', pathMatch: 'full' },
       {
         path: 'bloqueados',
         loadComponent: () =>

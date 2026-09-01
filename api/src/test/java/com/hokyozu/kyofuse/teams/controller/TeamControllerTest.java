@@ -1,10 +1,8 @@
 package com.hokyozu.kyofuse.teams.controller;
 
-import com.hokyozu.kyofuse.profiles.enums.PlayerRole;
 import com.hokyozu.kyofuse.teams.dto.request.TeamFilter;
 import com.hokyozu.kyofuse.teams.dto.request.TeamRequest;
 import com.hokyozu.kyofuse.teams.dto.request.UpdateTeamRequest;
-import com.hokyozu.kyofuse.teams.dto.request.UpdateTeamRequiredRolesRequest;
 import com.hokyozu.kyofuse.teams.dto.response.TeamResponse;
 import com.hokyozu.kyofuse.teams.enums.TeamStatus;
 import com.hokyozu.kyofuse.teams.service.TeamService;
@@ -51,7 +49,7 @@ class TeamControllerTest {
 
     @Test
     void detailTeamUsesPathTeamId() {
-        UUID teamId = UUID.randomUUID();
+        String teamId = "kyofuse";
         TeamResponse expected = response();
         when(teamService.detailTeam(teamId)).thenReturn(expected);
 
@@ -75,10 +73,10 @@ class TeamControllerTest {
     }
 
     @Test
-    void editTeamUsesAuthenticatedUserIdAndPathTeamId() {
+    void editTeamsUsesAuthenticatedUserIdAndPathTeamId() {
         UUID userId = UUID.randomUUID();
         UUID teamId = UUID.randomUUID();
-        UpdateTeamRequest request = new UpdateTeamRequest("Updated", null, null, null, null, null, null, null, null, null, null, null);
+        UpdateTeamRequest request = new UpdateTeamRequest("Edited name", "New description", null, null, null, null, null, null, null, null, null, null);
         TeamResponse expected = response();
         when(teamService.editTeam(userId, teamId, request)).thenReturn(expected);
 
@@ -101,35 +99,21 @@ class TeamControllerTest {
         verify(teamService).inactiveTeam(userId, teamId);
     }
 
-    @Test
-    void manageRequiredRolesUsesAuthenticatedUserIdAndRequest() {
-        UUID userId = UUID.randomUUID();
-        UUID teamId = UUID.randomUUID();
-        UpdateTeamRequiredRolesRequest request = new UpdateTeamRequiredRolesRequest(List.of(PlayerRole.AWPER));
-        TeamResponse expected = response();
-        when(teamService.manageRequiredRoles(userId, teamId, request)).thenReturn(expected);
-
-        TeamResponse result = controller.manageRequiredRoles(jwt(userId), teamId, request);
-
-        assertThat(result).isSameAs(expected);
-        verify(teamService).manageRequiredRoles(userId, teamId, request);
-    }
-
     private TeamRequest request() {
         return new TeamRequest(
-                "Kyofuse",
+                "Kyofuse Team",
                 null,
                 null,
-                "kyofuse",
-                "Team",
+                "kyofuse-team",
+                "Team description",
                 "BR",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                List.of(PlayerRole.AWPER)
+                10000,
+                20000,
+                5,
+                10,
+                10,
+                20,
+                List.of()
         );
     }
 
@@ -139,20 +123,20 @@ class TeamControllerTest {
                 UUID.randomUUID(),
                 UUID.randomUUID(),
                 "owner",
-                "Kyofuse",
-                "kyofuse",
+                "Kyofuse Team",
+                "kyofuse-team",
+                "Team description",
                 null,
                 null,
-                "Team",
                 "BR",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
+                10000,
+                20000,
+                5,
+                10,
+                10,
+                20,
                 TeamStatus.ACTIVE,
-                List.of(PlayerRole.AWPER),
+                List.of(),
                 now,
                 now
         );

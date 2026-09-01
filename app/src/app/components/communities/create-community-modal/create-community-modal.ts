@@ -3,7 +3,7 @@ import { ModalComponent } from '../../shared/modal/modal';
 import { CommunityService } from '../../../core/services/communities/community.service';
 import { MediaService } from '../../../core/services/media/media.service';
 import { CommunityResponse, CommunityVisibility } from '../../../models/communities/community.model';
-import { toSlug } from '../../../shared/utils/format.util';
+import { toSlug, COMMUNITY_FALLBACK_AVATAR_URL } from '../../../shared/utils/format.util';
 
 @Component({
   selector: 'app-create-community-modal',
@@ -29,6 +29,7 @@ export class CreateCommunityModalComponent {
 
   uploadingAvatar = signal(false);
   uploadingBanner = signal(false);
+  readonly defaultAvatar = COMMUNITY_FALLBACK_AVATAR_URL;
   saving = signal(false);
   error = signal<string | null>(null);
 

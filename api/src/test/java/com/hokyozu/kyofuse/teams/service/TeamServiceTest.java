@@ -292,7 +292,7 @@ class TeamServiceTest {
         when(teamFinder.findTeamById(teamId)).thenReturn(team);
         when(teamRequiredRoleRepository.findByTeamId(teamId)).thenReturn(List.of(role));
 
-        TeamResponse response = teamService.detailTeam(teamId);
+        TeamResponse response = teamService.detailTeam(teamId.toString());
 
         assertThat(response.id()).isEqualTo(teamId);
         assertThat(response.requiredRoles()).containsExactly(PlayerRole.AWPER);
@@ -305,7 +305,7 @@ class TeamServiceTest {
         team.setStatus(TeamStatus.INACTIVE);
         when(teamFinder.findTeamById(teamId)).thenReturn(team);
 
-        assertThatThrownBy(() -> teamService.detailTeam(teamId))
+        assertThatThrownBy(() -> teamService.detailTeam(teamId.toString()))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("Time inativo.");
 

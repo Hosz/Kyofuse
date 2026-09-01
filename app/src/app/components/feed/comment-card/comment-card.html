@@ -35,7 +35,7 @@
       />
     </div>
 
-    <p class="text-body-sm text-on-surface">{{ comment().content }}</p>
+    <app-post-content [content]="comment().content"></app-post-content>
 
     <app-reaction-summary
       [postId]="comment().postId"

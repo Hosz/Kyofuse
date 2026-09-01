@@ -20,7 +20,7 @@ import {
 } from '../../shared/models/team-options.model';
 import { ConfirmDialogComponent } from '../../components/shared/confirm-dialog/confirm-dialog';
 import { gamerProfileResponse } from '../../models/profile/gamer-profile.model';
-import { FALLBACK_AVATAR_URL } from '../../shared/utils/format.util';
+import { FALLBACK_AVATAR_URL, TEAM_FALLBACK_AVATAR_URL } from '../../shared/utils/format.util';
 import { TeamMemberRowComponent } from '../../components/team/team-member-row/team-member-row';
 import { TeamMemberModalComponent } from '../../components/team/team-member-modal/team-member-modal';
 import { getCountryFlagUrl, getCountryOptions } from '../../shared/models/location-options.model';
@@ -227,6 +227,7 @@ export class TeamAdminComponent {
   removeConfirmMember = signal<TeamMemberResponse | null>(null);
   removing = signal(false);
   readonly fallbackAvatar = FALLBACK_AVATAR_URL;
+  readonly teamFallbackAvatar = TEAM_FALLBACK_AVATAR_URL;
 
   /** Jogadores anunciando que procuram time — candidatos para convidar. */
   lookingForTeam = signal<gamerProfileResponse[]>([]);

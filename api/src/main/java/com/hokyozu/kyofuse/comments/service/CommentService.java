@@ -54,6 +54,7 @@ public class CommentService {
     private final PostPermissionService postPermissionService;
     private final ProfilePermissionService profilePermissionService;
     private final GamerProfileFinder gamerProfileFinder;
+    private final com.hokyozu.kyofuse.posts.service.MentionDetectionService mentionDetectionService;
 
     @Transactional
     public CommentResponse postComment(UUID userId, UUID postId, CreateCommentRequest request) {
@@ -64,6 +65,7 @@ public class CommentService {
 
         Comment comment = CommentMapper.toEntity(user, request, post);
         Comment savedComment = commentRepository.save(comment);
+        mentionDetectionService.processCommentMentions(savedComment);
 
         postPermissionService.validateComment(user, post);
 

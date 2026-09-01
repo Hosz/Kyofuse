@@ -48,4 +48,20 @@ public interface GamerProfileRepository extends JpaRepository<GamerProfile, UUID
             @Param("excludedUserIds") Collection<UUID> excludedUserIds,
             Pageable pageable
     );
+
+    @EntityGraph(attributePaths = "user")
+    @Query("""
+        SELECT gp FROM GamerProfile gp
+        JOIN gp.user u
+        WHERE u.status = :status
+          AND (LOWER(u.username) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(gp.nickname) LIKE LOWER(CONCAT('%', :query, '%')))
+        ORDER BY
+          CASE WHEN LOWER(u.username) LIKE LOWER(CONCAT(:query, '%')) THEN 0 ELSE 1 END,
+          u.username ASC
+    """)
+    List<GamerProfile> searchActiveProfilesForMention(
+            @Param("query") String query,
+            @Param("status") UserStatus status,
+            Pageable pageable
+    );
 }

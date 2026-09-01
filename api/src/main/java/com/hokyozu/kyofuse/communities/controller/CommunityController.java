@@ -61,7 +61,7 @@ public class CommunityController {
     }
 
     @GetMapping("/{communityId}")
-    public CommunityResponse detailCommunity(@PathVariable UUID communityId) {
+    public CommunityResponse detailCommunity(@PathVariable String communityId) {
         return communityService.detailCommunity(communityId);
     }
 

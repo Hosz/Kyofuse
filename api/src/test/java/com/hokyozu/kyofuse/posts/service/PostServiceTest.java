@@ -57,6 +57,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -107,6 +108,12 @@ class PostServiceTest {
 
     @Mock
     private PostMediaRepository postMediaRepository;
+
+    @Mock
+    private FeedRankingService feedRankingService;
+
+    @Mock
+    private MentionDetectionService mentionDetectionService;
 
     @InjectMocks
     private PostService postService;
@@ -257,8 +264,9 @@ class PostServiceTest {
         Post firstPost = post(UUID.randomUUID(), UUID.randomUUID(), PostVisibility.PUBLIC, PostStatus.ACTIVE);
         Post secondPost = post(UUID.randomUUID(), UUID.randomUUID(), PostVisibility.PUBLIC, PostStatus.ACTIVE);
         when(userFinder.findProfileByUserId(userId)).thenReturn(User.builder().id(userId).build());
-        when(postRepository.findGlobalFeed(PostVisibility.PUBLIC, PostStatus.ACTIVE, ProfileVisibility.PUBLIC, userId, pageable))
+        when(postRepository.findGlobalFeed(eq(PostVisibility.PUBLIC), eq(PostStatus.ACTIVE), eq(ProfileVisibility.PUBLIC), eq(userId), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(firstPost, secondPost), pageable, 2));
+        when(feedRankingService.rankPosts(anyList(), any())).thenAnswer(inv -> inv.getArgument(0));
         when(postMapRepository.findByPostIdIn(List.of(firstPost.getId(), secondPost.getId())))
                 .thenReturn(List.of(postMap(firstPost, "MIRAGE"), postMap(secondPost, "INFERNO")));
         when(gamerProfileFinder.findAllByUserIds(List.of(firstPost.getAuthor().getId(), secondPost.getAuthor().getId())))
@@ -266,7 +274,7 @@ class PostServiceTest {
 
         Page<PostResponse> response = postService.getFeed(pageable, userId);
 
-        verify(postRepository).findGlobalFeed(PostVisibility.PUBLIC, PostStatus.ACTIVE, ProfileVisibility.PUBLIC, userId, pageable);
+        verify(postRepository).findGlobalFeed(eq(PostVisibility.PUBLIC), eq(PostStatus.ACTIVE), eq(ProfileVisibility.PUBLIC), eq(userId), any(Pageable.class));
         assertThat(response.getTotalElements()).isEqualTo(2);
         assertThat(response.getContent()).extracting(PostResponse::id)
                 .containsExactly(firstPost.getId(), secondPost.getId());
@@ -713,23 +721,21 @@ class PostServiceTest {
 
     @Test
     void getFeedAsksForTheViewerIdSoOwnPostsAreNeverFilteredOut() {
-        // Privacidade protege dos outros, não de si mesmo: quem deixa postsVisibility
-        // diferente de PUBLIC continua vendo os próprios posts no feed geral.
         Pageable pageable = PageRequest.of(0, 20);
         UUID userId = UUID.randomUUID();
         when(userFinder.findProfileByUserId(userId)).thenReturn(User.builder().id(userId).build());
-        when(postRepository.findGlobalFeed(PostVisibility.PUBLIC, PostStatus.ACTIVE, ProfileVisibility.PUBLIC, userId, pageable))
+        when(postRepository.findGlobalFeed(eq(PostVisibility.PUBLIC), eq(PostStatus.ACTIVE), eq(ProfileVisibility.PUBLIC), eq(userId), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(), pageable, 0));
+        when(feedRankingService.rankPosts(anyList(), any())).thenAnswer(inv -> inv.getArgument(0));
 
         postService.getFeed(pageable, userId);
 
         verify(postRepository).findGlobalFeed(
-                PostVisibility.PUBLIC, PostStatus.ACTIVE, ProfileVisibility.PUBLIC, userId, pageable);
+                eq(PostVisibility.PUBLIC), eq(PostStatus.ACTIVE), eq(ProfileVisibility.PUBLIC), eq(userId), any(Pageable.class));
     }
 
     @Test
     void feedPageLoadsMapsAndProfilesInASingleBatchEach() {
-        // Guarda contra o N+1 de montagem: duas consultas por página, não duas por post.
         Pageable pageable = PageRequest.of(0, 20);
         UUID userId = UUID.randomUUID();
         Post firstPost = post(UUID.randomUUID(), UUID.randomUUID(), PostVisibility.PUBLIC, PostStatus.ACTIVE);
@@ -737,8 +743,9 @@ class PostServiceTest {
         Post thirdPost = post(UUID.randomUUID(), UUID.randomUUID(), PostVisibility.PUBLIC, PostStatus.ACTIVE);
         List<Post> posts = List.of(firstPost, secondPost, thirdPost);
         when(userFinder.findProfileByUserId(userId)).thenReturn(User.builder().id(userId).build());
-        when(postRepository.findGlobalFeed(PostVisibility.PUBLIC, PostStatus.ACTIVE, ProfileVisibility.PUBLIC, userId, pageable))
+        when(postRepository.findGlobalFeed(eq(PostVisibility.PUBLIC), eq(PostStatus.ACTIVE), eq(ProfileVisibility.PUBLIC), eq(userId), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(posts, pageable, posts.size()));
+        when(feedRankingService.rankPosts(anyList(), any())).thenAnswer(inv -> inv.getArgument(0));
         when(postMapRepository.findByPostIdIn(anyList())).thenReturn(List.of());
         when(gamerProfileFinder.findAllByUserIds(anyList()))
                 .thenReturn(posts.stream().map(post -> profileOf(post.getAuthor())).toList());
@@ -750,7 +757,10 @@ class PostServiceTest {
         verify(gamerProfileFinder).findAllByUserIds(List.of(
                 firstPost.getAuthor().getId(), secondPost.getAuthor().getId(), thirdPost.getAuthor().getId()));
         verify(postMapRepository, never()).findByPostId(any());
-        verify(gamerProfileFinder, never()).findProfileByUserId(any());
+        verify(gamerProfileFinder, times(1)).findProfileByUserId(userId);
+        verify(gamerProfileFinder, never()).findProfileByUserId(firstPost.getAuthor().getId());
+        verify(gamerProfileFinder, never()).findProfileByUserId(secondPost.getAuthor().getId());
+        verify(gamerProfileFinder, never()).findProfileByUserId(thirdPost.getAuthor().getId());
     }
 
     @Test
@@ -761,8 +771,9 @@ class PostServiceTest {
         Post firstPost = post(UUID.randomUUID(), authorId, PostVisibility.PUBLIC, PostStatus.ACTIVE);
         Post secondPost = post(UUID.randomUUID(), authorId, PostVisibility.PUBLIC, PostStatus.ACTIVE);
         when(userFinder.findProfileByUserId(userId)).thenReturn(User.builder().id(userId).build());
-        when(postRepository.findGlobalFeed(PostVisibility.PUBLIC, PostStatus.ACTIVE, ProfileVisibility.PUBLIC, userId, pageable))
+        when(postRepository.findGlobalFeed(eq(PostVisibility.PUBLIC), eq(PostStatus.ACTIVE), eq(ProfileVisibility.PUBLIC), eq(userId), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(firstPost, secondPost), pageable, 2));
+        when(feedRankingService.rankPosts(anyList(), any())).thenAnswer(inv -> inv.getArgument(0));
         when(postMapRepository.findByPostIdIn(anyList())).thenReturn(List.of());
         when(gamerProfileFinder.findAllByUserIds(List.of(authorId)))
                 .thenReturn(List.of(profileOf(firstPost.getAuthor())));
@@ -781,9 +792,9 @@ class PostServiceTest {
         Post firstPost = post(UUID.randomUUID(), UUID.randomUUID(), PostVisibility.PUBLIC, PostStatus.ACTIVE);
         Post secondPost = post(UUID.randomUUID(), UUID.randomUUID(), PostVisibility.PUBLIC, PostStatus.ACTIVE);
         when(userFinder.findProfileByUserId(userId)).thenReturn(User.builder().id(userId).build());
-        when(postRepository.findGlobalFeed(PostVisibility.PUBLIC, PostStatus.ACTIVE, ProfileVisibility.PUBLIC, userId, pageable))
+        when(postRepository.findGlobalFeed(eq(PostVisibility.PUBLIC), eq(PostStatus.ACTIVE), eq(ProfileVisibility.PUBLIC), eq(userId), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(firstPost, secondPost), pageable, 2));
-        // O lote volta misturado: cada mapa tem que cair no post a que pertence.
+        when(feedRankingService.rankPosts(anyList(), any())).thenAnswer(inv -> inv.getArgument(0));
         when(postMapRepository.findByPostIdIn(anyList())).thenReturn(List.of(
                 postMap(secondPost, "INFERNO"),
                 postMap(firstPost, "MIRAGE"),
@@ -800,15 +811,15 @@ class PostServiceTest {
 
     @Test
     void feedPageFallsBackToTheSingleFinderForAnAuthorMissingFromTheBatch() {
-        // Sem perfil no lote, o erro tem que continuar sendo o mesmo de antes em vez de
-        // virar NullPointerException dentro do mapper.
         Pageable pageable = PageRequest.of(0, 20);
         UUID userId = UUID.randomUUID();
         Post post = post(UUID.randomUUID(), UUID.randomUUID(), PostVisibility.PUBLIC, PostStatus.ACTIVE);
         UUID authorId = post.getAuthor().getId();
         when(userFinder.findProfileByUserId(userId)).thenReturn(User.builder().id(userId).build());
-        when(postRepository.findGlobalFeed(PostVisibility.PUBLIC, PostStatus.ACTIVE, ProfileVisibility.PUBLIC, userId, pageable))
+        when(gamerProfileFinder.findProfileByUserId(userId)).thenReturn(profileOf(User.builder().id(userId).build()));
+        when(postRepository.findGlobalFeed(eq(PostVisibility.PUBLIC), eq(PostStatus.ACTIVE), eq(ProfileVisibility.PUBLIC), eq(userId), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(post), pageable, 1));
+        when(feedRankingService.rankPosts(anyList(), any())).thenAnswer(inv -> inv.getArgument(0));
         when(postMapRepository.findByPostIdIn(anyList())).thenReturn(List.of());
         when(gamerProfileFinder.findAllByUserIds(List.of(authorId))).thenReturn(List.of());
         when(gamerProfileFinder.findProfileByUserId(authorId))

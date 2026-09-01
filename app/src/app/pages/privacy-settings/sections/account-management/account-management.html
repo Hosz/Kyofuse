@@ -27,7 +27,7 @@
           <span class="material-symbols-outlined text-[22px] text-tertiary">verified_user</span>
           <div class="flex flex-col">
             <span class="text-body-md font-semibold text-on-surface">Status da Conta: Ativa</span>
-            <span class="text-label-sm text-on-surface-variant">Conectado como <strong>@{{ acc.username }}</strong> ({{ acc.email }})</span>
+            <span class="text-body-sm text-on-surface-variant leading-relaxed">Conectado como <strong>&#64;{{ acc.username }}</strong> ({{ acc.email }})</span>
           </div>
         </div>
         <span class="rounded-md border border-tertiary/40 bg-tertiary/10 px-2.5 py-1 text-label-sm font-semibold text-tertiary">
@@ -49,11 +49,11 @@
             Pausa o acesso à sua conta e desconecta todos os seus dispositivos.
           </p>
           <div class="rounded-xl border border-warning/20 bg-surface-container/60 p-4">
-            <h4 class="text-label-sm font-bold text-on-surface mb-2 flex items-center gap-1.5">
+            <h4 class="text-body-sm font-bold text-on-surface mb-2 flex items-center gap-1.5">
               <span class="material-symbols-outlined text-[16px] text-warning">info</span>
               Como funciona a desativação:
             </h4>
-            <ul class="flex flex-col gap-1.5 text-label-sm text-on-surface-variant pl-4 list-disc">
+            <ul class="flex flex-col gap-2 text-body-sm text-on-surface-variant pl-4 list-disc leading-relaxed">
               <li>Liderança de times e comunidades é transferida automaticamente para o sucessor ou administrador mais antigo.</li>
               <li>Você é rebaixado mas <strong>não é removido</strong>, com <strong>prazo de 30 dias</strong> para reativar.</li>
               <li>Para reativar a qualquer momento, basta tentar fazer login e inserir o <strong>código OTP de 6 dígitos</strong> enviado ao seu e-mail.</li>
@@ -82,11 +82,11 @@
             Inicia o processo de exclusão definitiva com período de segurança de <strong>7 dias</strong>.
           </p>
           <div class="rounded-xl border border-error/20 bg-surface-container/60 p-4">
-            <h4 class="text-label-sm font-bold text-on-surface mb-2 flex items-center gap-1.5">
+            <h4 class="text-body-sm font-bold text-on-surface mb-2 flex items-center gap-1.5">
               <span class="material-symbols-outlined text-[16px] text-error">shield</span>
               Carência de 7 dias e Anonimização:
             </h4>
-            <ul class="flex flex-col gap-1.5 text-label-sm text-on-surface-variant pl-4 list-disc">
+            <ul class="flex flex-col gap-2 text-body-sm text-on-surface-variant pl-4 list-disc leading-relaxed">
               <li>Sua conta entra em carência por <strong>7 dias</strong> desativada.</li>
               <li>Se mudar de ideia, faça login dentro dos 7 dias e use o código de e-mail para <strong>cancelar a exclusão</strong>.</li>
               <li>Após 7 dias sem reativação, é aplicado o <em>soft delete</em> com anonimização permanente de dados pessoais (PII).</li>

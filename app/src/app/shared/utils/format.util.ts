@@ -1,4 +1,6 @@
 export const FALLBACK_AVATAR_URL = '/assets/profile/profile-image-default.png';
+export const TEAM_FALLBACK_AVATAR_URL = '/assets/profile/team-profile-image-default.png';
+export const COMMUNITY_FALLBACK_AVATAR_URL = '/assets/profile/community-profile-image-default.png';
 
 /**
  * Deriva um slug a partir de um nome livre, no formato que o backend exige

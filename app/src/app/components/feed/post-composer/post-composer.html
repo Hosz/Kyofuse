@@ -15,14 +15,14 @@
       class="h-12 w-12 shrink-0 rounded-full object-cover"
     />
     <div class="flex flex-1 flex-col gap-2">
-      <textarea
-        rows="2"
+      <app-mention-input
+        [rows]="2"
         placeholder="O que está acontecendo no server?"
         aria-label="O que está acontecendo no server?"
-        [value]="content()"
-        (input)="onContentChange($any($event.target).value)"
+        [content]="content()"
+        (contentChange)="onContentChange($event)"
         class="w-full resize-none border-0 bg-transparent text-body-md text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-0"
-      ></textarea>
+      ></app-mention-input>
 
       <!-- Previews das imagens anexadas -->
       @if (mediaItems().length > 0) {

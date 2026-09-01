@@ -238,7 +238,7 @@ class CommunityServiceTest {
         Community community = activeCommunity(communityId, activeUser(UUID.randomUUID(), "owner"));
         when(communityRepository.findById(communityId)).thenReturn(Optional.of(community));
 
-        CommunityResponse response = communityService.detailCommunity(communityId);
+        CommunityResponse response = communityService.detailCommunity(communityId.toString());
 
         assertThat(response.id()).isEqualTo(communityId);
     }
@@ -248,7 +248,7 @@ class CommunityServiceTest {
         UUID communityId = UUID.randomUUID();
         when(communityRepository.findById(communityId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> communityService.detailCommunity(communityId))
+        assertThatThrownBy(() -> communityService.detailCommunity(communityId.toString()))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Community not found");
     }
@@ -260,7 +260,7 @@ class CommunityServiceTest {
         community.setStatus(CommunityStatus.ARCHIVED);
         when(communityRepository.findById(communityId)).thenReturn(Optional.of(community));
 
-        assertThatThrownBy(() -> communityService.detailCommunity(communityId))
+        assertThatThrownBy(() -> communityService.detailCommunity(communityId.toString()))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Community not found");
     }

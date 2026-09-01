@@ -81,7 +81,7 @@ public class TeamService {
         String avatarUrl = imageProcessingService.processAndUploadAvatar(teamId, "teams", file);
         team.setAvatarUrl(avatarUrl);
         teamRepository.save(team);
-        return detailTeam(teamId);
+        return detailTeam(teamId.toString());
     }
 
     @Transactional
@@ -95,7 +95,7 @@ public class TeamService {
         String bannerUrl = imageProcessingService.processAndUploadBanner(teamId, "teams", file);
         team.setBannerUrl(bannerUrl);
         teamRepository.save(team);
-        return detailTeam(teamId);
+        return detailTeam(teamId.toString());
     }
 
     @Transactional
@@ -124,12 +124,17 @@ public class TeamService {
     }
 
     @Transactional(readOnly = true)
-    public TeamResponse detailTeam(UUID teamId) {
+    public TeamResponse detailTeam(String identifier) {
 
-        Team team = teamFinder.findTeamById(teamId);
+        Team team;
+        try {
+            team = teamFinder.findTeamById(java.util.UUID.fromString(identifier));
+        } catch (IllegalArgumentException e) {
+            team = teamFinder.findTeamBySlug(identifier);
+        }
         teamChecker.checkInactive(team);
 
-        List<TeamRequiredRole> requiredRoles = teamRequiredRoleRepository.findByTeamId(teamId);
+        List<TeamRequiredRole> requiredRoles = teamRequiredRoleRepository.findByTeamId(team.getId());
 
         return TeamMapper.toResponse(team, requiredRoles);
     }

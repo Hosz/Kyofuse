@@ -11,6 +11,7 @@ import { PostsService } from '../../../core/services/posts/posts.service';
 import { ToastService } from '../../../core/services/ui/toast.service';
 import { CurrentUserService } from '../../../core/services/profile/current-user.service';
 import { formatFullPostDateTime } from '../../../shared/utils/format.util';
+import { PostContentComponent } from '../../../shared/components/post-content/post-content';
 
 @Component({
   selector: 'app-post-card',
@@ -22,6 +23,7 @@ import { formatFullPostDateTime } from '../../../shared/utils/format.util';
     ReactionSummaryComponent,
     ConfirmDialogComponent,
     ImageModalComponent,
+    PostContentComponent,
   ],
   templateUrl: './post-card.html',
   styleUrl: './post-card.css',

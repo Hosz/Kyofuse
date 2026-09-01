@@ -86,7 +86,7 @@
               <div class="flex shrink-0 flex-wrap items-center gap-2">
                 @if (community(); as teamCommunity) {
                   <a
-                    [routerLink]="['/comunidade', teamCommunity.id]"
+                    [routerLink]="['/comunidade', teamCommunity.communitySlug]"
                     class="flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-outline-variant px-4 py-2 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high active:scale-[0.97]"
                   >
                     <span class="material-symbols-outlined text-[16px]">groups_2</span>

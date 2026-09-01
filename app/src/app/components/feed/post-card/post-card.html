@@ -54,7 +54,7 @@
       </div>
 
       @if (post().content) {
-        <p class="text-body-md text-on-surface">{{ post().content }}</p>
+        <app-post-content [content]="post().content"></app-post-content>
       }
 
       <!-- Grid de Mídias / Imagens -->

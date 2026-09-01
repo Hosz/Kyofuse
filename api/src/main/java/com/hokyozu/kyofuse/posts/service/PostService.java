@@ -30,8 +30,7 @@ import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.finder.UserFinder;
 import com.hokyozu.kyofuse.users.service.UserChecker;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
@@ -61,6 +60,8 @@ public class PostService {
     private final UserChecker userChecker;
     private final PostPermissionService postPermissionService;
     private final GamerProfileFinder gamerProfileFinder;
+    private final FeedRankingService feedRankingService;
+    private final MentionDetectionService mentionDetectionService;
 
     private final CommunityRepository communityRepository;
     private final CommunityMemberRepository communityMemberRepository;
@@ -85,6 +86,7 @@ public class PostService {
 
         List<PostMedia> postMedias = savePostMedia(savedPost, request);
 
+        mentionDetectionService.processMentions(savedPost);
         return PostMapper.toResponse(savedPost, postMaps, postMedias, gamerProfile);
     }
 
@@ -116,6 +118,7 @@ public class PostService {
 
         List<PostMedia> postMedias = savePostMedia(savedPost, request);
 
+        mentionDetectionService.processMentions(savedPost);
         return PostMapper.toResponse(savedPost, postMaps, postMedias, gamerProfile);
     }
 
@@ -235,16 +238,32 @@ public class PostService {
     public Page<PostResponse> getFeed(Pageable pageable, UUID userId) {
         User user = userFinder.findProfileByUserId(userId);
         userChecker.checkActive(user);
+        GamerProfile viewerProfile = gamerProfileFinder.findProfileByUserId(userId);
 
-        Page<Post> postsPage = postRepository.findGlobalFeed(
+        // Limit candidates pool to the recent 200 posts to avoid full table scanning for scores
+        Pageable candidatePageable = PageRequest.of(0, 200, Sort.by(Sort.Direction.DESC, "createdAt"));
+        
+        Page<Post> candidatesPage = postRepository.findGlobalFeed(
                 PostVisibility.PUBLIC,
                 PostStatus.ACTIVE,
                 ProfileVisibility.PUBLIC,
                 user.getId(),
-                pageable
+                candidatePageable
         );
 
-        return toResponsePage(postsPage);
+        List<Post> rankedPosts = feedRankingService.rankPosts(candidatesPage.getContent(), viewerProfile);
+
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), rankedPosts.size());
+        
+        List<Post> pagedPosts = new java.util.ArrayList<>();
+        if (start < rankedPosts.size()) {
+            pagedPosts = rankedPosts.subList(start, end);
+        }
+
+        Page<Post> rankedPage = new PageImpl<>(pagedPosts, pageable, rankedPosts.size());
+
+        return toResponsePage(rankedPage);
     }
 
     @Transactional(readOnly = true)

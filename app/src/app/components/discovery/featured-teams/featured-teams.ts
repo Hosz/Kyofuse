@@ -6,6 +6,7 @@ import { TEAM_STATUS_OPTIONS, TeamStatus } from '../../../shared/models/team-opt
 
 export interface DisplayFeaturedTeam {
   id?: string;
+  slug?: string;
   name: string;
   avatarUrl?: string | null;
   statusText: string;
@@ -44,6 +45,7 @@ export class FeaturedTeamsComponent implements OnInit {
   private mapTeamToDisplay(team: TeamResponse): DisplayFeaturedTeam {
     return {
       id: team.id,
+      slug: team.slug,
       name: team.name,
       avatarUrl: team.avatarUrl,
       statusText: this.statusLabel(team.status),

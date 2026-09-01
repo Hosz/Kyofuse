@@ -56,9 +56,9 @@
             <p class="py-8 text-center text-body-sm text-error">{{ myCommunitiesError() }}</p>
           } @else {
             <div class="flex flex-col gap-3">
-              @for (community of visibleMyCommunities(); track community.id) {
+              @for (community of visibleMyCommunities(); track community.communitySlug) {
                 <a
-                  [routerLink]="['/comunidade', community.id]"
+                  [routerLink]="['/comunidade', community.communitySlug]"
                   class="flex items-start gap-4 rounded-xl border border-outline-variant bg-surface-container p-lg transition-colors hover:border-primary"
                 >
                   @if (community.communityAvatarUrl) {
@@ -147,9 +147,9 @@
             <p class="py-8 text-center text-body-sm text-error">{{ error() }}</p>
           } @else {
             <div class="flex flex-col gap-3">
-              @for (community of communities(); track community.id) {
+              @for (community of communities(); track community.communitySlug) {
                 <a
-                  [routerLink]="['/comunidade', community.id]"
+                  [routerLink]="['/comunidade', community.communitySlug]"
                   class="flex items-start gap-4 rounded-xl border border-outline-variant bg-surface-container p-lg transition-colors hover:border-primary"
                 >
                   @if (community.communityAvatarUrl) {

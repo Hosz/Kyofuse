@@ -61,10 +61,12 @@
           }
         </button>
       </div>
-      @if (avatarUrl()) {
-        <div class="flex items-center gap-3 rounded-lg border border-outline-variant bg-surface-container-low p-2">
-          <img [src]="avatarUrl()" alt="Avatar" class="h-12 w-12 rounded-lg object-cover" />
-          <span class="flex-1 truncate text-label-sm text-on-surface">Foto selecionada</span>
+      <div class="flex items-center gap-3 rounded-lg border border-outline-variant bg-surface-container-low p-2">
+        <img [src]="avatarUrl() || defaultAvatar" alt="Avatar" class="h-12 w-12 rounded-lg object-cover" />
+        <span class="flex-1 truncate text-label-sm text-on-surface">
+          {{ avatarUrl() ? 'Foto selecionada' : 'Foto padrão (opcional)' }}
+        </span>
+        @if (avatarUrl()) {
           <button
             type="button"
             (click)="removeAvatar()"
@@ -73,8 +75,8 @@
           >
             <span class="material-symbols-outlined text-[18px]">delete</span>
           </button>
-        </div>
-      }
+        }
+      </div>
     </div>
 
     <div class="flex flex-col gap-2">
