@@ -33,9 +33,13 @@ The project starts as a modular monolith and may evolve with real-time features,
 
 ### Future Scope
 
-- Real-time notifications with SSE or WebSocket
-- Chat
-- Steam integration
+- Real-time online/offline/in-game presence (WebSocket + Redis)
+- Real-time typing indicators ("typing...")
+- Real-time message reactions with emojis
+- Live group & moderation events (joins, kicks, role changes)
+- Multi-tab/device read status synchronization
+- WebRTC voice channels signaling (squad & community voice chat)
+- Live feed social interactions (live post likes & comments counter)
 - FACEIT integration
 - Redis cache
 - Full-text search with Elasticsearch
@@ -367,9 +371,13 @@ O projeto começa como um monólito modular e pode evoluir futuramente com recur
 
 ### Escopo futuro
 
-- Notificações em tempo real com SSE ou WebSocket
-- Chat
-- Integração com Steam
+- Presença em tempo real online/offline/jogando (WebSocket + Redis)
+- Indicador de digitação em tempo real ("digitando...")
+- Reações a mensagens com emojis em tempo real
+- Eventos de grupo e moderação ao vivo (entrada/saída, promoção de admin)
+- Sincronização de status de leitura multi-aba/multi-dispositivo
+- Sinalização WebRTC para canais de voz (chat de voz para squads e comunidades)
+- Interações sociais do feed ao vivo (contadores de curtidas e comentários em tempo real)
 - Integração com FACEIT
 - Cache com Redis
 - Busca full-text com Elasticsearch
