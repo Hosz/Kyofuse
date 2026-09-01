@@ -57,6 +57,13 @@ public class ConversationController {
         return conversationService.revokeDirectConversationPermission(conversationId, userId);
     }
 
+    @PatchMapping("/{conversationId}/allow")
+    public ConversationResponse allowDirectConversationPermission(@AuthenticationPrincipal Jwt jwt,
+                                                                  @PathVariable UUID conversationId) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return conversationService.allowDirectConversationPermission(conversationId, userId);
+    }
+
     @GetMapping("/list-direct-conversations")
     public Page<ConversationResponse> listDirectConversations(@AuthenticationPrincipal Jwt jwt, Pageable pageable) {
         UUID userId = UUID.fromString(jwt.getSubject());
@@ -75,6 +82,12 @@ public class ConversationController {
                                                              Pageable pageable) {
         UUID userId = UUID.fromString(jwt.getSubject());
         return conversationService.listGroupConversations(userId, pageable);
+    }
+
+    @GetMapping("/unread-count")
+    public java.util.Map<String, Long> getUnreadCount(@AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return conversationService.getUnreadCount(userId);
     }
 
     @GetMapping("/{conversationId}/details")

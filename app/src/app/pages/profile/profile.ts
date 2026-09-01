@@ -126,9 +126,11 @@ export class ProfileComponent {
   viewerIsFollowing = signal(false);
   followActionPending = signal(false);
 
+  viewerIsFriend = signal(false);
   friendRequestSent = signal(false);
+  friendRequestReceived = signal(false);
   friendRequestPending = signal(false);
-  private sentFriendRequestId: string | null = null;
+  private activeFriendRequestId: string | null = null;
 
   activeModal = signal<ModalKind>(null);
   activeTabId = signal<ProfileTabId>('posts');
@@ -190,9 +192,11 @@ export class ProfileComponent {
     this.friendsCount.set(0);
     this.viewerIsFollowing.set(false);
     this.followActionPending.set(false);
+    this.viewerIsFriend.set(false);
     this.friendRequestSent.set(false);
+    this.friendRequestReceived.set(false);
     this.friendRequestPending.set(false);
-    this.sentFriendRequestId = null;
+    this.activeFriendRequestId = null;
     this.mediaPosts.set([]);
     this.mediaPostsLoaded = false;
     this.mediaPostsPage.set(0);
@@ -307,8 +311,46 @@ export class ProfileComponent {
 
     this.friendRequestPending.set(true);
 
+    if (this.viewerIsFriend()) {
+      this.friendshipService.removeFriendship(targetUserId).subscribe({
+        next: () => {
+          this.viewerIsFriend.set(false);
+          this.friendsCount.update((count) => Math.max(0, count - 1));
+          this.friendRequestPending.set(false);
+        },
+        error: (error) => {
+          console.error('Failed to remove friendship:', error);
+          this.friendRequestPending.set(false);
+        },
+      });
+      return;
+    }
+
+    if (this.friendRequestReceived()) {
+      const requestId = this.activeFriendRequestId;
+      if (!requestId) {
+        this.friendRequestPending.set(false);
+        return;
+      }
+
+      this.friendshipService.acceptRequest(requestId).subscribe({
+        next: () => {
+          this.friendRequestReceived.set(false);
+          this.viewerIsFriend.set(true);
+          this.activeFriendRequestId = null;
+          this.friendsCount.update((count) => count + 1);
+          this.friendRequestPending.set(false);
+        },
+        error: (error) => {
+          console.error('Failed to accept friend request:', error);
+          this.friendRequestPending.set(false);
+        },
+      });
+      return;
+    }
+
     if (this.friendRequestSent()) {
-      const requestId = this.sentFriendRequestId;
+      const requestId = this.activeFriendRequestId;
       if (!requestId) {
         this.friendRequestPending.set(false);
         return;
@@ -317,7 +359,7 @@ export class ProfileComponent {
       this.friendRequestService.removeRequest(requestId).subscribe({
         next: () => {
           this.friendRequestSent.set(false);
-          this.sentFriendRequestId = null;
+          this.activeFriendRequestId = null;
           this.friendRequestPending.set(false);
         },
         error: (error) => {
@@ -331,7 +373,7 @@ export class ProfileComponent {
     this.friendRequestService.sendRequest(targetUserId).subscribe({
       next: (response) => {
         this.friendRequestSent.set(true);
-        this.sentFriendRequestId = response.id;
+        this.activeFriendRequestId = response.id;
         this.friendRequestPending.set(false);
       },
       error: (error) => {
@@ -339,6 +381,11 @@ export class ProfileComponent {
         this.friendRequestPending.set(false);
       },
     });
+  }
+
+  onFriendRemoved(): void {
+    this.viewerIsFriend.set(false);
+    this.friendsCount.update((count) => Math.max(0, count - 1));
   }
 
   /**
@@ -514,17 +561,14 @@ export class ProfileComponent {
       },
     });
 
-    /** Não existe endpoint pra checar diretamente "já mandei pedido pra esse usuário?",
-     * então procuramos nos meus pedidos enviados. */
-    this.friendRequestService.showSentRequests().subscribe({
-      next: (response) => {
-        const existing = response.content.find((request) => request.receiverId === targetUserId);
-        if (existing) {
-          this.friendRequestSent.set(true);
-          this.sentFriendRequestId = existing.id;
-        }
+    this.friendshipService.getFriendshipStatus(targetUserId).subscribe({
+      next: (status) => {
+        this.viewerIsFriend.set(status.isFriend);
+        this.friendRequestSent.set(status.requestSent);
+        this.friendRequestReceived.set(status.requestReceived);
+        this.activeFriendRequestId = status.requestId ?? null;
       },
-      error: (error) => console.error('Failed to fetch sent friend requests:', error),
+      error: (error) => console.error('Failed to fetch friendship status:', error),
     });
   }
 

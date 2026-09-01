@@ -1,5 +1,5 @@
 export type ProfileVisibility = 'PUBLIC' | 'FOLLOWERS' | 'FRIENDS' | 'PRIVATE';
-export type MessagePermission = 'EVERYONE' | 'FOLLOWERS' | 'FRIENDS' | 'NOBODY';
+export type MessagePermission = 'EVERYONE' | 'NOBODY';
 export type FriendRequestPermission = 'EVERYONE' | 'NOBODY';
 export type TeamInvitePermission = 'EVERYONE' | 'FRIENDS' | 'NOBODY';
 
@@ -12,8 +12,6 @@ export const PROFILE_VISIBILITY_OPTIONS: { value: ProfileVisibility; label: stri
 
 export const MESSAGE_PERMISSION_OPTIONS: { value: MessagePermission; label: string }[] = [
   { value: 'EVERYONE', label: 'Todos' },
-  { value: 'FOLLOWERS', label: 'Seguidores' },
-  { value: 'FRIENDS', label: 'Amigos' },
   { value: 'NOBODY', label: 'Ninguém' },
 ];
 

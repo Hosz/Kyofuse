@@ -34,6 +34,7 @@ export class AccountManagerService {
     email?: string;
     avatarUrl?: string;
     country?: string;
+    showCountryFlag?: boolean;
     role?: string;
     switchToken?: string;
   }): void {
@@ -53,6 +54,7 @@ export class AccountManagerService {
       email: accountData.email || prevAccount?.email,
       avatarUrl: accountData.avatarUrl !== undefined ? accountData.avatarUrl : prevAccount?.avatarUrl,
       country: accountData.country !== undefined ? accountData.country : prevAccount?.country,
+      showCountryFlag: accountData.showCountryFlag !== undefined ? accountData.showCountryFlag : prevAccount?.showCountryFlag,
       role: accountData.role || prevAccount?.role || 'USER',
       switchToken: accountData.switchToken || prevAccount?.switchToken,
       lastActiveAt: new Date().toISOString(),

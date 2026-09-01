@@ -65,6 +65,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/disconnect-account").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/reactivate/confirm").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/reactivate/resend").permitAll()
+                        .requestMatchers("/ws", "/ws/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 ->
@@ -106,8 +107,8 @@ public class SecurityConfig {
 
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:4200"
+        configuration.setAllowedOriginPatterns(List.of(
+                "*"
         ));
 
         configuration.setAllowedMethods(List.of(

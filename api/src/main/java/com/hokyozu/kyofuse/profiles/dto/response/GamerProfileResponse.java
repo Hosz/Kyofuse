@@ -20,6 +20,7 @@ public record GamerProfileResponse(
         String country,
         String city,
         String state,
+        Boolean showCountryFlag,
         PlayerRole mainRole,
         PlayerRole secondaryRole,
         Integer premierRating,

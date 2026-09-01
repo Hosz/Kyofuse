@@ -78,8 +78,12 @@
             <span class="truncate text-label-md text-on-surface-variant" [class.font-semibold]="conversation.unread" [class.text-on-surface]="conversation.unread">
               {{ previewLabel(conversation) }}
             </span>
-            @if (conversation.unread) {
-              <span class="h-2 w-2 shrink-0 rounded-full bg-primary-container"></span>
+            @if (conversation.unreadCount && conversation.unreadCount > 0) {
+              <span class="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-label-sm font-bold text-on-primary shadow-sm">
+                {{ conversation.unreadCount > 99 ? '99+' : conversation.unreadCount }}
+              </span>
+            } @else if (conversation.unread) {
+              <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-primary-container"></span>
             }
           </div>
         </div>

@@ -52,17 +52,7 @@ export class ConversationListComponent {
     this.showRequestsOnly.update((value) => !value);
   }
 
-  /**
-   * ConversationResponse não traz um preview da última mensagem (nem a lista de
-   * mensagens é carregada aqui, só ao abrir a conversa) — por isso o subtítulo é um
-   * texto de status por tipo/relacionamento, não o conteúdo real da última mensagem.
-   */
   previewLabel(conversation: Conversation): string {
-    if (conversation.relationship === 'request-received') return 'Quer trocar mensagens com você';
-    if (conversation.relationship === 'request-sent') return 'Solicitação enviada';
-    if (conversation.relationship === 'declined') return 'Conversa encerrada';
-    if (conversation.type === 'GROUP') return 'Grupo';
-    if (conversation.type === 'COMMUNITY') return 'Comunidade';
-    return 'Toque para abrir a conversa';
+    return conversation.lastMessagePreview || 'Toque para conversar';
   }
 }

@@ -181,6 +181,114 @@
         </div>
       }
     </div>
+  } @else if (view() === 'add-members') {
+    <div class="flex flex-col gap-md">
+      <button
+        type="button"
+        (click)="backToMembers()"
+        class="flex w-fit cursor-pointer items-center gap-1 text-label-sm font-bold text-on-surface-variant transition-colors hover:text-on-surface"
+      >
+        <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+        Voltar para membros
+      </button>
+
+      <div class="flex flex-col gap-1">
+        <span class="text-body-sm font-semibold text-on-surface">Adicionar contatos mútuos</span>
+        <p class="text-label-sm text-on-surface-variant">
+          Selecione amigos ou pessoas que você segue e te seguem de volta para adicionar ao grupo.
+        </p>
+      </div>
+
+      <div class="relative">
+        <span class="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-on-surface-variant">search</span>
+        <input
+          type="text"
+          placeholder="Buscar por @username..."
+          [value]="candidateQuery()"
+          (input)="candidateQuery.set($any($event.target).value)"
+          class="w-full rounded-lg border border-outline-variant bg-surface py-2 pl-9 pr-3 text-body-sm text-on-surface outline-none focus:border-primary"
+        />
+      </div>
+
+      <div class="scrollbar-minimal flex max-h-64 flex-col gap-1 overflow-y-auto">
+        @if (candidatesLoading()) {
+          <p class="py-8 text-center text-body-sm text-on-surface-variant">Carregando contatos mútuos...</p>
+        } @else {
+          @for (candidate of availableCandidates(); track candidate.id) {
+            <button
+              type="button"
+              (click)="toggleCandidateSelection(candidate.id)"
+              class="flex cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-surface-container-high"
+              [class.bg-surface-container-high]="isCandidateSelected(candidate.id)"
+            >
+              <img
+                [src]="candidate.avatarUrl || fallbackAvatar"
+                [alt]="candidate.username"
+                class="h-9 w-9 shrink-0 rounded-full object-cover"
+              />
+              <span class="flex min-w-0 flex-1 flex-col">
+                <span class="truncate text-body-sm font-semibold text-on-surface">&#64;{{ candidate.username }}</span>
+              </span>
+              <div
+                class="flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors"
+                [class.border-primary]="isCandidateSelected(candidate.id)"
+                [class.bg-primary]="isCandidateSelected(candidate.id)"
+                [class.border-outline-variant]="!isCandidateSelected(candidate.id)"
+              >
+                @if (isCandidateSelected(candidate.id)) {
+                  <span class="material-symbols-outlined text-[16px] text-on-primary">check</span>
+                }
+              </div>
+            </button>
+          } @empty {
+            <div class="flex flex-col items-center justify-center gap-2 py-8 text-center text-on-surface-variant">
+              <span class="material-symbols-outlined text-[24px]">group_off</span>
+              <p class="text-body-sm">
+                @if (candidateQuery()) {
+                  Nenhum contato mútuo encontrado para "{{ candidateQuery() }}".
+                } @else {
+                  Nenhum contato mútuo disponível para adicionar (todos já estão no grupo ou você não possui conexões mútuas).
+                }
+              </p>
+            </div>
+          }
+        }
+      </div>
+
+      @if (addMembersError()) {
+        <p class="text-label-sm text-error">{{ addMembersError() }}</p>
+      }
+
+      <div class="flex items-center justify-between border-t border-outline-variant pt-3">
+        <span class="text-label-sm text-on-surface-variant">
+          {{ selectedCandidateCount() }} {{ selectedCandidateCount() === 1 ? 'selecionado' : 'selecionados' }}
+        </span>
+        <div class="flex gap-2">
+          <button
+            type="button"
+            (click)="backToMembers()"
+            [disabled]="addingMembers()"
+            class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            (click)="submitAddMembers()"
+            [disabled]="selectedCandidateCount() === 0 || addingMembers()"
+            class="flex cursor-pointer items-center gap-1.5 rounded-full bg-primary-container px-4 py-2 text-label-md font-bold text-on-primary-container transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            @if (addingMembers()) {
+              <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-on-primary-container border-t-transparent"></span>
+              <span>Adicionando...</span>
+            } @else {
+              <span class="material-symbols-outlined text-[18px]">person_add</span>
+              <span>Adicionar {{ selectedCandidateCount() > 0 ? '(' + selectedCandidateCount() + ')' : '' }}</span>
+            }
+          </button>
+        </div>
+      </div>
+    </div>
   } @else if (isCommunity()) {
     <div class="flex flex-col items-center gap-3 py-6 text-center">
       <span class="material-symbols-outlined text-[28px] text-on-surface-variant">groups_2</span>
@@ -198,15 +306,27 @@
     </div>
   } @else {
     <div class="flex flex-col gap-md">
-      @if (iAmAdmin()) {
-        <button
-          type="button"
-          (click)="openEdit()"
-          class="flex cursor-pointer items-center justify-center gap-2 rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high"
-        >
-          <span class="material-symbols-outlined text-[18px]">edit</span>
-          Editar grupo
-        </button>
+      @if (isGroup()) {
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            (click)="openAddMembers()"
+            class="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-full bg-primary-container px-4 py-2 text-label-md font-bold text-on-primary-container transition-colors hover:brightness-110 active:scale-[0.98]"
+          >
+            <span class="material-symbols-outlined text-[18px]">person_add</span>
+            Adicionar membros
+          </button>
+          @if (iAmAdmin()) {
+            <button
+              type="button"
+              (click)="openEdit()"
+              class="flex cursor-pointer items-center justify-center gap-2 rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high"
+            >
+              <span class="material-symbols-outlined text-[18px]">edit</span>
+              Editar
+            </button>
+          }
+        </div>
       }
 
       <div class="flex flex-col gap-1">

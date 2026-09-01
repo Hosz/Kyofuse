@@ -57,11 +57,10 @@ class MessagePermissionServiceTest {
     }
 
     @Test
-    void requiresApprovalReturnsFalseForFriends() {
+    void requiresApprovalReturnsFalseForFriendsEvenWhenPermissionIsNobody() {
         User sender = user("alice");
         User receiver = user("bob");
-        when(userFriendshipRepository.existsByUserOneAndUserTwo(sender, receiver)).thenReturn(true);
-        when(userPrivacySettingsRepository.findByUser(receiver)).thenReturn(privacySettings(MessagePermission.EVERYONE));
+        when(userFriendshipRepository.existsMutualFriendship(sender, receiver)).thenReturn(true);
 
         boolean result = messagePermissionService.requiresApprovalForFirstMessage(sender, receiver);
 
@@ -69,23 +68,37 @@ class MessagePermissionServiceTest {
     }
 
     @Test
-    void requiresApprovalReturnsFalseForActiveFollower() {
+    void requiresApprovalReturnsFalseForMutualFollowersEvenWhenPermissionIsNobody() {
         User sender = user("alice");
         User receiver = user("bob");
-        when(userFriendshipRepository.existsByUserOneAndUserTwo(sender, receiver)).thenReturn(false);
+        when(userFriendshipRepository.existsMutualFriendship(sender, receiver)).thenReturn(false);
         when(userFollowRepository.existsByFollowerAndFollowedAndStatus(sender, receiver, FollowStatus.ACTIVE)).thenReturn(true);
-        when(userPrivacySettingsRepository.findByUser(receiver)).thenReturn(privacySettings(MessagePermission.EVERYONE));
+        when(userFollowRepository.existsByFollowerAndFollowedAndStatus(receiver, sender, FollowStatus.ACTIVE)).thenReturn(true);
 
         boolean result = messagePermissionService.requiresApprovalForFirstMessage(sender, receiver);
 
         assertThat(result).isFalse();
+    }
+
+    @Test
+    void requiresApprovalReturnsTrueForSingleFollowerWhenPermissionIsEveryone() {
+        User sender = user("alice");
+        User receiver = user("bob");
+        when(userFriendshipRepository.existsMutualFriendship(sender, receiver)).thenReturn(false);
+        when(userFollowRepository.existsByFollowerAndFollowedAndStatus(sender, receiver, FollowStatus.ACTIVE)).thenReturn(true);
+        when(userFollowRepository.existsByFollowerAndFollowedAndStatus(receiver, sender, FollowStatus.ACTIVE)).thenReturn(false);
+        when(userPrivacySettingsRepository.findByUser(receiver)).thenReturn(privacySettings(MessagePermission.EVERYONE));
+
+        boolean result = messagePermissionService.requiresApprovalForFirstMessage(sender, receiver);
+
+        assertThat(result).isTrue();
     }
 
     @Test
     void requiresApprovalReturnsTrueForStrangerWhenPermissionIsEveryone() {
         User sender = user("alice");
         User receiver = user("bob");
-        when(userFriendshipRepository.existsByUserOneAndUserTwo(sender, receiver)).thenReturn(false);
+        when(userFriendshipRepository.existsMutualFriendship(sender, receiver)).thenReturn(false);
         when(userFollowRepository.existsByFollowerAndFollowedAndStatus(sender, receiver, FollowStatus.ACTIVE)).thenReturn(false);
         when(userPrivacySettingsRepository.findByUser(receiver)).thenReturn(privacySettings(MessagePermission.EVERYONE));
 
@@ -95,35 +108,25 @@ class MessagePermissionServiceTest {
     }
 
     @Test
-    void requiresApprovalRejectsStrangerWhenPermissionIsFriends() {
+    void requiresApprovalRejectsSingleFollowerWhenPermissionIsNobody() {
         User sender = user("alice");
         User receiver = user("bob");
-        when(userFriendshipRepository.existsByUserOneAndUserTwo(sender, receiver)).thenReturn(false);
-        when(userFollowRepository.existsByFollowerAndFollowedAndStatus(sender, receiver, FollowStatus.ACTIVE)).thenReturn(false);
-        when(userPrivacySettingsRepository.findByUser(receiver)).thenReturn(privacySettings(MessagePermission.FRIENDS));
+        when(userFriendshipRepository.existsMutualFriendship(sender, receiver)).thenReturn(false);
+        when(userFollowRepository.existsByFollowerAndFollowedAndStatus(sender, receiver, FollowStatus.ACTIVE)).thenReturn(true);
+        when(userFollowRepository.existsByFollowerAndFollowedAndStatus(receiver, sender, FollowStatus.ACTIVE)).thenReturn(false);
+        when(userPrivacySettingsRepository.findByUser(receiver)).thenReturn(privacySettings(MessagePermission.NOBODY));
 
         assertThatThrownBy(() -> messagePermissionService.requiresApprovalForFirstMessage(sender, receiver))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("This user only accepts messages from friends.");
-    }
-
-    @Test
-    void requiresApprovalRejectsNonFollowerWhenPermissionIsFollowers() {
-        User sender = user("alice");
-        User receiver = user("bob");
-        when(userFriendshipRepository.existsByUserOneAndUserTwo(sender, receiver)).thenReturn(false);
-        when(userFollowRepository.existsByFollowerAndFollowedAndStatus(sender, receiver, FollowStatus.ACTIVE)).thenReturn(false);
-        when(userPrivacySettingsRepository.findByUser(receiver)).thenReturn(privacySettings(MessagePermission.FOLLOWERS));
-
-        assertThatThrownBy(() -> messagePermissionService.requiresApprovalForFirstMessage(sender, receiver))
-                .isInstanceOf(ForbiddenException.class)
-                .hasMessage("This user only accepts messages from followers.");
+                .hasMessage("This user does not accept direct messages.");
     }
 
     @Test
     void requiresApprovalRejectsStrangerWhenPermissionIsNobody() {
         User sender = user("alice");
         User receiver = user("bob");
+        when(userFriendshipRepository.existsMutualFriendship(sender, receiver)).thenReturn(false);
+        when(userFollowRepository.existsByFollowerAndFollowedAndStatus(sender, receiver, FollowStatus.ACTIVE)).thenReturn(false);
         when(userPrivacySettingsRepository.findByUser(receiver)).thenReturn(privacySettings(MessagePermission.NOBODY));
 
         assertThatThrownBy(() -> messagePermissionService.requiresApprovalForFirstMessage(sender, receiver))

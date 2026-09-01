@@ -48,6 +48,10 @@ public class GamerProfile {
     @Column(name = "city", length = 80)
     private String city;
 
+    @Column(name = "show_country_flag", nullable = false)
+    @Builder.Default
+    private Boolean showCountryFlag = true;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "main_role", length = 40)
     private PlayerRole mainRole;

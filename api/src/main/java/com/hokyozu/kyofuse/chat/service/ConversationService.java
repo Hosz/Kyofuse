@@ -9,6 +9,11 @@ import com.hokyozu.kyofuse.chat.enums.ConversationMemberRole;
 import com.hokyozu.kyofuse.chat.enums.ConversationMemberStatus;
 import com.hokyozu.kyofuse.chat.enums.ConversationType;
 import com.hokyozu.kyofuse.chat.enums.DirectConversationStatus;
+import com.hokyozu.kyofuse.chat.entity.Message;
+import com.hokyozu.kyofuse.chat.entity.MessageMedia;
+import com.hokyozu.kyofuse.chat.repository.MessageMediaRepository;
+import com.hokyozu.kyofuse.chat.repository.MessageReceiptRepository;
+import com.hokyozu.kyofuse.chat.repository.MessageRepository;
 import com.hokyozu.kyofuse.chat.mapper.ConversationMapper;
 import com.hokyozu.kyofuse.chat.mapper.ConversationMemberMapper;
 import com.hokyozu.kyofuse.chat.repository.ConversationMemberRepository;
@@ -18,6 +23,7 @@ import com.hokyozu.kyofuse.communities.entity.CommunityMember;
 import com.hokyozu.kyofuse.communities.enums.CommunityMemberStatus;
 import com.hokyozu.kyofuse.communities.enums.CommunityStatus;
 import com.hokyozu.kyofuse.communities.repository.CommunityMemberRepository;
+import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import com.hokyozu.kyofuse.relationships.permission.service.message.MessagePermissionService;
 import com.hokyozu.kyofuse.relationships.shared.validator.BlockValidator;
@@ -37,10 +43,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -56,6 +66,9 @@ public class ConversationService {
     private final ConversationRepository conversationRepository;
     private final CommunityMemberRepository communityMemberRepository;
     private final ConversationMemberRepository conversationMemberRepository;
+    private final MessageRepository messageRepository;
+    private final MessageReceiptRepository messageReceiptRepository;
+    private final MessageMediaRepository messageMediaRepository;
 
     @Transactional
     public ConversationResponse createConversation(@Valid ConversationRequest request, UUID userId) {
@@ -197,10 +210,11 @@ public class ConversationService {
         Conversation conversation = validatePendingDirectConversationRecipient(conversationId, user);
 
         conversation.setDirectMessageStatus(DirectConversationStatus.ACCEPTED);
+        conversation.setRevokedBy(null);
         conversation.setUpdatedAt(Instant.now());
         conversationRepository.save(conversation);
 
-        return ConversationMapper.toResponse(conversation);
+        return directResponse(conversation);
     }
 
     /**
@@ -216,10 +230,11 @@ public class ConversationService {
         Conversation conversation = validatePendingDirectConversationRecipient(conversationId, user);
 
         conversation.setDirectMessageStatus(DirectConversationStatus.DECLINED);
+        conversation.setRevokedBy(user);
         conversation.setUpdatedAt(Instant.now());
         conversationRepository.save(conversation);
 
-        return ConversationMapper.toResponse(conversation);
+        return directResponse(conversation);
     }
 
     /**
@@ -241,10 +256,44 @@ public class ConversationService {
         }
 
         conversation.setDirectMessageStatus(DirectConversationStatus.DECLINED);
+        conversation.setRevokedBy(user);
         conversation.setUpdatedAt(Instant.now());
         conversationRepository.save(conversation);
 
-        return ConversationMapper.toResponse(conversation);
+        return directResponse(conversation);
+    }
+
+    /**
+     * Reativa uma conversa DIRECT que estava DECLINED (recusada ou revogada),
+     * voltando pro estado ACCEPTED. Apenas o usuário que realizou o revoke/recusa pode
+     * reativar a conversa, desde que nenhum dos lados tenha bloqueado o outro.
+     */
+    @Transactional
+    public ConversationResponse allowDirectConversationPermission(UUID conversationId, UUID userId) {
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
+
+        Conversation conversation = getDirectConversationForParticipant(conversationId, user);
+
+        if (conversation.getDirectMessageStatus() != DirectConversationStatus.DECLINED) {
+            throw new BadRequestException("This conversation is not currently declined.");
+        }
+
+        if (conversation.getRevokedBy() != null && !conversation.getRevokedBy().getId().equals(user.getId())) {
+            throw new ForbiddenException("Only the user who revoked the conversation can allow it again.");
+        }
+
+        User otherParticipant = conversation.getDirectUserOne().getId().equals(user.getId())
+                ? conversation.getDirectUserTwo()
+                : conversation.getDirectUserOne();
+        blockValidator.validate(user, otherParticipant);
+
+        conversation.setDirectMessageStatus(DirectConversationStatus.ACCEPTED);
+        conversation.setRevokedBy(null);
+        conversation.setUpdatedAt(Instant.now());
+        conversationRepository.save(conversation);
+
+        return directResponse(conversation);
     }
 
     private Conversation validatePendingDirectConversationRecipient(UUID conversationId, User user) {
@@ -286,8 +335,9 @@ public class ConversationService {
         userChecker.checkActive(user);
 
         Page<Conversation> conversations = conversationRepository.findAllByTypeAndDirectUser(ConversationType.DIRECT, user, pageable);
+        List<ConversationResponse> responses = enrichConversations(conversations.getContent(), userId);
 
-        return conversations.map(this::directResponse);
+        return new PageImpl<>(responses, pageable, conversations.getTotalElements());
     }
 
     @Transactional(readOnly = true)
@@ -298,15 +348,12 @@ public class ConversationService {
         Page<CommunityMember> memberships = communityMemberRepository
                 .findByUserAndStatus(user, CommunityMemberStatus.ACTIVE, pageable);
 
-        // Comunidade sem conversa é omitida em vez de derrubar a listagem inteira: hoje
-        // toda Community nasce com uma, mas as criadas antes dessa garantia não têm, e um
-        // 404 aqui quebraria a aba de conversas inteira por causa de uma única comunidade.
-        List<ConversationResponse> responses = memberships.getContent().stream()
+        List<Conversation> conversations = memberships.getContent().stream()
                 .map(CommunityMember::getCommunity)
                 .filter(community -> community.getStatus() != CommunityStatus.ARCHIVED)
                 .flatMap(community -> conversationRepository.findByCommunity(community).stream())
-                .map(ConversationMapper::toResponse)
                 .toList();
+        List<ConversationResponse> responses = enrichConversations(conversations, userId);
 
         return new PageImpl<>(responses, pageable, memberships.getTotalElements());
     }
@@ -319,11 +366,11 @@ public class ConversationService {
         Page<ConversationMember> memberships = conversationMemberRepository
                 .findByUserAndStatus(user, ConversationMemberStatus.ACTIVE, pageable);
 
-        List<ConversationResponse> responses = memberships.getContent().stream()
+        List<Conversation> conversations = memberships.getContent().stream()
                 .map(ConversationMember::getConversation)
                 .filter(conversation -> conversation.getType() == ConversationType.GROUP)
-                .map(ConversationMapper::toResponse)
                 .toList();
+        List<ConversationResponse> responses = enrichConversations(conversations, userId);
 
         return new PageImpl<>(responses, pageable, memberships.getTotalElements());
     }
@@ -352,8 +399,90 @@ public class ConversationService {
                     .orElseThrow(() -> new ForbiddenException("User is not a member of the community."));
         }
 
-        return conversation.getType() == ConversationType.DIRECT
-                ? directResponse(conversation)
-                : ConversationMapper.toResponse(conversation);
+        return enrichConversations(List.of(conversation), userId).getFirst();
+    }
+
+    private List<ConversationResponse> enrichConversations(List<Conversation> conversations, UUID userId) {
+        if (conversations.isEmpty()) {
+            return List.of();
+        }
+        List<UUID> conversationIds = conversations.stream().map(Conversation::getId).toList();
+
+        Map<UUID, Long> unreadCounts = messageReceiptRepository.countUnreadByConversationIdsAndUserId(conversationIds, userId).stream()
+                .collect(Collectors.toMap(
+                        row -> (UUID) row[0],
+                        row -> ((Number) row[1]).longValue()
+                ));
+
+        List<Message> latestMessagesList = messageRepository.findByConversationIdInOrderByCreatedAtDesc(conversationIds);
+        Map<UUID, Message> latestMessageMap = latestMessagesList.stream()
+                .collect(Collectors.toMap(
+                        m -> m.getConversation().getId(),
+                        Function.identity(),
+                        (existing, replacement) -> existing,
+                        LinkedHashMap::new
+                ));
+
+        List<UUID> latestMessageIds = latestMessageMap.values().stream().map(Message::getId).toList();
+        List<MessageMedia> mediaList = latestMessageIds.isEmpty() ? List.of() : messageMediaRepository.findByMessageIdIn(latestMessageIds);
+        Map<UUID, List<MessageMedia>> mediaMap = mediaList.stream()
+                .collect(Collectors.groupingBy(m -> m.getMessage().getId()));
+
+        List<UUID> groupConversationIds = conversations.stream()
+                .filter(c -> c.getType() == ConversationType.GROUP)
+                .map(Conversation::getId)
+                .toList();
+
+        Map<UUID, Instant> groupJoinedAtMap = groupConversationIds.isEmpty()
+                ? Map.of()
+                : conversationMemberRepository.findByConversationIdInAndUserId(groupConversationIds, userId).stream()
+                        .filter(m -> m.getStatus() == ConversationMemberStatus.ACTIVE && m.getJoinedAt() != null)
+                        .collect(Collectors.toMap(
+                                m -> m.getConversation().getId(),
+                                ConversationMember::getJoinedAt,
+                                (existing, replacement) -> existing
+                        ));
+
+        return conversations.stream().map(c -> {
+            GamerProfile profileOne = c.getDirectUserOne() != null ? gamerProfileFinder.findProfileByUserId(c.getDirectUserOne().getId()) : null;
+            GamerProfile profileTwo = c.getDirectUserTwo() != null ? gamerProfileFinder.findProfileByUserId(c.getDirectUserTwo().getId()) : null;
+
+            Message lastMessage = latestMessageMap.get(c.getId());
+            if (c.getType() == ConversationType.GROUP && lastMessage != null) {
+                Instant joinedAt = groupJoinedAtMap.get(c.getId());
+                if (joinedAt != null && lastMessage.getCreatedAt().isBefore(joinedAt)) {
+                    lastMessage = null;
+                }
+            }
+
+            GamerProfile lastMessageSenderProfile = (lastMessage != null && lastMessage.getSender() != null)
+                    ? gamerProfileFinder.findProfileByUserId(lastMessage.getSender().getId())
+                    : null;
+            List<MessageMedia> messageMedia = lastMessage != null ? mediaMap.getOrDefault(lastMessage.getId(), List.of()) : List.of();
+            Long unreadCount = unreadCounts.getOrDefault(c.getId(), 0L);
+
+            return ConversationMapper.toResponse(
+                    c,
+                    profileOne,
+                    profileTwo,
+                    lastMessage,
+                    lastMessageSenderProfile,
+                    messageMedia,
+                    unreadCount
+            );
+        }).sorted((a, b) -> {
+            Instant timeA = a.lastMessageCreatedAt() != null ? a.lastMessageCreatedAt() : a.updatedAt();
+            Instant timeB = b.lastMessageCreatedAt() != null ? b.lastMessageCreatedAt() : b.updatedAt();
+            return timeB.compareTo(timeA);
+        }).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Long> getUnreadCount(UUID userId) {
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
+
+        long count = messageReceiptRepository.countTotalUnreadByUserId(userId);
+        return Map.of("unreadCount", count);
     }
 }

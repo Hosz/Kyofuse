@@ -79,7 +79,9 @@ class MessageControllerTest {
                 "Player",
                 "https://example.com/avatar.png",
                 "hello there",
-                Instant.now()
+                List.of(),
+                Instant.now(),
+                com.hokyozu.kyofuse.chat.enums.MessageStatus.SENT
         );
     }
 

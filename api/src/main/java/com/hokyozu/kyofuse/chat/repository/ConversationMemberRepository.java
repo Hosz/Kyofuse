@@ -24,4 +24,7 @@ public interface ConversationMemberRepository extends JpaRepository<Conversation
     // Sem paginação de propósito: usado pra notificar todos os membros ativos de um
     // grupo quando alguém manda uma mensagem, não pra exibir uma listagem.
     List<ConversationMember> findByConversationAndStatus(Conversation conversation, ConversationMemberStatus status);
+
+    @org.springframework.data.jpa.repository.Query("SELECT cm FROM ConversationMember cm WHERE cm.conversation.id IN :conversationIds AND cm.user.id = :userId")
+    List<ConversationMember> findByConversationIdInAndUserId(@org.springframework.data.repository.query.Param("conversationIds") List<UUID> conversationIds, @org.springframework.data.repository.query.Param("userId") UUID userId);
 }

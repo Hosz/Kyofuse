@@ -3,6 +3,7 @@ import { API_URL } from '../../../models/api-url.model';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { PageResponse } from '../../../models/page-response.model';
 import { friendshipResponse } from '../../../models/friendship/friendship-response.model';
+import { FriendshipStatusResponse } from '../../../models/friendship/friendship-status.model';
 
 @Injectable({
   providedIn: 'root',
@@ -41,5 +42,13 @@ export class FriendshipService {
 
   public showUserFriendsQuantity(userId: string) {
     return this.http.get<number>(`${this.url}/${userId}/friends/quantity`);
+  }
+
+  public isFriend(userId: string) {
+    return this.http.get<boolean>(`${this.url}/${userId}/is-friend`);
+  }
+
+  public getFriendshipStatus(userId: string) {
+    return this.http.get<FriendshipStatusResponse>(`${this.url}/${userId}/status`);
   }
 }

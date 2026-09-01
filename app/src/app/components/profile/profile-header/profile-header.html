@@ -141,22 +141,56 @@
               {{ viewerIsFollowing() ? 'Seguindo' : 'Seguir' }}
             </button>
 
-            <button
-              type="button"
-              (click)="toggleFriendRequest.emit()"
-              [disabled]="friendRequestPending()"
-              class="flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-label-sm font-bold transition-all active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
-              [class]="
-                friendRequestSent()
-                  ? 'border border-outline-variant text-on-surface hover:border-error hover:text-error'
-                  : 'bg-surface-container-high text-on-surface hover:brightness-110'
-              "
-            >
-              <span class="material-symbols-outlined text-[16px]">{{ friendRequestSent() ? 'schedule' : 'group_add' }}</span>
-              {{ friendRequestSent() ? 'Solicitação enviada' : 'Solicitar amizade' }}
-            </button>
+            @if (viewerIsFriend()) {
+              <button
+                type="button"
+                (click)="toggleFriendRequest.emit()"
+                [disabled]="friendRequestPending()"
+                class="flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-outline-variant bg-surface-container-high px-4 py-2 text-label-sm font-bold text-on-surface transition-all hover:border-error hover:text-error active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
+                title="Clique para desfazer amizade"
+              >
+                <span class="material-symbols-outlined text-[16px] text-primary">diversity_1</span>
+                Amigos
+              </button>
+            } @else if (friendRequestReceived()) {
+              <button
+                type="button"
+                (click)="toggleFriendRequest.emit()"
+                [disabled]="friendRequestPending()"
+                class="ignite-glow flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-primary-container px-4 py-2 text-label-sm font-bold text-on-primary-container transition-all hover:brightness-110 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
+              >
+                <span class="material-symbols-outlined text-[16px]">person_check</span>
+                Aceitar amizade
+              </button>
+            } @else if (friendRequestSent()) {
+              <button
+                type="button"
+                (click)="toggleFriendRequest.emit()"
+                [disabled]="friendRequestPending()"
+                class="flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-outline-variant px-4 py-2 text-label-sm font-bold text-on-surface transition-all hover:border-error hover:text-error active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
+                title="Clique para cancelar solicitação"
+              >
+                <span class="material-symbols-outlined text-[16px]">schedule</span>
+                Solicitação enviada
+              </button>
+            } @else {
+              <button
+                type="button"
+                (click)="toggleFriendRequest.emit()"
+                [disabled]="friendRequestPending()"
+                class="flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-surface-container-high px-4 py-2 text-label-sm font-bold text-on-surface transition-all hover:brightness-110 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
+              >
+                <span class="material-symbols-outlined text-[16px]">group_add</span>
+                Solicitar amizade
+              </button>
+            }
 
-            <app-user-options-menu [userId]="profile().userId" (blocked)="blocked.emit()" />
+            <app-user-options-menu
+              [userId]="profile().userId"
+              [canRemoveFriend]="viewerIsFriend()"
+              (friendRemoved)="friendRemoved.emit()"
+              (blocked)="blocked.emit()"
+            />
           }
         </div>
       </div>

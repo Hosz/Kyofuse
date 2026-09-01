@@ -33,6 +33,8 @@ public record GamerProfileRequest(
         @Size(max = 80)
         String state,
 
+        Boolean showCountryFlag,
+
         PlayerRole mainRole,
         PlayerRole secondaryRole,
 

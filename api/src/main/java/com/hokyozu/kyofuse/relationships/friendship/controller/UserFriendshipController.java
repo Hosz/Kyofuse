@@ -72,4 +72,19 @@ public class UserFriendshipController {
         UUID userAuthId = UUID.fromString(jwt.getSubject());
         return userFriendshipService.showUserFriendsQuantity(userAuthId, userId);
     }
+
+    @GetMapping("/{userId}/is-friend")
+    public boolean isFriend(@AuthenticationPrincipal Jwt jwt,
+                            @PathVariable UUID userId) {
+        UUID userAuthId = UUID.fromString(jwt.getSubject());
+        return userFriendshipService.isFriend(userAuthId, userId);
+    }
+
+    @GetMapping("/{userId}/status")
+    public com.hokyozu.kyofuse.relationships.friendship.dto.response.FriendshipStatusResponse getFriendshipStatus(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID userId) {
+        UUID userAuthId = UUID.fromString(jwt.getSubject());
+        return userFriendshipService.getFriendshipStatus(userAuthId, userId);
+    }
 }

@@ -92,6 +92,7 @@ class GamerProfileControllerTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
     }
@@ -108,6 +109,7 @@ class GamerProfileControllerTest {
                 null,
                 null,
                 null,
+                true,
                 null,
                 null,
                 null,

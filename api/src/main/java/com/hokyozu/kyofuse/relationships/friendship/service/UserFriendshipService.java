@@ -119,7 +119,8 @@ public class UserFriendshipService {
         userChecker.checkActive(friend);
 
         friendshipPermissionService.validateRemoveFriendship(user, friend);
-        UserFriendship friendship = userFriendshipRepository.findByUserOneAndUserTwo(user, friend);
+        UserFriendship friendship = userFriendshipRepository.findFriendshipBetween(user, friend)
+                .orElseThrow(() -> new NotFoundException("Friendship not found"));
 
         userFriendshipRepository.delete(friendship);
     }
@@ -127,13 +128,45 @@ public class UserFriendshipService {
     @Transactional(readOnly = true)
     public long showMyFriendsQuantity(UUID userId) {
         User user = userFinder.findProfileByUserId(userId);
-        return userFriendshipRepository.countUserFriendshipByUserOne(user);
+        return userFriendshipRepository.countTotalFriends(user);
     }
 
     @Transactional(readOnly = true)
     public long showUserFriendsQuantity(UUID userAuthId, UUID userId) {
-        //User userAuth = userFinder.findProfileByUserId(userAuthId);
         User user = userFinder.findProfileByUserId(userId);
-        return userFriendshipRepository.countUserFriendshipByUserOne(user);
+        return userFriendshipRepository.countTotalFriends(user);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isFriend(UUID userAuthId, UUID userId) {
+        User userAuth = userFinder.findProfileByUserId(userAuthId);
+        User user = userFinder.findProfileByUserId(userId);
+        return userFriendshipRepository.existsMutualFriendship(userAuth, user);
+    }
+
+    @Transactional(readOnly = true)
+    public com.hokyozu.kyofuse.relationships.friendship.dto.response.FriendshipStatusResponse getFriendshipStatus(UUID userAuthId, UUID userId) {
+        User userAuth = userFinder.findProfileByUserId(userAuthId);
+        User user = userFinder.findProfileByUserId(userId);
+
+        if (userAuth.equals(user)) {
+            return new com.hokyozu.kyofuse.relationships.friendship.dto.response.FriendshipStatusResponse(false, false, false, null);
+        }
+
+        if (userFriendshipRepository.existsMutualFriendship(userAuth, user)) {
+            return new com.hokyozu.kyofuse.relationships.friendship.dto.response.FriendshipStatusResponse(true, false, false, null);
+        }
+
+        var sentReq = userFriendRequestRepository.findBySenderAndReceiver(userAuth, user);
+        if (sentReq.isPresent()) {
+            return new com.hokyozu.kyofuse.relationships.friendship.dto.response.FriendshipStatusResponse(false, true, false, sentReq.get().getId());
+        }
+
+        var recvReq = userFriendRequestRepository.findBySenderAndReceiver(user, userAuth);
+        if (recvReq.isPresent()) {
+            return new com.hokyozu.kyofuse.relationships.friendship.dto.response.FriendshipStatusResponse(false, false, true, recvReq.get().getId());
+        }
+
+        return new com.hokyozu.kyofuse.relationships.friendship.dto.response.FriendshipStatusResponse(false, false, false, null);
     }
 }

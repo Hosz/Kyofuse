@@ -28,6 +28,11 @@ public class MessagePermissionService {
     public boolean requiresApprovalForFirstMessage(User sender, User receiver) {
         blockValidator.validate(sender, receiver);
 
+        boolean isMutual = hasMutualRelationship(sender, receiver);
+        if (isMutual) {
+            return false;
+        }
+
         UserPrivacySettings settings = userPrivacySettingsRepository.findByUser(receiver);
         MessagePermission permission = settings != null ? settings.getMessagePermission() : MessagePermission.EVERYONE;
 
@@ -35,33 +40,19 @@ public class MessagePermissionService {
             throw new ForbiddenException("This user does not accept direct messages.");
         }
 
-        boolean isFriend = areFriends(sender, receiver);
-        boolean isFollower = isFollower(sender, receiver);
+        return true;
+    }
 
-        if (isFriend) {
-            return false;
-        }
-
-        if (permission == MessagePermission.FRIENDS) {
-            throw new ForbiddenException("This user only accepts messages from friends.");
-        }
-
-        if (permission == MessagePermission.FOLLOWERS) {
-            if (isFollower) {
-                return false;
-            }
-            throw new ForbiddenException("This user only accepts messages from followers.");
-        }
-
-        return !isFollower;
+    private boolean hasMutualRelationship(User userA, User userB) {
+        return areFriends(userA, userB) || areMutualFollowers(userA, userB);
     }
 
     private boolean areFriends(User viewer, User owner) {
-        return userFriendshipRepository.existsByUserOneAndUserTwo(viewer, owner) ||
-                userFriendshipRepository.existsByUserOneAndUserTwo(owner, viewer);
+        return userFriendshipRepository.existsMutualFriendship(viewer, owner);
     }
 
-    private boolean isFollower(User viewer, User owner) {
-        return userFollowRepository.existsByFollowerAndFollowedAndStatus(viewer, owner, FollowStatus.ACTIVE);
+    private boolean areMutualFollowers(User viewer, User owner) {
+        return userFollowRepository.existsByFollowerAndFollowedAndStatus(viewer, owner, FollowStatus.ACTIVE) &&
+                userFollowRepository.existsByFollowerAndFollowedAndStatus(owner, viewer, FollowStatus.ACTIVE);
     }
 }

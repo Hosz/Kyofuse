@@ -11,6 +11,8 @@ import java.util.UUID;
 public interface UserFriendRequestRepository extends JpaRepository<UserFriendRequest, UUID> {
     boolean existsBySenderAndReceiver(User user, User userFriendRequest);
 
+    java.util.Optional<UserFriendRequest> findBySenderAndReceiver(User sender, User receiver);
+
     Page<UserFriendRequest> findAllByReceiver(User user, Pageable pageable);
 
     Page<UserFriendRequest> findAllBySender(User user, Pageable pageable);

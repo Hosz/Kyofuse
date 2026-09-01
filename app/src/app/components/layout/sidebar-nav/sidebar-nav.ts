@@ -2,6 +2,7 @@ import { Component, inject, input } from '@angular/core';
 import { NavItem } from '../../../shared/models/social.model';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { NotificationService } from '../../../core/services/notifications/notification.service';
+import { ConversationService } from '../../../core/services/chat/conversation.service';
 
 @Component({
   selector: 'app-sidebar-nav',
@@ -11,8 +12,11 @@ import { NotificationService } from '../../../core/services/notifications/notifi
 })
 export class SidebarNavComponent {
   private notificationService = inject(NotificationService);
+  private conversationService = inject(ConversationService);
 
   readonly unreadNotificationsCount = this.notificationService.unreadCount;
+  readonly unreadChatsCount = this.conversationService.unreadCount;
+  readonly hasUnreadChats = this.conversationService.hasUnread;
 
   navItems = input<NavItem[]>([
     { icon: 'home', label: 'Página Inicial', route: '/home' },
@@ -29,5 +33,6 @@ export class SidebarNavComponent {
 
   ngOnInit(): void {
     this.notificationService.refreshUnreadCount();
+    this.conversationService.refreshUnreadStatus();
   }
 }

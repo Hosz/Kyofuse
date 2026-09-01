@@ -1,3 +1,6 @@
+import { MessageMediaResponse } from '../media/message-media-response.model';
+import { PostMediaItemRequest } from '../posts/post-request.model';
+
 export type ConversationType = 'DIRECT' | 'GROUP' | 'COMMUNITY';
 
 export type DirectConversationStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED';
@@ -21,6 +24,14 @@ export interface ConversationResponse {
     directUserTwoNickname: string | null;
     directUserTwoAvatarUrl: string | null;
     directMessageStatus: DirectConversationStatus | null;
+    revokedById: string | null;
+    lastMessageContent?: string | null;
+    lastMessageSenderUsername?: string | null;
+    lastMessageSenderNickname?: string | null;
+    lastMessageHasMedia?: boolean | null;
+    lastMessageMediaType?: string | null;
+    lastMessageCreatedAt?: string | null;
+    unreadCount?: number | null;
     createdAt: string;
     updatedAt: string;
 }
@@ -36,8 +47,7 @@ export interface UpdateConversationRequest {
     avatarUrl?: string;
 }
 
-import { MessageMediaResponse } from '../media/message-media-response.model';
-import { PostMediaItemRequest } from '../posts/post-request.model';
+export type MessageStatus = 'PENDING' | 'SENT' | 'DELIVERED' | 'READ';
 
 export interface MessageResponse {
     id: string;
@@ -49,6 +59,30 @@ export interface MessageResponse {
     content: string;
     media?: MessageMediaResponse[];
     createdAt: string;
+    status: MessageStatus;
+}
+
+export interface MessageReceiptItemResponse {
+    userId: string;
+    username: string;
+    nickname: string;
+    avatarUrl: string | null;
+    deliveredAt: string | null;
+    readAt: string | null;
+}
+
+export interface MessageInfoResponse {
+    messageId: string;
+    createdAt: string;
+    receipts: MessageReceiptItemResponse[];
+}
+
+export interface MessageStatusEvent {
+    messageId: string;
+    conversationId: string;
+    userId: string;
+    status: MessageStatus;
+    timestamp: string;
 }
 
 export interface MessageRequest {

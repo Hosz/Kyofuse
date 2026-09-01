@@ -30,7 +30,10 @@ export class ProfileHeaderComponent {
   handle = input.required<string>();
   viewMode = input.required<ProfileViewMode>();
 
-  flagUrl = computed(() => getCountryFlagUrl(this.profile().country));
+  flagUrl = computed(() => {
+    const showFlag = this.profile().showCountryFlag ?? true;
+    return showFlag ? getCountryFlagUrl(this.profile().country) : null;
+  });
   formattedLocation = computed(() =>
     formatLocation(this.profile().country, this.profile().state, this.profile().city),
   );
@@ -48,7 +51,9 @@ export class ProfileHeaderComponent {
   postsCount = input(0);
 
   viewerIsFollowing = input(false);
+  viewerIsFriend = input(false);
   friendRequestSent = input(false);
+  friendRequestReceived = input(false);
   friendRequestPending = input(false);
 
   followersClick = output<void>();
@@ -56,6 +61,7 @@ export class ProfileHeaderComponent {
   friendsClick = output<void>();
   toggleFollow = output<void>();
   toggleFriendRequest = output<void>();
+  friendRemoved = output<void>();
   inviteClick = output<void>();
   messageClick = output<void>();
   blocked = output<void>();

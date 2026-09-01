@@ -25,6 +25,14 @@ public record ConversationResponse(
         String directUserTwoNickname,
         String directUserTwoAvatarUrl,
         DirectConversationStatus directMessageStatus,
+        UUID revokedById,
+        String lastMessageContent,
+        String lastMessageSenderUsername,
+        String lastMessageSenderNickname,
+        Boolean lastMessageHasMedia,
+        String lastMessageMediaType,
+        Instant lastMessageCreatedAt,
+        Long unreadCount,
         Instant createdAt,
         Instant updatedAt
 ) {

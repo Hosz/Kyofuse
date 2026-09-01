@@ -81,6 +81,15 @@
                   <span class="material-symbols-outlined text-[18px]">block</span>
                   Revogar permissão de conversar
                 </button>
+              } @else if (canAllow()) {
+                <button
+                  type="button"
+                  (click)="onAllow()"
+                  class="flex w-full cursor-pointer items-center gap-2 px-4 py-3 text-left text-body-sm text-primary transition-colors hover:bg-surface-container-high"
+                >
+                  <span class="material-symbols-outlined text-[18px]">check_circle</span>
+                  Permitir conversa novamente
+                </button>
               } @else {
                 <p class="px-4 py-3 text-label-sm text-on-surface-variant">Nenhuma opção disponível.</p>
               }
@@ -122,52 +131,139 @@
       </div>
     }
 
-    <div class="scrollbar-minimal flex flex-1 flex-col gap-6 overflow-y-auto px-lg py-6">
-      @if (conv.messages.length === 0) {
-        <div class="flex flex-1 flex-col items-center justify-center gap-3 text-center">
-          <img [src]="conv.participant.avatarUrl" [alt]="conv.participant.name" class="h-16 w-16 rounded-full object-cover" />
-          <div class="flex flex-col gap-1">
-            <span class="text-title-md font-bold text-on-surface">{{ conv.participant.name }}</span>
-            <p class="max-w-[24rem] text-body-sm text-on-surface-variant">
-              @if (conv.type === 'DIRECT') {
-                Esse é o início da sua conversa direta com {{ conv.participant.name }}.
-              } @else if (conv.type === 'COMMUNITY') {
-                Esse é o chat oficial da comunidade {{ conv.participant.name }}.
-              } @else {
-                Esse é o início do grupo {{ conv.participant.name }}.
-              }
-            </p>
+    <div class="relative flex flex-1 flex-col overflow-hidden">
+      <div
+        #scroller
+        (scroll)="onScroll()"
+        class="scrollbar-minimal flex flex-1 flex-col gap-6 overflow-y-auto px-lg py-6"
+      >
+        @if (conv.messages.length === 0) {
+          <div class="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+            <img [src]="conv.participant.avatarUrl" [alt]="conv.participant.name" class="h-16 w-16 rounded-full object-cover" />
+            <div class="flex flex-col gap-1">
+              <span class="text-title-md font-bold text-on-surface">{{ conv.participant.name }}</span>
+              <p class="max-w-[24rem] text-body-sm text-on-surface-variant">
+                @if (conv.type === 'DIRECT') {
+                  Esse é o início da sua conversa direta com {{ conv.participant.name }}.
+                } @else if (conv.type === 'COMMUNITY') {
+                  Esse é o chat oficial da comunidade {{ conv.participant.name }}.
+                } @else {
+                  Esse é o início do grupo {{ conv.participant.name }}.
+                }
+              </p>
+            </div>
           </div>
-        </div>
-      }
-
-      @for (group of messageGroups(); track group.key) {
-        @if (group.dayDivider) {
-          <div class="my-3 flex items-center justify-center">
-            <span class="rounded-full border border-outline-variant/60 bg-surface-container-high px-3.5 py-1 text-label-sm font-semibold text-on-surface-variant shadow-sm">
-              {{ group.dayDivider }}
-            </span>
-          </div>
+        } @else {
+          @if (loadingOlderMessages()) {
+            <div class="flex items-center justify-center py-2 text-label-sm text-on-surface-variant">
+              <span class="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
+              <span>Carregando mensagens anteriores...</span>
+            </div>
+          } @else if (!conv.hasMoreMessages) {
+            <div class="flex flex-col items-center justify-center gap-2 py-4 text-center">
+              <img [src]="conv.participant.avatarUrl" [alt]="conv.participant.name" class="h-12 w-12 rounded-full object-cover opacity-80" />
+              <span class="text-body-sm font-semibold text-on-surface-variant">
+                @if (conv.type === 'DIRECT') {
+                  Início da conversa com {{ conv.participant.name }}
+                } @else if (conv.type === 'COMMUNITY') {
+                  Início do chat da comunidade {{ conv.participant.name }}
+                } @else {
+                  Início do grupo {{ conv.participant.name }}
+                }
+              </span>
+            </div>
+          }
         }
 
-        @if (group.author === 'them') {
-          <div class="flex max-w-[24rem] flex-col gap-1">
-            @if (conv.type !== 'DIRECT' && (group.senderNickname || group.senderUsername)) {
-              <span class="pl-10 text-label-sm font-semibold text-on-surface-variant">
-                {{ group.senderNickname || group.senderUsername }}
+        @for (group of messageGroups(); track group.key) {
+          @if (group.dayDivider) {
+            <div class="my-3 flex items-center justify-center">
+              <span class="rounded-full border border-outline-variant/60 bg-surface-container-high px-3.5 py-1 text-label-sm font-semibold text-on-surface-variant shadow-sm">
+                {{ group.dayDivider }}
               </span>
-            }
-            <div class="flex items-end gap-2">
-              <img
-                [src]="group.senderAvatarUrl || conv.participant.avatarUrl"
-                [alt]="group.senderNickname || group.senderUsername || conv.participant.name"
-                class="h-8 w-8 shrink-0 rounded-full object-cover"
-              />
-              <div class="flex flex-1 flex-col gap-1">
-                @for (message of group.messages; track message.id) {
-                  <div class="flex flex-col gap-1" [title]="message.tooltipTime">
+            </div>
+          }
+
+          @if (group.unreadDivider) {
+            <div id="unread-divider" class="my-4 flex items-center justify-center">
+              <div class="relative flex w-full items-center justify-center">
+                <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                  <div class="w-full border-t border-primary/40"></div>
+                </div>
+                <div class="relative flex items-center gap-1.5 rounded-full border border-primary/40 bg-surface-container px-4 py-1 text-label-sm font-bold uppercase tracking-wider text-primary shadow-sm backdrop-blur">
+                  <span class="material-symbols-outlined text-[15px]">mark_chat_unread</span>
+                  <span>{{ group.unreadDivider }}</span>
+                </div>
+              </div>
+            </div>
+          }
+
+          @if (group.author === 'them') {
+            <div class="flex max-w-[24rem] flex-col gap-1">
+              @if (conv.type !== 'DIRECT' && (group.senderNickname || group.senderUsername)) {
+                <span class="pl-10 text-label-sm font-semibold text-on-surface-variant">
+                  {{ group.senderNickname || group.senderUsername }}
+                </span>
+              }
+              <div class="flex items-end gap-2">
+                <img
+                  [src]="group.senderAvatarUrl || conv.participant.avatarUrl"
+                  [alt]="group.senderNickname || group.senderUsername || conv.participant.name"
+                  class="h-8 w-8 shrink-0 rounded-full object-cover"
+                />
+                <div class="flex flex-1 flex-col gap-1">
+                  @for (message of group.messages; track message.id) {
+                    <div class="flex flex-col gap-1" [title]="message.tooltipTime">
+                      @if (message.media && message.media.length > 0) {
+                        <div class="flex flex-wrap gap-1">
+                          @for (m of message.media; track m.id) {
+                            <img
+                              [src]="m.thumbnailUrl || m.url"
+                              alt="Mídia da mensagem"
+                              (click)="openImage(m.url)"
+                              class="max-h-60 max-w-xs cursor-zoom-in rounded-xl border border-outline-variant object-cover transition-transform hover:scale-[1.02]"
+                            />
+                          }
+                        </div>
+                      }
+                      @if (message.content) {
+                        <div class="rounded-2xl rounded-bl-sm bg-surface-container-high px-4 py-2.5 text-body-sm text-on-surface transition-colors hover:bg-surface-container-highest">
+                          {{ message.content }}
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+              <span class="pl-10 text-label-sm text-on-surface-variant" [title]="group.messages.at(-1)?.tooltipTime || ''">
+                {{ group.timeFormatted }}
+              </span>
+            </div>
+          } @else {
+            <div class="flex flex-col items-end gap-0.5">
+              @for (message of group.messages; track message.id) {
+                <div class="group flex items-center gap-1.5" [title]="message.tooltipTime">
+                  <button
+                    type="button"
+                    (click)="openMessageInfo(message.id)"
+                    aria-label="Dados da mensagem"
+                    title="Dados da mensagem"
+                    class="cursor-pointer rounded-full p-1 text-on-surface-variant opacity-0 transition-opacity hover:text-primary focus-visible:opacity-100 group-hover:opacity-100"
+                  >
+                    <span class="material-symbols-outlined text-[16px]">info</span>
+                  </button>
+                  <button
+                    type="button"
+                    (click)="askDeleteMessage(message)"
+                    aria-label="Apagar mensagem"
+                    title="Apagar mensagem"
+                    class="cursor-pointer rounded-full p-1 text-on-surface-variant opacity-0 transition-opacity hover:text-error focus-visible:opacity-100 group-hover:opacity-100"
+                  >
+                    <span class="material-symbols-outlined text-[16px]">delete</span>
+                  </button>
+                  <div class="flex flex-col items-end gap-1">
                     @if (message.media && message.media.length > 0) {
-                      <div class="flex flex-wrap gap-1">
+                      <div class="flex flex-wrap justify-end gap-1">
                         @for (m of message.media; track m.id) {
                           <img
                             [src]="m.thumbnailUrl || m.url"
@@ -179,68 +275,57 @@
                       </div>
                     }
                     @if (message.content) {
-                      <div class="rounded-2xl rounded-bl-sm bg-surface-container-high px-4 py-2.5 text-body-sm text-on-surface transition-colors hover:bg-surface-container-highest">
+                      <div class="max-w-[22rem] rounded-2xl rounded-br-sm border border-outline-variant bg-surface-container px-4 py-2.5 text-body-sm text-on-surface transition-colors hover:bg-surface-container-high">
                         {{ message.content }}
                       </div>
                     }
                   </div>
+                </div>
+              }
+              <div class="flex items-center gap-1 text-label-sm text-on-surface-variant" [title]="group.messages.at(-1)?.tooltipTime || ''">
+                <span>{{ group.timeFormatted }}</span>
+
+                @switch (group.messages.at(-1)?.status) {
+                  @case ('PENDING') {
+                    <span class="material-symbols-outlined text-[14px] text-on-surface-variant animate-pulse" title="Enviando...">schedule</span>
+                  }
+                  @case ('SENT') {
+                    <span class="material-symbols-outlined text-[15px] text-on-surface-variant" title="Enviada">check</span>
+                  }
+                  @case ('DELIVERED') {
+                    <span class="material-symbols-outlined text-[16px] text-on-surface-variant" title="Entregue">done_all</span>
+                  }
+                  @case ('READ') {
+                    <span class="material-symbols-outlined text-[16px] text-primary" title="Lida">done_all</span>
+                  }
                 }
               </div>
             </div>
-            <span class="pl-10 text-label-sm text-on-surface-variant" [title]="group.messages.at(-1)?.tooltipTime || ''">
-              {{ group.timeFormatted }}
-            </span>
-          </div>
-        } @else {
-          <div class="flex flex-col items-end gap-0.5">
-            @for (message of group.messages; track message.id) {
-              <div class="group flex items-center gap-1.5" [title]="message.tooltipTime">
-                <button
-                  type="button"
-                  (click)="askDeleteMessage(message)"
-                  aria-label="Apagar mensagem"
-                  title="Apagar mensagem"
-                  class="cursor-pointer rounded-full p-1 text-on-surface-variant opacity-0 transition-opacity hover:text-error focus-visible:opacity-100 group-hover:opacity-100"
-                >
-                  <span class="material-symbols-outlined text-[16px]">delete</span>
-                </button>
-                <div class="flex flex-col items-end gap-1">
-                  @if (message.media && message.media.length > 0) {
-                    <div class="flex flex-wrap justify-end gap-1">
-                      @for (m of message.media; track m.id) {
-                        <img
-                          [src]="m.thumbnailUrl || m.url"
-                          alt="Mídia da mensagem"
-                          (click)="openImage(m.url)"
-                          class="max-h-60 max-w-xs cursor-zoom-in rounded-xl border border-outline-variant object-cover transition-transform hover:scale-[1.02]"
-                        />
-                      }
-                    </div>
-                  }
-                  @if (message.content) {
-                    <div class="max-w-[22rem] rounded-2xl rounded-br-sm border border-outline-variant bg-surface-container px-4 py-2.5 text-body-sm text-on-surface transition-colors hover:bg-surface-container-high">
-                      {{ message.content }}
-                    </div>
-                  }
-                </div>
-              </div>
-            }
-            <span class="text-label-sm text-on-surface-variant" [title]="group.messages.at(-1)?.tooltipTime || ''">
-              {{ group.timeFormatted }}
-            </span>
+          }
+        }
+
+        @if (conv.isTyping) {
+          <div class="flex items-end gap-2">
+            <img [src]="conv.participant.avatarUrl" [alt]="conv.participant.name" class="h-7 w-7 shrink-0 rounded-full object-cover" />
+            <div class="flex items-center gap-1 rounded-2xl rounded-bl-sm bg-surface-container-high px-4 py-3">
+              <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-on-surface-variant"></span>
+              <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-on-surface-variant [animation-delay:150ms]"></span>
+              <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-on-surface-variant [animation-delay:300ms]"></span>
+            </div>
           </div>
         }
-      }
+      </div>
 
-      @if (conv.isTyping) {
-        <div class="flex items-end gap-2">
-          <img [src]="conv.participant.avatarUrl" [alt]="conv.participant.name" class="h-7 w-7 shrink-0 rounded-full object-cover" />
-          <div class="flex items-center gap-1 rounded-2xl rounded-bl-sm bg-surface-container-high px-4 py-3">
-            <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-on-surface-variant"></span>
-            <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-on-surface-variant [animation-delay:150ms]"></span>
-            <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-on-surface-variant [animation-delay:300ms]"></span>
-          </div>
-        </div>
+      @if (showScrollBottom()) {
+        <button
+          type="button"
+          (click)="scrollToBottom('smooth')"
+          class="absolute bottom-4 right-6 z-10 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-outline-variant/60 bg-surface-container-high/90 text-on-surface shadow-lg backdrop-blur transition-all hover:bg-surface-container-highest hover:scale-105 active:scale-95"
+          aria-label="Rolar para o final"
+          title="Rolar para as mensagens mais recentes"
+        >
+          <span class="material-symbols-outlined text-[20px]">arrow_downward</span>
+        </button>
       }
     </div>
 
@@ -325,12 +410,27 @@
           <span>Kyofuse Tactical Messenger v2.4</span>
         </div>
       } @else {
-        <div class="flex items-center gap-2 rounded-lg bg-surface-container px-4 py-3 text-label-md text-on-surface-variant">
-          <span class="material-symbols-outlined text-[18px]">lock</span>
-          @if (conv.relationship === 'declined') {
-            Essa conversa foi encerrada.
-          } @else {
-            Solicitação enviada. Aguardando {{ conv.participant.name }} aceitar para continuar.
+        <div class="flex items-center justify-between gap-3 rounded-lg bg-surface-container px-4 py-3 text-label-md text-on-surface-variant">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-[18px]">lock</span>
+            @if (conv.relationship === 'declined') {
+              @if (canAllow()) {
+                Essa conversa foi encerrada por você.
+              } @else {
+                Essa conversa foi encerrada por {{ conv.participant.name }}.
+              }
+            } @else {
+              Solicitação enviada. Aguardando {{ conv.participant.name }} aceitar para continuar.
+            }
+          </div>
+          @if (conv.relationship === 'declined' && canAllow()) {
+            <button
+              type="button"
+              (click)="onAllow()"
+              class="cursor-pointer whitespace-nowrap rounded-full bg-primary-container px-3.5 py-1 text-label-sm font-bold text-on-primary-container transition-all hover:brightness-110 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+            >
+              Permitir novamente
+            </button>
           }
         </div>
       }
@@ -363,4 +463,11 @@
 <app-image-modal
   [imageUrl]="selectedImageUrl()"
   (close)="closeImage()"
+/>
+
+<app-message-info-modal
+  [open]="infoModalOpen()"
+  [info]="messageInfo()"
+  [loading]="loadingMessageInfo()"
+  (closed)="closeMessageInfo()"
 />

@@ -17,6 +17,7 @@ import com.hokyozu.kyofuse.users.service.UserChecker;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,11 +35,15 @@ public class NotificationService {
     private final NotificationMapper notificationMapper;
     private final UserFinder userFinder;
     private final UserChecker userChecker;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
     public Notification createNotification(CreateNotificationRequest request) {
         Notification notification = NotificationMapper.toEntity(request);
-        return notificationRepository.save(notification);
+        Notification saved = notificationRepository.save(notification);
+
+        sendNotification(saved.getUser().getId(), notificationMapper.toResponse(saved));
+        return saved;
     }
 
     public Page<NotificationResponse> listNotifications(
@@ -103,5 +108,13 @@ public class NotificationService {
         });
 
         notificationRepository.saveAll(notifications);
+    }
+
+    public void sendNotification(UUID userId, NotificationResponse notification) {
+        messagingTemplate.convertAndSendToUser(
+                userId.toString(),
+                "/queue/notifications",
+                notification
+        );
     }
 }

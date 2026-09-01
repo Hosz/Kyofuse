@@ -1,14 +1,23 @@
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Observable } from 'rxjs';
+import { forkJoin, Observable } from 'rxjs';
 import { ModalComponent } from '../../shared/modal/modal';
 import { UserOptionsMenuComponent } from '../../shared/user-options-menu/user-options-menu';
 import { ConversationService } from '../../../core/services/chat/conversation.service';
 import { ConversationMemberService } from '../../../core/services/chat/conversation-member.service';
+import { FriendshipService } from '../../../core/services/friendship/friendship.service';
+import { FollowService } from '../../../core/services/follow/follow.service';
+import { ToastService } from '../../../core/services/ui/toast.service';
 import { MediaService } from '../../../core/services/media/media.service';
 import { ConversationMemberResponse, ConversationMemberRole, ConversationResponse } from '../../../models/chat/chat.model';
 import { Conversation } from '../../../shared/models/chat.model';
 import { FALLBACK_AVATAR_URL } from '../../../shared/utils/format.util';
+
+export interface ChatCandidate {
+  id: string;
+  username: string;
+  avatarUrl: string;
+}
 
 interface ViewedMember {
   userId: string;
@@ -23,8 +32,8 @@ const ROLE_LABEL: Record<ConversationMemberRole, string> = {
   MEMBER: 'Membro',
 };
 
-/** members = lista do grupo; member = cartão de um usuário; edit = formulário do grupo. */
-type PanelView = 'members' | 'member' | 'edit';
+/** members = lista do grupo; member = cartão de um usuário; edit = formulário do grupo; add-members = adicionar participantes. */
+type PanelView = 'members' | 'member' | 'edit' | 'add-members';
 
 @Component({
   selector: 'app-conversation-info-panel',
@@ -44,6 +53,9 @@ export class ConversationInfoPanelComponent {
 
   private conversationService = inject(ConversationService);
   private conversationMemberService = inject(ConversationMemberService);
+  private friendshipService = inject(FriendshipService);
+  private followService = inject(FollowService);
+  private toastService = inject(ToastService);
   private mediaService = inject(MediaService);
 
   readonly fallbackAvatar = FALLBACK_AVATAR_URL;
@@ -64,6 +76,33 @@ export class ConversationInfoPanelComponent {
   uploadingAvatar = signal(false);
   saving = signal(false);
   editError = signal<string | null>(null);
+
+  candidateQuery = signal('');
+  candidatesLoading = signal(false);
+  addingMembers = signal(false);
+  addMembersError = signal<string | null>(null);
+  selectedCandidateIds = signal<Set<string>>(new Set());
+
+  private friends = signal<ChatCandidate[]>([]);
+  private mutualFollows = signal<ChatCandidate[]>([]);
+  private candidatesLoaded = false;
+
+  allCandidates = computed<ChatCandidate[]>(() => {
+    const friendIds = new Set(this.friends().map((c) => c.id));
+    return [...this.friends(), ...this.mutualFollows().filter((c) => !friendIds.has(c.id))];
+  });
+
+  availableCandidates = computed<ChatCandidate[]>(() => {
+    const activeMemberIds = new Set(this.members().map((m) => m.userId));
+    const myId = this.myUserId();
+    const query = this.candidateQuery().trim().toLowerCase();
+
+    return this.allCandidates()
+      .filter((c) => c.id !== myId && !activeMemberIds.has(c.id))
+      .filter((c) => !query || c.username.toLowerCase().includes(query));
+  });
+
+  selectedCandidateCount = computed(() => this.selectedCandidateIds().size);
 
   isGroup = computed(() => this.conversation()?.type === 'GROUP');
   isCommunity = computed(() => this.conversation()?.type === 'COMMUNITY');
@@ -90,6 +129,7 @@ export class ConversationInfoPanelComponent {
   title = computed(() => {
     const viewed = this.viewedMember();
     if (this.view() === 'edit') return 'Editar grupo';
+    if (this.view() === 'add-members') return 'Adicionar membros';
     if (this.view() === 'member' && viewed) return '@' + viewed.username;
     if (this.isGroup()) return 'Membros do grupo';
     if (this.isCommunity()) return 'Sobre a comunidade';
@@ -236,10 +276,114 @@ export class ConversationInfoPanelComponent {
     this.runMemberAction(this.conversationMemberService.removeMember(conversation.id, viewed.userId));
   }
 
+  openAddMembers(): void {
+    this.candidateQuery.set('');
+    this.selectedCandidateIds.set(new Set());
+    this.addMembersError.set(null);
+    this.view.set('add-members');
+    this.loadCandidates();
+  }
+
+  toggleCandidateSelection(id: string): void {
+    this.selectedCandidateIds.update((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  isCandidateSelected(id: string): boolean {
+    return this.selectedCandidateIds().has(id);
+  }
+
+  submitAddMembers(): void {
+    const conversation = this.conversation();
+    const selectedIds = [...this.selectedCandidateIds()];
+    if (!conversation || selectedIds.length === 0 || this.addingMembers()) return;
+
+    this.addingMembers.set(true);
+    this.addMembersError.set(null);
+
+    const requests = selectedIds.map((id) =>
+      this.conversationMemberService.addMember(conversation.id, id),
+    );
+
+    forkJoin(requests).subscribe({
+      next: () => {
+        this.addingMembers.set(false);
+        const count = selectedIds.length;
+        this.toastService.success(
+          count === 1 ? 'Membro adicionado ao grupo com sucesso.' : `${count} membros adicionados ao grupo com sucesso.`,
+        );
+        this.selectedCandidateIds.set(new Set());
+        this.reloadMembers();
+        this.view.set('members');
+      },
+      error: (error) => {
+        console.error('Failed to add members:', error);
+        this.addingMembers.set(false);
+        this.addMembersError.set(error?.error?.message ?? 'Não foi possível adicionar os membros selecionados.');
+        this.reloadMembers();
+      },
+    });
+  }
+
+  private loadCandidates(): void {
+    if (this.candidatesLoaded) return;
+    this.candidatesLoading.set(true);
+
+    this.friendshipService.showMyFriends(0, 100).subscribe({
+      next: (response) => {
+        this.friends.set(
+          response.content.map((friend) => ({
+            id: friend.friendId,
+            username: friend.friendUsername,
+            avatarUrl: friend.avatarUrl || FALLBACK_AVATAR_URL,
+          })),
+        );
+      },
+      error: (error) => console.error('Failed to fetch friends:', error),
+    });
+
+    forkJoin({
+      following: this.followService.showMyFollowing(0, 100),
+      followers: this.followService.showMyFollowers(0, 100),
+    }).subscribe({
+      next: ({ following, followers }) => {
+        const followerIds = new Set(
+          followers.content.filter((f) => f.status === 'ACTIVE').map((f) => f.followerId),
+        );
+        this.mutualFollows.set(
+          following.content
+            .filter((f) => f.status === 'ACTIVE' && followerIds.has(f.followedId))
+            .map((f) => ({
+              id: f.followedId,
+              username: f.followedUsername,
+              avatarUrl: f.avatarUrl || FALLBACK_AVATAR_URL,
+            })),
+        );
+        this.candidatesLoaded = true;
+        this.candidatesLoading.set(false);
+      },
+      error: (error) => {
+        console.error('Failed to fetch mutual follows:', error);
+        this.candidatesLoaded = true;
+        this.candidatesLoading.set(false);
+      },
+    });
+  }
+
   onClose(): void {
     this.view.set('members');
     this.viewedMember.set(null);
     this.actionError.set(null);
+    this.candidateQuery.set('');
+    this.selectedCandidateIds.set(new Set());
+    this.addMembersError.set(null);
     this.closed.emit();
   }
 

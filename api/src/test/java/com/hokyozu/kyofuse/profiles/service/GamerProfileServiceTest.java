@@ -113,6 +113,7 @@ class GamerProfileServiceTest {
                 " BR ",
                 " Sao Paulo ",
                 " SP ",
+                false,
                 PlayerRole.AWPER,
                 PlayerRole.RIFLER,
                 15000,
@@ -139,6 +140,7 @@ class GamerProfileServiceTest {
         verify(updateFavoriteMapsService).execute(profile, request.favoriteMaps());
         assertThat(profile.getNickname()).isEqualTo("newNick");
         assertThat(profile.getBio()).isEqualTo("new bio");
+        assertThat(profile.getShowCountryFlag()).isFalse();
         assertThat(profile.getSetupStatus()).isEqualTo(GamerProfileSetupStatus.COMPLETED);
         assertThat(response.userId()).isEqualTo(userId);
         assertThat(response.favoriteMaps()).containsExactly(Cs2Map.MIRAGE);
@@ -173,6 +175,7 @@ class GamerProfileServiceTest {
                 null,
                 null,
                 null,
+                null,
                 List.of()
         );
 
@@ -190,6 +193,7 @@ class GamerProfileServiceTest {
     void editProfileThrowsWhenNicknameIsBlank() {
         GamerProfileRequest request = new GamerProfileRequest(
                 "   ",
+                null,
                 null,
                 null,
                 null,
@@ -241,6 +245,7 @@ class GamerProfileServiceTest {
                 null,
                 null,
                 null,
+                null,
                 PlayerRole.AWPER,
                 PlayerRole.AWPER,
                 null,
@@ -269,6 +274,7 @@ class GamerProfileServiceTest {
 
         GamerProfileRequest request = new GamerProfileRequest(
                 "nickname",
+                null,
                 null,
                 null,
                 null,
@@ -311,6 +317,7 @@ class GamerProfileServiceTest {
                 null,
                 null,
                 null,
+                null,
                 PlayerRole.RIFLER,
                 null,
                 null,
@@ -339,6 +346,7 @@ class GamerProfileServiceTest {
 
         GamerProfileRequest request = new GamerProfileRequest(
                 "nickname",
+                null,
                 null,
                 null,
                 null,
@@ -452,6 +460,7 @@ class GamerProfileServiceTest {
 
     private static GamerProfileRequest emptyRequest() {
         return new GamerProfileRequest(
+                null,
                 null,
                 null,
                 null,

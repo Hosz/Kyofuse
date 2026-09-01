@@ -5,6 +5,7 @@ export interface gamerProfileEdit {
     country: string;
     city: string;
     state: string;
+    showCountryFlag?: boolean;
     mainRole: string;
     secondaryRole: string;
     premierRating: number;

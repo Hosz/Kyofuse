@@ -32,7 +32,20 @@ public interface UserFriendshipRepository extends JpaRepository<UserFriendship, 
     """)
     List<UUID> findMutualFriendIdsIn(User user, List<User> others);
 
+    @Query("""
+        select f from UserFriendship f
+        where (f.userOne = :user and f.userTwo = :friend)
+           or (f.userOne = :friend and f.userTwo = :user)
+    """)
+    java.util.Optional<UserFriendship> findFriendshipBetween(User user, User friend);
+
     UserFriendship findByUserOneAndUserTwo(User user, User friend);
+
+    @Query("""
+        select count(f) from UserFriendship f
+        where f.userOne = :user or f.userTwo = :user
+    """)
+    long countTotalFriends(User user);
 
     long countUserFriendshipByUserOne(User userOne);
 }

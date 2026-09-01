@@ -101,6 +101,19 @@ class ConversationControllerTest {
     }
 
     @Test
+    void allowDirectConversationPermissionUsesAuthenticatedUserIdAndPathConversationId() {
+        UUID userId = UUID.randomUUID();
+        UUID conversationId = UUID.randomUUID();
+        ConversationResponse expected = response();
+        when(conversationService.allowDirectConversationPermission(conversationId, userId)).thenReturn(expected);
+
+        ConversationResponse result = controller.allowDirectConversationPermission(jwt(userId), conversationId);
+
+        assertThat(result).isSameAs(expected);
+        verify(conversationService).allowDirectConversationPermission(conversationId, userId);
+    }
+
+    @Test
     void listDirectConversationsUsesAuthenticatedUserId() {
         UUID userId = UUID.randomUUID();
         Pageable pageable = PageRequest.of(0, 10);
@@ -173,6 +186,14 @@ class ConversationControllerTest {
                 null,
                 null,
                 DirectConversationStatus.ACCEPTED,
+                null,
+                null,
+                null,
+                null,
+                false,
+                null,
+                null,
+                0L,
                 now,
                 now
         );

@@ -27,6 +27,7 @@ export interface ChatParticipant {
 export type MessageRelationship = 'mutual' | 'request-received' | 'request-sent' | 'declined';
 
 import { MessageMediaResponse } from '../../models/media/message-media-response.model';
+import { MessageStatus } from '../../models/chat/chat.model';
 
 export interface ChatMessage {
   id: string;
@@ -41,6 +42,7 @@ export interface ChatMessage {
   tooltipTime: string;
   /** ISO cru — usado para agrupar mensagens seguidas do mesmo autor. */
   createdAt: string;
+  status?: MessageStatus;
   read?: boolean;
   senderUsername?: string;
   senderNickname?: string;
@@ -54,6 +56,7 @@ export interface ChatMessage {
 export interface ChatMessageGroup {
   key: string;
   dayDivider?: string;
+  unreadDivider?: string;
   author: 'me' | 'them';
   senderUsername?: string;
   senderNickname?: string;
@@ -70,9 +73,16 @@ export interface Conversation {
   participant: ChatParticipant;
   relationship: MessageRelationship;
   lastMessageAt: string;
+  lastMessagePreview?: string;
   unread?: boolean;
+  unreadCount?: number;
   isTyping?: boolean;
   messages: ChatMessage[];
   /** Só preenchido em conversas COMMUNITY — usado pra linkar de volta pra página da comunidade. */
   communityId?: string;
+  /** Id do usuário que revogou a permissão da conversa (se aplicável). */
+  revokedById?: string;
+  hasMoreMessages?: boolean;
+  messagesPage?: number;
+  unreadDividerMessageId?: string | null;
 }
