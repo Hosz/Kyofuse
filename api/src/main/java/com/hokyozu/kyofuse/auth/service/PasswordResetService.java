@@ -24,6 +24,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -61,14 +62,17 @@ public class PasswordResetService {
 
         User user = userOpt.get();
 
-        tokenRepository.deleteAllByUser(user);
+        List<PasswordResetToken> existingTokens = tokenRepository.findByUserId(user.getId());
+        if (existingTokens != null && !existingTokens.isEmpty()) {
+            tokenRepository.deleteAll(existingTokens);
+        }
 
         byte[] randomBytes = new byte[32];
         new SecureRandom().nextBytes(randomBytes);
         String rawToken = Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
         String tokenHash = hashToken(rawToken);
 
-        PasswordResetToken resetToken = PasswordResetTokenMapper.toEntity(user, tokenHash, TOKEN_TTL);
+        PasswordResetToken resetToken = PasswordResetTokenMapper.toEntity(user.getId(), tokenHash);
         tokenRepository.save(resetToken);
 
         mailService.sendPasswordResetEmail(user.getEmail(), rawToken);
@@ -76,10 +80,7 @@ public class PasswordResetService {
 
     public void validateToken(String rawToken) {
         String tokenHash = hashToken(rawToken);
-        PasswordResetToken resetToken = tokenRepository.findByTokenHash(tokenHash)
-                .orElseThrow(() -> new BadRequestException("Token de recuperação inválido ou expirado."));
-
-        if (resetToken.isExpired() || resetToken.isUsed()) {
+        if (!tokenRepository.existsById(tokenHash)) {
             throw new BadRequestException("Token de recuperação inválido ou expirado.");
         }
     }
@@ -87,21 +88,18 @@ public class PasswordResetService {
     @Transactional
     public void resetPassword(String rawToken, String newPassword) {
         String tokenHash = hashToken(rawToken);
-        PasswordResetToken resetToken = tokenRepository.findByTokenHash(tokenHash)
+        PasswordResetToken resetToken = tokenRepository.findById(tokenHash)
                 .orElseThrow(() -> new BadRequestException("Token de recuperação inválido ou expirado."));
 
-        if (resetToken.isExpired() || resetToken.isUsed()) {
-            throw new BadRequestException("Token de recuperação inválido ou expirado.");
-        }
+        User user = userRepository.findById(resetToken.getUserId())
+                .orElseThrow(() -> new BadRequestException("Usuário não encontrado para o token fornecido."));
 
-        User user = resetToken.getUser();
         String newPasswordHash = passwordEncoder.encode(newPassword);
         user.setPasswordHash(newPasswordHash);
         user.setUpdatedAt(Instant.now());
         userRepository.save(user);
 
-        resetToken.setUsedAt(Instant.now());
-        tokenRepository.save(resetToken);
+        tokenRepository.deleteById(tokenHash);
 
         refreshTokenRepository.deleteAllByUser(user);
         accountSwitchSessionRepository.deleteAllByUserId(user.getId());

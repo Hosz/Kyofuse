@@ -270,8 +270,14 @@ public class AuthController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void logout(
             @CookieValue(name = AuthCookieService.REFRESH_TOKEN_COOKIE, required = false) String refreshToken,
+            @AuthenticationPrincipal Jwt jwt,
             HttpServletResponse response
     ) {
+        authService.logout(refreshToken, jwt);
+        clearAuthCookies(response);
+    }
+
+    public void logout(String refreshToken, HttpServletResponse response) {
         authService.logout(refreshToken);
         clearAuthCookies(response);
     }

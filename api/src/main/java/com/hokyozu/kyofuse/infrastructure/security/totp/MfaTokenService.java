@@ -2,16 +2,13 @@ package com.hokyozu.kyofuse.infrastructure.security.totp;
 
 import com.hokyozu.kyofuse.shared.exception.UnauthorizedException;
 import com.hokyozu.kyofuse.users.entity.User;
-import com.nimbusds.jose.jwk.source.ImmutableSecret;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.jwt.*;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.UUID;
 
 /**
@@ -24,52 +21,55 @@ import java.util.UUID;
  * esse token de cara.
  */
 @Service
+@RequiredArgsConstructor
 public class MfaTokenService {
 
-    private static final String PURPOSE_CLAIM = "purpose";
-    private static final String MFA_PENDING_PURPOSE = "mfa_pending";
-
-    private final JwtEncoder jwtEncoder;
-    private final JwtDecoder jwtDecoder;
-    private final long expirationMinutes;
-
-    public MfaTokenService(
-            @Value("${security.jwt.mfa-secret}") String secret,
-            @Value("${security.jwt.mfa-token-expiration-minutes}") long expirationMinutes
-    ) {
-        SecretKey secretKey = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-        this.jwtEncoder = new NimbusJwtEncoder(new ImmutableSecret<>(secretKey));
-        this.jwtDecoder = NimbusJwtDecoder.withSecretKey(secretKey).macAlgorithm(MacAlgorithm.HS256).build();
-        this.expirationMinutes = expirationMinutes;
-    }
+    private final MfaSessionRepository mfaSessionRepository;
 
     public String generate(User user) {
-        Instant now = Instant.now();
+        byte[] randomBytes = new byte[32];
+        new SecureRandom().nextBytes(randomBytes);
+        String token = Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
 
-        JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
-        JwtClaimsSet claims = JwtClaimsSet.builder()
-                .issuer("kyofuse-api")
-                .issuedAt(now)
-                .expiresAt(now.plusSeconds(expirationMinutes * 60))
-                .subject(user.getId().toString())
-                .claim(PURPOSE_CLAIM, MFA_PENDING_PURPOSE)
+        MfaSession session = MfaSession.builder()
+                .mfaToken(token)
+                .userId(user.getId())
+                .remainingAttempts(3)
+                .createdAt(Instant.now())
                 .build();
 
-        return jwtEncoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
+        mfaSessionRepository.save(session);
+        return token;
+    }
+
+    public UUID resolveAndValidateUserId(String mfaToken) {
+        MfaSession session = mfaSessionRepository.findById(mfaToken)
+                .orElseThrow(() -> new UnauthorizedException("Invalid mfa token"));
+
+        if (session.getRemainingAttempts() <= 0) {
+            mfaSessionRepository.deleteById(mfaToken);
+            throw new UnauthorizedException("Limite de tentativas de 2FA excedido. Faça login novamente.");
+        }
+
+        return session.getUserId();
     }
 
     public UUID resolveUserId(String mfaToken) {
-        Jwt jwt;
-        try {
-            jwt = jwtDecoder.decode(mfaToken);
-        } catch (JwtException e) {
-            throw new UnauthorizedException("Token de verificação inválido ou expirado.");
-        }
+        return resolveAndValidateUserId(mfaToken);
+    }
 
-        if (!MFA_PENDING_PURPOSE.equals(jwt.getClaimAsString(PURPOSE_CLAIM))) {
-            throw new UnauthorizedException("Token de verificação inválido.");
-        }
+    public void recordFailedAttempt(String mfaToken) {
+        mfaSessionRepository.findById(mfaToken).ifPresent(session -> {
+            session.setRemainingAttempts(session.getRemainingAttempts() - 1);
+            if (session.getRemainingAttempts() <= 0) {
+                mfaSessionRepository.deleteById(mfaToken);
+            } else {
+                mfaSessionRepository.save(session);
+            }
+        });
+    }
 
-        return UUID.fromString(jwt.getSubject());
+    public void consume(String mfaToken) {
+        mfaSessionRepository.deleteById(mfaToken);
     }
 }

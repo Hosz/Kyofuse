@@ -3,11 +3,14 @@ package com.hokyozu.kyofuse.auth.repository;
 import com.hokyozu.kyofuse.auth.entity.PasswordResetToken;
 import com.hokyozu.kyofuse.users.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface PasswordResetTokenRepository extends JpaRepository<PasswordResetToken, UUID> {
-    Optional<PasswordResetToken> findByTokenHash(String tokenHash);
-    void deleteAllByUser(User user);
+@Repository
+public interface PasswordResetTokenRepository extends CrudRepository<PasswordResetToken, String> {
+    List<PasswordResetToken> findByUserId(UUID userId);
 }

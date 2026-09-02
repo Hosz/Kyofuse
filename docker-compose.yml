@@ -48,6 +48,26 @@ services:
       - kyofuse-internal
 
   # ---------------------------------------------------------------------------
+  # Redis — In-memory data store for caching, distributed rate limiting & presence
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:8-alpine
+    container_name: kyofuse-redis
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning --requirepass ${REDIS_PASSWORD:-kyofuse_redis_secret}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - kyofuse_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-kyofuse_redis_secret}", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - kyofuse-internal
+
+  # ---------------------------------------------------------------------------
   # Mailpit — local mock SMTP server & Web UI for development email testing.
   # ---------------------------------------------------------------------------
   mailpit:
@@ -77,6 +97,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
+      redis:
+        condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
       SERVER_PORT: ${SERVER_PORT}
@@ -111,6 +133,11 @@ services:
       MFA_JWT_SECRET: ${MFA_JWT_SECRET}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       STEAM_API_KEY: ${STEAM_API_KEY:-}
+
+      # Redis
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-kyofuse_redis_secret}
 
       # JVM memory/GC tuning, read automatically by the `java` launcher.
       # Balanced for a small monolith on a dev machine with limited RAM
@@ -236,3 +263,4 @@ volumes:
   #     -v kyofuse_postgres_data:/to alpine cp -a /from/. /to/
   kyofuse_postgres_data:
   kyofuse_minio_data:
+  kyofuse_redis_data:

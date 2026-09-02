@@ -15,6 +15,7 @@ import com.hokyozu.kyofuse.infrastructure.security.crypto.EmailCipherService;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.AccountSwitchService;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.JwtService;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.RefreshTokenService;
+import com.hokyozu.kyofuse.infrastructure.security.jwt.TokenBlacklistService;
 import com.hokyozu.kyofuse.infrastructure.security.oauth.GoogleTokenVerifierService;
 import com.hokyozu.kyofuse.infrastructure.security.ratelimit.RateLimitPolicies;
 import com.hokyozu.kyofuse.infrastructure.security.ratelimit.RateLimiterService;
@@ -33,10 +34,12 @@ import com.hokyozu.kyofuse.users.enums.UserStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
@@ -74,6 +77,8 @@ public class AuthService {
 
     private final ApplicationEventPublisher eventPublisher;
     private final AccountReactivationService accountReactivationService;
+
+    private final TokenBlacklistService tokenBlacklistService;
 
     private static final String LOGIN_IP_KEY_PREFIX = "login:ip:";
     private static final String LOGIN_USER_KEY_PREFIX = "login:user:";
@@ -376,9 +381,11 @@ public class AuthService {
                 || recoveryCodeService.consume(user, code);
 
         if (!valid) {
+            mfaTokenService.recordFailedAttempt(mfaToken);
             throw new UnauthorizedException("Código de verificação inválido.");
         }
 
+        mfaTokenService.consume(mfaToken);
         rateLimiterService.recordSuccess(rateLimitKey);
         publishLoginSuccess(user, clientIp, userAgent);
 
@@ -445,8 +452,17 @@ public class AuthService {
     }
 
     public void logout(String rawRefreshToken) {
+        logout(rawRefreshToken, null);
+    }
+
+    public void logout(String rawRefreshToken, Jwt currentJwt) {
         if (rawRefreshToken != null && !rawRefreshToken.isBlank()) {
             refreshTokenService.revoke(rawRefreshToken);
+        }
+
+        if (currentJwt != null && currentJwt.getId() != null && currentJwt.getExpiresAt() != null) {
+            Duration remaining = Duration.between(Instant.now(), currentJwt.getExpiresAt());
+            tokenBlacklistService.blacklistToken(currentJwt.getId(), remaining);
         }
     }
 

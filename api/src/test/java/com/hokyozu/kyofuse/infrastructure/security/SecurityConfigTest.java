@@ -1,6 +1,8 @@
 package com.hokyozu.kyofuse.infrastructure.security;
 
 import com.hokyozu.kyofuse.infrastructure.security.jwt.AuthCookieService;
+import com.hokyozu.kyofuse.infrastructure.security.jwt.JwtBlacklistValidator;
+import com.hokyozu.kyofuse.infrastructure.security.jwt.TokenBlacklistService;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -10,6 +12,7 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 class SecurityConfigTest {
 
@@ -30,7 +33,8 @@ class SecurityConfigTest {
         String secret = "kyofuse-local-development-secret-key-change-me-please-123456789";
 
         JwtEncoder encoder = securityConfig.jwtEncoder(secret);
-        JwtDecoder decoder = securityConfig.jwtDecoder(secret);
+        JwtBlacklistValidator validator = new JwtBlacklistValidator(mock(TokenBlacklistService.class));
+        JwtDecoder decoder = securityConfig.jwtDecoder(secret, validator);
 
         assertThat(encoder).isNotNull();
         assertThat(decoder).isNotNull();

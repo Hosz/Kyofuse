@@ -1,26 +1,27 @@
-package com.hokyozu.kyofuse.auth.entity;
+package com.hokyozu.kyofuse.infrastructure.security.totp;
 
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
-import org.springframework.data.redis.core.index.Indexed;
 
 import java.time.Instant;
 import java.util.UUID;
 
-@RedisHash(value = "password_reset_tokens", timeToLive = 900)
+@RedisHash(value = "mfa_sessions", timeToLive = 300)
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PasswordResetToken {
+public class MfaSession {
 
     @Id
-    private String tokenHash;
+    private String mfaToken;
 
-    @Indexed
     private UUID userId;
+
+    @Builder.Default
+    private int remainingAttempts = 3;
 
     private Instant createdAt;
 }
