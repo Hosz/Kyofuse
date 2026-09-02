@@ -5,12 +5,16 @@
 #   postgres   Database. Sole source of truth for persisted data. Reachable
 #              from the host (DBeaver) via the published port, but only the
 #              `api` service can reach it over the network.
+#   mailpit    Mock SMTP server and web dashboard for dev email testing.
 #   api        Spring Boot backend, built locally from ./api/Dockerfile
 #              (no prebuilt image is pulled for it).
+#   app        Angular frontend, built locally from ./app/Dockerfile
+#              and served via Nginx with API/WebSocket reverse proxy.
+#   minio      S3-compatible object storage for local file/image uploads.
 #
-# Adding services later (Angular dev server, Redis, Nginx, ...) means adding
-# a new service block below plus attaching it to `kyofuse-internal` and/or
-# `kyofuse-public` (see the networks section) — no restructuring needed.
+# Adding services later (Redis, etc.) means adding a new service block below
+# plus attaching it to `kyofuse-internal` and/or `kyofuse-public` (see the
+# networks section) — no restructuring needed.
 # =============================================================================
 
 services:
@@ -71,6 +75,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      minio:
+        condition: service_started
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
       SERVER_PORT: ${SERVER_PORT}
@@ -87,6 +93,14 @@ services:
       MAIL_HOST: ${MAIL_HOST:-mailpit}
       MAIL_PORT: ${MAIL_PORT:-1025}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4200}
+
+      # Storage (MinIO)
+      STORAGE_ENDPOINT: ${STORAGE_ENDPOINT:-http://minio:9000}
+      STORAGE_PUBLIC_URL: ${STORAGE_PUBLIC_URL:-http://localhost:9000}
+      STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY:-kyofuse_storage_user}
+      STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY:-kyofuse_storage_secret}
+      STORAGE_BUCKET: ${STORAGE_BUCKET:-kyofuse-media}
+      STORAGE_REGION: ${STORAGE_REGION:-us-east-1}
 
       # Auth
       JWT_SECRET: ${JWT_SECRET}
@@ -129,6 +143,24 @@ services:
       resources:
         limits:
           memory: 768M
+
+  # ---------------------------------------------------------------------------
+  # Angular Frontend (Kyofuse App) — built locally from ./app/Dockerfile.
+  # Serves the Angular SPA through Nginx and reverse-proxies /api and /ws
+  # traffic to the Spring Boot API service.
+  # ---------------------------------------------------------------------------
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: kyofuse-app
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${APP_PORT:-4200}:80"
+    networks:
+      - kyofuse-public
 
   # ---------------------------------------------------------------------------
   # MinIO — S3-compatible Object Storage for local file/image uploads
