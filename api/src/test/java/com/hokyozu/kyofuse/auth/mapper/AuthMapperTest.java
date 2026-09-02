@@ -1,6 +1,7 @@
 package com.hokyozu.kyofuse.auth.mapper;
 
 import com.hokyozu.kyofuse.auth.dto.response.AuthResponse;
+import com.hokyozu.kyofuse.auth.dto.response.RegisterResponse;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.enums.UserRole;
 import com.hokyozu.kyofuse.users.enums.UserStatus;
@@ -16,17 +17,28 @@ class AuthMapperTest {
     @Test
     void toResponse_shouldMapUserToAuthResponse_successfully() {
         User user = createUser();
-        String token = "jwt.token.here";
 
-        AuthResponse response = AuthMapper.toResponse(user, token);
+        AuthResponse response = AuthMapper.toResponse(user);
 
         assertThat(response).isNotNull();
         assertThat(response.userId()).isEqualTo(user.getId());
         assertThat(response.username()).isEqualTo(user.getUsername());
         assertThat(response.email()).isEqualTo(user.getEmail());
         assertThat(response.role()).isEqualTo(user.getRole().name());
-        assertThat(response.token()).isEqualTo(token);
-        assertThat(response.tokenType()).isEqualTo("Bearer");
+    }
+
+    @Test
+    void toRegisterResponse_shouldMapUserToRegisterResponse() {
+        User user = createUser();
+        user.setEmailVerified(false);
+
+        RegisterResponse response = AuthMapper.toRegisterResponse(user);
+
+        assertThat(response).isNotNull();
+        assertThat(response.userId()).isEqualTo(user.getId());
+        assertThat(response.username()).isEqualTo(user.getUsername());
+        assertThat(response.email()).isEqualTo(user.getEmail());
+        assertThat(response.emailVerified()).isFalse();
     }
 
     @Test
@@ -46,57 +58,60 @@ class AuthMapperTest {
                 .lastName("User")
                 .build();
 
-        String token = "valid.jwt.token";
-
-        AuthResponse response = AuthMapper.toResponse(user, token);
+        AuthResponse response = AuthMapper.toResponse(user);
 
         assertThat(response.userId()).isEqualTo(userId);
         assertThat(response.username()).isEqualTo(username);
         assertThat(response.email()).isEqualTo(email);
         assertThat(response.role()).isEqualTo(role.name());
-        assertThat(response.token()).isEqualTo(token);
     }
 
     @Test
     void toResponse_shouldThrowException_whenUserIsNull() {
-        String token = "valid.token";
-
-        assertThatThrownBy(() -> AuthMapper.toResponse(null, token))
+        assertThatThrownBy(() -> AuthMapper.toResponse(null))
                 .isInstanceOf(NullPointerException.class);
-    }
-
-    @Test
-    void toResponse_shouldAllowNullToken() {
-        User user = createUser();
-
-        AuthResponse response = AuthMapper.toResponse(user, null);
-
-        assertThat(response.token()).isNull();
     }
 
     @Test
     void toResponse_shouldMapAdminRole() {
         User user = createUser();
         user.setRole(UserRole.ADMIN);
-        String token = "admin.token";
 
-        AuthResponse response = AuthMapper.toResponse(user, token);
+        AuthResponse response = AuthMapper.toResponse(user);
 
         assertThat(response.role()).isEqualTo(UserRole.ADMIN.name());
     }
 
     @Test
-    void toResponse_shouldMapDifferentTokens() {
-        User user = createUser();
-        String token1 = "token.1";
-        String token2 = "token.2";
+    void toSteamEntity_shouldMapAllFieldsCorrectly() {
+        User user = AuthMapper.toSteamEntity("76561198012345678", "Gamer", "steam_76561198012345678@steam.kyofuse.local", "email-index", "gamer", "hash");
 
-        AuthResponse response1 = AuthMapper.toResponse(user, token1);
-        AuthResponse response2 = AuthMapper.toResponse(user, token2);
+        assertThat(user.getSteamId()).isEqualTo("76561198012345678");
+        assertThat(user.getFirstName()).isEqualTo("Gamer");
+        assertThat(user.getLastName()).isEqualTo("Steam");
+        assertThat(user.getEmail()).isEqualTo("steam_76561198012345678@steam.kyofuse.local");
+        assertThat(user.getEmailIndex()).isEqualTo("email-index");
+        assertThat(user.getUsername()).isEqualTo("gamer");
+        assertThat(user.getPasswordHash()).isEqualTo("hash");
+        assertThat(user.isHasCustomPassword()).isFalse();
+        assertThat(user.isEmailVerified()).isFalse();
+        assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
+    }
 
-        assertThat(response1.token()).isEqualTo(token1);
-        assertThat(response2.token()).isEqualTo(token2);
-        assertThat(response1.token()).isNotEqualTo(response2.token());
+    @Test
+    void toGoogleEntity_shouldMapAllFieldsCorrectly() {
+        User user = AuthMapper.toGoogleEntity("google-sub-123", "Gamer", "Pro", "gamer@gmail.com", "email-index", "gamer", "hash");
+
+        assertThat(user.getGoogleId()).isEqualTo("google-sub-123");
+        assertThat(user.getFirstName()).isEqualTo("Gamer");
+        assertThat(user.getLastName()).isEqualTo("Pro");
+        assertThat(user.getEmail()).isEqualTo("gamer@gmail.com");
+        assertThat(user.getEmailIndex()).isEqualTo("email-index");
+        assertThat(user.getUsername()).isEqualTo("gamer");
+        assertThat(user.getPasswordHash()).isEqualTo("hash");
+        assertThat(user.isHasCustomPassword()).isFalse();
+        assertThat(user.isEmailVerified()).isTrue();
+        assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
     }
 
     private User createUser() {

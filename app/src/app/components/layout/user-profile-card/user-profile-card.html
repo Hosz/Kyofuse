@@ -1,23 +1,146 @@
-<div class="flex items-center gap-3 border-t border-outline-variant px-md pt-md">
-  <a
-    routerLink="/perfil"
-    class="flex flex-1 items-center gap-3 rounded-lg transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-  >
-    <img
-      [src]="user().avatarUrl"
-      [alt]="user().nickname"
-      class="h-11 w-11 rounded-full object-cover"
-    />
-    <div class="flex flex-1 flex-col">
-      <span class="text-label-md font-semibold text-on-surface">{{ user().nickname }}</span>
-      <span class="text-label-sm text-on-surface-variant">@{{ user().username }}</span>
+<div class="relative px-md pt-md border-t border-outline-variant">
+
+  <!-- Multi-Account Dropdown Popup -->
+  @if (isDropdownOpen()) {
+    <div
+      class="absolute bottom-full left-2 right-2 mb-2 max-h-96 overflow-y-auto rounded-2xl border border-outline-variant bg-surface-container-high p-3 shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-2 duration-150"
+    >
+      <div class="flex items-center justify-between px-2 pb-2 border-b border-outline-variant/60">
+        <div class="flex items-center gap-1.5 text-label-md font-semibold text-on-surface">
+          <span class="material-symbols-outlined text-[18px] text-primary">switch_account</span>
+          <span>Trocar de Conta</span>
+        </div>
+        <span class="text-label-sm text-on-surface-variant font-medium">
+          {{ accountManager.savedAccounts().length }} {{ accountManager.savedAccounts().length === 1 ? 'conta' : 'contas' }}
+        </span>
+      </div>
+
+      <!-- Current Active Account -->
+      <div class="mt-2.5 rounded-xl bg-surface-container-highest/60 p-2.5 flex items-center justify-between border border-primary/20">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <img
+            [src]="user().avatarUrl || fallbackAvatar"
+            [alt]="user().nickname"
+            class="h-9 w-9 rounded-full object-cover shrink-0 ring-2 ring-primary/40"
+          />
+          <div class="flex flex-col min-w-0">
+            <span class="truncate text-label-md font-semibold text-on-surface">{{ user().nickname }}</span>
+            <span class="truncate text-label-sm text-on-surface-variant">@{{ user().username }}</span>
+          </div>
+        </div>
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary-container text-on-primary-container text-[11px] font-semibold">
+          <span class="material-symbols-outlined text-[13px]">check_circle</span>
+          Ativa
+        </span>
+      </div>
+
+      <!-- Other Saved Accounts -->
+      @if (otherAccounts().length > 0) {
+        <div class="mt-2 space-y-1">
+          <span class="block px-2 pt-1 text-[11px] font-medium uppercase tracking-wider text-on-surface-variant/80">Outras Contas</span>
+          @for (account of otherAccounts(); track account.userId) {
+            <div
+              (click)="switchAccount(account.userId, $event)"
+              class="group flex cursor-pointer items-center justify-between gap-2 rounded-xl p-2 transition-colors hover:bg-surface-container-highest active:bg-surface-container-highest"
+              [class.opacity-50]="switchingUserId() === account.userId"
+            >
+              <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                <img
+                  [src]="account.avatarUrl || fallbackAvatar"
+                  [alt]="account.nickname"
+                  class="h-8 w-8 rounded-full object-cover shrink-0"
+                />
+                <div class="flex flex-col min-w-0">
+                  <span class="truncate text-label-md font-medium text-on-surface group-hover:text-primary transition-colors">
+                    {{ account.nickname }}
+                  </span>
+                  <span class="truncate text-label-sm text-on-surface-variant">@{{ account.username }}</span>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-1 shrink-0">
+                @if (switchingUserId() === account.userId) {
+                  <span class="material-symbols-outlined animate-spin text-[18px] text-primary">progress_activity</span>
+                } @else {
+                  <button
+                    type="button"
+                    (click)="disconnectAccount(account.userId, $event)"
+                    title="Desconectar conta"
+                    class="opacity-0 group-hover:opacity-100 p-1 rounded-lg text-on-surface-variant hover:text-error hover:bg-error-container/20 transition-all"
+                  >
+                    <span class="material-symbols-outlined text-[18px]">close</span>
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Add Account Button -->
+      <div class="mt-2.5 pt-2 border-t border-outline-variant/60">
+        <button
+          type="button"
+          (click)="navigateToAddAccount($event)"
+          class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-outline-variant p-2 text-label-md font-medium text-on-surface-variant transition-colors hover:border-primary hover:bg-primary/5 hover:text-primary active:bg-primary/10"
+        >
+          <span class="material-symbols-outlined text-[18px]">add_circle</span>
+          <span>Adicionar outra conta</span>
+        </button>
+      </div>
     </div>
-  </a>
-  <button
-    type="button"
-    class="cursor-pointer rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high active:bg-surface-container-highest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-    aria-label="Opções da conta"
-  >
-    <span class="material-symbols-outlined text-[20px]">badge</span>
-  </button>
+  }
+
+  <!-- Main Profile Card -->
+  <div class="flex items-center gap-2">
+    <a
+      [routerLink]="['/perfil', user().username]"
+      class="flex flex-1 items-center gap-3 rounded-lg transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface min-w-0"
+    >
+      <img
+        [src]="user().avatarUrl || fallbackAvatar"
+        [alt]="user().nickname"
+        class="h-11 w-11 rounded-full object-cover shrink-0"
+      />
+      <div class="flex flex-1 flex-col min-w-0">
+        <div class="flex items-center gap-1.5 truncate">
+          <span class="truncate text-label-md font-semibold text-on-surface">{{ user().nickname }}</span>
+          @if (flagUrl()) {
+            <img
+              [src]="flagUrl()!"
+              [alt]="user().country || 'Bandeira'"
+              class="h-3 w-4 shrink-0 rounded-[2px] object-cover"
+            />
+          }
+        </div>
+        <span class="truncate text-label-sm text-on-surface-variant">@{{ user().username }}</span>
+      </div>
+    </a>
+
+    <!-- Account Switcher Trigger -->
+    <button
+      type="button"
+      (click)="toggleDropdown($event)"
+      [class.bg-surface-container-high]="isDropdownOpen()"
+      [class.text-primary]="isDropdownOpen() || otherAccounts().length > 0"
+      class="relative cursor-pointer rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high active:bg-surface-container-highest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+      aria-label="Alternar conta"
+      title="Alternar conta"
+    >
+      <span class="material-symbols-outlined text-[20px]">switch_account</span>
+      @if (otherAccounts().length > 0) {
+        <span class="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary ring-2 ring-surface"></span>
+      }
+    </button>
+
+    <!-- Settings Link -->
+    <a
+      routerLink="/configuracoes"
+      class="cursor-pointer rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high active:bg-surface-container-highest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+      aria-label="Configurações da conta"
+      title="Configurações da conta"
+    >
+      <span class="material-symbols-outlined text-[20px]">badge</span>
+    </a>
+  </div>
 </div>

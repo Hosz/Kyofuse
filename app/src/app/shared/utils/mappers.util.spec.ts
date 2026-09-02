@@ -8,6 +8,8 @@ function message(partial: Partial<ChatMessage> & { id: string; createdAt: string
     author: 'me',
     content: 'oi',
     timestamp: '1min',
+    exactTime: '10:00',
+    tooltipTime: '20/08/2026 10:00:00',
     senderUsername: 'eu',
     ...partial,
   };

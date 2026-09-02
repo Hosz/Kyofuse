@@ -1,0 +1,51 @@
+@if (assetSrc()) {
+  <!-- Asset PNG Rendered as a Dynamic Colorizable CSS Mask -->
+  <span
+    class="role-icon-asset"
+    [class]="sizeClass()"
+    [style.-webkit-mask-image]="maskUrl()"
+    [style.mask-image]="maskUrl()"
+    [style.background-color]="resolvedColor() || 'currentColor'"
+    [attr.aria-label]="normalizedRole()"
+  ></span>
+} @else if (normalizedRole() === 'ENTRY_FRAGGER') {
+  <!-- Entry Fragger: Raio de Invasão / Ponta de Lança Agressiva -->
+  <svg
+    [class]="sizeClass()"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    [style.color]="resolvedColor()"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-label="Entry Fragger"
+  >
+    <path d="M13.5 2.2L4.5 13.2h5.5l-1.5 8.6 9-11.2h-5.5l1.5-8.4z" />
+  </svg>
+} @else if (normalizedRole() === 'FLEX') {
+  <!-- Flex: Versatilidade / Adaptável / Múltiplas funções -->
+  <svg
+    [class]="sizeClass()"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    [style.color]="resolvedColor()"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-label="Flex"
+  >
+    <path d="M16 3l4 4-4 4" />
+    <path d="M20 7H9a4 4 0 0 0-4 4v1" />
+    <path d="M8 21l-4-4 4-4" />
+    <path d="M4 17h11a4 4 0 0 0 4-4v-1" />
+    <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none" />
+  </svg>
+} @else {
+  <!-- Fallback default tactical icon -->
+  <span
+    class="material-symbols-outlined text-[18px]"
+    [style.color]="resolvedColor()"
+  >
+    sports_esports
+  </span>
+}

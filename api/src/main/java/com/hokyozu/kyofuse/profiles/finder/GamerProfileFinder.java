@@ -28,4 +28,9 @@ public class GamerProfileFinder {
         return gamerProfileRepository.findById(profileId)
                 .orElseThrow(() -> new RuntimeException("Gamer profile not found for profile ID: " + profileId));
     }
+
+    public GamerProfile findProfileByUserUsername(String username) {
+        return gamerProfileRepository.findByUserUsername(username)
+                .orElseThrow(() -> new RuntimeException("Gamer profile not found for username: " + username));
+    }
 }

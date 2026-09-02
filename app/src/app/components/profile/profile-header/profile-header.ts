@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { LiveStatsCardComponent } from '../live-stats-card/live-stats-card';
 import { SocialLinksComponent } from '../../shared/social-links/social-links';
@@ -6,14 +6,21 @@ import { ProfileRankStats, ProfileViewMode } from '../../../shared/models/profil
 import { gamerProfileResponse } from '../../../models/profile/gamer-profile.model';
 import { SocialLinks } from '../../../shared/models/social-links.model';
 import { UserOptionsMenuComponent } from '../../shared/user-options-menu/user-options-menu';
+import { RoleIconComponent } from '../../shared/role-icon/role-icon';
+import { formatLocation, getCountryFlagUrl } from '../../../shared/models/location-options.model';
+import { getPlayerRoleLabel } from '../../../shared/models/profile-options.model';
+import { formatJoinedDate, FALLBACK_AVATAR_URL } from '../../../shared/utils/format.util';
+import { ToastService } from '../../../core/services/ui/toast.service';
 
 @Component({
   selector: 'app-profile-header',
-  imports: [RouterLink, LiveStatsCardComponent, SocialLinksComponent, UserOptionsMenuComponent],
+  imports: [RouterLink, LiveStatsCardComponent, SocialLinksComponent, UserOptionsMenuComponent, RoleIconComponent],
   templateUrl: './profile-header.html',
   styleUrl: './profile-header.css',
 })
 export class ProfileHeaderComponent {
+  readonly fallbackAvatar = FALLBACK_AVATAR_URL;
+  private toastService = inject(ToastService);
   profile = input.required<gamerProfileResponse>();
 
   bannerUrl = input.required<string>();
@@ -22,6 +29,18 @@ export class ProfileHeaderComponent {
   socialLinks = input<SocialLinks | undefined>(undefined);
   handle = input.required<string>();
   viewMode = input.required<ProfileViewMode>();
+
+  flagUrl = computed(() => getCountryFlagUrl(this.profile().country));
+  formattedLocation = computed(() =>
+    formatLocation(this.profile().country, this.profile().state, this.profile().city),
+  );
+  joinedDate = computed(() => formatJoinedDate(this.profile().createdAt));
+  mainRoleLabel = computed(() => getPlayerRoleLabel(this.profile().mainRole));
+  secondaryRoleLabel = computed(() => getPlayerRoleLabel(this.profile().secondaryRole));
+
+  inviteCommunity(): void {
+    this.toastService.info('O convite de jogadores para comunidades estará disponível em breve!');
+  }
 
   followersCount = input(0);
   followingCount = input(0);

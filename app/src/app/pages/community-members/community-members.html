@@ -8,7 +8,7 @@
           <a routerLink="/comunidade" class="rounded hover:text-on-surface hover:underline">Comunidades</a>
           <span class="material-symbols-outlined text-[16px]">chevron_right</span>
           @if (community(); as info) {
-            <a [routerLink]="['/comunidade', info.id]" class="rounded hover:text-on-surface hover:underline">
+            <a [routerLink]="['/comunidade', info.communitySlug]" class="rounded hover:text-on-surface hover:underline">
               {{ info.communityName }}
             </a>
             <span class="material-symbols-outlined text-[16px]">chevron_right</span>
@@ -51,7 +51,7 @@
               <div class="flex flex-col gap-1">
                 @for (member of group.members; track member.id) {
                   <a
-                    [routerLink]="['/perfil', member.memberId]"
+                    [routerLink]="['/perfil', member.memberUsername]"
                     class="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-surface-container-high"
                   >
                     <img

@@ -11,7 +11,13 @@ import com.hokyozu.kyofuse.notifications.dto.request.CreateNotificationRequest;
 import com.hokyozu.kyofuse.notifications.enums.NotificationTargetType;
 import com.hokyozu.kyofuse.notifications.enums.NotificationType;
 import com.hokyozu.kyofuse.notifications.service.NotificationService;
+import com.hokyozu.kyofuse.relationships.friendship.repository.UserFriendshipRepository;
+import com.hokyozu.kyofuse.relationships.privacy.entity.UserPrivacySettings;
+import com.hokyozu.kyofuse.relationships.privacy.enums.TeamInvitePermission;
+import com.hokyozu.kyofuse.relationships.privacy.repository.UserPrivacySettingsRepository;
+import com.hokyozu.kyofuse.relationships.shared.validator.BlockValidator;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
+import com.hokyozu.kyofuse.shared.exception.ForbiddenException;
 import com.hokyozu.kyofuse.teams.entity.Team;
 import com.hokyozu.kyofuse.teams.entity.TeamMember;
 import com.hokyozu.kyofuse.teams.enums.TeamMemberType;
@@ -50,11 +56,14 @@ public class TeamInviteService {
     private final TeamMemberService teamMemberService;
     private final TeamRequiredRoleFulfillment teamRequiredRoleFulfillment;
     private final NotificationService notificationService;
+    private final UserPrivacySettingsRepository userPrivacySettingsRepository;
+    private final UserFriendshipRepository userFriendshipRepository;
+    private final BlockValidator blockValidator;
 
     @Transactional
-    public TeamInviteResponse inviteUser(UUID userId, UUID teamId, UUID receiverId, TeamInviteRequest request) {
+    public TeamInviteResponse inviteUser(UUID userId, UUID teamId, String receiverUsername, TeamInviteRequest request) {
         User user = userFinder.findProfileByUserId(userId);
-        User receiver = userFinder.findProfileByUserId(receiverId);
+        User receiver = userFinder.findProfileByUsername(receiverUsername);
         Team team = teamFinder.findTeamById(teamId);
 
         userChecker.checkActive(user);
@@ -62,8 +71,29 @@ public class TeamInviteService {
         teamChecker.checkInactive(team);
         teamChecker.checkUserIsOwner(team, user);
 
-        if (receiverId.equals(team.getOwner().getId())) {
+        blockValidator.validate(user, receiver);
+
+        if (receiver.getId().equals(team.getOwner().getId())) {
             throw new BadRequestException("You cannot invite the team owner.");
+        }
+
+        if (userId.equals(receiver.getId())) {
+            throw new BadRequestException("You cannot invite yourself to a team.");
+        }
+
+        UserPrivacySettings receiverSettings = userPrivacySettingsRepository.findByUser(receiver);
+        TeamInvitePermission invitePermission = receiverSettings != null ? receiverSettings.getTeamInvitePermission() : TeamInvitePermission.EVERYONE;
+
+        if (invitePermission == TeamInvitePermission.NOBODY) {
+            throw new ForbiddenException("This user does not accept team invites.");
+        }
+
+        if (invitePermission == TeamInvitePermission.FRIENDS) {
+            boolean isFriend = userFriendshipRepository.existsByUserOneAndUserTwo(user, receiver) ||
+                    userFriendshipRepository.existsByUserOneAndUserTwo(receiver, user);
+            if (!isFriend) {
+                throw new ForbiddenException("This user only accepts team invites from friends.");
+            }
         }
 
         if (teamInviteRepository.existsByTeamAndReceiverAndStatus(team, receiver, TeamInviteStatus.PENDING)) {
@@ -74,7 +104,7 @@ public class TeamInviteService {
             throw new BadRequestException("The user is already a member of the team.");
         }
 
-        if (userId == receiverId) {
+        if (userId == receiver.getId()) {
             throw new BadRequestException("You cannot invite yourself to a team.");
         }
 

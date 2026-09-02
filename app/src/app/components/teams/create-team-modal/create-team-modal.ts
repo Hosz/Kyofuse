@@ -1,9 +1,11 @@
-import { Component, inject, input, output, signal } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { ModalComponent } from '../../shared/modal/modal';
 import { TeamService } from '../../../core/services/teams/team.service';
+import { MediaService } from '../../../core/services/media/media.service';
 import { TeamRequest, TeamResponse } from '../../../models/teams/team.model';
 import { PLAYER_ROLE_OPTIONS, PlayerRole } from '../../../shared/models/profile-options.model';
-import { toSlug } from '../../../shared/utils/format.util';
+import { toSlug, TEAM_FALLBACK_AVATAR_URL } from '../../../shared/utils/format.util';
+import { getCountryFlagUrl, getCountryOptions } from '../../../shared/models/location-options.model';
 
 @Component({
   selector: 'app-create-team-modal',
@@ -18,8 +20,10 @@ export class CreateTeamModalComponent {
   created = output<TeamResponse>();
 
   private teamService = inject(TeamService);
+  private mediaService = inject(MediaService);
 
   readonly roleOptions = PLAYER_ROLE_OPTIONS;
+  readonly countryOptions = getCountryOptions();
 
   name = signal('');
   slug = signal('');
@@ -27,6 +31,7 @@ export class CreateTeamModalComponent {
   bannerUrl = signal('');
   description = signal('');
   region = signal('');
+  readonly flagUrl = computed(() => getCountryFlagUrl(this.region()));
   minPremierRating = signal<number | null>(null);
   maxPremierRating = signal<number | null>(null);
   minFaceitLevel = signal<number | null>(null);
@@ -35,6 +40,9 @@ export class CreateTeamModalComponent {
   maxGcRank = signal<number | null>(null);
   requiredRoles = signal<PlayerRole[]>([]);
 
+  uploadingAvatar = signal(false);
+  uploadingBanner = signal(false);
+  readonly defaultAvatar = TEAM_FALLBACK_AVATAR_URL;
   saving = signal(false);
   error = signal<string | null>(null);
 
@@ -50,6 +58,48 @@ export class CreateTeamModalComponent {
   onSlugChange(value: string): void {
     this.slugTouched = true;
     this.slug.set(value);
+  }
+
+  onAvatarFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    this.uploadingAvatar.set(true);
+    this.mediaService.uploadImage(file).subscribe({
+      next: (res) => {
+        this.avatarUrl.set(res.url);
+        this.uploadingAvatar.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to upload team avatar:', err);
+        this.uploadingAvatar.set(false);
+      },
+    });
+  }
+
+  onBannerFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    this.uploadingBanner.set(true);
+    this.mediaService.uploadImage(file).subscribe({
+      next: (res) => {
+        this.bannerUrl.set(res.url);
+        this.uploadingBanner.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to upload team banner:', err);
+        this.uploadingBanner.set(false);
+      },
+    });
+  }
+
+  removeAvatar(): void {
+    this.avatarUrl.set('');
+  }
+
+  removeBanner(): void {
+    this.bannerUrl.set('');
   }
 
   toggleRequiredRole(role: PlayerRole): void {

@@ -1,35 +1,43 @@
-<section class="flex flex-col gap-lg rounded-xl border border-outline-variant bg-surface-container-low p-lg">
-  <div class="flex items-center justify-between border-b border-outline-variant pb-3">
-    <div class="flex items-center gap-2">
-      <span class="material-symbols-outlined text-primary">block</span>
-      <h2 class="text-title-md font-bold text-on-surface">Usuários Bloqueados</h2>
+<section class="flex flex-col gap-6 rounded-2xl border border-outline-variant bg-surface-container-low p-6 sm:p-8 shadow-sm">
+  <div class="flex items-center justify-between border-b border-outline-variant pb-4">
+    <div class="flex items-center gap-3">
+      <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <span class="material-symbols-outlined text-[24px]">block</span>
+      </div>
+      <div class="flex flex-col">
+        <h2 class="text-title-lg font-bold text-on-surface">Usuários Bloqueados</h2>
+        <span class="text-body-sm text-on-surface-variant">Gerencie a lista de contas que você bloqueou no Kyofuse.</span>
+      </div>
     </div>
-    <span class="rounded-md border border-outline-variant px-2 py-1 text-label-sm text-on-surface-variant">
-      {{ totalBlocked() }}
+    <span class="rounded-full border border-outline-variant bg-surface-container px-3 py-1 text-label-sm font-semibold text-on-surface-variant">
+      {{ totalBlocked() }} {{ totalBlocked() === 1 ? 'bloqueado' : 'bloqueados' }}
     </span>
   </div>
 
-  <p class="text-label-md text-on-surface-variant">
-    Quem está bloqueado não vê seu perfil nem interage com você, e você deixa de ver o conteúdo dessas pessoas.
-    Desbloquear libera a interação novamente nos dois sentidos.
+  <p class="text-body-sm text-on-surface-variant leading-relaxed">
+    Quem está bloqueado não pode ver seu perfil nem interagir com você, e você deixa de ver o conteúdo dessas pessoas.
+    Ao desbloquear, a interação é restabelecida em ambas as direções.
   </p>
 
   @if (loading()) {
     <p class="py-8 text-center text-body-sm text-on-surface-variant">Carregando bloqueados...</p>
   } @else if (error()) {
-    <p class="py-8 text-center text-body-sm text-error">{{ error() }}</p>
+    <div class="rounded-xl border border-error/20 bg-error/10 p-3.5 text-label-sm text-error flex items-start gap-2">
+      <span class="material-symbols-outlined text-[18px] shrink-0">error</span>
+      <span>{{ error() }}</span>
+    </div>
   } @else {
-    <div class="flex flex-col gap-1">
+    <div class="flex flex-col divide-y divide-outline-variant rounded-2xl border border-outline-variant bg-surface-container/30">
       @for (entry of blocked(); track entry.blockedId) {
-        <div class="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-surface-container-high">
-          <a [routerLink]="['/perfil', entry.blockedId]" class="flex min-w-0 flex-1 items-center gap-3">
+        <div class="flex items-center gap-4 p-4 transition-colors hover:bg-surface-container/60">
+          <a [routerLink]="['/perfil', entry.blockedUsername]" class="flex min-w-0 flex-1 items-center gap-3.5">
             <img
               [src]="entry.blockedAvatarUrl || fallbackAvatar"
               [alt]="entry.blockedUsername"
-              class="h-11 w-11 shrink-0 rounded-full object-cover"
+              class="h-12 w-12 shrink-0 rounded-full object-cover border border-outline-variant"
             />
             <span class="flex min-w-0 flex-col">
-              <span class="truncate text-body-sm font-semibold text-on-surface hover:underline">
+              <span class="truncate text-body-md font-bold text-on-surface hover:underline">
                 {{ entry.blockedNickname || entry.blockedUsername }}
               </span>
               <span class="truncate text-label-sm text-on-surface-variant">&#64;{{ entry.blockedUsername }}</span>
@@ -40,25 +48,30 @@
             type="button"
             (click)="unblock(entry)"
             [disabled]="unblockingId() !== null"
-            class="shrink-0 cursor-pointer rounded-full border border-outline-variant px-4 py-1.5 text-label-md font-bold text-on-surface transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
+            class="shrink-0 cursor-pointer rounded-full border border-outline-variant bg-surface-container px-4 py-2 text-label-sm font-bold text-on-surface transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
           >
             {{ unblockingId() === entry.blockedId ? 'Desbloqueando...' : 'Desbloquear' }}
           </button>
         </div>
       } @empty {
-        <div class="flex flex-col items-center gap-2 py-10 text-center">
-          <span class="material-symbols-outlined text-[28px] text-on-surface-variant">sentiment_satisfied</span>
-          <p class="text-body-sm text-on-surface-variant">Você não bloqueou ninguém.</p>
+        <div class="flex flex-col items-center gap-3 py-12 text-center">
+          <div class="flex h-12 w-12 items-center justify-center rounded-full bg-surface-container text-on-surface-variant">
+            <span class="material-symbols-outlined text-[28px]">sentiment_satisfied</span>
+          </div>
+          <p class="text-body-sm text-on-surface-variant font-medium">Você não possui nenhum usuário bloqueado.</p>
         </div>
       }
     </div>
 
     @if (unblockError()) {
-      <p class="text-label-sm text-error">{{ unblockError() }}</p>
+      <div class="rounded-xl border border-error/20 bg-error/10 p-3.5 text-label-sm text-error flex items-start gap-2">
+        <span class="material-symbols-outlined text-[18px] shrink-0">error</span>
+        <span>{{ unblockError() }}</span>
+      </div>
     }
 
     @if (totalPages() > 1) {
-      <div class="flex items-center justify-center gap-2 pt-2">
+      <div class="flex items-center justify-center gap-3 pt-3">
         <button
           type="button"
           (click)="goToPage(page() - 1)"

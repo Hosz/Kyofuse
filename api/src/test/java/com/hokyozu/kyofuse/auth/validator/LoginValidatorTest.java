@@ -25,10 +25,11 @@ class LoginValidatorTest {
     private LoginValidator validator;
 
     @Test
-    void validatePassesWhenPasswordMatchesAndUserIsActive() {
+    void validatePassesWhenPasswordMatchesAndUserIsActiveAndVerified() {
         User user = User.builder()
                 .passwordHash("hash")
                 .status(UserStatus.ACTIVE)
+                .emailVerified(true)
                 .build();
         LoginRequest request = new LoginRequest("player", "password123");
         when(passwordEncoder.matches("password123", "hash")).thenReturn(true);
@@ -41,6 +42,7 @@ class LoginValidatorTest {
         User user = User.builder()
                 .passwordHash("hash")
                 .status(UserStatus.ACTIVE)
+                .emailVerified(true)
                 .build();
         LoginRequest request = new LoginRequest("player", "wrong-password");
         when(passwordEncoder.matches("wrong-password", "hash")).thenReturn(false);
@@ -51,16 +53,32 @@ class LoginValidatorTest {
     }
 
     @Test
-    void validateThrowsWhenUserIsNotActive() {
+    void validateThrowsWhenEmailIsNotVerified() {
         User user = User.builder()
                 .passwordHash("hash")
-                .status(UserStatus.BANNED)
+                .status(UserStatus.ACTIVE)
+                .emailVerified(false)
                 .build();
         LoginRequest request = new LoginRequest("player", "password123");
         when(passwordEncoder.matches("password123", "hash")).thenReturn(true);
 
         assertThatThrownBy(() -> validator.validate(user, request))
                 .isInstanceOf(UnauthorizedException.class)
-                .hasMessage("Usuário não está ativo.");
+                .hasMessage("E-mail não verificado. Verifique seu e-mail para ativar sua conta.");
+    }
+
+    @Test
+    void validateThrowsWhenUserIsBanned() {
+        User user = User.builder()
+                .passwordHash("hash")
+                .status(UserStatus.BANNED)
+                .emailVerified(true)
+                .build();
+        LoginRequest request = new LoginRequest("player", "password123");
+        when(passwordEncoder.matches("password123", "hash")).thenReturn(true);
+
+        assertThatThrownBy(() -> validator.validate(user, request))
+                .isInstanceOf(UnauthorizedException.class)
+                .hasMessage("Sua conta foi suspensa.");
     }
 }

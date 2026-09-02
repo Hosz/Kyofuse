@@ -6,18 +6,31 @@ import { UserOptionsMenuComponent } from '../../shared/user-options-menu/user-op
 import { ShareButtonComponent } from '../../shared/share-button/share-button';
 import { ReactionSummaryComponent } from '../../shared/reaction-summary/reaction-summary';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog';
+import { ImageModalComponent } from '../../shared/image-modal/image-modal';
 import { PostsService } from '../../../core/services/posts/posts.service';
 import { ToastService } from '../../../core/services/ui/toast.service';
 import { CurrentUserService } from '../../../core/services/profile/current-user.service';
+import { formatFullPostDateTime } from '../../../shared/utils/format.util';
+import { PostContentComponent } from '../../../shared/components/post-content/post-content';
 
 @Component({
   selector: 'app-post-card',
-  imports: [RouterLink, ReactionButtonComponent, UserOptionsMenuComponent, ShareButtonComponent, ReactionSummaryComponent, ConfirmDialogComponent],
+  imports: [
+    RouterLink,
+    ReactionButtonComponent,
+    UserOptionsMenuComponent,
+    ShareButtonComponent,
+    ReactionSummaryComponent,
+    ConfirmDialogComponent,
+    ImageModalComponent,
+    PostContentComponent,
+  ],
   templateUrl: './post-card.html',
   styleUrl: './post-card.css',
 })
 export class PostCardComponent {
   post = input.required<Post>();
+  isDetail = input(false);
 
   /** Emitido com o id do autor quando ele é bloqueado, pra quem estiver ouvindo remover os posts dele da lista. */
   authorBlocked = output<string>();
@@ -30,9 +43,20 @@ export class PostCardComponent {
 
   /** Só o autor apaga o próprio post — mesma regra do backend. */
   canDelete = computed(() => this.currentUser.isMe(this.post().author.id));
+  formattedDateTime = computed(() => formatFullPostDateTime(this.post().createdAt));
 
   confirmDeleteOpen = signal(false);
   deleting = signal(false);
+  selectedImageUrl = signal<string | null>(null);
+
+  openImage(url: string, event: Event): void {
+    event.stopPropagation();
+    this.selectedImageUrl.set(url);
+  }
+
+  closeImage(): void {
+    this.selectedImageUrl.set(null);
+  }
 
   askDelete(): void {
     this.confirmDeleteOpen.set(true);
@@ -62,5 +86,10 @@ export class PostCardComponent {
         this.toastService.error('Não foi possível apagar a publicação.');
       },
     });
+  }
+
+  onRepost(event: Event): void {
+    event.stopPropagation();
+    this.toastService.info('O recurso de repostar publicações estará disponível em breve!');
   }
 }

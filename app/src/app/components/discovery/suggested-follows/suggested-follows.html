@@ -1,19 +1,48 @@
 <section class="flex flex-col gap-md rounded-xl bg-surface-container p-md">
-  <h2 class="border-l-4 border-primary-container pl-3 text-label-md font-bold uppercase tracking-[0.05em] text-on-surface">
-    Sugestões para seguir
-  </h2>
-
-  <div class="flex flex-col gap-md">
-    @for (profile of profiles(); track profile.handle) {
-      <app-user-row
-        [name]="profile.name"
-        [handle]="profile.handle"
-        [avatarUrl]="profile.avatarUrl"
-        [isFollowing]="isFollowing(profile.handle)"
-        (actionClick)="onToggleFollow(profile)"
-      />
-    }
+  <div class="flex items-center justify-between">
+    <h2 class="border-l-4 border-primary-container pl-3 text-label-md font-bold uppercase tracking-[0.05em] text-on-surface">
+      Sugestões para seguir
+    </h2>
   </div>
 
-  <a href="#" class="rounded text-label-md font-semibold text-primary-container transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface">Ver mais</a>
+  @if (loading()) {
+    <div class="flex flex-col gap-md">
+      @for (i of [1, 2, 3]; track i) {
+        <div class="flex items-center gap-3 animate-pulse">
+          <div class="h-11 w-11 shrink-0 rounded-full bg-surface-container-high"></div>
+          <div class="flex flex-1 flex-col gap-1.5">
+            <div class="h-3.5 w-3/4 rounded bg-surface-container-high"></div>
+            <div class="h-2.5 w-1/2 rounded bg-surface-container-high"></div>
+          </div>
+        </div>
+      }
+    </div>
+  } @else if (error()) {
+    <p class="py-2 text-center text-label-sm text-error">{{ error() }}</p>
+  } @else {
+    <div class="flex flex-col gap-md">
+      @for (profile of profiles(); track profile.userId) {
+        <app-user-row
+          [userId]="profile.userId"
+          [name]="profile.name"
+          [handle]="profile.handle"
+          [avatarUrl]="profile.avatarUrl"
+          [isFollowing]="isFollowing(profile.userId)"
+          (actionClick)="onToggleFollow(profile)"
+        />
+      } @empty {
+        <p class="py-2 text-center text-label-sm text-on-surface-variant">Nenhuma sugestão no momento.</p>
+      }
+    </div>
+
+    @if (profiles().length > 0) {
+      <button
+        type="button"
+        (click)="seeMore()"
+        class="cursor-pointer text-left rounded text-label-md font-semibold text-primary-container transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+      >
+        Ver mais sugestões
+      </button>
+    }
+  }
 </section>

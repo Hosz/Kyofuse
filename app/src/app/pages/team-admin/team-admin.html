@@ -72,56 +72,160 @@
               </label>
 
               <label class="flex flex-col gap-1.5">
-                <span class="text-label-sm font-semibold text-on-surface-variant">Região</span>
-                <input
-                  type="text"
-                  maxlength="80"
+                <div class="flex items-center gap-1.5">
+                  <span class="text-label-sm font-semibold text-on-surface-variant">Região (País)</span>
+                  @if (flagUrl()) {
+                    <img
+                      [src]="flagUrl()!"
+                      [alt]="region()"
+                      class="h-3.5 w-5 rounded-[2px] object-cover shadow-xs"
+                    />
+                  }
+                </div>
+                <select
                   [value]="region()"
-                  (input)="region.set($any($event.target).value)"
-                  class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
-                />
+                  (change)="region.set($any($event.target).value)"
+                  class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none transition-colors focus:border-primary"
+                >
+                  <option value="">Selecione um país</option>
+                  @for (option of countryOptions; track option.value) {
+                    <option [value]="option.value" [selected]="option.value === region()">
+                      {{ option.label }}
+                    </option>
+                  }
+                </select>
               </label>
 
               <div class="flex flex-col items-center gap-4 sm:flex-row">
-                @if (avatarUrl()) {
-                  <img [src]="avatarUrl()" alt="Escudo" class="h-24 w-24 shrink-0 rounded-xl border-4 border-surface-container object-cover" />
-                } @else {
-                  <div class="flex h-24 w-24 shrink-0 items-center justify-center rounded-xl border-4 border-surface-container bg-surface-container">
-                    <span class="material-symbols-outlined text-[32px] text-on-surface-variant">shield</span>
+                <input
+                  #teamAvatarInput
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  (change)="onAvatarFileSelected($event)"
+                  class="hidden"
+                />
+                <div class="group relative shrink-0">
+                  @if (avatarUrl()) {
+                    <img [src]="avatarUrl()" alt="Escudo" class="h-24 w-24 rounded-xl border-4 border-surface-container object-cover" />
+                  } @else {
+                    <div class="flex h-24 w-24 items-center justify-center rounded-xl border-4 border-surface-container bg-surface-container">
+                      <span class="material-symbols-outlined text-[32px] text-on-surface-variant">shield</span>
+                    </div>
+                  }
+                  <button
+                    type="button"
+                    (click)="teamAvatarInput.click()"
+                    [disabled]="uploadingAvatar()"
+                    class="absolute inset-0 flex cursor-pointer items-center justify-center rounded-xl bg-black/50 opacity-0 transition-opacity group-hover:opacity-100 disabled:cursor-not-allowed"
+                    title="Alterar escudo"
+                  >
+                    @if (uploadingAvatar()) {
+                      <span class="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                    } @else {
+                      <span class="material-symbols-outlined text-white">photo_camera</span>
+                    }
+                  </button>
+                </div>
+
+                <div class="flex w-full flex-1 flex-col gap-2">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-body-sm font-bold text-on-surface">Escudo do time</p>
+                      <p class="text-label-sm text-on-surface-variant">JPG, PNG ou WebP. Proporção 1:1 recomendada (256x256).</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      @if (avatarUrl()) {
+                        <button
+                          type="button"
+                          (click)="removeAvatar()"
+                          class="flex cursor-pointer items-center gap-1 rounded-lg border border-outline-variant px-3 py-2 text-label-md font-semibold text-on-surface-variant transition-colors hover:border-error hover:text-error"
+                          title="Remover escudo"
+                        >
+                          <span class="material-symbols-outlined text-[18px]">delete</span>
+                          <span>Remover</span>
+                        </button>
+                      }
+                      <button
+                        type="button"
+                        (click)="teamAvatarInput.click()"
+                        [disabled]="uploadingAvatar()"
+                        class="flex cursor-pointer items-center gap-1.5 rounded-lg bg-surface-container-high px-4 py-2 text-label-md font-semibold text-primary transition-colors hover:bg-surface-container-highest disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        @if (uploadingAvatar()) {
+                          <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
+                          <span>Enviando...</span>
+                        } @else {
+                          <span class="material-symbols-outlined text-[18px]">upload</span>
+                          <span>{{ avatarUrl() ? 'Alterar escudo' : 'Enviar escudo' }}</span>
+                        }
+                      </button>
+                    </div>
                   </div>
-                }
-                <label class="flex w-full flex-1 flex-col gap-1.5">
-                  <span class="text-label-sm font-semibold text-on-surface-variant">URL do escudo</span>
-                  <input
-                    type="text"
-                    maxlength="500"
-                    placeholder="https://..."
-                    [value]="avatarUrl()"
-                    (input)="avatarUrl.set($any($event.target).value)"
-                    class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
-                  />
-                </label>
+                </div>
               </div>
 
               <div class="flex flex-col gap-3">
-                <div class="tactical-grid h-28 w-full shrink-0 overflow-hidden rounded-lg border border-outline-variant bg-surface-container">
+                <input
+                  #teamBannerInput
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  (change)="onBannerFileSelected($event)"
+                  class="hidden"
+                />
+                <div class="group relative h-36 w-full shrink-0 overflow-hidden rounded-lg border border-outline-variant bg-surface-container">
                   @if (bannerUrl()) {
                     <img [src]="bannerUrl()" alt="Banner" class="h-full w-full object-cover" />
                   } @else {
                     <div class="h-full w-full bg-gradient-to-br from-primary-container/40 via-surface-container to-surface-container-low"></div>
                   }
+                  <button
+                    type="button"
+                    (click)="teamBannerInput.click()"
+                    [disabled]="uploadingBanner()"
+                    class="absolute inset-0 flex cursor-pointer items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100 disabled:cursor-not-allowed"
+                    title="Alterar banner"
+                  >
+                    @if (uploadingBanner()) {
+                      <span class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                    } @else {
+                      <span class="material-symbols-outlined text-white">photo_camera</span>
+                    }
+                  </button>
                 </div>
-                <label class="flex w-full flex-col gap-1.5">
-                  <span class="text-label-sm font-semibold text-on-surface-variant">URL do banner</span>
-                  <input
-                    type="text"
-                    maxlength="500"
-                    placeholder="https://..."
-                    [value]="bannerUrl()"
-                    (input)="bannerUrl.set($any($event.target).value)"
-                    class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
-                  />
-                </label>
+
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-body-sm font-bold text-on-surface">Banner do time</p>
+                    <p class="text-label-sm text-on-surface-variant">Imagem panorâmica exibida na página do time (1200x400).</p>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    @if (bannerUrl()) {
+                      <button
+                        type="button"
+                        (click)="removeBanner()"
+                        class="flex cursor-pointer items-center gap-1 rounded-lg border border-outline-variant px-3 py-2 text-label-md font-semibold text-on-surface-variant transition-colors hover:border-error hover:text-error"
+                        title="Remover banner"
+                      >
+                        <span class="material-symbols-outlined text-[18px]">delete</span>
+                        <span>Remover</span>
+                      </button>
+                    }
+                    <button
+                      type="button"
+                      (click)="teamBannerInput.click()"
+                      [disabled]="uploadingBanner()"
+                      class="flex cursor-pointer items-center gap-1.5 rounded-lg bg-surface-container-high px-4 py-2 text-label-md font-semibold text-primary transition-colors hover:bg-surface-container-highest disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      @if (uploadingBanner()) {
+                        <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
+                        <span>Enviando...</span>
+                      } @else {
+                        <span class="material-symbols-outlined text-[18px]">upload</span>
+                        <span>{{ bannerUrl() ? 'Alterar banner' : 'Enviar banner' }}</span>
+                      }
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <label class="flex flex-col gap-1.5">
@@ -258,10 +362,11 @@
                     type="button"
                     (click)="toggleRequiredRole(option.value)"
                     [style.background-color]="roleAccent(option.value)"
-                    class="tactical-grid relative flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 overflow-hidden rounded-lg border-2 p-2 transition-colors"
+                    class="tactical-grid relative flex aspect-square cursor-pointer flex-col items-center justify-center gap-1.5 overflow-hidden rounded-lg border-2 p-2 transition-colors"
                     [class]="requiredRoles().includes(option.value) ? 'border-primary' : 'border-outline-variant hover:border-outline'"
                   >
                     <span class="absolute inset-0 bg-surface-dim/20"></span>
+                    <app-role-icon [role]="option.value" size="md" [colored]="true" class="relative" />
                     <span class="relative text-center text-label-sm font-bold uppercase tracking-[0.04em] text-on-surface">
                       {{ option.label }}
                     </span>
@@ -289,14 +394,84 @@
                 </span>
               </div>
 
-              <div class="flex flex-col gap-2">
-                <input
-                  type="text"
-                  placeholder="ID do usuário a convidar"
-                  [value]="inviteUserId()"
-                  (input)="inviteUserId.set($any($event.target).value)"
-                  class="min-w-0 rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
-                />
+              <div id="invite-autocomplete-container" class="relative flex flex-col gap-2">
+                <div class="relative">
+                  <input
+                    type="text"
+                    placeholder="Usuário a convidar (ex: usuario ou @usuario)"
+                    [value]="inviteUsername()"
+                    (input)="onInviteUsernameInput($any($event.target).value)"
+                    (focus)="onInviteUsernameFocus()"
+                    (keydown.escape)="closeSuggestions()"
+                    class="w-full min-w-0 rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                  />
+                  @if (suggestionsLoading()) {
+                    <div class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant">
+                      <span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+                    </div>
+                  }
+
+                  @if (suggestionsOpen()) {
+                    <div
+                      class="absolute left-0 right-0 top-full z-30 mt-1 flex max-h-72 flex-col overflow-y-auto rounded-xl border border-outline-variant bg-surface-container-low shadow-2xl"
+                    >
+                      <div class="flex flex-col gap-1 p-2">
+                        <div class="flex items-center justify-between px-2 py-1">
+                          <span class="text-label-xs font-bold uppercase tracking-[0.05em] text-on-surface-variant">
+                            Sugestões de perfis
+                          </span>
+                          @if (suggestionsLoading()) {
+                            <span class="text-label-xs text-on-surface-variant">Buscando...</span>
+                          }
+                        </div>
+
+                        @if (suggestionsLoading() && suggestedProfiles().length === 0) {
+                          <p class="px-3 py-2 text-label-sm text-on-surface-variant">Buscando jogadores...</p>
+                        } @else if (suggestedProfiles().length === 0) {
+                          <p class="px-3 py-2 text-label-sm text-on-surface-variant">Nenhum jogador encontrado.</p>
+                        } @else {
+                          @for (profile of suggestedProfiles(); track profile.id) {
+                            <button
+                              type="button"
+                              (click)="selectSuggestedProfile(profile)"
+                              class="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-surface-container-high"
+                            >
+                              <div class="flex min-w-0 items-center gap-2.5">
+                                <img
+                                  [src]="profile.avatarUrl || fallbackAvatar"
+                                  [alt]="profile.nickname || profile.username"
+                                  class="h-8 w-8 shrink-0 rounded-full object-cover"
+                                />
+                                <div class="flex min-w-0 flex-col">
+                                  <span class="truncate text-body-sm font-semibold text-on-surface">
+                                    {{ profile.nickname || profile.username }}
+                                  </span>
+                                  <span class="truncate text-label-sm text-on-surface-variant">
+                                    &#64;{{ profile.username }}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div class="flex shrink-0 items-center gap-2">
+                                @if (profile.mainRole) {
+                                  <div class="flex items-center gap-1">
+                                    <app-role-icon [role]="profile.mainRole" size="sm" [colored]="true" />
+                                  </div>
+                                }
+                                @if (profile.premierRating) {
+                                  <span class="rounded bg-surface-container-high px-1.5 py-0.5 text-label-xs font-semibold text-primary">
+                                    {{ profile.premierRating }} rating
+                                  </span>
+                                }
+                              </div>
+                            </button>
+                          }
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+
                 <textarea
                   rows="2"
                   placeholder="Mensagem do convite (opcional)"
@@ -329,7 +504,7 @@
                 <button
                   type="button"
                   (click)="inviteMember()"
-                  [disabled]="inviting() || !inviteUserId().trim()"
+                  [disabled]="inviting() || !inviteUsername().trim()"
                   class="flex shrink-0 cursor-pointer items-center justify-center gap-1.5 self-start whitespace-nowrap rounded-full bg-secondary-fixed px-4 py-2.5 text-label-sm font-bold text-on-secondary transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <span class="material-symbols-outlined text-[16px]">send</span>
@@ -343,8 +518,7 @@
                 <p class="text-label-sm text-primary">Convite enviado com sucesso.</p>
               }
               <p class="text-label-sm text-on-surface-variant">
-                O convite por &#64;usuário ainda não está disponível — é necessário o ID do usuário. Ele precisa aceitar
-                o convite em Notificações para entrar no time.
+                O usuário receberá uma notificação com o convite e poderá aceitar ou recusar em Notificações.
               </p>
 
               <div class="h-px w-full bg-outline-variant"></div>
@@ -409,7 +583,7 @@
                 <div class="flex flex-col gap-1">
                   @for (player of lookingForTeam(); track player.userId) {
                     <div class="flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-surface-container-high">
-                      <a [routerLink]="['/perfil', player.userId]" class="shrink-0">
+                      <a [routerLink]="['/perfil', player.username]" class="shrink-0">
                         <img
                           [src]="player.avatarUrl || fallbackAvatar"
                           [alt]="player.nickname || player.username"
@@ -417,7 +591,7 @@
                         />
                       </a>
 
-                      <a [routerLink]="['/perfil', player.userId]" class="flex min-w-0 flex-1 flex-col">
+                      <a [routerLink]="['/perfil', player.username]" class="flex min-w-0 flex-1 flex-col">
                         <span class="truncate text-body-sm font-semibold text-on-surface hover:underline">
                           {{ player.nickname || player.username }}
                         </span>

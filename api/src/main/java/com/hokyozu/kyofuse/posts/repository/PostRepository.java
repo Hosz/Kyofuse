@@ -35,11 +35,11 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
             and (
                 p.author.id = :viewerId
                 or p.author.id in (
-                    select ups.id from UserPrivacySettings ups where ups.postsVisibility = :postsVisibility
+                    select ups.id from UserPrivacySettings ups where ups.profileVisibility = :profileVisibility
                 )
             )
     """)
-    Page<Post> findGlobalFeed(PostVisibility postVisibility, PostStatus postStatus, ProfileVisibility postsVisibility, UUID viewerId, Pageable pageable);
+    Page<Post> findGlobalFeed(PostVisibility postVisibility, PostStatus postStatus, ProfileVisibility profileVisibility, UUID viewerId, Pageable pageable);
 
     Page<Post> findByAuthorIdAndVisibilityInAndStatusAndCommunityIsNull(UUID profileId, List<PostVisibility> postVisibility, PostStatus postStatus, Pageable pageable);
 
@@ -48,6 +48,30 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
     Page<Post> findByAuthorIdInAndVisibilityAndStatusAndCommunityIsNull(List<UUID> authorIds, PostVisibility postVisibility, PostStatus postStatus, Pageable pageable);
 
     Page<Post> findByCommunityIdAndVisibilityInAndStatus(UUID communityId, List<PostVisibility> postVisibility, PostStatus postStatus, Pageable pageable);
+
+    @Query("""
+        select p from Post p
+        where p.author.id = :profileId
+            and p.visibility in :visibilities
+            and p.status = :status
+            and p.community is null
+            and exists (
+                select 1 from PostMedia pm where pm.post = p
+            )
+    """)
+    Page<Post> findMediaPostsByAuthorIdAndVisibilityInAndStatus(UUID profileId, List<PostVisibility> visibilities, PostStatus status, Pageable pageable);
+
+    @Query("""
+        select p from Post p
+        where p.author.id = :authorId
+            and p.visibility in :visibilities
+            and p.status in :statuses
+            and p.community is null
+            and exists (
+                select 1 from PostMedia pm where pm.post = p
+            )
+    """)
+    Page<Post> findMyMediaPosts(UUID authorId, List<PostVisibility> visibilities, List<PostStatus> statuses, Pageable pageable);
 
     @Query("""
         select p from Post p

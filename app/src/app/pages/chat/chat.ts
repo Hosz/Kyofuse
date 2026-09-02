@@ -11,6 +11,7 @@ import { MessageService } from '../../core/services/chat/message.service';
 import { ProfileService } from '../../core/services/profile/profile.service';
 import { ToastService } from '../../core/services/ui/toast.service';
 import { ConversationResponse } from '../../models/chat/chat.model';
+import { PostMediaItemRequest } from '../../models/posts/post-request.model';
 import { toChatMessage, toConversation } from '../../shared/utils/mappers.util';
 
 const CONVERSATIONS_PAGE_SIZE = 50;
@@ -104,11 +105,11 @@ export class ChatComponent {
     });
   }
 
-  onSendMessage(content: string): void {
+  onSendMessage(payload: { content?: string; media?: PostMediaItemRequest[] }): void {
     const conversation = this.selectedConversation();
     if (!conversation) return;
 
-    this.messageService.sendMessage(conversation.id, { content }).subscribe({
+    this.messageService.sendMessage(conversation.id, payload).subscribe({
       next: (response) => {
         const myId = this.myUserId();
         if (!myId) return;

@@ -1,7 +1,9 @@
-import { Component, OnDestroy, inject, signal } from '@angular/core';
+import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AppSidebarComponent } from '../../components/layout/app-sidebar/app-sidebar';
 import { ProfileService } from '../../core/services/profile/profile.service';
+import { MediaService } from '../../core/services/media/media.service';
+import { ToastService } from '../../core/services/ui/toast.service';
 import { gamerProfileResponse } from '../../models/profile/gamer-profile.model';
 import { GamerProfileEditRequest } from '../../models/profile/gamer-profile-edit-request.model';
 import {
@@ -12,12 +14,20 @@ import {
   PlayerRole,
   Playstyle,
 } from '../../shared/models/profile-options.model';
+import {
+  getCitiesForState,
+  getCountryFlagUrl,
+  getCountryOptions,
+  getStatesForCountry,
+  normalizeCountry,
+  normalizeState,
+} from '../../shared/models/location-options.model';
 import { FALLBACK_AVATAR_URL } from '../../shared/utils/format.util';
 
 type SectionId = 'identidade' | 'pessoal' | 'competitivo';
 
-/** Espelha os tons de cada mapa só pra dar variedade visual às cartas (não temos
- * capturas de tela reais dos mapas hospedadas pelo Kyofuse). */
+/** Espelha os tons de cada mapa como fundo de fallback visual às cartas quando
+ * a imagem estiver carregando ou não estiver disponível. */
 const MAP_ACCENT_HUE: Record<Cs2Map, number> = {
   ANCIENT: 150,
   ANUBIS: 40,
@@ -36,14 +46,18 @@ const MAP_ACCENT_HUE: Record<Cs2Map, number> = {
   WARDEN: 20,
 };
 
+import { RoleIconComponent } from '../../components/shared/role-icon/role-icon';
+
 @Component({
   selector: 'app-profile-edit',
-  imports: [RouterLink, AppSidebarComponent],
+  imports: [RouterLink, AppSidebarComponent, RoleIconComponent],
   templateUrl: './profile-edit.html',
   styleUrl: './profile-edit.css',
 })
 export class ProfileEditComponent implements OnDestroy {
   private profileService = inject(ProfileService);
+  private mediaService = inject(MediaService);
+  private toastService = inject(ToastService);
   private router = inject(Router);
   private observer?: IntersectionObserver;
 
@@ -62,7 +76,55 @@ export class ProfileEditComponent implements OnDestroy {
 
   loading = signal(true);
   saving = signal(false);
+  uploadingAvatar = signal(false);
+  uploadingBanner = signal(false);
   error = signal<string | null>(null);
+
+  onAvatarFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    this.uploadingAvatar.set(true);
+    this.mediaService.uploadImage(file).subscribe({
+      next: (res) => {
+        this.avatarUrl.set(res.url);
+        this.uploadingAvatar.set(false);
+        this.toastService.info('Foto carregada. Clique em Salvar para aplicar.');
+      },
+      error: (err) => {
+        console.error('Failed to upload avatar:', err);
+        this.toastService.error('Não foi possível enviar o avatar.');
+        this.uploadingAvatar.set(false);
+      },
+    });
+  }
+
+  removeAvatar(): void {
+    this.avatarUrl.set('');
+  }
+
+  onBannerFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    this.uploadingBanner.set(true);
+    this.mediaService.uploadImage(file).subscribe({
+      next: (res) => {
+        this.bannerUrl.set(res.url);
+        this.uploadingBanner.set(false);
+        this.toastService.info('Banner carregado. Clique em Salvar para aplicar.');
+      },
+      error: (err) => {
+        console.error('Failed to upload banner:', err);
+        this.toastService.error('Não foi possível enviar o banner.');
+        this.uploadingBanner.set(false);
+      },
+    });
+  }
+
+  removeBanner(): void {
+    this.bannerUrl.set('');
+  }
 
   nickname = signal('');
   bio = signal('');
@@ -71,6 +133,28 @@ export class ProfileEditComponent implements OnDestroy {
   country = signal('');
   city = signal('');
   state = signal('');
+
+  readonly countryOptions = getCountryOptions();
+  readonly flagUrl = computed(() => getCountryFlagUrl(this.country()));
+
+  readonly stateOptions = computed(() => {
+    const states = getStatesForCountry(this.country());
+    const currentState = this.state();
+    if (currentState && !states.some((s) => s.value === currentState)) {
+      return [{ value: currentState, label: currentState }, ...states];
+    }
+    return states;
+  });
+
+  readonly cityOptions = computed(() => {
+    const cities = getCitiesForState(this.country(), this.state());
+    const currentCity = this.city();
+    if (currentCity && !cities.includes(currentCity)) {
+      return [currentCity, ...cities];
+    }
+    return cities;
+  });
+
   mainRole = signal<PlayerRole | ''>('');
   secondaryRole = signal<PlayerRole | ''>('');
   premierRating = signal<number | null>(null);
@@ -131,11 +215,38 @@ export class ProfileEditComponent implements OnDestroy {
   }
 
   selectMainRole(role: PlayerRole): void {
-    this.mainRole.set(this.mainRole() === role ? '' : role);
+    if (this.mainRole() === role) {
+      if (this.secondaryRole()) {
+        this.mainRole.set(this.secondaryRole());
+        this.secondaryRole.set('');
+        this.toastService.info('O papel secundário assumiu o lugar de papel principal.');
+      } else {
+        this.mainRole.set('');
+      }
+    } else {
+      this.mainRole.set(role);
+      if (this.secondaryRole() === role) {
+        this.secondaryRole.set('');
+        this.toastService.info('O papel secundário foi desmarcado pois não pode ser igual ao principal.');
+      }
+    }
   }
 
   selectSecondaryRole(role: PlayerRole): void {
-    this.secondaryRole.set(this.secondaryRole() === role ? '' : role);
+    if (this.secondaryRole() === role) {
+      this.secondaryRole.set('');
+    } else {
+      if (this.mainRole() === role) {
+        this.toastService.info('O papel secundário não pode ser igual ao papel principal.');
+        return;
+      }
+      if (!this.mainRole()) {
+        this.mainRole.set(role);
+        this.toastService.info('Papel definido como principal.');
+        return;
+      }
+      this.secondaryRole.set(role);
+    }
   }
 
   selectPlaystyle(style: Playstyle): void {
@@ -157,11 +268,39 @@ export class ProfileEditComponent implements OnDestroy {
     return `hsl(${hue} 32% 14%)`;
   }
 
+  onCountryChange(value: string): void {
+    this.country.set(value);
+    const validStates = getStatesForCountry(value);
+    if (!validStates.some((s) => s.value === this.state())) {
+      this.state.set('');
+      this.city.set('');
+    }
+  }
+
+  onStateChange(value: string): void {
+    this.state.set(value);
+    const validCities = getCitiesForState(this.country(), value);
+    if (!validCities.includes(this.city())) {
+      this.city.set('');
+    }
+  }
+
+  onCityChange(value: string): void {
+    this.city.set(value);
+  }
+
   submit(): void {
     if (this.saving()) return;
     if (!this.nickname().trim()) {
       this.error.set('Informe um nickname.');
       this.scrollToSection('pessoal');
+      return;
+    }
+
+    if (this.mainRole() && this.secondaryRole() && this.mainRole() === this.secondaryRole()) {
+      this.error.set('O papel principal e o papel secundário não podem ser iguais.');
+      this.toastService.error('O papel principal e o papel secundário não podem ser iguais.');
+      this.scrollToSection('competitivo');
       return;
     }
 
@@ -176,12 +315,12 @@ export class ProfileEditComponent implements OnDestroy {
       country: this.country().trim(),
       city: this.city().trim(),
       state: this.state().trim(),
-      mainRole: this.mainRole() || undefined,
-      secondaryRole: this.secondaryRole() || undefined,
+      mainRole: this.mainRole() ? (this.mainRole() as PlayerRole) : null,
+      secondaryRole: this.secondaryRole() ? (this.secondaryRole() as PlayerRole) : null,
       premierRating: this.premierRating() ?? undefined,
       faceitLevel: this.faceitLevel() ?? undefined,
       gcRank: this.gcRank() ?? undefined,
-      playstyle: this.playstyle() || undefined,
+      playstyle: this.playstyle() ? (this.playstyle() as Playstyle) : null,
       lookingForTeam: this.lookingForTeam(),
       lookingForDuo: this.lookingForDuo(),
       favoriteMaps: this.favoriteMaps(),
@@ -205,9 +344,11 @@ export class ProfileEditComponent implements OnDestroy {
     this.bio.set(p.bio ?? '');
     this.avatarUrl.set(p.avatarUrl ?? '');
     this.bannerUrl.set(p.bannerUrl ?? '');
-    this.country.set(p.country ?? '');
+    const normalizedCountry = normalizeCountry(p.country ?? '');
+    this.country.set(normalizedCountry);
+    const normalizedState = normalizeState(normalizedCountry, p.state ?? '');
+    this.state.set(normalizedState);
     this.city.set(p.city ?? '');
-    this.state.set(p.state ?? '');
     this.mainRole.set((p.mainRole as PlayerRole) || '');
     this.secondaryRole.set((p.secondaryRole as PlayerRole) || '');
     this.premierRating.set(p.premierRating || null);

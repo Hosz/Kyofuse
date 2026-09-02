@@ -78,6 +78,36 @@ export class HomeComponent {
     this.pinnedCommunities().find((community) => community.id === this.activeFeed()) ?? null,
   );
 
+  emptyTitle = computed(() => {
+    if (this.activeFeed() === FOR_YOU) {
+      return 'Nenhuma publicação por aqui ainda';
+    }
+    if (this.activeFeed() === FOLLOWING) {
+      return 'Nenhuma publicação no seu feed';
+    }
+    return 'Nenhuma publicação na comunidade ainda';
+  });
+
+  emptyMessage = computed(() => {
+    if (this.activeFeed() === FOR_YOU) {
+      return 'Seja o primeiro a postar algo no Kyofuse!';
+    }
+    if (this.activeFeed() === FOLLOWING) {
+      return 'Ou você não segue ninguém ou ninguém que você segue postou algo.';
+    }
+    return 'Seja o primeiro a postar algo na comunidade!';
+  });
+
+  emptyIcon = computed(() => {
+    if (this.activeFeed() === FOLLOWING) {
+      return 'person_search';
+    }
+    if (this.activeFeed() !== FOR_YOU) {
+      return 'groups';
+    }
+    return 'dynamic_feed';
+  });
+
   ngOnInit() {
     this.loadFeed(0);
     this.loadPinnedCommunities();

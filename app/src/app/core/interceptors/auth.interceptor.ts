@@ -1,30 +1,83 @@
-import { HttpInterceptorFn } from "@angular/common/http";
+import { HttpErrorResponse, HttpInterceptorFn } from "@angular/common/http";
 import { inject } from "@angular/core";
 import { AuthService } from "../services/auth/auth.service";
-import { catchError, throwError } from "rxjs";
-import { Router } from "@angular/router";
+import { AccountManagerService } from "../services/auth/account-manager.service";
+import { catchError, switchMap, throwError } from "rxjs";
+
+/**
+ * Endpoints de auth que não fazem sentido reprocessar com refresh+retry: são os pontos
+ * de entrada do fluxo (login/register), o próprio refresh, o logout, e o passo de
+ * verificação de 2FA (que roda com um mfaToken, não com o access token). Note que
+ * /api/auth/2fa/{setup,confirm,disable} FICAM de fora dessa lista — são chamadas
+ * autenticadas normais (settings da conta) e devem se beneficiar do retry como
+ * qualquer outro endpoint protegido.
+ *
+ * IMPORTANTE: Logout é incluído aqui, mas se a própria requisição de logout falhar com
+ * 401 (access token expirado), o interceptador ainda vai tentar fazer refresh.
+ * Para evitar ciclos infinitos, diferenciamos 400 (token ausente) de 401 (expirado).
+ */
+const PUBLIC_AUTH_PATHS = [
+    '/api/auth/register',
+    '/api/auth/login',
+    '/api/auth/refresh',
+    '/api/auth/logout',
+    '/api/auth/2fa/verify',
+    '/api/auth/switch-account',
+    '/api/auth/disconnect-account',
+];
 
 export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
     const authService = inject(AuthService);
-    const router = inject(Router);
+    const accountManager = inject(AccountManagerService);
 
-    if (req.url.includes('/api/auth')) {
-        return next(req);
+    const deviceId = accountManager.getDeviceId();
+    const headers = req.headers.has('X-Device-Id') ? req.headers : req.headers.set('X-Device-Id', deviceId);
+
+    const request = req.clone({
+        withCredentials: true,
+        headers,
+    });
+
+    if (PUBLIC_AUTH_PATHS.some((path) => request.url.includes(path))) {
+        return next(request);
     }
 
-    const token = authService.getToken();
-
-    const request = token ? req.clone({
-        setHeaders: {
-            Authorization: `Bearer ${token}`
-        }
-    }) : req;
-
     return next(request).pipe(
-        catchError(error => {
+        catchError((error: unknown) => {
+            if (!(error instanceof HttpErrorResponse)) {
+                return throwError(() => error);
+            }
+
+            /**
+             * ⚠️ NOVO: Tratar 400 Bad Request (refresh token ausente)
+             * Indica erro técnico: cookies foram deletados, sessão realmente expirou.
+             * Nunca tenta retry, pois não há ponto de recuperação.
+             */
+            if (error.status === 400) {
+                // Token ausente = erro técnico (não tenta retry)
+                authService.clearSession();
+                // Apenas throwError, NÃO faz navigate (evita ciclo de requisições)
+                return throwError(() => error);
+            }
+
+            /**
+             * ✅ Tratar 401 Unauthorized (access token expirado)
+             * Indica que o token precisa ser renovado. Tenta fazer refresh uma vez.
+             * A navegação para login fica a cargo dos guards (authGuard/guestGuard),
+             * NÃO do interceptor — navigateByUrl aqui causava um ciclo infinito
+             * porque disparava guestGuard → checkSession() → 401 → refresh → navigateByUrl → ...
+             */
             if (error.status === 401) {
-                authService.clearToken();
-                router.navigateByUrl('');
+                return authService.refresh().pipe(
+                    switchMap((refreshed) => {
+                        if (refreshed) {
+                            return next(request);
+                        }
+
+                        authService.clearSession();
+                        return throwError(() => error);
+                    }),
+                );
             }
 
             return throwError(() => error);

@@ -2,6 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { API_URL } from '../../../models/api-url.model';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { followResponse } from '../../../models/follow/follow-response.model';
+import { gamerProfileResponse } from '../../../models/profile/gamer-profile.model';
 import { PageResponse } from '../../../models/page-response.model';
 import { Observable } from 'rxjs';
 
@@ -74,5 +75,10 @@ export class FollowService {
 
   public acceptFollowRequest(requestId: string) {
     return this.http.patch<followResponse>(`${this.url}/${requestId}/accept`, {});
+  }
+
+  public getSuggestions(page: number = 0, size: number = 5) {
+    const params = new HttpParams().set('page', page.toString()).set('size', size.toString());
+    return this.http.get<PageResponse<gamerProfileResponse>>(`${this.url}/suggestions`, { params });
   }
 }

@@ -18,12 +18,11 @@ export class AppSidebarComponent {
   logout(): void {
     this.authService.logout().subscribe({
       next: () => {
-        this.authService.clearToken();
         this.router.navigateByUrl('');
       },
       error: (error) => {
         console.error('Logout failed:', error);
-        this.authService.clearToken();
+        this.authService.clearSession();
         this.router.navigateByUrl('');
       },
     });

@@ -25,11 +25,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-/**
- * filterViewableAuthors decide, em lote, o mesmo que canViewAuthorPosts decidiria um a
- * um — mas com um número fixo de consultas. Estes testes travam as duas coisas: o
- * resultado e a quantidade de idas ao banco.
- */
 @ExtendWith(MockitoExtension.class)
 class PostPermissionServiceFilterAuthorsTest {
 
@@ -77,11 +72,13 @@ class PostPermissionServiceFilterAuthorsTest {
     }
 
     @Test
-    void dropsPrivateAuthors() {
+    void dropsPrivateAuthorsWhenNotFollowed() {
         User viewer = user();
         User author = user();
         when(userPrivacySettingsRepository.findAllByUserIn(List.of(author)))
                 .thenReturn(List.of(settings(author, ProfileVisibility.PRIVATE)));
+        when(userFollowRepository.findFollowedIdsByFollowerAndFollowedIn(viewer, List.of(author)))
+                .thenReturn(List.of());
 
         List<User> result = postPermissionService.filterViewableAuthors(viewer, List.of(author));
 
@@ -143,6 +140,9 @@ class PostPermissionServiceFilterAuthorsTest {
         when(userFollowRepository.findFollowedIdsByFollowerAndFollowedIn(
                 viewer, List.of(followerAuthor, otherFollowerAuthor)
         )).thenReturn(List.of(followerAuthor.getId()));
+        when(userFollowRepository.findFollowedIdsByFollowerAndFollowedIn(
+                viewer, List.of(privateAuthor)
+        )).thenReturn(List.of());
         when(userFriendshipRepository.findMutualFriendIdsIn(viewer, List.of(friendAuthor)))
                 .thenReturn(List.of(friendAuthor.getId()));
 
@@ -150,8 +150,6 @@ class PostPermissionServiceFilterAuthorsTest {
 
         assertThat(result).containsExactly(publicAuthor, followerAuthor, friendAuthor);
         verify(userPrivacySettingsRepository).findAllByUserIn(authors);
-        verify(userFollowRepository).findFollowedIdsByFollowerAndFollowedIn(any(), anyList());
-        verify(userFriendshipRepository).findMutualFriendIdsIn(any(), anyList());
     }
 
     @Test
@@ -173,7 +171,6 @@ class PostPermissionServiceFilterAuthorsTest {
 
     @Test
     void keepsTheViewerEvenWhenTheirOwnPostsAreRestricted() {
-        // Mesma saída de canViewAuthorPosts: o próprio usuário sempre vê os posts dele.
         User viewer = user();
         when(userPrivacySettingsRepository.findAllByUserIn(List.of(viewer)))
                 .thenReturn(List.of(settings(viewer, ProfileVisibility.PRIVATE)));
@@ -200,11 +197,11 @@ class PostPermissionServiceFilterAuthorsTest {
         return User.builder().id(UUID.randomUUID()).username("player").build();
     }
 
-    private static UserPrivacySettings settings(User user, ProfileVisibility postsVisibility) {
+    private static UserPrivacySettings settings(User user, ProfileVisibility profileVisibility) {
         return UserPrivacySettings.builder()
                 .id(user.getId())
                 .user(user)
-                .postsVisibility(postsVisibility)
+                .profileVisibility(profileVisibility)
                 .build();
     }
 }

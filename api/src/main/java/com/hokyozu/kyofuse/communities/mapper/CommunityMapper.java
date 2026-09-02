@@ -35,13 +35,14 @@ public class CommunityMapper {
                 community.getName(),
                 community.getSlug(),
                 community.getDescription(),
-                community.getAvatarUrl(),
+                community.getAvatarUrl() != null ? community.getAvatarUrl() : "/assets/profile/community-profile-image-default.png",
                 community.getBannerUrl(),
                 community.getOwner().getId(),
                 community.getOwner().getUsername(),
                 community.getTeam() != null ? community.getTeam().getId() : null,
+                community.getTeam() != null ? community.getTeam().getSlug() : null,
                 community.getTeam() != null ? community.getTeam().getName() : null,
-                community.getTeam() != null ? community.getTeam().getAvatarUrl() : null,
+                community.getTeam() != null ? (community.getTeam().getAvatarUrl() != null ? community.getTeam().getAvatarUrl() : "/assets/profile/team-profile-image-default.png") : null,
                 community.getVisibility(),
                 community.getStatus(),
                 //community.getMemberCount(),
@@ -65,11 +66,11 @@ public class CommunityMapper {
         }
 
         if (request.communityAvatarUrl() != null) {
-            community.setAvatarUrl(request.communityAvatarUrl());
+            community.setAvatarUrl(request.communityAvatarUrl().trim().isEmpty() ? null : request.communityAvatarUrl().trim());
         }
 
         if (request.communityBannerUrl() != null) {
-            community.setBannerUrl(request.communityBannerUrl());
+            community.setBannerUrl(request.communityBannerUrl().trim().isEmpty() ? null : request.communityBannerUrl().trim());
         }
 
         if (request.visibility() != null) {

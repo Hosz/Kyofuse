@@ -4,33 +4,234 @@
 
     <div class="w-full max-w-[24rem] shrink-0">
       <div class="overflow-hidden rounded-xl border border-b-2 border-outline-variant border-b-primary-container bg-surface-container-low">
-        <app-auth-tabs [active]="activeTab()" (tabSelected)="onTabSelected($event)" />
+        
+        <!-- MODO: ADICIONAR CONTA -->
+        @if (isAddAccount()) {
+          <div class="flex items-center justify-between border-b border-outline-variant bg-surface-container px-4 py-2.5">
+            <div class="flex items-center gap-2 text-label-sm font-semibold text-primary">
+              <span class="material-symbols-outlined text-[18px]">person_add</span>
+              <span>Adicionar outra conta</span>
+            </div>
+            <button
+              type="button"
+              (click)="cancelAddAccount()"
+              class="cursor-pointer text-label-sm text-on-surface-variant hover:text-on-surface transition-colors"
+              title="Voltar ao início"
+            >
+              Cancelar
+            </button>
+          </div>
+        }
 
-        <div class="flex flex-col gap-lg px-lg py-lg">
-          @if (activeTab() === 'login') {
-            <app-login-form (submitLogin)="onLogin($event)" />
-          } @else {
-            <app-register-form (submitRegister)="onRegister($event)" />
-          }
+        <!-- ESTADO: DESAFIO 2FA -->
+        @if (mfaToken()) {
+          <div class="flex flex-col gap-lg px-lg py-lg">
+            <app-mfa-verify-form
+              [errorMessage]="mfaError()"
+              [submitting]="mfaSubmitting()"
+              (submitCode)="onVerifyMfa($event)"
+              (back)="onCancelMfa()"
+            />
+          </div>
+        } 
+        
+        <!-- ESTADO: RECUPERAÇÃO DE SENHA -->
+        @else if (isForgotPassword()) {
+          <div class="flex flex-col gap-lg px-lg py-lg">
+            <app-forgot-password-form
+              [errorMessage]="forgotPasswordError()"
+              [submitting]="forgotPasswordSubmitting()"
+              [success]="forgotPasswordSuccess()"
+              (submitRequest)="onRequestForgotPassword($event)"
+              (back)="onCloseForgotPassword()"
+            />
+          </div>
+        } 
+        
+        <!-- ESTADO: SUCESSO NO CADASTRO (CONFIRMAÇÃO DE EMAIL PENDENTE) -->
+        @else if (registrationSuccess()) {
+          <div class="flex flex-col gap-lg px-lg py-lg text-center">
+            <div class="flex flex-col items-center gap-3">
+              <span class="material-symbols-outlined text-[48px] text-primary-container">mark_email_read</span>
+              <h2 class="text-title-md font-bold text-on-surface">Confirme seu E-mail</h2>
+              <p class="text-body-sm text-on-surface-variant">
+                Enviamos um link de ativação para <strong class="text-on-surface">{{ registeredEmail() }}</strong>. Acesse seu e-mail para ativar sua conta e entrar na unidade.
+              </p>
+            </div>
 
-          <app-social-auth-buttons />
-        </div>
-
-        <div class="border-t border-outline-variant bg-surface-container px-lg py-3.5 text-center">
-          <button
-            type="button"
-            (click)="toggleTab()"
-            class="cursor-pointer rounded text-label-sm text-on-surface-variant transition-colors hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"
-          >
-            @if (activeTab() === 'login') {
-              Ainda não faz parte da unidade?
-              <span class="font-bold text-primary-container">Registrar</span>
-            } @else {
-              Já faz parte da unidade?
-              <span class="font-bold text-primary-container">Entrar no Sistema</span>
+            @if (resendSuccess()) {
+              <p class="text-label-sm text-primary-container">Link reenviado com sucesso!</p>
             }
-          </button>
-        </div>
+            @if (resendError()) {
+              <p class="text-label-sm text-error">{{ resendError() }}</p>
+            }
+
+            <div class="flex flex-col gap-2">
+              <button
+                type="button"
+                (click)="onResendRegistrationEmail()"
+                [disabled]="resendingEmail()"
+                class="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-outline-variant bg-surface-container px-4 py-2.5 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <span class="material-symbols-outlined text-[18px]">send</span>
+                {{ resendingEmail() ? 'Reenviando...' : 'Reenviar E-mail de Confirmação' }}
+              </button>
+
+              <button
+                type="button"
+                (click)="onBackToLogin()"
+                class="cursor-pointer text-label-sm text-on-surface-variant transition-colors hover:text-on-surface mt-2"
+              >
+                Ir para o Login
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- ESTADO: REATIVAÇÃO DE CONTA -->
+        @else if (reactivationToken()) {
+          <div class="flex flex-col gap-lg px-lg py-lg text-center">
+            <div class="flex flex-col items-center gap-3">
+              <div class="flex h-12 w-12 items-center justify-center rounded-full bg-warning/10 text-warning">
+                <span class="material-symbols-outlined text-[28px]">
+                  {{ reactivationScheduledDeletion() ? 'person_remove' : 'lock_reset' }}
+                </span>
+              </div>
+
+              <h2 class="text-title-md font-bold text-on-surface">
+                {{ reactivationScheduledDeletion() ? 'Conta com Exclusão Agendada' : 'Reativar Sua Conta' }}
+              </h2>
+
+              @if (reactivationScheduledDeletion()) {
+                <p class="text-body-sm text-on-surface-variant">
+                  Esta conta possui exclusão agendada. Para cancelar o processo de exclusão e restaurar seu acesso, insira o código de segurança enviado para <strong class="text-on-surface">{{ reactivationMaskedEmail() }}</strong>.
+                </p>
+              } @else {
+                <p class="text-body-sm text-on-surface-variant">
+                  Sua conta está desativada no momento. Enviamos um código de segurança de 6 dígitos para <strong class="text-on-surface">{{ reactivationMaskedEmail() }}</strong> para você reativá-la com segurança.
+                </p>
+              }
+            </div>
+
+            @if (reactivationError()) {
+              <div class="rounded-lg border border-error/20 bg-error/10 p-3 text-label-sm text-error flex items-start gap-2 text-left">
+                <span class="material-symbols-outlined text-[18px] shrink-0">error</span>
+                <span>{{ reactivationError() }}</span>
+              </div>
+            }
+
+            @if (resendReactivationSuccess()) {
+              <p class="text-label-sm text-primary-container font-semibold">Novo código de verificação enviado!</p>
+            }
+            @if (resendReactivationError()) {
+              <p class="text-label-sm text-error">{{ resendReactivationError() }}</p>
+            }
+
+            <form (ngSubmit)="onConfirmReactivation()" class="flex flex-col gap-4">
+              <div class="flex flex-col gap-1.5 text-left">
+                <label class="text-label-sm font-semibold text-on-surface-variant">Código de 6 dígitos</label>
+                <input
+                  type="text"
+                  [(ngModel)]="reactivationCode"
+                  name="code"
+                  maxlength="6"
+                  placeholder="123456"
+                  autocomplete="one-time-code"
+                  class="w-full text-center tracking-[0.5em] font-mono text-title-md rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2.5 text-on-surface outline-none focus:border-primary"
+                />
+              </div>
+
+              <div class="flex flex-col gap-2">
+                <button
+                  type="submit"
+                  [disabled]="reactivationSubmitting() || reactivationCode().trim().length !== 6"
+                  class="flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary-container px-4 py-2.5 text-label-sm font-bold text-on-primary-container transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <span class="material-symbols-outlined text-[18px]">lock_open</span>
+                  {{ reactivationSubmitting() ? 'Reativando conta...' : (reactivationScheduledDeletion() ? 'Cancelar Exclusão e Entrar' : 'Reativar Conta e Entrar') }}
+                </button>
+
+                <div class="flex items-center justify-between pt-2">
+                  <button
+                    type="button"
+                    (click)="onResendReactivationCode()"
+                    [disabled]="resendingReactivation()"
+                    class="cursor-pointer text-label-sm text-primary transition-colors hover:underline disabled:opacity-50"
+                  >
+                    {{ resendingReactivation() ? 'Reenviando...' : 'Reenviar código' }}
+                  </button>
+
+                  <button
+                    type="button"
+                    (click)="onCancelReactivation()"
+                    class="cursor-pointer text-label-sm text-on-surface-variant transition-colors hover:text-on-surface"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        }
+
+        <!-- ESTADO: LOGIN OU REGISTRO PADRÃO -->
+        @else {
+          <app-auth-tabs [active]="activeTab()" (tabSelected)="onTabSelected($event)" />
+
+          <div class="flex flex-col gap-lg px-lg py-lg">
+            @if (activeTab() === 'login') {
+              @if (loginError()) {
+                <div class="rounded-lg border border-error/20 bg-error/10 p-3 text-label-sm text-error flex items-start gap-2">
+                  <span class="material-symbols-outlined text-[18px] shrink-0">error</span>
+                  <span>{{ loginError() }}</span>
+                </div>
+              }
+
+              <app-login-form
+                [loading]="isLoggingIn()"
+                (submitLogin)="onLogin($event)"
+                (forgotPassword)="onOpenForgotPassword()"
+              />
+            } @else {
+              @if (registerError()) {
+                <div class="rounded-lg border border-error/20 bg-error/10 p-3 text-label-sm text-error flex items-start gap-2">
+                  <span class="material-symbols-outlined text-[18px] shrink-0">error</span>
+                  <span>{{ registerError() }}</span>
+                </div>
+              }
+
+              <app-register-form
+                [loading]="isRegistering()"
+                (submitRegister)="onRegister($event)"
+              />
+            }
+
+            <app-social-auth-buttons
+              [loading]="isSocialLoading()"
+              [disabled]="isLoggingIn() || isRegistering()"
+              (googleCredential)="onGoogleCredentialReceived($event)"
+              (steamClick)="onSteamClick()"
+            />
+          </div>
+        }
+
+        @if (!mfaToken() && !reactivationToken() && !isForgotPassword() && !registrationSuccess()) {
+          <div class="border-t border-outline-variant bg-surface-container px-lg py-3.5 text-center">
+            <button
+              type="button"
+              (click)="toggleTab()"
+              class="cursor-pointer rounded text-label-sm text-on-surface-variant transition-colors hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"
+            >
+              @if (activeTab() === 'login') {
+                Ainda não faz parte da unidade?
+                <span class="font-bold text-primary-container">Registrar</span>
+              } @else {
+                Já faz parte da unidade?
+                <span class="font-bold text-primary-container">Entrar no Sistema</span>
+              }
+            </button>
+          </div>
+        }
       </div>
     </div>
   </div>

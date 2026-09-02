@@ -36,6 +36,7 @@ public class JwtService {
                 .claim("email", user.getEmail())
                 .claim("username", user.getUsername())
                 .claim("role", user.getRole().name())
+                .claim("totpEnabled", user.isTotpEnabled())
                 .build();
 
         return jwtEncoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();

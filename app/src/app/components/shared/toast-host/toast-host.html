@@ -10,11 +10,18 @@
       [class]="
         toast.kind === 'error'
           ? 'border-error/40 bg-error-container/90 text-on-error-container'
-          : 'border-outline-variant/50 bg-surface-container-high/90 text-on-surface'
+          : toast.kind === 'info'
+            ? 'border-primary/40 bg-surface-container-high/95 text-on-surface'
+            : 'border-outline-variant/50 bg-surface-container-high/90 text-on-surface'
       "
     >
-      <span class="material-symbols-outlined shrink-0 text-[18px]">
-        {{ toast.kind === 'error' ? 'error' : 'check_circle' }}
+      <span
+        class="material-symbols-outlined shrink-0 text-[18px]"
+        [class.text-primary]="toast.kind === 'info'"
+        [class.text-error]="toast.kind === 'error'"
+        [class.text-secondary]="toast.kind === 'success'"
+      >
+        {{ toast.kind === 'error' ? 'error' : toast.kind === 'info' ? 'info' : 'check_circle' }}
       </span>
       <span class="flex-1 text-body-sm">{{ toast.message }}</span>
       <button

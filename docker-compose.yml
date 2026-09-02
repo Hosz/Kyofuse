@@ -44,6 +44,20 @@ services:
       - kyofuse-internal
 
   # ---------------------------------------------------------------------------
+  # Mailpit — local mock SMTP server & Web UI for development email testing.
+  # ---------------------------------------------------------------------------
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: kyofuse-mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # Web Dashboard
+    networks:
+      - kyofuse-internal
+      - kyofuse-public
+
+  # ---------------------------------------------------------------------------
   # Spring Boot API — the only service with credentials/network access to
   # Postgres. Built locally from source; waits for Postgres to be healthy
   # before starting so Flyway migrations never race a not-yet-ready database.
@@ -69,9 +83,20 @@ services:
       DB_MIGRATION_PASSWORD: ${DB_MIGRATION_PASSWORD}
       FLYWAY_ENABLED: ${FLYWAY_ENABLED}
 
+      # Mail
+      MAIL_HOST: ${MAIL_HOST:-mailpit}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4200}
+
       # Auth
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES}
+      EMAIL_ENCRYPTION_KEY: ${EMAIL_ENCRYPTION_KEY}
+      EMAIL_INDEX_SECRET: ${EMAIL_INDEX_SECRET}
+      TOTP_ENCRYPTION_KEY: ${TOTP_ENCRYPTION_KEY}
+      MFA_JWT_SECRET: ${MFA_JWT_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      STEAM_API_KEY: ${STEAM_API_KEY:-}
 
       # JVM memory/GC tuning, read automatically by the `java` launcher.
       # Balanced for a small monolith on a dev machine with limited RAM
@@ -104,6 +129,45 @@ services:
       resources:
         limits:
           memory: 768M
+
+  # ---------------------------------------------------------------------------
+  # MinIO — S3-compatible Object Storage for local file/image uploads
+  # ---------------------------------------------------------------------------
+  minio:
+    image: minio/minio:latest
+    container_name: kyofuse-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${STORAGE_ACCESS_KEY:-kyofuse_storage_user}
+      MINIO_ROOT_PASSWORD: ${STORAGE_SECRET_KEY:-kyofuse_storage_secret}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - kyofuse_minio_data:/data
+    networks:
+      - kyofuse-internal
+      - kyofuse-public
+
+  # ---------------------------------------------------------------------------
+  # MinIO Init — Creates the default bucket and sets public download access
+  # ---------------------------------------------------------------------------
+  minio-init:
+    image: minio/mc:latest
+    container_name: kyofuse-minio-init
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 2;
+      /usr/bin/mc alias set myminio http://minio:9000 ${STORAGE_ACCESS_KEY:-kyofuse_storage_user} ${STORAGE_SECRET_KEY:-kyofuse_storage_secret};
+      /usr/bin/mc mb myminio/${STORAGE_BUCKET:-kyofuse-media} --ignore-existing;
+      /usr/bin/mc anonymous set download myminio/${STORAGE_BUCKET:-kyofuse-media};
+      exit 0;
+      "
+    networks:
+      - kyofuse-internal
 
 # =============================================================================
 # Networks
@@ -139,3 +203,4 @@ volumes:
   #   docker run --rm -v kyofuse_kyofuse_postgres_data:/from \
   #     -v kyofuse_postgres_data:/to alpine cp -a /from/. /to/
   kyofuse_postgres_data:
+  kyofuse_minio_data:

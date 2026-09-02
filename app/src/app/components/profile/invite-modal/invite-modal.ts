@@ -25,8 +25,8 @@ type InviteState = 'idle' | 'sending' | 'sent' | 'failed';
 })
 export class InviteModalComponent {
   open = input(false);
-  targetName = input.required<string>();
-  targetUserId = input.required<string>();
+  targetName = input<string>('');
+  targetUsername = input.required<string>();
 
   closed = output<void>();
 
@@ -77,7 +77,7 @@ export class InviteModalComponent {
     if (this.stateOf(team.id) === 'sending' || this.stateOf(team.id) === 'sent') return;
     this.setState(team.id, 'sending');
 
-    this.teamInviteService.inviteUser(team.id, this.targetUserId(), {}).subscribe({
+    this.teamInviteService.inviteUser(team.id, this.targetUsername(), {}).subscribe({
       next: () => {
         this.setState(team.id, 'sent');
         this.toastService.success(`Convite para ${team.name} enviado.`);

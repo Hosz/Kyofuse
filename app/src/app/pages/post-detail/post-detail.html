@@ -18,17 +18,17 @@
         @if (loading()) {
           <p class="px-lg py-lg text-body-md text-on-surface-variant">Carregando publicação...</p>
         } @else if (post(); as p) {
-          <app-post-card [post]="p" (authorBlocked)="onAuthorBlocked()" (deleted)="onPostDeleted()" />
+          <app-post-card [post]="p" [isDetail]="true" (authorBlocked)="onAuthorBlocked()" (deleted)="onPostDeleted()" />
 
           <form class="flex items-start gap-3 border-b border-outline-variant px-lg py-md" (ngSubmit)="submitComment()">
-            <textarea
-              [ngModel]="commentDraft()"
-              (ngModelChange)="commentDraft.set($event)"
-              name="commentDraft"
-              rows="2"
+            <app-mention-input
+              [content]="commentDraft()"
+              (contentChange)="commentDraft.set($event)"
+              
+              [rows]="2"
               placeholder="Escreva um comentário..."
               class="w-full resize-none rounded-lg border border-outline-variant bg-transparent px-3 py-2 text-body-sm text-on-surface outline-none focus:border-primary"
-            ></textarea>
+            ></app-mention-input>
             <button
               type="submit"
               [disabled]="!commentDraft().trim() || posting()"

@@ -22,19 +22,19 @@
         <div class="flex items-center gap-2 border-b border-outline-variant">
           <button
             type="button"
-            (click)="setTab('mine')"
-            class="cursor-pointer whitespace-nowrap border-b-2 px-2 pb-3 text-label-md font-bold transition-colors"
-            [class]="activeTab() === 'mine' ? 'border-primary text-on-surface' : 'border-transparent text-on-surface-variant hover:text-on-surface'"
-          >
-            Times que você é membro
-          </button>
-          <button
-            type="button"
             (click)="setTab('discover')"
             class="cursor-pointer whitespace-nowrap border-b-2 px-2 pb-3 text-label-md font-bold transition-colors"
             [class]="activeTab() === 'discover' ? 'border-primary text-on-surface' : 'border-transparent text-on-surface-variant hover:text-on-surface'"
           >
             Times que existem
+          </button>
+          <button
+            type="button"
+            (click)="setTab('mine')"
+            class="cursor-pointer whitespace-nowrap border-b-2 px-2 pb-3 text-label-md font-bold transition-colors"
+            [class]="activeTab() === 'mine' ? 'border-primary text-on-surface' : 'border-transparent text-on-surface-variant hover:text-on-surface'"
+          >
+            Times que você é membro
           </button>
         </div>
 
@@ -56,9 +56,9 @@
             <p class="py-8 text-center text-body-sm text-error">{{ myTeamsError() }}</p>
           } @else {
             <div class="flex flex-col gap-3">
-              @for (team of visibleMyTeams(); track team.id) {
+              @for (team of visibleMyTeams(); track team.slug) {
                 <a
-                  [routerLink]="['/times', team.id]"
+                  [routerLink]="['/times', team.slug]"
                   class="flex items-start gap-4 rounded-xl border border-outline-variant bg-surface-container p-lg transition-colors hover:border-primary"
                 >
                   @if (team.avatarUrl) {
@@ -117,9 +117,9 @@
             <p class="py-8 text-center text-body-sm text-error">{{ error() }}</p>
           } @else {
             <div class="flex flex-col gap-3">
-              @for (team of teams(); track team.id) {
+              @for (team of teams(); track team.slug) {
                 <a
-                  [routerLink]="['/times', team.id]"
+                  [routerLink]="['/times', team.slug]"
                   class="flex items-start gap-4 rounded-xl border border-outline-variant bg-surface-container p-lg transition-colors hover:border-primary"
                 >
                   @if (team.avatarUrl) {

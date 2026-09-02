@@ -20,6 +20,14 @@ import {
 import { FALLBACK_AVATAR_URL } from '../../shared/utils/format.util';
 import { ConfirmDialogComponent } from '../../components/shared/confirm-dialog/confirm-dialog';
 
+import { SkeletonComponent } from '../../components/shared/skeleton/skeleton';
+
+import { MediaService } from '../../core/services/media/media.service';
+import { ToastService } from '../../core/services/ui/toast.service';
+
+import { PostMediaItemRequest } from '../../models/posts/post-request.model';
+import { ImageModalComponent } from '../../components/shared/image-modal/image-modal';
+
 const ROLE_LABEL: Record<CommunityMemberRole, string> = {
   ADMIN: 'Admin',
   MODERATOR: 'Moderador',
@@ -30,7 +38,7 @@ type ConfirmAction = 'archive' | 'delete' | null;
 
 @Component({
   selector: 'app-community',
-  imports: [RouterLink, AppSidebarComponent, ModalComponent, ConfirmDialogComponent],
+  imports: [RouterLink, AppSidebarComponent, ModalComponent, ConfirmDialogComponent, SkeletonComponent, ImageModalComponent],
   templateUrl: './community.html',
   styleUrl: './community.css',
 })
@@ -45,6 +53,8 @@ export class CommunityComponent {
   private conversationService = inject(ConversationService);
   private postsService = inject(PostsService);
   private profileService = inject(ProfileService);
+  private mediaService = inject(MediaService);
+  private toastService = inject(ToastService);
 
   readonly fallbackAvatar = FALLBACK_AVATAR_URL;
 
@@ -52,6 +62,55 @@ export class CommunityComponent {
   notFound = signal(false);
   community = signal<CommunityResponse | null>(null);
   myUserId = signal<string | null>(null);
+
+  uploadingAvatar = signal(false);
+  uploadingBanner = signal(false);
+
+  onAvatarFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    this.uploadingAvatar.set(true);
+    this.mediaService.uploadImage(file).subscribe({
+      next: (res) => {
+        this.editAvatarUrl.set(res.url);
+        this.uploadingAvatar.set(false);
+        this.toastService.info('Foto carregada. Clique em Salvar para aplicar.');
+      },
+      error: (err) => {
+        console.error('Failed to upload community avatar:', err);
+        this.toastService.error('Erro ao enviar avatar da comunidade.');
+        this.uploadingAvatar.set(false);
+      },
+    });
+  }
+
+  removeAvatar(): void {
+    this.editAvatarUrl.set('');
+  }
+
+  onBannerFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    this.uploadingBanner.set(true);
+    this.mediaService.uploadImage(file).subscribe({
+      next: (res) => {
+        this.editBannerUrl.set(res.url);
+        this.uploadingBanner.set(false);
+        this.toastService.info('Banner carregado. Clique em Salvar para aplicar.');
+      },
+      error: (err) => {
+        console.error('Failed to upload community banner:', err);
+        this.toastService.error('Erro ao enviar banner da comunidade.');
+        this.uploadingBanner.set(false);
+      },
+    });
+  }
+
+  removeBanner(): void {
+    this.editBannerUrl.set('');
+  }
 
   isOwner = computed(() => {
     const community = this.community();
@@ -101,9 +160,75 @@ export class CommunityComponent {
   posts = signal<Post[]>([]);
   postsLoading = signal(false);
   postContent = signal('');
+  postMediaItems = signal<PostMediaItemRequest[]>([]);
+  uploadingPostMedia = signal(false);
+  selectedImageUrl = signal<string | null>(null);
   postVisibility = signal<'PUBLIC' | 'PRIVATE'>('PUBLIC');
   publishing = signal(false);
   postError = signal<string | null>(null);
+
+  openImage(url: string, event?: Event): void {
+    if (event) event.stopPropagation();
+    this.selectedImageUrl.set(url);
+  }
+
+  closeImage(): void {
+    this.selectedImageUrl.set(null);
+  }
+
+  onPostMediaSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+
+    const files = Array.from(input.files);
+    const availableSlots = 4 - this.postMediaItems().length;
+
+    if (availableSlots <= 0) {
+      this.toastService.info('Você pode adicionar até 4 imagens por publicação.');
+      input.value = '';
+      return;
+    }
+
+    const filesToUpload = files.slice(0, availableSlots);
+    this.uploadingPostMedia.set(true);
+
+    let completed = 0;
+    filesToUpload.forEach((file) => {
+      this.mediaService.uploadImage(file).subscribe({
+        next: (res) => {
+          const item: PostMediaItemRequest = {
+            fileKey: res.fileKey,
+            url: res.url,
+            thumbnailUrl: res.thumbnailUrl,
+            contentType: res.contentType,
+            fileSizeBytes: res.fileSizeBytes,
+            width: res.width,
+            height: res.height,
+            displayOrder: this.postMediaItems().length,
+          };
+          this.postMediaItems.update((items) => [...items, item]);
+          completed++;
+          if (completed === filesToUpload.length) {
+            this.uploadingPostMedia.set(false);
+            input.value = '';
+          }
+        },
+        error: (err) => {
+          console.error('Failed to upload image:', err);
+          this.toastService.error('Erro ao fazer upload da imagem.');
+          completed++;
+          if (completed === filesToUpload.length) {
+            this.uploadingPostMedia.set(false);
+            input.value = '';
+          }
+        },
+      });
+    });
+  }
+
+  removePostMedia(index: number): void {
+    this.postMediaItems.update((items) => items.filter((_, i) => i !== index));
+  }
 
   openingChat = signal(false);
   chatError = signal<string | null>(null);
@@ -171,18 +296,27 @@ export class CommunityComponent {
   publishPost(): void {
     const communityId = this.communityId();
     const content = this.postContent().trim();
-    if (!communityId || !content || this.publishing()) return;
+    const media = this.postMediaItems();
+    if (!communityId || (!content && media.length === 0) || this.publishing() || this.uploadingPostMedia()) return;
 
     this.publishing.set(true);
     this.postError.set(null);
 
     this.postsService
-      .postInCommunity(communityId, { content, postType: 'TEXT', visibility: this.postVisibility(), maps: [] })
+      .postInCommunity(communityId, {
+        content: content || undefined,
+        postType: 'TEXT',
+        visibility: this.postVisibility(),
+        maps: [],
+        media: media.length > 0 ? media : undefined,
+      })
       .subscribe({
         next: (post) => {
           this.publishing.set(false);
           this.postContent.set('');
+          this.postMediaItems.set([]);
           this.posts.update((list) => [toPost(post), ...list]);
+          this.toastService.success('Publicação realizada com sucesso!');
         },
         error: (error) => {
           console.error('Failed to publish community post:', error);

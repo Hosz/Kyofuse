@@ -113,6 +113,22 @@ class PostControllerTest {
     }
 
     @Test
+    void getProfileMediaPostsUsesPathProfileIdAndPageable() {
+        UUID profileId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Page<PostResponse> expected = new PageImpl<>(List.of(response(UUID.randomUUID(), UUID.randomUUID())));
+        when(postService.getProfileMediaPosts(eq(profileId), any(Pageable.class), eq(userId))).thenReturn(expected);
+
+        Page<PostResponse> result = controller.getProfileMediaPosts(jwt(userId), profileId, 1, 10);
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        assertThat(result).isSameAs(expected);
+        verify(postService).getProfileMediaPosts(eq(profileId), pageableCaptor.capture(), eq(userId));
+        assertThat(pageableCaptor.getValue().getPageNumber()).isEqualTo(1);
+        assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(10);
+    }
+
+    @Test
     void getMyPostsUsesAuthenticatedUserIdAndPageable() {
         UUID userId = UUID.randomUUID();
         Page<PostResponse> expected = new PageImpl<>(List.of(response(UUID.randomUUID(), userId)));
@@ -123,6 +139,21 @@ class PostControllerTest {
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         assertThat(result).isSameAs(expected);
         verify(postService).getMyPosts(eq(userId), pageableCaptor.capture());
+        assertThat(pageableCaptor.getValue().getPageNumber()).isEqualTo(3);
+        assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(5);
+    }
+
+    @Test
+    void getMyMediaPostsUsesAuthenticatedUserIdAndPageable() {
+        UUID userId = UUID.randomUUID();
+        Page<PostResponse> expected = new PageImpl<>(List.of(response(UUID.randomUUID(), userId)));
+        when(postService.getMyMediaPosts(eq(userId), any(Pageable.class))).thenReturn(expected);
+
+        Page<PostResponse> result = controller.getMyMediaPosts(jwt(userId), 3, 5);
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        assertThat(result).isSameAs(expected);
+        verify(postService).getMyMediaPosts(eq(userId), pageableCaptor.capture());
         assertThat(pageableCaptor.getValue().getPageNumber()).isEqualTo(3);
         assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(5);
     }

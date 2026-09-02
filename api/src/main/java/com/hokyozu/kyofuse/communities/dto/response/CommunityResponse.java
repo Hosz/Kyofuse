@@ -16,6 +16,7 @@ public record CommunityResponse(
         UUID ownerId,
         String ownerUsername,
         UUID teamId,
+        String teamSlug,
         String teamName,
         String teamAvatarUrl,
         CommunityVisibility visibility,

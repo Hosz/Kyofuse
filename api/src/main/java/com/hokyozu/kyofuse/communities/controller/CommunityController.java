@@ -12,6 +12,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
 import java.util.UUID;
 
 @RestController
@@ -29,6 +32,26 @@ public class CommunityController {
         return communityService.createCommunity(request, userId);
     }
 
+    @PostMapping(value = "/{communityId}/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public CommunityResponse uploadAvatar(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID communityId,
+            @RequestParam("file") MultipartFile file
+    ) throws IOException {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return communityService.uploadAvatar(userId, communityId, file);
+    }
+
+    @PostMapping(value = "/{communityId}/banner", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public CommunityResponse uploadBanner(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID communityId,
+            @RequestParam("file") MultipartFile file
+    ) throws IOException {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return communityService.uploadBanner(userId, communityId, file);
+    }
+
     @PatchMapping("/edit/{communityId}")
     public CommunityResponse editCommunity(@AuthenticationPrincipal Jwt jwt,
                                            @PathVariable UUID communityId,
@@ -38,7 +61,7 @@ public class CommunityController {
     }
 
     @GetMapping("/{communityId}")
-    public CommunityResponse detailCommunity(@PathVariable UUID communityId) {
+    public CommunityResponse detailCommunity(@PathVariable String communityId) {
         return communityService.detailCommunity(communityId);
     }
 

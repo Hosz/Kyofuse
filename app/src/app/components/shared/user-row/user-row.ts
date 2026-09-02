@@ -1,5 +1,6 @@
 import { Component, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { FALLBACK_AVATAR_URL } from '../../../shared/utils/format.util';
 
 @Component({
   selector: 'app-user-row',
@@ -8,6 +9,7 @@ import { RouterLink } from '@angular/router';
   styleUrl: './user-row.css',
 })
 export class UserRowComponent {
+  readonly fallbackAvatar = FALLBACK_AVATAR_URL;
   /** Ausente quando a linha vem de dados ainda não ligados à API real (ex.: sugestões) — a linha fica sem link. */
   userId = input<string | null>(null);
   name = input.required<string>();

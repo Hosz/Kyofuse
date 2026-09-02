@@ -77,6 +77,7 @@ class UserPinnedCommunityControllerTest {
                 null,
                 null,
                 null,
+                null,
                 CommunityVisibility.PUBLIC,
                 CommunityStatus.ACTIVE,
                 now,

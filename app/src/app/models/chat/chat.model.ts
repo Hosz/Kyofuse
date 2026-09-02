@@ -36,6 +36,9 @@ export interface UpdateConversationRequest {
     avatarUrl?: string;
 }
 
+import { MessageMediaResponse } from '../media/message-media-response.model';
+import { PostMediaItemRequest } from '../posts/post-request.model';
+
 export interface MessageResponse {
     id: string;
     conversationId: string;
@@ -44,11 +47,13 @@ export interface MessageResponse {
     senderNickname: string | null;
     senderAvatarUrl: string | null;
     content: string;
+    media?: MessageMediaResponse[];
     createdAt: string;
 }
 
 export interface MessageRequest {
-    content: string;
+    content?: string;
+    media?: PostMediaItemRequest[];
 }
 
 export type ConversationMemberRole = 'ADMIN' | 'MEMBER';

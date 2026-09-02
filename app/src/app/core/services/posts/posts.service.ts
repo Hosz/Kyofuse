@@ -56,11 +56,25 @@ export class PostsService {
     return this.http.get<PageResponse<postResponse>>(this.url + `/profile/${profileId}/posts`, { params });
   }
 
+  public getProfileMediaPosts(profileId: string, page: number = 0, size: number = 20): Observable<PageResponse<postResponse>> {
+    const params = new HttpParams().set('page', page.toString())
+      .set('size', size.toString());
+
+    return this.http.get<PageResponse<postResponse>>(this.url + `/profile/${profileId}/media`, { params });
+  }
+
   public getMyPosts(page: number = 0, size: number = 20): Observable<PageResponse<postResponse>> {
     const params = new HttpParams().set('page', page.toString())
       .set('size', size.toString());
 
     return this.http.get<PageResponse<postResponse>>(this.url + '/posts/me', { params });
+  }
+
+  public getMyMediaPosts(page: number = 0, size: number = 20): Observable<PageResponse<postResponse>> {
+    const params = new HttpParams().set('page', page.toString())
+      .set('size', size.toString());
+
+    return this.http.get<PageResponse<postResponse>>(this.url + '/posts/me/media', { params });
   }
 
   /**

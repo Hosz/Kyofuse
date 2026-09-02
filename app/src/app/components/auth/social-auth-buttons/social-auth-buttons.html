@@ -6,21 +6,37 @@
   </div>
 
   <div class="grid grid-cols-2 gap-3">
-    <button
-      type="button"
-      (click)="googleClick.emit()"
-      class="flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-secondary-fixed px-4 py-2.5 text-label-md font-bold text-on-secondary transition-all hover:brightness-95 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"
+    <!-- Google Button Wrapper -->
+    <div
+      class="relative flex h-[42px] items-center justify-center overflow-hidden rounded-lg bg-secondary-fixed transition-all"
+      [class.cursor-pointer]="!disabled() && !loading()"
+      [class.hover:brightness-95]="!disabled() && !loading()"
+      [class.active:scale-[0.97]]="!disabled() && !loading()"
+      [class.opacity-50]="disabled() || loading()"
+      [class.pointer-events-none]="disabled() || loading()"
     >
-      <span class="flex h-5 w-5 items-center justify-center rounded-full bg-on-secondary text-[11px] font-bold text-secondary-fixed">G</span>
-      Google
-    </button>
+      <div class="pointer-events-none flex items-center justify-center gap-2 px-4 py-2.5 text-label-md font-bold text-on-secondary">
+        <span class="flex h-5 w-5 items-center justify-center rounded-full bg-on-secondary text-[11px] font-bold text-secondary-fixed">G</span>
+        Google
+      </div>
+      <!-- Native Google GIS button overlay to open official modal popup -->
+      <div #googleBtnContainer class="absolute inset-0 flex items-center justify-center opacity-[0.0001] cursor-pointer scale-150 overflow-hidden"></div>
+    </div>
+
+    <!-- Steam Button -->
     <button
       type="button"
       (click)="steamClick.emit()"
-      class="flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#171a21] px-4 py-2.5 text-label-md font-bold text-white transition-all hover:brightness-125 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"
+      [disabled]="disabled() || loading()"
+      class="flex h-[42px] cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#171a21] px-4 py-2.5 text-label-md font-bold text-white transition-all hover:brightness-125 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"
     >
-      <span class="material-symbols-outlined text-[18px]">sports_esports</span>
-      Steam
+      @if (loading()) {
+        <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+        <span>Conectando...</span>
+      } @else {
+        <span class="material-symbols-outlined text-[18px]">sports_esports</span>
+        <span>Steam</span>
+      }
     </button>
   </div>
 </div>

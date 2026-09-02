@@ -57,7 +57,7 @@
                     <span class="text-label-sm text-on-surface-variant">
                       Dono:
                       <a
-                        [routerLink]="['/perfil', community()!.ownerId]"
+                        [routerLink]="['/perfil', community()!.ownerUsername]"
                         class="font-semibold text-primary hover:underline"
                       >&#64;{{ community()!.ownerUsername }}</a>
                     </span>
@@ -68,7 +68,7 @@
                 <div class="flex shrink-0 flex-col items-stretch gap-3 sm:items-end">
                   @if (community()!.teamName) {
                     <a
-                      [routerLink]="['/times', community()!.teamId]"
+                      [routerLink]="['/times', community()!.teamSlug]"
                       class="flex items-center gap-3 rounded-xl border border-outline-variant bg-surface-container px-3 py-2.5 transition-colors hover:border-primary"
                     >
                       @if (community()!.teamAvatarUrl) {
@@ -187,7 +187,7 @@
             </div>
 
             <a
-              [routerLink]="['/comunidade', community()!.id, 'membros']"
+              [routerLink]="['/comunidade', community()!.communitySlug, 'membros']"
               class="flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high"
             >
               Ver membros
@@ -229,6 +229,15 @@
 
             @if (isMember() || isOwner()) {
               <div class="flex flex-col gap-3 rounded-lg border border-outline-variant p-3">
+                <input
+                  #commPostFileInput
+                  type="file"
+                  multiple
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  (change)="onPostMediaSelected($event)"
+                  class="hidden"
+                />
+
                 <textarea
                   rows="3"
                   maxlength="2000"
@@ -238,23 +247,64 @@
                   class="resize-none rounded-lg border border-outline-variant bg-surface px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
                 ></textarea>
 
+                @if (postMediaItems().length > 0) {
+                  <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    @for (media of postMediaItems(); track media.fileKey; let i = $index) {
+                      <div class="group relative aspect-video overflow-hidden rounded-xl border border-outline-variant bg-surface-container">
+                        <img
+                          [src]="media.thumbnailUrl || media.url"
+                          alt="Prévia"
+                          class="h-full w-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          (click)="removePostMedia(i)"
+                          class="absolute right-1.5 top-1.5 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90"
+                        >
+                          <span class="material-symbols-outlined text-[14px]">close</span>
+                        </button>
+                      </div>
+                    }
+                  </div>
+                }
+
+                @if (uploadingPostMedia()) {
+                  <div class="flex items-center gap-2 text-label-sm text-primary">
+                    <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
+                    <span>Enviando imagem...</span>
+                  </div>
+                }
+
                 <div class="flex flex-wrap items-center justify-between gap-2">
-                  <label class="flex items-center gap-2">
-                    <span class="text-label-sm text-on-surface-variant">Visibilidade</span>
-                    <select
-                      [value]="postVisibility()"
-                      (change)="postVisibility.set($any($event.target).value)"
-                      class="rounded-lg border border-outline-variant bg-surface px-3 py-1.5 text-label-md text-on-surface outline-none focus:border-primary"
+                  <div class="flex items-center gap-3">
+                    <button
+                      type="button"
+                      (click)="commPostFileInput.click()"
+                      [disabled]="uploadingPostMedia() || postMediaItems().length >= 4"
+                      class="flex cursor-pointer items-center gap-1 text-primary hover:text-primary-container disabled:cursor-not-allowed disabled:opacity-40"
+                      title="Adicionar imagens"
                     >
-                      <option value="PUBLIC">Pública</option>
-                      <option value="PRIVATE">Só membros</option>
-                    </select>
-                  </label>
+                      <span class="material-symbols-outlined text-[20px]">add_photo_alternate</span>
+                      <span class="text-label-sm font-semibold">Foto</span>
+                    </button>
+
+                    <label class="flex items-center gap-2">
+                      <span class="text-label-sm text-on-surface-variant">Visibilidade</span>
+                      <select
+                        [value]="postVisibility()"
+                        (change)="postVisibility.set($any($event.target).value)"
+                        class="rounded-lg border border-outline-variant bg-surface px-3 py-1.5 text-label-md text-on-surface outline-none focus:border-primary"
+                      >
+                        <option value="PUBLIC">Pública</option>
+                        <option value="PRIVATE">Só membros</option>
+                      </select>
+                    </label>
+                  </div>
 
                   <button
                     type="button"
                     (click)="publishPost()"
-                    [disabled]="publishing() || !postContent().trim()"
+                    [disabled]="publishing() || uploadingPostMedia() || (!postContent().trim() && postMediaItems().length === 0)"
                     class="cursor-pointer rounded-full bg-primary-container px-4 py-2 text-label-md font-bold text-on-primary-container transition-all hover:brightness-110 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     {{ publishing() ? 'Publicando...' : 'Publicar' }}
@@ -268,22 +318,58 @@
             }
 
             @if (postsLoading()) {
-              <p class="py-6 text-center text-body-sm text-on-surface-variant">Carregando publicações...</p>
+              <div class="py-2">
+                <app-skeleton variant="post" [count]="3" />
+              </div>
             } @else {
               <div class="flex flex-col gap-3">
                 @for (post of posts(); track post.id) {
-                  <article class="flex flex-col gap-2 rounded-lg border border-outline-variant p-lg">
-                    <a [routerLink]="['/perfil', post.author.id]" class="flex items-center gap-3">
+                  <article class="flex flex-col gap-3 rounded-lg border border-outline-variant p-lg">
+                    <a [routerLink]="['/perfil', post.author.handle]" class="flex items-center gap-3">
                       <img [src]="post.author.avatarUrl" [alt]="post.author.name" class="h-9 w-9 shrink-0 rounded-full object-cover" />
                       <span class="flex min-w-0 flex-col">
                         <span class="truncate text-body-sm font-semibold text-on-surface hover:underline">{{ post.author.name }}</span>
                         <span class="truncate text-label-sm text-on-surface-variant">&#64;{{ post.author.handle }} &middot; {{ post.timeAgo }}</span>
                       </span>
                     </a>
-                    <p class="whitespace-pre-wrap text-body-sm text-on-surface">{{ post.content }}</p>
+
+                    @if (post.content) {
+                      <p class="whitespace-pre-wrap text-body-sm text-on-surface">{{ post.content }}</p>
+                    }
+
+                    <!-- Grid de imagens da publicação da comunidade -->
+                    @if (post.mediaList && post.mediaList.length > 0) {
+                      <div
+                        class="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-low"
+                        [class.grid]="post.mediaList.length > 1"
+                        [class.grid-cols-2]="post.mediaList.length >= 2"
+                        [class.gap-1]="post.mediaList.length > 1"
+                      >
+                        @for (item of post.mediaList; track item.id; let i = $index) {
+                          <div
+                            class="relative cursor-zoom-in overflow-hidden bg-surface-container"
+                            [class.col-span-2]="post.mediaList.length === 3 && i === 0"
+                            [class.aspect-video]="post.mediaList.length === 1"
+                            [class.aspect-square]="post.mediaList.length > 1"
+                            (click)="openImage(item.url, $event)"
+                          >
+                            <img
+                              [src]="item.url"
+                              alt="Mídia da publicação"
+                              class="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+                              loading="lazy"
+                            />
+                          </div>
+                        }
+                      </div>
+                    }
                   </article>
                 } @empty {
-                  <p class="py-6 text-center text-body-sm text-on-surface-variant">Nenhuma publicação nessa comunidade ainda.</p>
+                  <div class="flex w-full flex-col items-center justify-center gap-3 px-6 py-16 text-center text-on-surface-variant">
+                    <span class="material-symbols-outlined text-[48px] text-outline-variant">groups</span>
+                    <p class="text-title-sm font-bold text-on-surface">Nenhuma publicação na comunidade ainda</p>
+                    <p class="text-body-sm text-on-surface-variant leading-relaxed">Seja o primeiro a postar algo na comunidade!</p>
+                  </div>
                 }
               </div>
             }
@@ -331,28 +417,85 @@
         ></textarea>
       </div>
 
-      <div class="flex flex-col gap-1.5">
-        <label class="text-label-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant" for="edit-community-avatar">URL do avatar</label>
+      <div class="flex flex-col gap-2">
         <input
-          id="edit-community-avatar"
-          type="text"
-          maxlength="500"
-          [value]="editAvatarUrl()"
-          (input)="editAvatarUrl.set($any($event.target).value)"
-          class="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container"
+          #communityAvatarInput
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          (change)="onAvatarFileSelected($event)"
+          class="hidden"
         />
+        <div class="flex items-center justify-between">
+          <label class="text-label-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant">Avatar da comunidade</label>
+          <button
+            type="button"
+            (click)="communityAvatarInput.click()"
+            [disabled]="uploadingAvatar()"
+            class="flex cursor-pointer items-center gap-1.5 rounded-lg bg-surface-container px-3 py-1.5 text-label-sm font-semibold text-primary hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            @if (uploadingAvatar()) {
+              <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
+              <span>Enviando...</span>
+            } @else {
+              <span class="material-symbols-outlined text-[16px]">upload</span>
+              <span>{{ editAvatarUrl() ? 'Alterar foto' : 'Enviar foto' }}</span>
+            }
+          </button>
+        </div>
+        @if (editAvatarUrl()) {
+          <div class="flex items-center gap-3 rounded-lg border border-outline-variant bg-surface-container-low p-2">
+            <img [src]="editAvatarUrl()" alt="Avatar" class="h-12 w-12 rounded-lg object-cover" />
+            <span class="flex-1 truncate text-label-sm text-on-surface">Foto selecionada</span>
+            <button
+              type="button"
+              (click)="removeAvatar()"
+              class="cursor-pointer text-on-surface-variant hover:text-error"
+              title="Remover foto"
+            >
+              <span class="material-symbols-outlined text-[18px]">delete</span>
+            </button>
+          </div>
+        }
       </div>
 
-      <div class="flex flex-col gap-1.5">
-        <label class="text-label-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant" for="edit-community-banner">URL do banner</label>
+      <div class="flex flex-col gap-2">
         <input
-          id="edit-community-banner"
-          type="text"
-          maxlength="500"
-          [value]="editBannerUrl()"
-          (input)="editBannerUrl.set($any($event.target).value)"
-          class="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container"
+          #communityBannerInput
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          (change)="onBannerFileSelected($event)"
+          class="hidden"
         />
+        <div class="flex items-center justify-between">
+          <label class="text-label-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant">Banner da comunidade</label>
+          <button
+            type="button"
+            (click)="communityBannerInput.click()"
+            [disabled]="uploadingBanner()"
+            class="flex cursor-pointer items-center gap-1.5 rounded-lg bg-surface-container px-3 py-1.5 text-label-sm font-semibold text-primary hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            @if (uploadingBanner()) {
+              <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
+              <span>Enviando...</span>
+            } @else {
+              <span class="material-symbols-outlined text-[16px]">upload</span>
+              <span>{{ editBannerUrl() ? 'Alterar banner' : 'Enviar banner' }}</span>
+            }
+          </button>
+        </div>
+        @if (editBannerUrl()) {
+          <div class="relative h-20 w-full overflow-hidden rounded-lg border border-outline-variant">
+            <img [src]="editBannerUrl()" alt="Banner" class="h-full w-full object-cover" />
+            <button
+              type="button"
+              (click)="removeBanner()"
+              class="absolute right-2 top-2 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white hover:bg-error"
+              title="Remover banner"
+            >
+              <span class="material-symbols-outlined text-[16px]">close</span>
+            </button>
+          </div>
+        }
       </div>
 
       <div class="flex flex-col gap-1.5">
@@ -443,4 +586,9 @@
   [error]="leaveError()"
   (confirmed)="leave()"
   (cancelled)="cancelLeave()"
+/>
+
+<app-image-modal
+  [imageUrl]="selectedImageUrl()"
+  (close)="closeImage()"
 />

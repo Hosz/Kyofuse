@@ -12,6 +12,7 @@ import com.hokyozu.kyofuse.posts.enums.PostStatus;
 import com.hokyozu.kyofuse.posts.enums.PostVisibility;
 import com.hokyozu.kyofuse.posts.finder.PostFinder;
 import com.hokyozu.kyofuse.posts.repository.PostRepository;
+import com.hokyozu.kyofuse.posts.service.MentionDetectionService;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import com.hokyozu.kyofuse.relationships.permission.service.comment.CommentPermissionService;
@@ -82,6 +83,9 @@ class CommentServiceTest {
 
     @Mock
     private ProfilePermissionService profilePermissionService;
+
+    @Mock
+    private MentionDetectionService mentionDetectionService;
 
     @InjectMocks
     private CommentService commentService;

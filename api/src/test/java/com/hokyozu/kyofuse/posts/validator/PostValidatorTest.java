@@ -28,4 +28,13 @@ class PostValidatorTest {
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("TEAM_ONLY posts are not available in V1");
     }
+
+    @Test
+    void validateThrowsWhenContentAndMediaAreBothEmpty() {
+        CreatePostRequest request = new CreatePostRequest("", PostType.TEXT, PostVisibility.PUBLIC, null);
+
+        assertThatThrownBy(() -> validator.validate(request))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Post must contain text content or at least one media attachment");
+    }
 }

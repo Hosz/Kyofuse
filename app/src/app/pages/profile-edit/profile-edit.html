@@ -50,45 +50,133 @@
               </div>
 
               <div class="flex flex-col items-center gap-4 sm:flex-row">
-                <img
-                  [src]="avatarUrl() || fallbackAvatar"
-                  alt="Avatar"
-                  class="h-24 w-24 shrink-0 rounded-xl border-4 border-surface-container object-cover"
+                <input
+                  #avatarInput
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  (change)="onAvatarFileSelected($event)"
+                  class="hidden"
                 />
-                <label class="flex w-full flex-1 flex-col gap-1.5">
-                  <span class="text-label-sm font-semibold text-on-surface-variant">URL do avatar</span>
-                  <input
-                    type="text"
-                    maxlength="500"
-                    placeholder="https://..."
-                    [value]="avatarUrl()"
-                    (input)="avatarUrl.set($any($event.target).value)"
-                    class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                <div class="group relative shrink-0">
+                  <img
+                    [src]="avatarUrl() || fallbackAvatar"
+                    alt="Avatar"
+                    class="h-24 w-24 rounded-xl border-4 border-surface-container object-cover"
                   />
-                  <span class="text-label-sm text-on-surface-variant">Cole o link de uma imagem para usar como avatar.</span>
-                </label>
+                  <button
+                    type="button"
+                    (click)="avatarInput.click()"
+                    [disabled]="uploadingAvatar()"
+                    class="absolute inset-0 flex cursor-pointer items-center justify-center rounded-xl bg-black/50 opacity-0 transition-opacity group-hover:opacity-100 disabled:cursor-not-allowed"
+                    title="Alterar avatar"
+                  >
+                    @if (uploadingAvatar()) {
+                      <span class="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                    } @else {
+                      <span class="material-symbols-outlined text-white">photo_camera</span>
+                    }
+                  </button>
+                </div>
+
+                <div class="flex w-full flex-1 flex-col gap-2">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-body-sm font-bold text-on-surface">Avatar do perfil</p>
+                      <p class="text-label-sm text-on-surface-variant">JPG, PNG ou WebP de até 10MB. Proporção 1:1 recomendada.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      @if (avatarUrl()) {
+                        <button
+                          type="button"
+                          (click)="removeAvatar()"
+                          class="flex cursor-pointer items-center gap-1 rounded-lg border border-outline-variant px-3 py-2 text-label-md font-semibold text-on-surface-variant transition-colors hover:border-error hover:text-error"
+                          title="Remover foto"
+                        >
+                          <span class="material-symbols-outlined text-[18px]">delete</span>
+                          <span>Remover</span>
+                        </button>
+                      }
+                      <button
+                        type="button"
+                        (click)="avatarInput.click()"
+                        [disabled]="uploadingAvatar()"
+                        class="flex cursor-pointer items-center gap-1.5 rounded-lg bg-surface-container-high px-4 py-2 text-label-md font-semibold text-primary transition-colors hover:bg-surface-container-highest disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        @if (uploadingAvatar()) {
+                          <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
+                          <span>Enviando...</span>
+                        } @else {
+                          <span class="material-symbols-outlined text-[18px]">upload</span>
+                          <span>{{ avatarUrl() ? 'Alterar foto' : 'Enviar foto' }}</span>
+                        }
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div class="flex flex-col gap-3">
-                <div class="tactical-grid h-28 w-full shrink-0 overflow-hidden rounded-lg border border-outline-variant bg-surface-container">
+                <input
+                  #bannerInput
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  (change)="onBannerFileSelected($event)"
+                  class="hidden"
+                />
+                <div class="group relative h-36 w-full shrink-0 overflow-hidden rounded-lg border border-outline-variant bg-surface-container">
                   @if (bannerUrl()) {
                     <img [src]="bannerUrl()" alt="Banner" class="h-full w-full object-cover" />
                   } @else {
                     <div class="h-full w-full bg-gradient-to-br from-primary-container/40 via-surface-container to-surface-container-low"></div>
                   }
+                  <button
+                    type="button"
+                    (click)="bannerInput.click()"
+                    [disabled]="uploadingBanner()"
+                    class="absolute inset-0 flex cursor-pointer items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100 disabled:cursor-not-allowed"
+                    title="Alterar banner"
+                  >
+                    @if (uploadingBanner()) {
+                      <span class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                    } @else {
+                      <span class="material-symbols-outlined text-white">photo_camera</span>
+                    }
+                  </button>
                 </div>
-                <label class="flex w-full flex-col gap-1.5">
-                  <span class="text-label-sm font-semibold text-on-surface-variant">URL do banner</span>
-                  <input
-                    type="text"
-                    maxlength="500"
-                    placeholder="https://..."
-                    [value]="bannerUrl()"
-                    (input)="bannerUrl.set($any($event.target).value)"
-                    class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
-                  />
-                  <span class="text-label-sm text-on-surface-variant">Imagem larga exibida no topo do seu perfil.</span>
-                </label>
+
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-body-sm font-bold text-on-surface">Banner do topo</p>
+                    <p class="text-label-sm text-on-surface-variant">Imagem panorâmica exibida no topo do perfil (1200x400).</p>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    @if (bannerUrl()) {
+                      <button
+                        type="button"
+                        (click)="removeBanner()"
+                        class="flex cursor-pointer items-center gap-1 rounded-lg border border-outline-variant px-3 py-2 text-label-md font-semibold text-on-surface-variant transition-colors hover:border-error hover:text-error"
+                        title="Remover banner"
+                      >
+                        <span class="material-symbols-outlined text-[18px]">delete</span>
+                        <span>Remover</span>
+                      </button>
+                    }
+                    <button
+                      type="button"
+                      (click)="bannerInput.click()"
+                      [disabled]="uploadingBanner()"
+                      class="flex cursor-pointer items-center gap-1.5 rounded-lg bg-surface-container-high px-4 py-2 text-label-md font-semibold text-primary transition-colors hover:bg-surface-container-highest disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      @if (uploadingBanner()) {
+                        <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
+                        <span>Enviando...</span>
+                      } @else {
+                        <span class="material-symbols-outlined text-[18px]">upload</span>
+                        <span>{{ bannerUrl() ? 'Alterar banner' : 'Enviar banner' }}</span>
+                      }
+                    </button>
+                  </div>
+                </div>
               </div>
             </section>
 
@@ -130,34 +218,66 @@
 
               <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <label class="flex flex-col gap-1.5">
-                  <span class="text-label-sm font-semibold text-on-surface-variant">País</span>
-                  <input
-                    type="text"
-                    maxlength="80"
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-label-sm font-semibold text-on-surface-variant">País</span>
+                    @if (flagUrl()) {
+                      <img
+                        [src]="flagUrl()!"
+                        [alt]="country()"
+                        class="h-3.5 w-5 rounded-[2px] object-cover shadow-xs"
+                      />
+                    }
+                  </div>
+                  <select
                     [value]="country()"
-                    (input)="country.set($any($event.target).value)"
-                    class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
-                  />
+                    (change)="onCountryChange($any($event.target).value)"
+                    class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none transition-colors focus:border-primary"
+                  >
+                    <option value="">Selecione um país</option>
+                    @for (option of countryOptions; track option.value) {
+                      <option [value]="option.value" [selected]="option.value === country()">
+                        {{ option.label }}
+                      </option>
+                    }
+                  </select>
                 </label>
+
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-label-sm font-semibold text-on-surface-variant">Estado / Região</span>
+                  <select
+                    [value]="state()"
+                    [disabled]="!country() || stateOptions().length === 0"
+                    (change)="onStateChange($any($event.target).value)"
+                    class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none transition-colors focus:border-primary disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="">
+                      {{ !country() ? 'Selecione o país primeiro' : 'Selecione um estado' }}
+                    </option>
+                    @for (option of stateOptions(); track option.value) {
+                      <option [value]="option.value" [selected]="option.value === state()">
+                        {{ option.label }}
+                      </option>
+                    }
+                  </select>
+                </label>
+
                 <label class="flex flex-col gap-1.5">
                   <span class="text-label-sm font-semibold text-on-surface-variant">Cidade</span>
-                  <input
-                    type="text"
-                    maxlength="80"
+                  <select
                     [value]="city()"
-                    (input)="city.set($any($event.target).value)"
-                    class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
-                  />
-                </label>
-                <label class="flex flex-col gap-1.5">
-                  <span class="text-label-sm font-semibold text-on-surface-variant">Estado</span>
-                  <input
-                    type="text"
-                    maxlength="80"
-                    [value]="state()"
-                    (input)="state.set($any($event.target).value)"
-                    class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
-                  />
+                    [disabled]="!state() || cityOptions().length === 0"
+                    (change)="onCityChange($any($event.target).value)"
+                    class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none transition-colors focus:border-primary disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="">
+                      {{ !state() ? 'Selecione o estado primeiro' : 'Selecione uma cidade' }}
+                    </option>
+                    @for (c of cityOptions(); track c) {
+                      <option [value]="c" [selected]="c === city()">
+                        {{ c }}
+                      </option>
+                    }
+                  </select>
                 </label>
               </div>
             </section>
@@ -185,14 +305,15 @@
                     <button
                       type="button"
                       (click)="selectMainRole(option.value)"
-                      class="cursor-pointer rounded-full border px-3 py-1.5 text-label-sm font-semibold transition-colors"
+                      class="flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-label-sm font-semibold transition-colors"
                       [class]="
                         mainRole() === option.value
-                          ? 'border-primary text-primary'
+                          ? 'border-primary text-primary bg-primary/10'
                           : 'border-outline-variant text-on-surface-variant hover:text-on-surface'
                       "
                     >
-                      {{ option.label }}
+                      <app-role-icon [role]="option.value" size="sm" [colored]="true" />
+                      <span>{{ option.label }}</span>
                     </button>
                   }
                 </div>
@@ -207,14 +328,17 @@
                     <button
                       type="button"
                       (click)="selectSecondaryRole(option.value)"
-                      class="cursor-pointer rounded-full border px-3 py-1.5 text-label-sm font-semibold transition-colors"
+                      [disabled]="mainRole() === option.value"
+                      [title]="mainRole() === option.value ? 'Papel já selecionado como principal' : ''"
+                      class="flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-label-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40"
                       [class]="
                         secondaryRole() === option.value
-                          ? 'border-primary text-primary'
+                          ? 'border-primary text-primary bg-primary/10'
                           : 'border-outline-variant text-on-surface-variant hover:text-on-surface'
                       "
                     >
-                      {{ option.label }}
+                      <app-role-icon [role]="option.value" size="sm" [colored]="true" />
+                      <span>{{ option.label }}</span>
                     </button>
                   }
                 </div>
@@ -300,25 +424,54 @@
               </div>
 
               <div class="flex flex-col gap-2">
-                <span class="text-label-sm font-semibold uppercase tracking-[0.06em] text-on-surface-variant">
-                  Mapas favoritos ({{ favoriteMaps().length }}/3)
-                </span>
+                <div class="flex items-center justify-between">
+                  <span class="text-label-sm font-semibold uppercase tracking-[0.06em] text-on-surface-variant">
+                    Mapas favoritos ({{ favoriteMaps().length }}/3)
+                  </span>
+                  <span class="text-label-sm text-on-surface-variant">
+                    Escolha até 3 mapas
+                  </span>
+                </div>
                 <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
                   @for (option of mapOptions; track option.value) {
                     <button
                       type="button"
                       (click)="toggleMap(option.value)"
                       [style.background-color]="mapColor(option.value)"
-                      class="tactical-grid relative flex aspect-video cursor-pointer items-center justify-center overflow-hidden rounded-lg border-2 transition-colors"
-                      [class]="favoriteMaps().includes(option.value) ? 'border-primary' : 'border-outline-variant hover:border-outline'"
+                      class="tactical-grid group relative flex aspect-video cursor-pointer items-center justify-center overflow-hidden rounded-lg border-2 transition-all duration-200"
+                      [class]="
+                        favoriteMaps().includes(option.value)
+                          ? 'border-primary shadow-lg shadow-primary/20 ring-2 ring-primary/40'
+                          : 'border-outline-variant hover:border-primary/60 hover:brightness-105'
+                      "
                     >
-                      <span class="absolute inset-0 bg-surface-dim/30"></span>
-                      <span class="relative text-label-md font-bold uppercase tracking-[0.08em] text-on-surface">
+                      @if (option.imageUrl) {
+                        <img
+                          [src]="option.imageUrl"
+                          [alt]="option.label"
+                          class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
+                          loading="lazy"
+                        />
+                      }
+                      <span
+                        class="absolute inset-0 transition-opacity"
+                        [class]="
+                          favoriteMaps().includes(option.value)
+                            ? 'bg-gradient-to-t from-surface-container-lowest/80 via-surface-container-lowest/40 to-surface-container-lowest/20'
+                            : 'bg-gradient-to-t from-surface-container-lowest/85 via-surface-container-lowest/50 to-surface-container-lowest/25 group-hover:via-surface-container-lowest/35'
+                        "
+                      ></span>
+                      <span
+                        class="relative z-10 px-2 text-center text-label-md font-bold uppercase tracking-[0.08em] text-on-surface drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] transition-colors"
+                        [class.text-primary]="favoriteMaps().includes(option.value)"
+                      >
                         {{ option.label }}
                       </span>
                       @if (favoriteMaps().includes(option.value)) {
-                        <span class="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-on-primary">
-                          <span class="material-symbols-outlined text-[16px]">check</span>
+                        <span
+                          class="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-on-primary shadow-md"
+                        >
+                          <span class="material-symbols-outlined text-[16px] font-bold">check</span>
                         </span>
                       }
                     </button>

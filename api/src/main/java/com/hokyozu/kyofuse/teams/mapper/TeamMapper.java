@@ -46,7 +46,7 @@ public class TeamMapper {
                 teamSaved.getOwner().getUsername(),
                 teamSaved.getName(),
                 teamSaved.getSlug(),
-                teamSaved.getAvatarUrl(),
+                teamSaved.getAvatarUrl() != null ? teamSaved.getAvatarUrl() : "/assets/profile/team-profile-image-default.png",
                 teamSaved.getBannerUrl(),
                 teamSaved.getDescription(),
                 teamSaved.getRegion(),
@@ -76,15 +76,11 @@ public class TeamMapper {
         }
 
         if (updateTeamRequest.avatarUrl() != null) {
-            team.setAvatarUrl(updateTeamRequest.avatarUrl());
-        } else if (updateTeamRequest.avatarUrl() == null && team.getAvatarUrl() == null) {
-            team.setAvatarUrl(null);
+            team.setAvatarUrl(updateTeamRequest.avatarUrl().trim().isEmpty() ? null : updateTeamRequest.avatarUrl().trim());
         }
 
         if (updateTeamRequest.bannerUrl() != null) {
-            team.setBannerUrl(updateTeamRequest.bannerUrl());
-        } else if (updateTeamRequest.bannerUrl() == null && team.getBannerUrl() == null) {
-            team.setBannerUrl(null);
+            team.setBannerUrl(updateTeamRequest.bannerUrl().trim().isEmpty() ? null : updateTeamRequest.bannerUrl().trim());
         }
 
         if (updateTeamRequest.region() != null) {

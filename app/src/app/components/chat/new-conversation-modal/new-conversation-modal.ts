@@ -3,6 +3,7 @@ import { forkJoin } from 'rxjs';
 import { ModalComponent } from '../../shared/modal/modal';
 import { FriendshipService } from '../../../core/services/friendship/friendship.service';
 import { FollowService } from '../../../core/services/follow/follow.service';
+import { MediaService } from '../../../core/services/media/media.service';
 import { FALLBACK_AVATAR_URL } from '../../../shared/utils/format.util';
 
 export interface ChatCandidate {
@@ -32,6 +33,7 @@ export class NewConversationModalComponent {
 
   private friendshipService = inject(FriendshipService);
   private followService = inject(FollowService);
+  private mediaService = inject(MediaService);
 
   readonly fallbackAvatar = FALLBACK_AVATAR_URL;
 
@@ -39,6 +41,7 @@ export class NewConversationModalComponent {
   query = signal('');
   groupName = signal('');
   groupAvatarUrl = signal('');
+  uploadingAvatar = signal(false);
   loading = signal(false);
 
   private selectedIds = signal(new Set<string>());
@@ -86,8 +89,25 @@ export class NewConversationModalComponent {
     this.groupName.set(value);
   }
 
-  onGroupAvatarChange(value: string): void {
-    this.groupAvatarUrl.set(value);
+  onAvatarFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    this.uploadingAvatar.set(true);
+    this.mediaService.uploadImage(file).subscribe({
+      next: (res) => {
+        this.groupAvatarUrl.set(res.url);
+        this.uploadingAvatar.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to upload group avatar:', err);
+        this.uploadingAvatar.set(false);
+      },
+    });
+  }
+
+  removeAvatar(): void {
+    this.groupAvatarUrl.set('');
   }
 
   selectCandidate(candidate: ChatCandidate): void {

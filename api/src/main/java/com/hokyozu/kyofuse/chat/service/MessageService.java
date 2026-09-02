@@ -35,6 +35,13 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.hokyozu.kyofuse.chat.entity.MessageMedia;
+import com.hokyozu.kyofuse.chat.repository.MessageMediaRepository;
+import com.hokyozu.kyofuse.shared.exception.BadRequestException;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class MessageService {
@@ -48,6 +55,7 @@ public class MessageService {
     private final ConversationMemberRepository conversationMemberRepository;
     private final CommunityMemberRepository communityMemberRepository;
     private final MessageRepository messageRepository;
+    private final MessageMediaRepository messageMediaRepository;
     private final NotificationService notificationService;
 
     @Transactional
@@ -60,12 +68,36 @@ public class MessageService {
         validateParticipant(conversation, user);
         validateDirectMessageStatus(conversation, user);
 
+        boolean hasContent = request.content() != null && !request.content().trim().isEmpty();
+        boolean hasMedia = request.media() != null && !request.media().isEmpty();
+        if (!hasContent && !hasMedia) {
+            throw new BadRequestException("Message must contain text content or at least one media attachment");
+        }
+
         Message message = MessageMapper.toEntity(conversation, user, request);
         messageRepository.save(message);
 
+        List<MessageMedia> messageMedias = List.of();
+        if (hasMedia) {
+            List<MessageMedia> mediaEntities = request.media().stream()
+                    .map(item -> MessageMedia.builder()
+                            .message(message)
+                            .fileKey(item.fileKey())
+                            .url(item.url())
+                            .thumbnailUrl(item.thumbnailUrl())
+                            .contentType(item.contentType())
+                            .fileSizeBytes(item.fileSizeBytes())
+                            .width(item.width())
+                            .height(item.height())
+                            .createdAt(Instant.now())
+                            .build())
+                    .toList();
+            messageMedias = messageMediaRepository.saveAll(mediaEntities);
+        }
+
         notifyRecipients(conversation, user);
 
-        return MessageMapper.toResponse(message, gamerProfileFinder.findProfileByUserId(user.getId()));
+        return MessageMapper.toResponse(message, messageMedias, gamerProfileFinder.findProfileByUserId(user.getId()));
     }
 
     @Transactional(readOnly = true)
@@ -78,8 +110,16 @@ public class MessageService {
         validateParticipant(conversation, user);
 
         Page<Message> messages = messageRepository.findByConversation(conversation, pageable);
+        List<UUID> messageIds = messages.getContent().stream().map(Message::getId).toList();
+
+        Map<UUID, List<MessageMedia>> mediaByMessage = messageIds.isEmpty()
+                ? Map.of()
+                : messageMediaRepository.findByMessageIdIn(messageIds).stream()
+                        .collect(Collectors.groupingBy(media -> media.getMessage().getId()));
+
         return messages.map(item -> MessageMapper.toResponse(
                 item,
+                mediaByMessage.getOrDefault(item.getId(), List.of()),
                 gamerProfileFinder.findProfileByUserId(item.getSender().getId())
         ));
     }

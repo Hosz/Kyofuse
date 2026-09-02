@@ -28,6 +28,14 @@ export const PLAYER_ROLE_OPTIONS: { value: PlayerRole; label: string }[] = [
   { value: 'FLEX', label: 'Flex' },
 ];
 
+export function getPlayerRoleLabel(role: PlayerRole | string | null | undefined): string | null {
+  if (!role) return null;
+  const found = PLAYER_ROLE_OPTIONS.find(
+    (opt) => opt.value === role || opt.label.toLowerCase() === role.toLowerCase(),
+  );
+  return found ? found.label : role;
+}
+
 export const PLAYSTYLE_OPTIONS: { value: Playstyle; label: string }[] = [
   { value: 'CASUAL', label: 'Casual' },
   { value: 'COMPETITIVE', label: 'Competitivo' },
@@ -36,20 +44,45 @@ export const PLAYSTYLE_OPTIONS: { value: Playstyle; label: string }[] = [
   { value: 'SOLO_QUEUE', label: 'Solo queue' },
 ];
 
-export const CS2_MAP_OPTIONS: { value: Cs2Map; label: string }[] = [
-  { value: 'ANCIENT', label: 'Ancient' },
-  { value: 'ANUBIS', label: 'Anubis' },
-  { value: 'ALPINE', label: 'Alpine' },
-  { value: 'CACHE', label: 'Cache' },
-  { value: 'DUST2', label: 'Dust II' },
-  { value: 'INFERNO', label: 'Inferno' },
-  { value: 'ITALY', label: 'Italy' },
-  { value: 'MIRAGE', label: 'Mirage' },
-  { value: 'NUKE', label: 'Nuke' },
-  { value: 'OFFICE', label: 'Office' },
-  { value: 'OVERPASS', label: 'Overpass' },
-  { value: 'STRONGHOLD', label: 'Stronghold' },
-  { value: 'TRAIN', label: 'Train' },
-  { value: 'VERTIGO', label: 'Vertigo' },
-  { value: 'WARDEN', label: 'Warden' },
+export interface Cs2MapOption {
+  value: Cs2Map;
+  label: string;
+  imageUrl?: string;
+}
+
+export const CS2_MAP_IMAGES: Record<Cs2Map, string | undefined> = {
+  ANCIENT: '/assets/maps/cs2ancient.webp',
+  ANUBIS: '/assets/maps/anubis.png',
+  ALPINE: '/assets/maps/alpine.webp',
+  CACHE: '/assets/maps/cache.jpg',
+  DUST2: '/assets/maps/dust2.webp',
+  INFERNO: '/assets/maps/inferno.webp',
+  ITALY: '/assets/maps/italy.webp',
+  MIRAGE: '/assets/maps/mirage.webp',
+  NUKE: '/assets/maps/nuke.webp',
+  OFFICE: '/assets/maps/office.webp',
+  OVERPASS: '/assets/maps/overpass.webp',
+  STRONGHOLD: '/assets/maps/stronghold.webp',
+  TRAIN: '/assets/maps/train.webp',
+  VERTIGO: '/assets/maps/vertigo.webp',
+  WARDEN: '/assets/maps/warden.webp',
+};
+
+export const CS2_MAP_OPTIONS: Cs2MapOption[] = [
+  { value: 'ANCIENT', label: 'Ancient', imageUrl: '/assets/maps/cs2ancient.webp' },
+  { value: 'ANUBIS', label: 'Anubis', imageUrl: '/assets/maps/anubis.png' },
+  { value: 'ALPINE', label: 'Alpine', imageUrl: '/assets/maps/alpine.webp' },
+  { value: 'CACHE', label: 'Cache', imageUrl: '/assets/maps/cache.jpg' },
+  { value: 'DUST2', label: 'Dust II', imageUrl: '/assets/maps/dust2.webp' },
+  { value: 'INFERNO', label: 'Inferno', imageUrl: '/assets/maps/inferno.webp' },
+  { value: 'ITALY', label: 'Italy', imageUrl: '/assets/maps/italy.webp' },
+  { value: 'MIRAGE', label: 'Mirage', imageUrl: '/assets/maps/mirage.webp' },
+  { value: 'NUKE', label: 'Nuke', imageUrl: '/assets/maps/nuke.webp' },
+  { value: 'OFFICE', label: 'Office', imageUrl: '/assets/maps/office.webp' },
+  { value: 'OVERPASS', label: 'Overpass', imageUrl: '/assets/maps/overpass.webp' },
+  { value: 'STRONGHOLD', label: 'Stronghold', imageUrl: '/assets/maps/stronghold.webp' },
+  { value: 'TRAIN', label: 'Train', imageUrl: '/assets/maps/train.webp' },
+  { value: 'VERTIGO', label: 'Vertigo', imageUrl: '/assets/maps/vertigo.webp' },
+  { value: 'WARDEN', label: 'Warden', imageUrl: '/assets/maps/warden.webp' },
 ];
+

@@ -4,6 +4,7 @@ import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfileFavoriteMap;
 import com.hokyozu.kyofuse.profiles.enums.Cs2Map;
 import com.hokyozu.kyofuse.profiles.mapper.FavoriteMapsValidator;
+import com.hokyozu.kyofuse.profiles.mapper.GamerProfileMapper;
 import com.hokyozu.kyofuse.profiles.repository.GamerProfileFavoriteMapRepository;
 import com.hokyozu.kyofuse.profiles.repository.GamerProfileRepository;
 import jakarta.validation.constraints.Size;
@@ -38,11 +39,7 @@ public class UpdateFavoriteMapsService {
 
         List<GamerProfileFavoriteMap> maps = favoriteMaps.stream()
                 .distinct()
-                .map(map -> GamerProfileFavoriteMap.builder()
-                        .profile(profile)
-                        .mapName(map)
-                        .createdAt(Instant.now())
-                        .build())
+                .map(map -> GamerProfileMapper.toFavoriteMapEntity(profile, map))
                 .toList();
 
         gamerProfileFavoriteMapRepository.saveAll(maps);

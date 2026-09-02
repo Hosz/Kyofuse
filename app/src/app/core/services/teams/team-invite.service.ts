@@ -18,8 +18,8 @@ export class TeamInviteService {
   private url = `${this.api}/api/team-invite`;
   private http = inject(HttpClient);
 
-  public inviteUser(teamId: string, receiverId: string, request: TeamInviteRequest) {
-    return this.http.post<TeamInviteResponse>(`${this.url}/${teamId}/invite/${receiverId}`, request);
+  public inviteUser(teamId: string, receiverUsername: string, request: TeamInviteRequest) {
+    return this.http.post<TeamInviteResponse>(`${this.url}/${teamId}/invite/${receiverUsername}`, request);
   }
 
   public listInvites(teamId: string, status?: TeamInviteStatus) {

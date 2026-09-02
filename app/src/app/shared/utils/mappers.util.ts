@@ -3,9 +3,17 @@ import { postResponse } from '../../models/posts/posts-response.model';
 import { CommentResponse } from '../../models/comments/comments.model';
 import { ChatMessage, ChatMessageGroup, Conversation, MessageRelationship } from '../models/chat.model';
 import { ConversationResponse, MessageResponse } from '../../models/chat/chat.model';
-import { FALLBACK_AVATAR_URL, toTimeAgo } from './format.util';
+import {
+  FALLBACK_AVATAR_URL,
+  formatMessageDayDivider,
+  getMessageDayKey,
+  toExactTime,
+  toFullDateTimeTooltip,
+  toTimeAgo,
+} from './format.util';
 
 export function toPost(post: postResponse): Post {
+  const firstMedia = post.media && post.media.length > 0 ? post.media[0] : undefined;
   return {
     id: post.id,
     author: {
@@ -15,7 +23,10 @@ export function toPost(post: postResponse): Post {
       avatarUrl: post.authorAvatarUrl || FALLBACK_AVATAR_URL,
     },
     timeAgo: toTimeAgo(post.createdAt),
+    createdAt: post.createdAt,
     content: post.content,
+    media: firstMedia ? { imageUrl: firstMedia.url } : undefined,
+    mediaList: post.media || [],
     stats: {
       comments: post.commentCount,
       reposts: 0,
@@ -94,7 +105,10 @@ export function toChatMessage(message: MessageResponse, myUserId: string): ChatM
     id: message.id,
     author: message.senderId === myUserId ? 'me' : 'them',
     content: message.content,
+    media: message.media || [],
     timestamp: toTimeAgo(message.createdAt),
+    exactTime: toExactTime(message.createdAt),
+    tooltipTime: toFullDateTimeTooltip(message.createdAt),
     createdAt: message.createdAt,
     senderUsername: message.senderUsername,
     senderNickname: message.senderNickname ?? undefined,
@@ -107,13 +121,18 @@ const MESSAGE_GROUP_WINDOW_MS = 5 * 60 * 1000;
 
 export function toChatMessageGroups(messages: ChatMessage[]): ChatMessageGroup[] {
   const groups: ChatMessageGroup[] = [];
+  let lastDayKey = '';
 
   for (const message of messages) {
     const current = groups.at(-1);
     const previous = current?.messages.at(-1);
+    const messageDayKey = getMessageDayKey(message.createdAt);
+    const isNewDay = messageDayKey !== lastDayKey;
+
     const sameAuthor =
       current?.author === message.author && current?.senderUsername === message.senderUsername;
     const withinWindow =
+      !isNewDay &&
       !!previous &&
       new Date(message.createdAt).getTime() - new Date(previous.createdAt).getTime() <= MESSAGE_GROUP_WINDOW_MS;
 
@@ -121,16 +140,24 @@ export function toChatMessageGroups(messages: ChatMessage[]): ChatMessageGroup[]
       current.messages.push(message);
       // O bloco mostra o horário da mensagem mais recente dele.
       current.timestamp = message.timestamp;
+      current.timeFormatted = message.exactTime;
       continue;
+    }
+
+    const dayDivider = isNewDay ? formatMessageDayDivider(message.createdAt) : undefined;
+    if (isNewDay) {
+      lastDayKey = messageDayKey;
     }
 
     groups.push({
       key: message.id,
+      dayDivider,
       author: message.author,
       senderUsername: message.senderUsername,
       senderNickname: message.senderNickname,
       senderAvatarUrl: message.senderAvatarUrl,
       messages: [message],
+      timeFormatted: message.exactTime,
       timestamp: message.timestamp,
     });
   }

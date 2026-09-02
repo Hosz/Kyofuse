@@ -5,5 +5,11 @@
       (authorBlocked)="authorBlocked.emit($event)"
       (deleted)="postDeleted.emit($event)"
     />
+  } @empty {
+    <div class="flex w-full flex-col items-center justify-center gap-3 px-6 py-16 text-center text-on-surface-variant">
+      <span class="material-symbols-outlined text-[48px] text-outline-variant">{{ emptyIcon() }}</span>
+      <p class="text-title-sm font-bold text-on-surface">{{ emptyTitle() }}</p>
+      <p class="text-body-sm text-on-surface-variant leading-relaxed">{{ emptyMessage() }}</p>
+    </div>
   }
 </div>

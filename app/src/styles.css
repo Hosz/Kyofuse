@@ -55,6 +55,10 @@
   --color-on-surface: #e5e2e1;
   --color-on-tertiary-fixed-variant: #004e59;
   --color-surface-tint: #ffb68b;
+  --color-warning: #f59e0b;
+  --color-warning-container: #78350f;
+  --color-on-warning: #000000;
+  --color-on-warning-container: #fef3c7;
 
   /* ---------- Raio de borda ---------- */
   --radius: 0.125rem;

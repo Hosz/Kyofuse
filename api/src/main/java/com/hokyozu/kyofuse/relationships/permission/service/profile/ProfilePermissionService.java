@@ -1,8 +1,9 @@
 package com.hokyozu.kyofuse.relationships.permission.service.profile;
 
-import com.hokyozu.kyofuse.relationships.block.repository.UserBlockRepository;
+import com.hokyozu.kyofuse.relationships.follow.enums.FollowStatus;
 import com.hokyozu.kyofuse.relationships.follow.repository.UserFollowRepository;
 import com.hokyozu.kyofuse.relationships.friendship.repository.UserFriendshipRepository;
+import com.hokyozu.kyofuse.relationships.privacy.entity.UserPrivacySettings;
 import com.hokyozu.kyofuse.relationships.privacy.enums.ProfileVisibility;
 import com.hokyozu.kyofuse.relationships.privacy.repository.UserPrivacySettingsRepository;
 import com.hokyozu.kyofuse.relationships.shared.validator.BlockValidator;
@@ -20,95 +21,73 @@ public class ProfilePermissionService {
     private final UserFollowRepository userFollowRepository;
     private final BlockValidator blockValidator;
 
-    /**
-     * Perfil privado continua visível como identidade — avatar, banner, apelido e bio.
-     * O que a privacidade protege é o conteúdo e as conexões (posts, comentários,
-     * seguidores, seguindo e amigos), validados pelos métodos abaixo. Só bloqueio
-     * impede ver o perfil em si, e PRIVATE significa apenas que novos seguidores
-     * precisam de aprovação (doc.md 4.5).
-     */
     public void validateViewProfile(User viewer, User owner) {
         blockValidator.validate(viewer, owner);
     }
 
     public void validateViewPosts(User viewer, User owner) {
-
         try {
             validatePrivateProfileAccess(viewer, owner);
         } catch (ForbiddenException e) {
             throw new ForbiddenException("User does not have permission to view this user's posts.");
         }
-
     }
 
     public void validateViewFollowers(User viewer, User owner) {
-
         try {
             validatePrivateProfileAccess(viewer, owner);
-
-            if (userPrivacySettingsRepository.findByUser(owner).getFollowersVisibility().equals(ProfileVisibility.PUBLIC)) {
-                return;
-            }
-
         } catch (ForbiddenException e) {
             throw new ForbiddenException("User does not have permission to view this user's followers.");
         }
-
-     }
+    }
 
     public void validateViewFollowing(User viewer, User owner) {
-
-        validatePrivateProfileAccess(viewer, owner);
-
-        if (userPrivacySettingsRepository.findByUser(owner).getFollowingVisibility().equals(ProfileVisibility.PUBLIC)) {
-            return;
+        try {
+            validatePrivateProfileAccess(viewer, owner);
+        } catch (ForbiddenException e) {
+            throw new ForbiddenException("User does not have permission to view this user's following.");
         }
-
-        throw new ForbiddenException("User does not have permission to view this user's following.");
     }
 
     public void validateViewFriends(User viewer, User owner) {
-
         try {
             validatePrivateProfileAccess(viewer, owner);
-
-            if (userPrivacySettingsRepository.findByUser(owner).getFriendsVisibility().equals(ProfileVisibility.PUBLIC)) {
-                return;
-            }
-
         } catch (ForbiddenException e) {
             throw new ForbiddenException("User does not have permission to view this user's friends.");
         }
     }
 
     private boolean isFollower(User viewer, User owner) {
-        return userFollowRepository.existsByFollowerAndFollowed(viewer, owner);
+        return userFollowRepository.existsByFollowerAndFollowedAndStatus(viewer, owner, FollowStatus.ACTIVE);
     }
 
     private boolean areFriends(User viewer, User owner) {
-        return userFriendshipRepository.existsByUserOneAndUserTwo(viewer, owner);
-    }
-
-    private boolean isPrivate(User owner) {
-        return userPrivacySettingsRepository.findByUser(owner).getProfileVisibility().equals(ProfileVisibility.PRIVATE);
+        return userFriendshipRepository.existsByUserOneAndUserTwo(viewer, owner) ||
+                userFriendshipRepository.existsByUserOneAndUserTwo(owner, viewer);
     }
 
     private void validatePrivateProfileAccess(User viewer, User owner) {
-
         blockValidator.validate(viewer, owner);
 
-        if (!isPrivate(owner)) {
+        if (viewer.getId().equals(owner.getId())) {
             return;
         }
 
-        if (areFriends(viewer, owner)) {
-            return;
-        }
+        UserPrivacySettings settings = userPrivacySettingsRepository.findByUser(owner);
+        ProfileVisibility visibility = settings != null ? settings.getProfileVisibility() : ProfileVisibility.PUBLIC;
 
-        if (isFollower(viewer, owner)) {
-            return;
+        switch (visibility) {
+            case PUBLIC -> {}
+            case FOLLOWERS, PRIVATE -> {
+                if (!isFollower(viewer, owner) && !areFriends(viewer, owner)) {
+                    throw new ForbiddenException("User does not have permission to view this profile.");
+                }
+            }
+            case FRIENDS -> {
+                if (!areFriends(viewer, owner)) {
+                    throw new ForbiddenException("User does not have permission to view this profile.");
+                }
+            }
         }
-
-        throw new ForbiddenException("User does not have permission to view this profile.");
     }
 }

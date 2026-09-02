@@ -13,7 +13,11 @@ import com.hokyozu.kyofuse.communities.repository.CommunityMemberRepository;
 import com.hokyozu.kyofuse.communities.repository.CommunityRepository;
 import com.hokyozu.kyofuse.communities.validator.CommunityCreationValidator;
 import com.hokyozu.kyofuse.communities.validator.CommunityEditValidator;
+import com.hokyozu.kyofuse.shared.exception.ForbiddenException;
 import com.hokyozu.kyofuse.shared.exception.NotFoundException;
+import com.hokyozu.kyofuse.storage.service.ImageProcessingService;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
 import com.hokyozu.kyofuse.teams.entity.Team;
 import com.hokyozu.kyofuse.teams.repository.TeamRepository;
 import com.hokyozu.kyofuse.teams.service.TeamChecker;
@@ -40,11 +44,49 @@ public class CommunityService {
     private final CommunityEditValidator communityEditValidator;
 
     private final ConversationService conversationService;
+    private final ImageProcessingService imageProcessingService;
 
     private final CommunityRepository communityRepository;
     private final CommunityMemberRepository communityMemberRepository;
     private final TeamRepository teamRepository;
     private final TeamChecker teamChecker;
+
+    @Transactional
+    public CommunityResponse uploadAvatar(UUID userId, UUID communityId, MultipartFile file) throws IOException {
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
+        Community community = findCommunityById(communityId);
+        if (!community.getOwner().getId().equals(userId)) {
+            throw new ForbiddenException("Only the owner can update the community avatar");
+        }
+        String avatarUrl = imageProcessingService.processAndUploadAvatar(communityId, "communities", file);
+        community.setAvatarUrl(avatarUrl);
+        communityRepository.save(community);
+        return CommunityMapper.toResponse(community);
+    }
+
+    @Transactional
+    public CommunityResponse uploadBanner(UUID userId, UUID communityId, MultipartFile file) throws IOException {
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
+        Community community = findCommunityById(communityId);
+        if (!community.getOwner().getId().equals(userId)) {
+            throw new ForbiddenException("Only the owner can update the community banner");
+        }
+        String bannerUrl = imageProcessingService.processAndUploadBanner(communityId, "communities", file);
+        community.setBannerUrl(bannerUrl);
+        communityRepository.save(community);
+        return CommunityMapper.toResponse(community);
+    }
+
+    private Community findCommunityById(UUID communityId) {
+        Community community = communityRepository.findById(communityId)
+                .orElseThrow(() -> new NotFoundException("Community not found"));
+        if (community.getStatus() == CommunityStatus.ARCHIVED) {
+            throw new NotFoundException("Community not found");
+        }
+        return community;
+    }
 
     @Transactional
     public CommunityResponse createCommunity(@Valid CommunityRequest request, UUID userId) {
@@ -121,9 +163,15 @@ public class CommunityService {
     }
 
     @Transactional(readOnly = true)
-    public CommunityResponse detailCommunity(UUID communityId) {
-        Community community = communityRepository.findById(communityId)
-                .orElseThrow(() -> new NotFoundException("Community not found"));
+    public CommunityResponse detailCommunity(String identifier) {
+        Community community;
+        try {
+            community = communityRepository.findById(java.util.UUID.fromString(identifier))
+                    .orElseThrow(() -> new NotFoundException("Community not found"));
+        } catch (IllegalArgumentException e) {
+            community = communityRepository.findBySlug(identifier)
+                    .orElseThrow(() -> new NotFoundException("Community not found"));
+        }
 
         if (community.getStatus() == CommunityStatus.ARCHIVED) {
             throw new NotFoundException("Community not found");

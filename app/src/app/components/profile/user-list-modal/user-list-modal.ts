@@ -50,9 +50,17 @@ export class UserListModalComponent {
 
   constructor() {
     effect(() => {
-      if (this.open() && !this.loaded) {
-        this.loaded = true;
-        this.fetchUsers(0);
+      if (this.open()) {
+        if (!this.loaded) {
+          this.loaded = true;
+          this.fetchUsers(0);
+        }
+      } else {
+        this.loaded = false;
+        this.users.set([]);
+        this.page.set(0);
+        this.lastPage.set(true);
+        this.restricted.set(false);
       }
     });
   }
@@ -73,12 +81,13 @@ export class UserListModalComponent {
   }
 
   private fetchUsers(page: number): void {
-    const otherUserId = this.profileUserId();
+    const isOwner = this.manageable();
+    const otherUserId = isOwner ? null : this.profileUserId();
     this.loadingMore.set(true);
 
     switch (this.type()) {
       case 'followers':
-        (otherUserId ? this.followService.showFollowers(otherUserId, page) : this.followService.showMyFollowers(page)).subscribe({
+        (!otherUserId ? this.followService.showMyFollowers(page) : this.followService.showFollowers(otherUserId, page)).subscribe({
           next: (response) => this.appendEntries(page, this.toFollowEntries(response, 'followers'), response),
           error: (error) => {
             if (error?.status === 403) {
@@ -91,7 +100,7 @@ export class UserListModalComponent {
         });
         break;
       case 'following':
-        (otherUserId ? this.followService.showFollowing(otherUserId, page) : this.followService.showMyFollowing(page)).subscribe({
+        (!otherUserId ? this.followService.showMyFollowing(page) : this.followService.showFollowing(otherUserId, page)).subscribe({
           next: (response) => this.appendEntries(page, this.toFollowEntries(response, 'following'), response),
           error: (error) => {
             if (error?.status === 403) {
@@ -104,7 +113,7 @@ export class UserListModalComponent {
         });
         break;
       case 'friends':
-        (otherUserId ? this.friendshipService.showUserFriends(otherUserId, page) : this.friendshipService.showMyFriends(page)).subscribe({
+        (!otherUserId ? this.friendshipService.showMyFriends(page) : this.friendshipService.showUserFriends(otherUserId, page)).subscribe({
           next: (response) => this.appendEntries(page, this.toFriendEntries(response), response),
           error: (error) => {
             if (error?.status === 403) {

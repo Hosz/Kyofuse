@@ -1,83 +1,78 @@
-<section class="flex flex-col gap-lg rounded-xl border border-outline-variant bg-surface-container-low p-lg">
-  <div class="flex items-center justify-between border-b border-outline-variant pb-3">
-    <div class="flex items-center gap-2">
-      <span class="material-symbols-outlined text-primary">shield_person</span>
-      <h2 class="text-title-md font-bold text-on-surface">Permissões de Interação</h2>
+<section class="flex flex-col gap-6 rounded-2xl border border-outline-variant bg-surface-container-low p-6 sm:p-8 shadow-sm">
+  <div class="flex items-center justify-between border-b border-outline-variant pb-4">
+    <div class="flex items-center gap-3">
+      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <span class="material-symbols-outlined text-[24px]">shield_person</span>
+      </div>
+      <div class="flex flex-col">
+        <h2 class="text-title-lg font-bold text-on-surface">Permissões de Interação</h2>
+        <span class="text-body-sm text-on-surface-variant">Configure quem tem permissão para enviar mensagens, convites e pedidos a você.</span>
+      </div>
     </div>
-    <span class="rounded-md border border-outline-variant px-2 py-1 text-label-sm text-on-surface-variant">Módulo 04</span>
+    <span class="rounded-full border border-outline-variant bg-surface-container px-3 py-1 text-label-sm font-semibold text-on-surface-variant">Privacidade</span>
   </div>
 
-  <div class="grid grid-cols-1 gap-lg sm:grid-cols-2">
-    <label class="flex flex-col gap-1.5">
-      <span class="text-label-sm font-semibold text-on-surface-variant">Quem pode te enviar mensagem</span>
+  <div class="flex flex-col divide-y divide-outline-variant">
+    <div class="flex flex-col gap-4 py-5 first:pt-0 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex flex-col flex-1 min-w-0 pr-4">
+        <span class="text-body-md font-semibold text-on-surface">Mensagens diretas</span>
+        <span class="text-body-sm text-on-surface-variant leading-relaxed">Define quem pode iniciar conversas privadas com você no chat</span>
+      </div>
       <select
         [value]="store.messagePermission()"
         (change)="store.messagePermission.set($any($event.target).value)"
-        class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+        class="w-full shrink-0 rounded-xl border border-outline-variant bg-surface-container px-4 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary sm:w-64"
       >
         @for (option of messagePermissionOptions; track option.value) {
           <option [value]="option.value" [selected]="option.value === store.messagePermission()">{{ option.label }}</option>
         }
       </select>
-    </label>
-    <label class="flex flex-col gap-1.5">
-      <span class="text-label-sm font-semibold text-on-surface-variant">Quem pode te pedir amizade</span>
+    </div>
+
+    <div class="flex flex-col gap-4 py-5 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex flex-col flex-1 min-w-0 pr-4">
+        <span class="text-body-md font-semibold text-on-surface">Pedidos de amizade</span>
+        <span class="text-body-sm text-on-surface-variant leading-relaxed">Define quem tem permissão para te enviar solicitações de amizade</span>
+      </div>
       <select
         [value]="store.friendRequestPermission()"
         (change)="store.friendRequestPermission.set($any($event.target).value)"
-        class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+        class="w-full shrink-0 rounded-xl border border-outline-variant bg-surface-container px-4 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary sm:w-64"
       >
         @for (option of friendRequestPermissionOptions; track option.value) {
           <option [value]="option.value" [selected]="option.value === store.friendRequestPermission()">{{ option.label }}</option>
         }
       </select>
-    </label>
-    <label class="flex flex-col gap-1.5">
-      <span class="text-label-sm font-semibold text-on-surface-variant">Quem pode te seguir</span>
-      <select
-        [value]="store.followPermission()"
-        (change)="store.followPermission.set($any($event.target).value)"
-        class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
-      >
-        @for (option of followPermissionOptions; track option.value) {
-          <option [value]="option.value" [selected]="option.value === store.followPermission()">{{ option.label }}</option>
-        }
-      </select>
-    </label>
-    <label class="flex flex-col gap-1.5">
-      <span class="text-label-sm font-semibold text-on-surface-variant">Quem pode te convidar pra time</span>
+    </div>
+
+    <div class="flex flex-col gap-4 py-5 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex flex-col flex-1 min-w-0 pr-4">
+        <span class="text-body-md font-semibold text-on-surface">Convites de times</span>
+        <span class="text-body-sm text-on-surface-variant leading-relaxed">Define quem pode te convidar para integrar novos times</span>
+      </div>
       <select
         [value]="store.teamInvitePermission()"
         (change)="store.teamInvitePermission.set($any($event.target).value)"
-        class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+        class="w-full shrink-0 rounded-xl border border-outline-variant bg-surface-container px-4 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary sm:w-64"
       >
         @for (option of teamInvitePermissionOptions; track option.value) {
           <option [value]="option.value" [selected]="option.value === store.teamInvitePermission()">{{ option.label }}</option>
         }
       </select>
-    </label>
-    <label class="flex flex-col gap-1.5">
-      <span class="text-label-sm font-semibold text-on-surface-variant">Quem pode te convidar pra duo</span>
-      <select
-        [value]="store.duoInvitePermission()"
-        (change)="store.duoInvitePermission.set($any($event.target).value)"
-        class="rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
-      >
-        @for (option of duoInvitePermissionOptions; track option.value) {
-          <option [value]="option.value" [selected]="option.value === store.duoInvitePermission()">{{ option.label }}</option>
-        }
-      </select>
-    </label>
+    </div>
   </div>
 
   @if (store.error()) {
-    <p class="text-label-sm text-error">{{ store.error() }}</p>
+    <div class="rounded-xl border border-error/20 bg-error/10 p-3.5 text-body-sm text-error flex items-start gap-2">
+      <span class="material-symbols-outlined text-[18px] shrink-0">error</span>
+      <span>{{ store.error() }}</span>
+    </div>
   }
 
-  <div class="flex items-center gap-3 border-t border-outline-variant pt-lg">
+  <div class="flex items-center gap-3 border-t border-outline-variant pt-5">
     <a
       routerLink="/perfil"
-      class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high"
+      class="cursor-pointer rounded-full border border-outline-variant px-5 py-2.5 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high"
     >
       Voltar
     </a>
@@ -85,14 +80,14 @@
       type="button"
       (click)="save()"
       [disabled]="store.saving()"
-      class="cursor-pointer rounded-full bg-secondary-fixed px-4 py-2 text-label-md font-bold text-on-secondary transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+      class="cursor-pointer rounded-full bg-primary-container px-6 py-2.5 text-label-md font-bold text-on-primary-container transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
     >
-      {{ store.saving() ? 'Salvando...' : 'Salvar' }}
+      {{ store.saving() ? 'Salvando...' : 'Salvar Alterações' }}
     </button>
     @if (saved()) {
       <span class="flex items-center gap-1 text-label-sm font-semibold text-tertiary">
-        <span class="material-symbols-outlined text-[16px]">check_circle</span>
-        Salvo
+        <span class="material-symbols-outlined text-[18px]">check_circle</span>
+        Configurações salvas!
       </span>
     }
   </div>

@@ -1,5 +1,7 @@
 package com.hokyozu.kyofuse.users.entity;
 
+import com.hokyozu.kyofuse.infrastructure.security.crypto.EncryptedEmailConverter;
+import com.hokyozu.kyofuse.infrastructure.security.crypto.EncryptedTotpSecretConverter;
 import com.hokyozu.kyofuse.users.enums.UserRole;
 import com.hokyozu.kyofuse.users.enums.UserStatus;
 import jakarta.persistence.*;
@@ -28,8 +30,17 @@ public class User {
     @Column(name = "last_name", length = 120, nullable = false)
     private String lastName;
 
-    @Column(name = "email", length = 160, nullable = false)
+    @Convert(converter = EncryptedEmailConverter.class)
+    @Column(name = "email", length = 500, nullable = false)
     private String email;
+
+    /**
+     * HMAC-SHA256 do email normalizado — usado pra busca/unicidade, já que a coluna
+     * email guarda um valor cifrado (não comparável por igualdade). Sempre que o email
+     * mudar, esse campo precisa ser recalculado junto (EmailCipherService.blindIndex).
+     */
+    @Column(name = "email_index", length = 64)
+    private String emailIndex;
 
     @Column(name = "username", length = 40, nullable = false)
     private String username;
@@ -60,4 +71,32 @@ public class User {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    @Convert(converter = EncryptedTotpSecretConverter.class)
+    @Column(name = "totp_secret", length = 500)
+    private String totpSecret;
+
+    @Column(name = "totp_enabled", nullable = false)
+    @Builder.Default
+    private boolean totpEnabled = false;
+
+    @Column(name = "totp_confirmed_at")
+    private Instant totpConfirmedAt;
+
+    @Column(name = "email_verified", nullable = false)
+    @Builder.Default
+    private boolean emailVerified = false;
+
+    @Column(name = "email_verified_at")
+    private Instant emailVerifiedAt;
+
+    @Column(name = "steam_id", length = 30)
+    private String steamId;
+
+    @Column(name = "google_id", length = 255)
+    private String googleId;
+
+    @Column(name = "has_custom_password", nullable = false)
+    @Builder.Default
+    private boolean hasCustomPassword = true;
 }

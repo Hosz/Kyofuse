@@ -29,6 +29,7 @@ class JwtServiceTest {
                 .email("user@example.com")
                 .username("player")
                 .role(UserRole.USER)
+                .totpEnabled(true)
                 .build();
 
         when(jwtEncoder.encode(any(JwtEncoderParameters.class))).thenAnswer(invocation -> {
@@ -40,6 +41,7 @@ class JwtServiceTest {
             assertThat(parameters.getClaims().<String>getClaim("email")).isEqualTo("user@example.com");
             assertThat(parameters.getClaims().<String>getClaim("username")).isEqualTo("player");
             assertThat(parameters.getClaims().<String>getClaim("role")).isEqualTo("USER");
+            assertThat(parameters.getClaims().<Boolean>getClaim("totpEnabled")).isTrue();
             assertThat(Duration.between(
                     parameters.getClaims().getIssuedAt(),
                     parameters.getClaims().getExpiresAt()

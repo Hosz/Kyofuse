@@ -1,8 +1,7 @@
-import { Component, computed, output, signal } from '@angular/core';
+import { Component, computed, input, output, signal } from '@angular/core';
 import { AuthFieldComponent } from '../auth-field/auth-field';
 import { PasswordStrengthMeterComponent } from '../password-strength-meter/password-strength-meter';
 import { RobotCheckComponent } from '../robot-check/robot-check';
-import { AuthComponent } from "../../../pages/auth/auth";
 import { registerRequest } from '../../../models/auth/register-form.model';
 
 const MIN_AGE = 18;
@@ -14,6 +13,7 @@ const MIN_AGE = 18;
   styleUrl: './register-form.css',
 })
 export class RegisterFormComponent {
+  loading = input(false);
   submitRegister = output<registerRequest>();
 
   readonly today = new Date().toISOString().split('T')[0];

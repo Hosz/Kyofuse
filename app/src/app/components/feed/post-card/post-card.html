@@ -4,7 +4,7 @@
 >
   <div class="flex items-start gap-3">
     <a
-      [routerLink]="['/perfil', post().author.id]"
+      [routerLink]="['/perfil', post().author.handle]"
       (click)="$event.stopPropagation()"
       class="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
     >
@@ -19,7 +19,7 @@
       <div class="flex items-center justify-between gap-3">
         <div class="flex flex-wrap items-center gap-2 text-body-md">
           <a
-            [routerLink]="['/perfil', post().author.id]"
+            [routerLink]="['/perfil', post().author.handle]"
             (click)="$event.stopPropagation()"
             class="rounded font-bold text-on-surface hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
             >{{ post().author.name }}</a
@@ -53,30 +53,53 @@
         </div>
       </div>
 
-      <p class="text-body-md text-on-surface">{{ post().content }}</p>
+      @if (post().content) {
+        <app-post-content [content]="post().content"></app-post-content>
+      }
 
-      @if (post().media; as media) {
-        <div class="relative overflow-hidden rounded-xl">
+      <!-- Grid de Mídias / Imagens -->
+      @if (post().mediaList && post().mediaList!.length > 0) {
+        <div
+          class="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-low"
+          [class.grid]="post().mediaList!.length > 1"
+          [class.grid-cols-2]="post().mediaList!.length >= 2"
+          [class.gap-1]="post().mediaList!.length > 1"
+        >
+          @for (item of post().mediaList!; track item.id; let i = $index) {
+            <div
+              class="relative cursor-zoom-in overflow-hidden bg-surface-container"
+              [class.col-span-2]="post().mediaList!.length === 3 && i === 0"
+              [class.aspect-video]="post().mediaList!.length === 1"
+              [class.aspect-square]="post().mediaList!.length > 1"
+              (click)="openImage(item.url, $event)"
+            >
+              <img
+                [src]="item.url"
+                alt="Mídia da publicação"
+                class="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+                loading="lazy"
+              />
+            </div>
+          }
+        </div>
+      } @else if (post().media; as media) {
+        <div
+          class="relative cursor-zoom-in overflow-hidden rounded-xl border border-outline-variant bg-surface-container"
+          (click)="openImage(media.imageUrl, $event)"
+        >
           @if (media.tag) {
-            <span class="absolute left-3 top-3 rounded-md bg-surface-dim/80 px-2 py-1 text-label-sm font-semibold text-on-surface">
+            <span class="absolute left-3 top-3 z-10 rounded-md bg-surface-dim/80 px-2 py-1 text-label-sm font-semibold text-on-surface">
               {{ media.tag }}
             </span>
           }
 
-          <img [src]="media.imageUrl" alt="Mídia da publicação" class="h-auto w-full object-cover" />
+          <img [src]="media.imageUrl" alt="Mídia da publicação" class="h-auto w-full object-cover transition-transform duration-300 hover:scale-105" />
+        </div>
+      }
 
-          <div class="absolute inset-x-0 bottom-0 flex items-center justify-between bg-surface-dim/70 px-3 py-2">
-            <div class="flex items-center gap-2">
-              <span class="flex h-5 w-5 items-center justify-center rounded bg-primary-container text-[11px] font-bold text-on-primary-container">
-                K
-              </span>
-              <span class="text-label-sm text-on-surface">Kyofuse - Feed Principal</span>
-            </div>
-            <div class="flex items-center gap-1 text-on-surface">
-              <span class="material-symbols-outlined text-[18px]">ios_share</span>
-              <span class="material-symbols-outlined text-[18px]">expand_more</span>
-            </div>
-          </div>
+      @if (isDetail() && formattedDateTime()) {
+        <div class="border-t border-outline-variant/40 pt-2 text-label-md text-on-surface-variant">
+          <span>{{ formattedDateTime() }}</span>
         </div>
       }
 
@@ -92,7 +115,13 @@
           <span class="material-symbols-outlined text-[20px]">chat_bubble</span>
           <span class="text-label-md">{{ post().stats.comments }}</span>
         </button>
-        <button type="button" (click)="$event.stopPropagation()" class="flex cursor-pointer items-center gap-2 rounded-full transition-colors hover:text-primary active:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface" aria-label="Repostar">
+        <button
+          type="button"
+          (click)="onRepost($event)"
+          class="flex cursor-pointer items-center gap-2 rounded-full transition-colors hover:text-primary active:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+          aria-label="Repostar"
+          title="Repostar (Em breve)"
+        >
           <span class="material-symbols-outlined text-[20px]">repeat</span>
           <span class="text-label-md">{{ post().stats.reposts }}</span>
         </button>
@@ -102,7 +131,7 @@
           [likeCount]="post().stats.likes"
           [reactionCount]="post().stats.reactions"
         />
-        <app-share-button [path]="'/post/' + post().id" (click)="$event.stopPropagation()" />
+        <app-share-button [path]="'/post/' + post().id" />
       </div>
     </div>
   </div>
@@ -111,9 +140,14 @@
 <app-confirm-dialog
   [open]="confirmDeleteOpen()"
   title="Apagar publicação"
-  message="A publicação sai do feed e do seu perfil. Não dá para desfazer."
+  message="Essa publicação será removida do feed. Essa ação não pode ser desfeita."
   confirmLabel="Apagar"
   [pending]="deleting()"
   (confirmed)="confirmDelete()"
   (cancelled)="cancelDelete()"
+/>
+
+<app-image-modal
+  [imageUrl]="selectedImageUrl()"
+  (close)="closeImage()"
 />

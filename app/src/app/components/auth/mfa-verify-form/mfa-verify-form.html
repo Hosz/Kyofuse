@@ -1,0 +1,47 @@
+<form class="flex flex-col gap-lg" (submit)="$event.preventDefault(); onSubmit()" novalidate>
+  <div class="flex flex-col gap-1">
+    <h2 class="text-title-md font-bold text-on-surface">Verificação em duas etapas</h2>
+    <p class="text-body-sm text-on-surface-variant">
+      Abra seu app autenticador e informe o código de 6 dígitos, ou use um dos seus códigos de backup.
+    </p>
+  </div>
+
+  <app-auth-field
+    label="Código de verificação"
+    icon="shield_lock"
+    [hasError]="showCodeError()"
+    [errorMessage]="codeError()"
+  >
+    <input
+      type="text"
+      inputmode="numeric"
+      autocomplete="one-time-code"
+      placeholder="123456 ou XXXXX-XXXXX"
+      [value]="code()"
+      (input)="onCodeChange($any($event.target).value)"
+      (blur)="codeTouched.set(true)"
+      class="w-full border-0 bg-transparent text-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-0"
+    />
+  </app-auth-field>
+
+  @if (errorMessage()) {
+    <p class="text-label-sm text-error">{{ errorMessage() }}</p>
+  }
+
+  <button
+    type="submit"
+    [disabled]="submitting()"
+    class="ignite-glow flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary-container px-6 py-3 text-label-md font-bold uppercase tracking-[0.04em] text-on-primary-container transition-all hover:brightness-110 active:scale-[0.98] active:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container disabled:cursor-not-allowed disabled:opacity-60"
+  >
+    <span class="material-symbols-outlined text-[20px]">verified_user</span>
+    {{ submitting() ? 'Verificando...' : 'Verificar' }}
+  </button>
+
+  <button
+    type="button"
+    (click)="onBack()"
+    class="cursor-pointer rounded text-label-sm text-on-surface-variant transition-colors hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"
+  >
+    Voltar para o login
+  </button>
+</form>

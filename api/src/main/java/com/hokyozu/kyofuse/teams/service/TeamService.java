@@ -6,7 +6,11 @@ import com.hokyozu.kyofuse.communities.service.CommunityService;
 import com.hokyozu.kyofuse.profiles.enums.PlayerRole;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.shared.exception.ConflictException;
+import com.hokyozu.kyofuse.shared.exception.ForbiddenException;
 import com.hokyozu.kyofuse.shared.exception.NotFoundException;
+import com.hokyozu.kyofuse.storage.service.ImageProcessingService;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
 import com.hokyozu.kyofuse.teams.dto.request.TeamFilter;
 import com.hokyozu.kyofuse.teams.dto.request.TeamRequest;
 import com.hokyozu.kyofuse.teams.dto.request.UpdateTeamRequest;
@@ -59,11 +63,40 @@ public class TeamService {
 
     private final CommunityService communityService;
     private final ConversationService conversationService;
+    private final ImageProcessingService imageProcessingService;
 
     private final TeamRepository teamRepository;
     private final TeamRequiredRoleRepository teamRequiredRoleRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final GamerProfileRepository gamerProfileRepository;
+
+    @Transactional
+    public TeamResponse uploadAvatar(UUID userId, UUID teamId, MultipartFile file) throws IOException {
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
+        Team team = teamFinder.findTeamById(teamId);
+        if (!team.getOwner().getId().equals(userId)) {
+            throw new ForbiddenException("Only the owner can update the team avatar");
+        }
+        String avatarUrl = imageProcessingService.processAndUploadAvatar(teamId, "teams", file);
+        team.setAvatarUrl(avatarUrl);
+        teamRepository.save(team);
+        return detailTeam(teamId.toString());
+    }
+
+    @Transactional
+    public TeamResponse uploadBanner(UUID userId, UUID teamId, MultipartFile file) throws IOException {
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
+        Team team = teamFinder.findTeamById(teamId);
+        if (!team.getOwner().getId().equals(userId)) {
+            throw new ForbiddenException("Only the owner can update the team banner");
+        }
+        String bannerUrl = imageProcessingService.processAndUploadBanner(teamId, "teams", file);
+        team.setBannerUrl(bannerUrl);
+        teamRepository.save(team);
+        return detailTeam(teamId.toString());
+    }
 
     @Transactional
     public TeamResponse createTeams(@Valid TeamRequest request, UUID userId) {
@@ -91,12 +124,17 @@ public class TeamService {
     }
 
     @Transactional(readOnly = true)
-    public TeamResponse detailTeam(UUID teamId) {
+    public TeamResponse detailTeam(String identifier) {
 
-        Team team = teamFinder.findTeamById(teamId);
+        Team team;
+        try {
+            team = teamFinder.findTeamById(java.util.UUID.fromString(identifier));
+        } catch (IllegalArgumentException e) {
+            team = teamFinder.findTeamBySlug(identifier);
+        }
         teamChecker.checkInactive(team);
 
-        List<TeamRequiredRole> requiredRoles = teamRequiredRoleRepository.findByTeamId(teamId);
+        List<TeamRequiredRole> requiredRoles = teamRequiredRoleRepository.findByTeamId(team.getId());
 
         return TeamMapper.toResponse(team, requiredRoles);
     }

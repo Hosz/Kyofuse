@@ -11,6 +11,7 @@ import com.hokyozu.kyofuse.chat.enums.ConversationType;
 import com.hokyozu.kyofuse.chat.enums.DirectConversationStatus;
 import com.hokyozu.kyofuse.chat.repository.ConversationMemberRepository;
 import com.hokyozu.kyofuse.chat.repository.ConversationRepository;
+import com.hokyozu.kyofuse.chat.repository.MessageMediaRepository;
 import com.hokyozu.kyofuse.chat.repository.MessageRepository;
 import com.hokyozu.kyofuse.communities.entity.Community;
 import com.hokyozu.kyofuse.communities.entity.CommunityMember;
@@ -79,6 +80,9 @@ class MessageServiceTest {
 
     @Mock
     private GamerProfileFinder gamerProfileFinder;
+
+    @Mock
+    private MessageMediaRepository messageMediaRepository;
 
     @Spy
     private UserChecker userChecker = new UserChecker();

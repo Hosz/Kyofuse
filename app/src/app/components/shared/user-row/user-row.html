@@ -1,10 +1,10 @@
 <div class="flex items-center gap-3">
-  @if (userId()) {
+  @if (handle()) {
     <a
-      [routerLink]="['/perfil', userId()]"
+      [routerLink]="['/perfil', handle()]"
       class="flex flex-1 items-center gap-3 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"
     >
-      <img [src]="avatarUrl()" [alt]="name()" class="h-11 w-11 rounded-full object-cover" />
+      <img [src]="avatarUrl() || fallbackAvatar" [alt]="name()" class="h-11 w-11 rounded-full object-cover" />
       <div class="flex flex-1 flex-col">
         <span class="text-body-sm font-semibold text-on-surface hover:underline">{{ name() }}</span>
         <span class="text-label-sm text-on-surface-variant">&#64;{{ handle() }}</span>
@@ -12,7 +12,7 @@
     </a>
   } @else {
     <div class="flex flex-1 items-center gap-3 rounded-lg">
-      <img [src]="avatarUrl()" [alt]="name()" class="h-11 w-11 rounded-full object-cover" />
+      <img [src]="avatarUrl() || fallbackAvatar" [alt]="name()" class="h-11 w-11 rounded-full object-cover" />
       <div class="flex flex-1 flex-col">
         <span class="text-body-sm font-semibold text-on-surface">{{ name() }}</span>
         <span class="text-label-sm text-on-surface-variant">&#64;{{ handle() }}</span>

@@ -54,16 +54,16 @@ class GamerProfileControllerTest {
     }
 
     @Test
-    void userProfileUsesPathProfileId() {
-        UUID profileId = UUID.randomUUID();
+    void userProfileUsesPathUsername() {
+        String username = "player";
         UUID userId = UUID.randomUUID();
         GamerProfileResponse expected = response(UUID.randomUUID());
-        when(gamerProfileService.viewUserProfile(profileId, userId)).thenReturn(expected);
+        when(gamerProfileService.viewUserProfile(username, userId)).thenReturn(expected);
 
-        GamerProfileResponse result = controller.userProfile(jwt(userId), profileId);
+        GamerProfileResponse result = controller.userProfile(jwt(userId), username);
 
         assertThat(result).isSameAs(expected);
-        verify(gamerProfileService).viewUserProfile(profileId, userId);
+        verify(gamerProfileService).viewUserProfile(username, userId);
     }
 
     private static Jwt jwt(UUID userId) {

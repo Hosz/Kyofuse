@@ -11,9 +11,9 @@ public class EmailAndUsernameAvailabilityValidator {
 
     private final UserRepository userRepository;
 
-    public void validate(String email, String username) {
+    public void validate(String emailIndex, String username) {
 
-        if (userRepository.existsByEmailIgnoreCase(email.trim())) {
+        if (userRepository.existsByEmailIndex(emailIndex)) {
             throw new ConflictException("Email já está em uso.");
         }
 

@@ -61,15 +61,18 @@ class AuthDtoTest {
     void authResponsesExposeRecordValues() {
         UUID userId = UUID.randomUUID();
 
-        AuthResponse authResponse = new AuthResponse("token", "Bearer", userId, "john@example.com", "john", "USER");
-        AuthMeResponse meResponse = new AuthMeResponse(userId, "john@example.com", "john", "USER");
+        AuthResponse authResponse = new AuthResponse(userId, "john@example.com", "john", "USER");
+        AuthMeResponse meResponse = new AuthMeResponse(userId, "john@example.com", "john", "USER", true, "COMPLETED");
 
-        assertThat(authResponse.token()).isEqualTo("token");
-        assertThat(authResponse.tokenType()).isEqualTo("Bearer");
         assertThat(authResponse.userId()).isEqualTo(userId);
+        assertThat(authResponse.email()).isEqualTo("john@example.com");
+        assertThat(authResponse.username()).isEqualTo("john");
+        assertThat(authResponse.role()).isEqualTo("USER");
         assertThat(meResponse.userId()).isEqualTo(userId);
         assertThat(meResponse.email()).isEqualTo("john@example.com");
         assertThat(meResponse.username()).isEqualTo("john");
         assertThat(meResponse.role()).isEqualTo("USER");
+        assertThat(meResponse.totpEnabled()).isTrue();
+        assertThat(meResponse.profileSetupStatus()).isEqualTo("COMPLETED");
     }
 }

@@ -51,7 +51,7 @@ class CommunityControllerTest {
     void editCommunityUsesAuthenticatedUserIdAndPathCommunityId() {
         UUID userId = UUID.randomUUID();
         UUID communityId = UUID.randomUUID();
-        UpdateCommunityRequest request = new UpdateCommunityRequest("Updated", null, null, null, null, null);
+        UpdateCommunityRequest request = new UpdateCommunityRequest("Kyofuse CS2", "kyofuse-cs2", "Community description", null, null, CommunityVisibility.PUBLIC);
         CommunityResponse expected = response();
         when(communityService.editCommunity(userId, communityId, request)).thenReturn(expected);
 
@@ -63,7 +63,7 @@ class CommunityControllerTest {
 
     @Test
     void detailCommunityUsesPathCommunityId() {
-        UUID communityId = UUID.randomUUID();
+        String communityId = "kyofuse-cs2";
         CommunityResponse expected = response();
         when(communityService.detailCommunity(communityId)).thenReturn(expected);
 
@@ -141,6 +141,7 @@ class CommunityControllerTest {
                 null,
                 UUID.randomUUID(),
                 "owner",
+                null,
                 null,
                 null,
                 null,

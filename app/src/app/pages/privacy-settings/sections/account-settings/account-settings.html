@@ -1,0 +1,320 @@
+<section class="flex flex-col gap-6 rounded-2xl border border-outline-variant bg-surface-container-low p-6 sm:p-8 shadow-sm">
+  <div class="flex items-center justify-between border-b border-outline-variant pb-4">
+    <div class="flex items-center gap-3">
+      <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <span class="material-symbols-outlined text-[24px]">manage_accounts</span>
+      </div>
+      <div class="flex flex-col">
+        <h2 class="text-title-lg font-bold text-on-surface">Dados da Conta</h2>
+        <span class="text-body-sm text-on-surface-variant">Gerencie seu nome de usuário, e-mail e vínculos de autenticação externa.</span>
+      </div>
+    </div>
+    <span class="rounded-full border border-outline-variant bg-surface-container px-3 py-1 text-label-sm font-semibold text-on-surface-variant">Conta</span>
+  </div>
+
+  @if (loading()) {
+    <app-skeleton variant="row" [count]="4" />
+  } @else if (loadError()) {
+    <p class="py-8 text-center text-body-sm text-error">{{ loadError() }}</p>
+  } @else if (account(); as acc) {
+    <div class="flex flex-col divide-y divide-outline-variant">
+      <!-- USERNAME -->
+      <div class="flex flex-col gap-3 py-5 first:pt-0">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex flex-col flex-1 min-w-0 pr-4">
+            <span class="text-body-md font-semibold text-on-surface">Nome de Usuário</span>
+            <span class="text-body-sm text-on-surface-variant leading-relaxed">Seu identificador exclusivo no Kyofuse (&#64;{{ acc.username }})</span>
+          </div>
+
+          @if (!editingUsername()) {
+            <div class="flex shrink-0 items-center gap-3">
+              <span class="font-mono text-body-md font-bold text-primary">&#64;{{ acc.username }}</span>
+              <button
+                type="button"
+                (click)="toggleEditUsername()"
+                class="cursor-pointer rounded-full border border-outline-variant px-4 py-1.5 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high"
+              >
+                Alterar
+              </button>
+            </div>
+          }
+        </div>
+
+        @if (editingUsername()) {
+          <div class="flex flex-col gap-4 rounded-2xl border border-outline-variant bg-surface-container p-5 max-w-2xl">
+            <label class="flex flex-col gap-2">
+              <span class="text-label-sm font-semibold text-on-surface">Novo nome de usuário</span>
+              <div class="relative flex items-center">
+                <span class="absolute left-3.5 text-body-md text-on-surface-variant">&#64;</span>
+                <input
+                  type="text"
+                  [(ngModel)]="newUsername"
+                  placeholder="novo_username"
+                  class="w-full rounded-xl border border-outline-variant bg-surface-container-low py-3 pl-8 pr-4 text-body-sm text-on-surface outline-none focus:border-primary"
+                />
+              </div>
+            </label>
+
+            @if (usernameError()) {
+              <p class="text-label-sm text-error">{{ usernameError() }}</p>
+            }
+
+            <div class="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                (click)="toggleEditUsername()"
+                [disabled]="savingUsername()"
+                class="cursor-pointer rounded-full border border-outline-variant px-3.5 py-1.5 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                (click)="saveUsername()"
+                [disabled]="savingUsername() || !newUsername().trim()"
+                class="cursor-pointer rounded-full bg-secondary-fixed px-4 py-1.5 text-label-sm font-bold text-on-secondary transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {{ savingUsername() ? 'Salvando...' : 'Salvar username' }}
+              </button>
+            </div>
+          </div>
+        }
+
+        @if (usernameSuccess()) {
+          <p class="flex items-center gap-1 text-label-sm font-semibold text-tertiary">
+            <span class="material-symbols-outlined text-[16px]">check_circle</span>
+            Nome de usuário atualizado com sucesso!
+          </p>
+        }
+      </div>
+
+      <!-- EMAIL -->
+      <div class="flex flex-col gap-3 py-4">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex flex-col flex-1 min-w-0 pr-4">
+            <span class="text-body-md font-semibold text-on-surface">Endereço de E-mail</span>
+            @if (acc.hasGoogle) {
+              <span class="text-body-sm text-on-surface-variant leading-relaxed">Vinculado à sua conta Google. Para alterar o e-mail, desvincule o Google.</span>
+            } @else if (acc.isSyntheticEmail) {
+              <span class="text-body-sm text-primary leading-relaxed">Conta criada via Steam. Adicione um e-mail próprio para login tradicional.</span>
+            } @else {
+              <span class="text-body-sm text-on-surface-variant leading-relaxed">E-mail associado para notificações e login</span>
+            }
+          </div>
+
+          @if (!editingEmail()) {
+            <div class="flex shrink-0 items-center gap-3">
+              <div class="flex items-center gap-1.5">
+                @if (acc.isSyntheticEmail) {
+                  <span class="rounded bg-surface-container-high px-2 py-1 text-label-sm text-on-surface-variant">Sem e-mail pessoal</span>
+                } @else {
+                  <span class="text-body-sm text-on-surface">{{ acc.email }}</span>
+                  @if (acc.emailVerified) {
+                    <span class="material-symbols-outlined text-[16px] text-tertiary" title="E-mail verificado">verified</span>
+                  } @else {
+                    <span class="rounded border border-error/40 bg-error/10 px-1.5 py-0.5 text-label-sm text-error">Não verificado</span>
+                  }
+                }
+              </div>
+
+              @if (!acc.hasGoogle) {
+                <button
+                  type="button"
+                  (click)="toggleEditEmail()"
+                  class="cursor-pointer rounded-full border border-outline-variant px-4 py-1.5 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high"
+                >
+                  {{ acc.isSyntheticEmail ? 'Adicionar e-mail' : 'Alterar' }}
+                </button>
+              }
+            </div>
+          }
+        </div>
+
+        @if (editingEmail() && !acc.hasGoogle) {
+          <div class="flex flex-col gap-4 rounded-2xl border border-outline-variant bg-surface-container p-5 max-w-2xl">
+            <label class="flex flex-col gap-2">
+              <span class="text-label-sm font-semibold text-on-surface">Novo endereço de e-mail</span>
+              <input
+                type="email"
+                [(ngModel)]="newEmail"
+                placeholder="seu@novoemail.com"
+                class="w-full rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 text-body-sm text-on-surface outline-none focus:border-primary"
+              />
+            </label>
+
+            @if (acc.hasPassword) {
+              <label class="flex flex-col gap-2">
+                <span class="text-label-sm font-semibold text-on-surface">Senha atual (para confirmação)</span>
+                <input
+                  type="password"
+                  [(ngModel)]="emailCurrentPassword"
+                  placeholder="Sua senha atual"
+                  class="w-full rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 text-body-sm text-on-surface outline-none focus:border-primary"
+                />
+              </label>
+            }
+
+            @if (emailError()) {
+              <div class="rounded-xl border border-error/20 bg-error/10 p-3 text-label-sm text-error flex items-start gap-2">
+                <span class="material-symbols-outlined text-[18px] shrink-0">error</span>
+                <span>{{ emailError() }}</span>
+              </div>
+            }
+
+            <div class="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                (click)="toggleEditEmail()"
+                [disabled]="savingEmail()"
+                class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                (click)="saveEmail()"
+                [disabled]="savingEmail() || !newEmail().trim()"
+                class="cursor-pointer rounded-full bg-primary-container px-5 py-2 text-label-sm font-bold text-on-primary-container transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {{ savingEmail() ? 'Salvando...' : (acc.isSyntheticEmail ? 'Cadastrar e-mail' : 'Salvar e-mail') }}
+              </button>
+            </div>
+          </div>
+        }
+
+        @if (emailSuccess()) {
+          <p class="flex items-center gap-1 text-label-sm font-semibold text-tertiary">
+            <span class="material-symbols-outlined text-[16px]">check_circle</span>
+            E-mail atualizado! Enviamos um link de confirmação para sua caixa de entrada.
+          </p>
+        }
+      </div>
+
+      <!-- GOOGLE ACCOUNT LINK -->
+      <div class="flex flex-col gap-3 py-4">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex flex-col flex-1 min-w-0 pr-4">
+            <span class="text-body-md font-semibold text-on-surface">Conta Google</span>
+            <span class="text-body-sm text-on-surface-variant leading-relaxed">Conexão direta para login rápido via Google OAuth</span>
+          </div>
+
+          <div class="flex shrink-0 items-center gap-3">
+            @if (acc.hasGoogle) {
+              <span class="flex items-center gap-1 rounded-md border border-tertiary/40 bg-tertiary/10 px-2.5 py-1 text-label-sm font-semibold text-tertiary">
+                <span class="material-symbols-outlined text-[16px]">check_circle</span>
+                Conectada
+              </span>
+              <button
+                type="button"
+                (click)="unlinkGoogle()"
+                [disabled]="actionLoading()"
+                class="cursor-pointer rounded-full border border-error/40 px-3 py-1.5 text-label-sm font-bold text-error transition-colors hover:bg-error/10 disabled:opacity-50"
+              >
+                Desvincular
+              </button>
+            } @else {
+              <div #googleConnectBtn></div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- STEAM ACCOUNT LINK -->
+      <div class="flex flex-col gap-3 py-4">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex flex-col flex-1 min-w-0 pr-4">
+            <span class="text-body-md font-semibold text-on-surface">Conta Steam</span>
+            <span class="text-body-sm text-on-surface-variant leading-relaxed">Vínculo de inventário e login via Steam OpenID</span>
+          </div>
+
+          <div class="flex shrink-0 items-center gap-3">
+            @if (acc.hasSteam) {
+              <span class="flex items-center gap-1 rounded-md border border-tertiary/40 bg-tertiary/10 px-2.5 py-1 text-label-sm font-semibold text-tertiary">
+                <span class="material-symbols-outlined text-[16px]">check_circle</span>
+                Conectada
+              </span>
+              <button
+                type="button"
+                (click)="unlinkSteam()"
+                [disabled]="actionLoading()"
+                class="cursor-pointer rounded-full border border-error/40 px-3 py-1.5 text-label-sm font-bold text-error transition-colors hover:bg-error/10 disabled:opacity-50"
+              >
+                Desvincular
+              </button>
+            } @else {
+              <button
+                type="button"
+                (click)="connectSteam()"
+                [disabled]="actionLoading()"
+                class="flex cursor-pointer items-center gap-2 rounded-full border border-outline-variant px-3.5 py-1.5 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:opacity-50"
+              >
+                <svg class="h-4 w-4 fill-current" viewBox="0 0 24 24">
+                  <path d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.911c0 .052.005.105.005.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.727L.436 14.819C1.942 20.06 6.702 24 12 24c6.627 0 12-5.373 12-12S18.627 0 11.979 0z" />
+                </svg>
+                Conectar Steam
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    @if (socialError()) {
+      <div class="flex items-start gap-2 rounded-lg border border-error/40 bg-error/10 p-3 text-body-sm text-error">
+        <span class="material-symbols-outlined shrink-0 text-[18px]">error</span>
+        <span>{{ socialError() }}</span>
+      </div>
+    }
+
+    @if (socialSuccess()) {
+      <div class="flex items-center gap-2 rounded-lg border border-tertiary/40 bg-tertiary/10 p-3 text-body-sm font-semibold text-tertiary">
+        <span class="material-symbols-outlined text-[18px]">check_circle</span>
+        <span>{{ socialSuccess() }}</span>
+      </div>
+    }
+
+    <!-- CARD INFORMATIVO DE REQUISITOS DE DESVINCULAÇÃO -->
+    @if (acc.hasGoogle || acc.hasSteam) {
+      <div class="flex flex-col gap-2 rounded-lg border border-outline-variant bg-surface-container/50 p-4">
+        <div class="flex items-center gap-2 text-body-md font-bold text-on-surface">
+          <span class="material-symbols-outlined text-[18px] text-primary">info</span>
+          Regras de Segurança para Desvinculação
+        </div>
+        <p class="text-body-sm text-on-surface-variant leading-relaxed">
+          Para desvincular contas de provedores externos (Google ou Steam), sua conta deve possuir:
+        </p>
+        <ul class="flex flex-col gap-1.5 pl-4 text-body-sm text-on-surface-variant list-disc">
+          <li [class.text-tertiary]="acc.hasPassword" [class.font-semibold]="acc.hasPassword">
+            Senha própria cadastrada na plataforma {{ acc.hasPassword ? '✓' : '(Pendente)' }}
+          </li>
+          <li [class.text-tertiary]="!acc.isSyntheticEmail" [class.font-semibold]="!acc.isSyntheticEmail">
+            E-mail pessoal válido cadastrado {{ !acc.isSyntheticEmail ? '✓' : '(Pendente)' }}
+          </li>
+          <li [class.text-tertiary]="acc.emailVerified" [class.font-semibold]="acc.emailVerified">
+            E-mail verificado {{ acc.emailVerified ? '✓' : '(Pendente)' }}
+          </li>
+        </ul>
+      </div>
+    }
+
+    <!-- LINK PARA GERENCIAMENTO E STATUS DA CONTA -->
+    <div class="mt-4 flex flex-col gap-4 rounded-2xl border border-outline-variant bg-surface-container/30 p-6 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex items-center gap-3.5 flex-1 min-w-0 pr-4">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-error/10 text-error">
+          <span class="material-symbols-outlined text-[22px]">dangerous</span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-body-md font-semibold text-on-surface">Gerenciamento e Status da Conta</span>
+          <span class="text-body-sm text-on-surface-variant leading-relaxed">Deseja pausar suas atividades temporariamente ou excluir sua conta? Acesse a área dedicada.</span>
+        </div>
+      </div>
+
+      <a
+        routerLink="/configuracoes/gerenciamento"
+        class="cursor-pointer whitespace-nowrap rounded-full border border-outline-variant bg-surface-container px-4 py-2 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high hover:text-error shrink-0"
+      >
+        Acessar Gerenciamento
+      </a>
+    </div>
+  }
+</section>

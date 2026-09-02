@@ -1,0 +1,334 @@
+<section class="flex flex-col gap-6 rounded-2xl border border-outline-variant bg-surface-container-low p-6 sm:p-8 shadow-sm">
+  <!-- CABEÇALHO DA SEÇÃO -->
+  <div class="flex flex-col gap-2 border-b border-outline-variant pb-5 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex items-center gap-3">
+      <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-error/10 text-error">
+        <span class="material-symbols-outlined text-[24px]">dangerous</span>
+      </div>
+      <div class="flex flex-col">
+        <h2 class="text-title-lg font-bold text-on-surface">Gerenciamento e Status da Conta</h2>
+        <span class="text-body-sm text-on-surface-variant">Controle o status de atividade, desativação temporária ou exclusão permanente do seu perfil.</span>
+      </div>
+    </div>
+    <span class="self-start sm:self-auto rounded-full border border-error/40 bg-error/10 px-3 py-1 text-label-sm font-bold text-error">
+      Zona de Perigo
+    </span>
+  </div>
+
+  @if (loading()) {
+    <app-skeleton variant="row" [count]="3" />
+  } @else if (loadError()) {
+    <p class="py-8 text-center text-body-sm text-error">{{ loadError() }}</p>
+  } @else if (account(); as acc) {
+    <!-- STATUS ATUAL -->
+    <div class="flex flex-col gap-4 rounded-xl border border-outline-variant bg-surface-container/30 p-5">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-[22px] text-tertiary">verified_user</span>
+          <div class="flex flex-col">
+            <span class="text-body-md font-semibold text-on-surface">Status da Conta: Ativa</span>
+            <span class="text-body-sm text-on-surface-variant leading-relaxed">Conectado como <strong>&#64;{{ acc.username }}</strong> ({{ acc.email }})</span>
+          </div>
+        </div>
+        <span class="rounded-md border border-tertiary/40 bg-tertiary/10 px-2.5 py-1 text-label-sm font-semibold text-tertiary">
+          Normal
+        </span>
+      </div>
+    </div>
+
+    <!-- CARDS DE AÇÃO EM GRID RESPONSIVO ESPAÇOSO -->
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <!-- CARD: DESATIVAR CONTA -->
+      <div class="flex flex-col justify-between gap-5 rounded-2xl border border-warning/30 bg-warning/5 p-6 transition-all hover:border-warning/50">
+        <div class="flex flex-col gap-3">
+          <div class="flex items-center gap-2.5 text-warning">
+            <span class="material-symbols-outlined text-[24px]">pause_circle</span>
+            <h3 class="text-title-md font-bold text-on-surface">Desativar Conta</h3>
+          </div>
+          <p class="text-body-sm text-on-surface-variant leading-relaxed">
+            Pausa o acesso à sua conta e desconecta todos os seus dispositivos.
+          </p>
+          <div class="rounded-xl border border-warning/20 bg-surface-container/60 p-4">
+            <h4 class="text-body-sm font-bold text-on-surface mb-2 flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[16px] text-warning">info</span>
+              Como funciona a desativação:
+            </h4>
+            <ul class="flex flex-col gap-2 text-body-sm text-on-surface-variant pl-4 list-disc leading-relaxed">
+              <li>Liderança de times e comunidades é transferida automaticamente para o sucessor ou administrador mais antigo.</li>
+              <li>Você é rebaixado mas <strong>não é removido</strong>, com <strong>prazo de 30 dias</strong> para reativar.</li>
+              <li>Para reativar a qualquer momento, basta tentar fazer login e inserir o <strong>código OTP de 6 dígitos</strong> enviado ao seu e-mail.</li>
+            </ul>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          (click)="openDeactivateModal()"
+          class="cursor-pointer flex items-center justify-center gap-2 rounded-full border border-warning/50 bg-warning/10 px-5 py-2.5 text-label-md font-bold text-warning transition-colors hover:bg-warning hover:text-black"
+        >
+          <span class="material-symbols-outlined text-[18px]">pause</span>
+          Desativar Minha Conta
+        </button>
+      </div>
+
+      <!-- CARD: EXCLUIR CONTA -->
+      <div class="flex flex-col justify-between gap-5 rounded-2xl border border-error/30 bg-error/5 p-6 transition-all hover:border-error/50">
+        <div class="flex flex-col gap-3">
+          <div class="flex items-center gap-2.5 text-error">
+            <span class="material-symbols-outlined text-[24px]">delete_forever</span>
+            <h3 class="text-title-md font-bold text-on-surface">Excluir Conta</h3>
+          </div>
+          <p class="text-body-sm text-on-surface-variant leading-relaxed">
+            Inicia o processo de exclusão definitiva com período de segurança de <strong>7 dias</strong>.
+          </p>
+          <div class="rounded-xl border border-error/20 bg-surface-container/60 p-4">
+            <h4 class="text-body-sm font-bold text-on-surface mb-2 flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[16px] text-error">shield</span>
+              Carência de 7 dias e Anonimização:
+            </h4>
+            <ul class="flex flex-col gap-2 text-body-sm text-on-surface-variant pl-4 list-disc leading-relaxed">
+              <li>Sua conta entra em carência por <strong>7 dias</strong> desativada.</li>
+              <li>Se mudar de ideia, faça login dentro dos 7 dias e use o código de e-mail para <strong>cancelar a exclusão</strong>.</li>
+              <li>Após 7 dias sem reativação, é aplicado o <em>soft delete</em> com anonimização permanente de dados pessoais (PII).</li>
+            </ul>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          (click)="openDeleteModal()"
+          class="cursor-pointer flex items-center justify-center gap-2 rounded-full bg-error px-5 py-2.5 text-label-md font-bold text-on-error transition-colors hover:brightness-110"
+        >
+          <span class="material-symbols-outlined text-[18px]">delete</span>
+          Excluir Conta Definitivamente
+        </button>
+      </div>
+    </div>
+  }
+</section>
+
+<!-- MODAL DE DESATIVAÇÃO -->
+@if (deactivateModalOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 sm:p-6 backdrop-blur-md overflow-y-auto">
+    <div class="relative flex w-full max-w-2xl flex-col gap-6 rounded-3xl border border-outline-variant bg-surface-container-low p-6 sm:p-10 shadow-2xl">
+      <!-- BOTÃO FECHAR -->
+      <button
+        type="button"
+        (click)="closeDeactivateModal()"
+        [disabled]="deactivating()"
+        class="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface cursor-pointer disabled:opacity-50"
+        title="Fechar modal"
+      >
+        <span class="material-symbols-outlined text-[24px]">close</span>
+      </button>
+
+      <!-- CABEÇALHO DO MODAL -->
+      <div class="flex items-start gap-4 pr-8">
+        <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-warning/10 text-warning">
+          <span class="material-symbols-outlined text-[32px]">pause_circle</span>
+        </div>
+        <div class="flex flex-col gap-1">
+          <div class="flex items-center gap-2">
+            <h3 class="text-title-lg sm:text-headline-sm font-bold text-on-surface">Pausar e Desativar Conta</h3>
+            <span class="rounded-full border border-warning/40 bg-warning/10 px-2.5 py-0.5 text-label-sm font-bold text-warning">
+              Temporário
+            </span>
+          </div>
+          <span class="text-body-sm text-on-surface-variant leading-relaxed">
+            Sua conta ficará pausada e inacessível até que você decida reativá-la através do código enviado por e-mail.
+          </span>
+        </div>
+      </div>
+
+      <!-- INFORMAÇÕES E IMPACTO DA DESATIVAÇÃO -->
+      <div class="flex flex-col gap-3 rounded-2xl border border-warning/20 bg-surface-container/50 p-5 sm:p-6 text-body-sm text-on-surface-variant leading-relaxed">
+        <span class="text-label-md font-bold text-on-surface flex items-center gap-2">
+          <span class="material-symbols-outlined text-[20px] text-warning">info</span>
+          O que acontece após a desativação:
+        </span>
+        <ul class="flex flex-col gap-2.5 pl-2 text-body-sm">
+          <li class="flex items-start gap-2.5">
+            <span class="material-symbols-outlined text-[18px] text-warning shrink-0 mt-0.5">logout</span>
+            <span>Você será <strong>desconectado imediatamente</strong> de todas as suas sessões ativas.</span>
+          </li>
+          <li class="flex items-start gap-2.5">
+            <span class="material-symbols-outlined text-[18px] text-warning shrink-0 mt-0.5">groups</span>
+            <span>A liderança de times e comunidades será <strong>transferida automaticamente</strong> para o segundo no comando ou administrador mais antigo.</span>
+          </li>
+          <li class="flex items-start gap-2.5">
+            <span class="material-symbols-outlined text-[18px] text-warning shrink-0 mt-0.5">schedule</span>
+            <span>Você continuará registrado como membro por um <strong>prazo de carência de 30 dias</strong>.</span>
+          </li>
+          <li class="flex items-start gap-2.5">
+            <span class="material-symbols-outlined text-[18px] text-warning shrink-0 mt-0.5">mark_email_read</span>
+            <span>Para reativar a qualquer momento, basta tentar fazer login e inserir o <strong>código OTP de 6 dígitos</strong> recebido no seu e-mail.</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- CAMPOS DO FORMULÁRIO -->
+      <div class="flex flex-col gap-4">
+        @if (account()?.hasPassword) {
+          <label class="flex flex-col gap-2">
+            <span class="text-label-md font-semibold text-on-surface">Confirme sua senha</span>
+            <input
+              type="password"
+              [(ngModel)]="deactivatePassword"
+              placeholder="Digite sua senha atual"
+              class="w-full rounded-2xl border border-outline-variant bg-surface-container px-4 py-3.5 text-body-md text-on-surface outline-none focus:border-warning focus:ring-1 focus:ring-warning"
+            />
+          </label>
+        }
+
+        <label class="flex flex-col gap-2">
+          <span class="text-label-md font-semibold text-on-surface">Motivo da desativação (opcional)</span>
+          <input
+            type="text"
+            [(ngModel)]="deactivateReason"
+            placeholder="Ex: Férias, pausa nos jogos, foco em estudos..."
+            class="w-full rounded-2xl border border-outline-variant bg-surface-container px-4 py-3.5 text-body-md text-on-surface outline-none focus:border-warning focus:ring-1 focus:ring-warning"
+          />
+        </label>
+      </div>
+
+      @if (deactivateError()) {
+        <div class="rounded-2xl border border-error/20 bg-error/10 p-4 text-label-sm text-error flex items-start gap-2.5">
+          <span class="material-symbols-outlined text-[20px] shrink-0">error</span>
+          <span>{{ deactivateError() }}</span>
+        </div>
+      }
+
+      <!-- AÇÕES -->
+      <div class="flex flex-col-reverse sm:flex-row items-center justify-end gap-3 pt-4 border-t border-outline-variant">
+        <button
+          type="button"
+          (click)="closeDeactivateModal()"
+          [disabled]="deactivating()"
+          class="w-full sm:w-auto cursor-pointer rounded-full border border-outline-variant bg-surface-container px-6 py-3 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:opacity-50"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          (click)="confirmDeactivate()"
+          [disabled]="deactivating() || (account()?.hasPassword && !deactivatePassword())"
+          class="w-full sm:w-auto cursor-pointer flex items-center justify-center gap-2 rounded-full bg-amber-500 hover:bg-amber-400 text-neutral-950 px-8 py-3 text-label-md font-extrabold transition-all shadow-lg shadow-amber-500/25 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-amber-500 disabled:shadow-none"
+        >
+          <span class="material-symbols-outlined text-[20px]">pause_circle</span>
+          <span>{{ deactivating() ? 'Desativando...' : 'Confirmar Desativação' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- MODAL DE EXCLUSÃO AGENDADA -->
+@if (deleteModalOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 sm:p-6 backdrop-blur-md overflow-y-auto">
+    <div class="relative flex w-full max-w-2xl flex-col gap-6 rounded-3xl border border-error/40 bg-surface-container-low p-6 sm:p-10 shadow-2xl">
+      <!-- BOTÃO FECHAR -->
+      <button
+        type="button"
+        (click)="closeDeleteModal()"
+        [disabled]="deleting()"
+        class="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface cursor-pointer disabled:opacity-50"
+        title="Fechar modal"
+      >
+        <span class="material-symbols-outlined text-[24px]">close</span>
+      </button>
+
+      <!-- CABEÇALHO DO MODAL -->
+      <div class="flex items-start gap-4 pr-8">
+        <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-error/10 text-error">
+          <span class="material-symbols-outlined text-[32px]">delete_forever</span>
+        </div>
+        <div class="flex flex-col gap-1">
+          <div class="flex items-center gap-2">
+            <h3 class="text-title-lg sm:text-headline-sm font-bold text-error">Solicitar Exclusão da Conta</h3>
+            <span class="rounded-full border border-error/40 bg-error/10 px-2.5 py-0.5 text-label-sm font-bold text-error">
+              7 Dias de Carência
+            </span>
+          </div>
+          <span class="text-body-sm text-on-surface-variant leading-relaxed">
+            Inicia o processo de exclusão programada com prazo de segurança de 7 dias para cancelamento.
+          </span>
+        </div>
+      </div>
+
+      <!-- INFORMAÇÕES E IMPACTO DA EXCLUSÃO -->
+      <div class="flex flex-col gap-3 rounded-2xl border border-error/30 bg-error/5 p-5 sm:p-6 text-body-sm text-on-surface-variant leading-relaxed">
+        <span class="text-label-md font-bold text-error flex items-center gap-2">
+          <span class="material-symbols-outlined text-[20px] text-error">shield</span>
+          Regras de exclusão e anonimização de dados:
+        </span>
+        <ul class="flex flex-col gap-2.5 pl-2 text-body-sm">
+          <li class="flex items-start gap-2.5">
+            <span class="material-symbols-outlined text-[18px] text-error shrink-0 mt-0.5">timer</span>
+            <span>A conta permanecerá desativada durante um <strong>período de carência de 7 dias</strong>.</span>
+          </li>
+          <li class="flex items-start gap-2.5">
+            <span class="material-symbols-outlined text-[18px] text-error shrink-0 mt-0.5">restore</span>
+            <span>Se mudar de ideia, você pode <strong>cancelar a exclusão e restaurar seu acesso</strong> a qualquer momento nesses 7 dias simplesmente fazendo login e confirmando o código do e-mail.</span>
+          </li>
+          <li class="flex items-start gap-2.5">
+            <span class="material-symbols-outlined text-[18px] text-error shrink-0 mt-0.5">person_off</span>
+            <span>Ao término dos 7 dias, será realizado o <strong>soft delete</strong> definitivo: seu e-mail, username e dados de perfil (PII) serão permanentemente desvinculados e anonimizados para fins de auditoria.</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- CAMPOS DO FORMULÁRIO -->
+      <div class="flex flex-col gap-4">
+        @if (account()?.hasPassword) {
+          <label class="flex flex-col gap-2">
+            <span class="text-label-md font-semibold text-on-surface">Confirme sua senha</span>
+            <input
+              type="password"
+              [(ngModel)]="deletePassword"
+              placeholder="Digite sua senha atual"
+              class="w-full rounded-2xl border border-outline-variant bg-surface-container px-4 py-3.5 text-body-md text-on-surface outline-none focus:border-error focus:ring-1 focus:ring-error"
+            />
+          </label>
+        }
+
+        <label class="flex flex-col gap-2">
+          <span class="text-label-md font-semibold text-on-surface">Motivo da solicitação de exclusão (opcional)</span>
+          <input
+            type="text"
+            [(ngModel)]="deleteReason"
+            placeholder="Ex: Não jogo mais, criei outra conta, outros..."
+            class="w-full rounded-2xl border border-outline-variant bg-surface-container px-4 py-3.5 text-body-md text-on-surface outline-none focus:border-error focus:ring-1 focus:ring-error"
+          />
+        </label>
+      </div>
+
+      @if (deleteError()) {
+        <div class="rounded-2xl border border-error/20 bg-error/10 p-4 text-label-sm text-error flex items-start gap-2.5">
+          <span class="material-symbols-outlined text-[20px] shrink-0">error</span>
+          <span>{{ deleteError() }}</span>
+        </div>
+      }
+
+      <!-- AÇÕES -->
+      <div class="flex flex-col-reverse sm:flex-row items-center justify-end gap-3 pt-4 border-t border-outline-variant">
+        <button
+          type="button"
+          (click)="closeDeleteModal()"
+          [disabled]="deleting()"
+          class="w-full sm:w-auto cursor-pointer rounded-full border border-outline-variant bg-surface-container px-6 py-3 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:opacity-50"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          (click)="confirmDelete()"
+          [disabled]="deleting() || (account()?.hasPassword && !deletePassword())"
+          class="w-full sm:w-auto cursor-pointer flex items-center justify-center gap-2 rounded-full bg-red-600 hover:bg-red-500 text-white px-8 py-3 text-label-md font-extrabold transition-all shadow-lg shadow-red-600/25 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-red-600 disabled:shadow-none"
+        >
+          <span class="material-symbols-outlined text-[20px]">delete_forever</span>
+          <span>{{ deleting() ? 'Agendando...' : 'Iniciar Exclusão (Carência 7 dias)' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+}

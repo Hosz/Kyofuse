@@ -26,11 +26,11 @@ public class GamerProfileMapper {
         }
 
         if (request.avatarUrl() != null) {
-            profile.setAvatarUrl(request.avatarUrl().trim());
+            profile.setAvatarUrl(request.avatarUrl().trim().isEmpty() ? null : request.avatarUrl().trim());
         }
 
         if (request.bannerUrl() != null) {
-            profile.setBannerUrl(request.bannerUrl().trim());
+            profile.setBannerUrl(request.bannerUrl().trim().isEmpty() ? null : request.bannerUrl().trim());
         }
 
         if (request.country() != null) {
@@ -112,15 +112,46 @@ public class GamerProfileMapper {
     }
 
     public static GamerProfile toEntity(User user) {
+        return toEntity(user, user.getUsername(), null, null);
+    }
+
+    public static GamerProfile toEntity(User user, String nickname, String avatarUrl, String country) {
         Instant now = Instant.now();
         return GamerProfile.builder()
                 .user(user)
-                .nickname(user.getUsername())
+                .nickname((nickname != null && !nickname.isBlank()) ? nickname.trim() : user.getUsername())
+                .avatarUrl(avatarUrl)
+                .country(country)
                 .lookingForDuo(false)
                 .lookingForTeam(false)
                 .setupStatus(GamerProfileSetupStatus.PENDING)
                 .createdAt(now)
                 .updatedAt(now)
+                .build();
+    }
+
+    public static boolean updateFromSteam(GamerProfile profile, String personaName, String avatarUrl, String country) {
+        boolean changed = false;
+        if (avatarUrl != null && !avatarUrl.isBlank() && (profile.getAvatarUrl() == null || profile.getAvatarUrl().isBlank())) {
+            profile.setAvatarUrl(avatarUrl.trim());
+            changed = true;
+        }
+        if (personaName != null && !personaName.isBlank() && profile.getNickname() != null && profile.getNickname().startsWith("steam_")) {
+            profile.setNickname(personaName.trim());
+            changed = true;
+        }
+        if (country != null && !country.isBlank() && (profile.getCountry() == null || profile.getCountry().isBlank())) {
+            profile.setCountry(country.trim());
+            changed = true;
+        }
+        return changed;
+    }
+
+    public static GamerProfileFavoriteMap toFavoriteMapEntity(GamerProfile profile, Cs2Map map) {
+        return GamerProfileFavoriteMap.builder()
+                .profile(profile)
+                .mapName(map)
+                .createdAt(Instant.now())
                 .build();
     }
 }

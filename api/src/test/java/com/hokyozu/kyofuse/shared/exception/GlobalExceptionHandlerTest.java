@@ -63,6 +63,20 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void handleTooManyAttemptsReturnsTooManyRequestsResponseWithRetryAfterHeader() {
+        ResponseEntity<ApiErrorResponse> response = handler.handleTooManyAttempts(
+                new TooManyAttemptsException("Muitas tentativas. Tente novamente mais tarde.", java.time.Duration.ofMinutes(5))
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+        assertThat(response.getHeaders().getFirst("Retry-After")).isEqualTo("300");
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().status()).isEqualTo(429);
+        assertThat(response.getBody().error()).isEqualTo("Too Many Requests");
+        assertThat(response.getBody().message()).isEqualTo("Muitas tentativas. Tente novamente mais tarde.");
+    }
+
+    @Test
     void handleForbiddenReturnsForbiddenResponse() {
         ResponseEntity<ApiErrorResponse> response = handler.handleForbidden(
                 new ForbiddenException("Você não tem permissão para acessar este recurso.")

@@ -19,6 +19,8 @@ export interface gamerProfileResponse {
     lookingForDuo: boolean;
     setupStatus: string;
     favoriteMaps: string[];
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface gamerProfileCard {
@@ -26,4 +28,12 @@ export interface gamerProfileCard {
     mainRole: string;
     avatarUrl: string;
     username: string;
+    country?: string;
+    city?: string;
+    state?: string;
+}
+
+export interface ProfileFilter {
+    username?: string;
+    status?: string;
 }
