@@ -128,6 +128,7 @@ export class TeamAdminComponent {
     this.bannerUrl.set('');
   }
 
+  team = signal<TeamResponse | null>(null);
   name = signal('');
   description = signal('');
   avatarUrl = signal('');
@@ -238,8 +239,8 @@ export class TeamAdminComponent {
 
   hasMoreLookingToLoad = computed(() => !this.lookingLastPage());
 
-  loadLookingForTeam(page: number = 0): void {
-    const id = this.teamId();
+  loadLookingForTeam(teamId?: string, page: number = 0): void {
+    const id = teamId ?? this.team()?.id ?? this.teamId();
     if (!id) return;
 
     if (page === 0) this.lookingLoading.set(true);
@@ -263,7 +264,7 @@ export class TeamAdminComponent {
 
   loadMoreLooking(): void {
     if (this.lookingLoadingMore() || this.lookingLastPage()) return;
-    this.loadLookingForTeam(this.lookingPage() + 1);
+    this.loadLookingForTeam(undefined, this.lookingPage() + 1);
   }
 
   /** Reaproveita o convite por username no formulário acima. */
@@ -287,12 +288,13 @@ export class TeamAdminComponent {
 
     this.teamService.detailTeam(id).subscribe({
       next: (team) => {
+        this.team.set(team);
         this.ownerName.set(team.ownerName);
         this.seedFromTeam(team);
         this.loading.set(false);
         this.setupSectionObserver();
-        this.loadMembers(id);
-        this.loadLookingForTeam();
+        this.loadMembers(team.id);
+        this.loadLookingForTeam(team.id);
       },
       error: (error) => {
         console.error('Failed to fetch team:', error);
@@ -345,7 +347,7 @@ export class TeamAdminComponent {
   }
 
   submit(): void {
-    const teamId = this.teamId();
+    const teamId = this.team()?.id ?? this.teamId();
     if (!teamId || this.saving()) return;
     if (!this.name().trim()) {
       this.error.set('Informe o nome do time.');
@@ -376,7 +378,7 @@ export class TeamAdminComponent {
         this.teamService.manageRequiredRoles(teamId, { requiredRoles: this.requiredRoles() }).subscribe({
           next: () => {
             this.saving.set(false);
-            this.router.navigateByUrl(`/times/${teamId}`);
+            this.router.navigateByUrl(`/times/${this.team()?.slug ?? teamId}`);
           },
           error: (error) => {
             console.error('Failed to update required roles:', error);
@@ -394,7 +396,7 @@ export class TeamAdminComponent {
   }
 
   inviteMember(): void {
-    const teamId = this.teamId();
+    const teamId = this.team()?.id ?? this.teamId();
     const username = this.inviteUsername().trim().replace(/^@/, '');
     if (!teamId || !username || this.inviting()) return;
 
@@ -485,7 +487,7 @@ export class TeamAdminComponent {
   }
 
   confirmRemoveMember(): void {
-    const teamId = this.teamId();
+    const teamId = this.team()?.id ?? this.teamId();
     const member = this.removeConfirmMember();
     if (!teamId || !member || this.removing()) return;
 
@@ -521,7 +523,7 @@ export class TeamAdminComponent {
   }
 
   leaveTeam(): void {
-    const teamId = this.teamId();
+    const teamId = this.team()?.id ?? this.teamId();
     if (!teamId || this.leaving()) return;
 
     this.leaving.set(true);
@@ -542,15 +544,17 @@ export class TeamAdminComponent {
   }
 
   loadMoreMembers(): void {
-    const teamId = this.teamId();
+    const teamId = this.team()?.id ?? this.teamId();
     if (!teamId || this.membersLoadingMore() || this.membersLastPage()) return;
     this.membersLoadingMore.set(true);
     this.loadMembers(teamId, this.membersPage() + 1);
   }
 
-  private loadMembers(teamId: string, page: number = 0): void {
+  private loadMembers(teamId?: string, page: number = 0): void {
+    const id = teamId ?? this.team()?.id ?? this.teamId();
+    if (!id) return;
     if (page === 0) this.membersLoading.set(true);
-    this.teamMemberService.listMembers(teamId, page).subscribe({
+    this.teamMemberService.listMembers(id, page).subscribe({
       next: (response) => {
         this.members.update((list) => (page === 0 ? response.content : [...list, ...response.content]));
         this.membersLastPage.set(response.last);

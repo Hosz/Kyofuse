@@ -81,4 +81,13 @@ public interface GamerProfileRepository extends JpaRepository<GamerProfile, UUID
     WHERE LOWER(u.username) = LOWER(:username)
     """)
     Optional<GamerProfile> findFullByUserUsername(@Param("username") String username);
+
+    @EntityGraph(attributePaths = "user")
+    @Query("""
+        SELECT gp FROM GamerProfile gp
+        JOIN gp.user u
+        WHERE gp.premierRating IS NOT NULL
+          AND u.status = com.hokyozu.kyofuse.users.enums.UserStatus.ACTIVE
+    """)
+    List<GamerProfile> findAllWithPremierRatingAndActiveUser();
 }

@@ -4,8 +4,11 @@ import com.hokyozu.kyofuse.leaderboard.dto.response.LeaderboardEntryResponse;
 import com.hokyozu.kyofuse.leaderboard.dto.response.UserRankResponse;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
+import com.hokyozu.kyofuse.profiles.repository.GamerProfileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
@@ -21,6 +24,7 @@ public class LeaderboardService {
 
     private final StringRedisTemplate redisTemplate;
     private final GamerProfileFinder gamerProfileFinder;
+    private final GamerProfileRepository gamerProfileRepository;
 
     public static final String LEADERBOARD_KEY = "leaderboard:premier";
 
@@ -28,10 +32,52 @@ public class LeaderboardService {
         redisTemplate.opsForZSet().add(LEADERBOARD_KEY, userId.toString(), score);
     }
 
+    public void removePlayer(UUID userId) {
+        redisTemplate.opsForZSet().remove(LEADERBOARD_KEY, userId.toString());
+    }
+
+    public void syncLeaderboardFromDatabase() {
+        log.info("[Leaderboard] Sincronizando ranking do Premier a partir do banco de dados...");
+        List<GamerProfile> profiles = gamerProfileRepository.findAllWithPremierRatingAndActiveUser();
+        if (profiles == null || profiles.isEmpty()) {
+            log.info("[Leaderboard] Nenhum jogador ativo com Premier Rating encontrado.");
+            return;
+        }
+
+        Set<ZSetOperations.TypedTuple<String>> tuples = new HashSet<>();
+        for (GamerProfile profile : profiles) {
+            if (profile.getUser() != null && profile.getPremierRating() != null) {
+                tuples.add(ZSetOperations.TypedTuple.of(
+                        profile.getUser().getId().toString(),
+                        (double) profile.getPremierRating()
+                ));
+            }
+        }
+
+        if (!tuples.isEmpty()) {
+            redisTemplate.opsForZSet().add(LEADERBOARD_KEY, tuples);
+            log.info("[Leaderboard] Sincronização concluída: {} jogadores carregados no ranking Redis.", tuples.size());
+        }
+    }
+
+    @EventListener(ApplicationReadyEvent.class)
+    public void onApplicationReady() {
+        try {
+            syncLeaderboardFromDatabase();
+        } catch (Exception e) {
+            log.warn("[Leaderboard] Não foi possível sincronizar o ranking com o Redis na inicialização: {}", e.getMessage());
+        }
+    }
+
     public List<LeaderboardEntryResponse> getTopPlayers(int limit) {
         int max = Math.min(Math.max(limit, 1), 100);
         Set<ZSetOperations.TypedTuple<String>> tuples = redisTemplate.opsForZSet()
                 .reverseRangeWithScores(LEADERBOARD_KEY, 0, max - 1);
+
+        if ((tuples == null || tuples.isEmpty()) && gamerProfileRepository != null) {
+            syncLeaderboardFromDatabase();
+            tuples = redisTemplate.opsForZSet().reverseRangeWithScores(LEADERBOARD_KEY, 0, max - 1);
+        }
 
         if (tuples == null || tuples.isEmpty()) {
             return List.of();
@@ -69,6 +115,15 @@ public class LeaderboardService {
         Long totalPlayers = redisTemplate.opsForZSet().zCard(LEADERBOARD_KEY);
 
         if (rankZeroBased == null || score == null) {
+            if ((totalPlayers == null || totalPlayers == 0) && gamerProfileRepository != null) {
+                syncLeaderboardFromDatabase();
+                rankZeroBased = redisTemplate.opsForZSet().reverseRank(LEADERBOARD_KEY, userId.toString());
+                score = redisTemplate.opsForZSet().score(LEADERBOARD_KEY, userId.toString());
+                totalPlayers = redisTemplate.opsForZSet().zCard(LEADERBOARD_KEY);
+            }
+        }
+
+        if (rankZeroBased == null || score == null) {
             return new UserRankResponse(userId, null, 0L, totalPlayers != null ? totalPlayers : 0L);
         }
 
@@ -77,6 +132,14 @@ public class LeaderboardService {
 
     public List<LeaderboardEntryResponse> getAroundUser(UUID userId, int range) {
         Long rankZeroBased = redisTemplate.opsForZSet().reverseRank(LEADERBOARD_KEY, userId.toString());
+        if (rankZeroBased == null) {
+            Long total = redisTemplate.opsForZSet().zCard(LEADERBOARD_KEY);
+            if ((total == null || total == 0) && gamerProfileRepository != null) {
+                syncLeaderboardFromDatabase();
+                rankZeroBased = redisTemplate.opsForZSet().reverseRank(LEADERBOARD_KEY, userId.toString());
+            }
+        }
+
         if (rankZeroBased == null) {
             return List.of();
         }

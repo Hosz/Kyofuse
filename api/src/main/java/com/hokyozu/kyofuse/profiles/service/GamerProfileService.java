@@ -138,8 +138,8 @@ public class GamerProfileService {
         profile.setSetupStatus(newStatus);
 
         GamerProfile savedProfile = gamerProfileRepository.save(profile);
-        if (request.premierRating() != null) {
-            leaderboardService.updateScore(userId, request.premierRating());
+        if (savedProfile.getPremierRating() != null) {
+            leaderboardService.updateScore(userId, savedProfile.getPremierRating());
         }
         List<GamerProfileFavoriteMap> favoriteMaps =
                 gamerProfileFavoriteMapRepository.findByProfile_Id(savedProfile.getId());

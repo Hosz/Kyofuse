@@ -131,10 +131,9 @@ public class TeamService {
     @Cacheable(value = "teams_public", key = "#identifier")
     @Transactional(readOnly = true)
     public TeamResponse detailTeam(String identifier) {
-
         Team team;
         try {
-            team = teamFinder.findTeamById(java.util.UUID.fromString(identifier));
+            team = teamFinder.findTeamById(UUID.fromString(identifier));
         } catch (IllegalArgumentException e) {
             team = teamFinder.findTeamBySlug(identifier);
         }
@@ -357,7 +356,22 @@ public class TeamService {
     public Page<GamerProfileResponse> listPlayersLookingForTeam(UUID userId, UUID teamId, Pageable pageable) {
         User user = userFinder.findProfileByUserId(userId);
         Team team = teamFinder.findTeamById(teamId);
+        return listPlayersLookingForTeamInternal(user, team, pageable);
+    }
 
+    @Transactional(readOnly = true)
+    public Page<GamerProfileResponse> listPlayersLookingForTeam(UUID userId, String teamIdentifier, Pageable pageable) {
+        User user = userFinder.findProfileByUserId(userId);
+        Team team;
+        try {
+            team = teamFinder.findTeamById(UUID.fromString(teamIdentifier));
+        } catch (IllegalArgumentException e) {
+            team = teamFinder.findTeamBySlug(teamIdentifier);
+        }
+        return listPlayersLookingForTeamInternal(user, team, pageable);
+    }
+
+    private Page<GamerProfileResponse> listPlayersLookingForTeamInternal(User user, Team team, Pageable pageable) {
         userChecker.checkActive(user);
         teamChecker.checkInactive(team);
         teamChecker.checkUserIsOwner(team, user);

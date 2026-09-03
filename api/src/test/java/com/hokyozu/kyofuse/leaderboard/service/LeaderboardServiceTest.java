@@ -33,6 +33,9 @@ class LeaderboardServiceTest {
     private GamerProfileFinder gamerProfileFinder;
 
     @Mock
+    private com.hokyozu.kyofuse.profiles.repository.GamerProfileRepository gamerProfileRepository;
+
+    @Mock
     private ZSetOperations<String, String> zSetOperations;
 
     @InjectMocks
@@ -117,5 +120,28 @@ class LeaderboardServiceTest {
 
         assertThat(result).hasSize(2);
         assertThat(result.get(0).rank()).isEqualTo(4L);
+    }
+
+    @Test
+    void syncLeaderboardFromDatabasePopulatesRedis() {
+        UUID user1 = UUID.randomUUID();
+        GamerProfile profile = GamerProfile.builder()
+                .user(User.builder().id(user1).build())
+                .premierRating(15000)
+                .build();
+        when(gamerProfileRepository.findAllWithPremierRatingAndActiveUser()).thenReturn(List.of(profile));
+
+        leaderboardService.syncLeaderboardFromDatabase();
+
+        verify(zSetOperations).add(eq("leaderboard:premier"), anySet());
+    }
+
+    @Test
+    void removePlayerRemovesFromRedis() {
+        UUID userId = UUID.randomUUID();
+
+        leaderboardService.removePlayer(userId);
+
+        verify(zSetOperations).remove("leaderboard:premier", userId.toString());
     }
 }

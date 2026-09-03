@@ -86,8 +86,9 @@ export class TeamComponent {
       next: (team) => {
         this.team.set(team);
         this.loading.set(false);
-        this.loadMembers(id);
-        this.loadCommunity(id);
+        this.resolveViewMode();
+        this.loadMembers(team.id);
+        this.loadCommunity(team.id);
       },
       error: (error) => {
         console.error('Failed to fetch team:', error);
@@ -134,7 +135,7 @@ export class TeamComponent {
   /** Depois de salvar, os papéis necessários são recarregados: preencher um papel
    * anunciado tira a vaga do anúncio no backend. */
   editMember(request: TeamMemberEditRequest): void {
-    const id = this.teamId();
+    const id = this.team()?.id ?? this.teamId();
     const member = this.selectedMember();
     if (!id || !member || this.savingMember()) return;
 
@@ -164,7 +165,7 @@ export class TeamComponent {
   }
 
   removeMember(member: TeamMemberResponse): void {
-    const id = this.teamId();
+    const id = this.team()?.id ?? this.teamId();
     if (!id || this.removingMember()) return;
 
     this.removingMember.set(true);
@@ -197,7 +198,7 @@ export class TeamComponent {
   }
 
   leaveTeam(): void {
-    const id = this.teamId();
+    const id = this.team()?.id ?? this.teamId();
     if (!id || this.leaving()) return;
 
     this.leaveConfirmOpen.set(false);
@@ -219,7 +220,7 @@ export class TeamComponent {
   }
 
   loadMoreMembers(): void {
-    const teamId = this.teamId();
+    const teamId = this.team()?.id ?? this.teamId();
     if (!teamId || this.membersLoadingMore() || this.membersLastPage()) return;
     this.membersLoadingMore.set(true);
     this.loadMembers(teamId, this.membersPage() + 1);
@@ -249,6 +250,7 @@ export class TeamComponent {
         console.error('Failed to fetch team members:', error);
         this.membersLoading.set(false);
         this.membersLoadingMore.set(false);
+        this.resolveViewMode();
       },
     });
   }

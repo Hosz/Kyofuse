@@ -127,6 +127,7 @@ dump.sql
 db_snapshot.sql
 *.sql.gz
 seed.sql
+docs/security-audit
 
 # Archives and generated bundles
 *.tgz

@@ -23,4 +23,15 @@ public class TeamFinder {
         return teamRepository.findById(teamId)
                 .orElseThrow(() -> new NotFoundException("Time não encontrado: " + teamId));
     }
+
+    public Team findTeamByIdentifier(String identifier) {
+        if (identifier == null || identifier.isBlank()) {
+            throw new NotFoundException("Time não encontrado.");
+        }
+        try {
+            return findTeamById(UUID.fromString(identifier.trim()));
+        } catch (IllegalArgumentException e) {
+            return findTeamBySlug(identifier.trim());
+        }
+    }
 }

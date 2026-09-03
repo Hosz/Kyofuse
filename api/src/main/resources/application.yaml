@@ -67,8 +67,25 @@ app:
   geoip:
     database-path: ${GEOIP_DATABASE_PATH:classpath:geoip/GeoLite2-City.mmdb}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
 server:
   port: ${SERVER_PORT:8080}
+  tomcat:
+    mbeanregistry:
+      enabled: true
 
 security:
   jwt:
