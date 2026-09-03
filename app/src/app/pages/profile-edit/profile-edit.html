@@ -280,6 +280,19 @@
                   </select>
                 </label>
               </div>
+
+              <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-outline-variant bg-surface-container/60 p-3.5 transition-colors hover:bg-surface-container">
+                <input
+                  type="checkbox"
+                  [checked]="showCountryFlag()"
+                  (change)="showCountryFlag.set($any($event.target).checked)"
+                  class="mt-0.5 h-4 w-4 rounded border-outline-variant text-primary focus:ring-primary focus:ring-offset-0"
+                />
+                <div class="flex flex-col gap-0.5">
+                  <span class="text-body-sm font-semibold text-on-surface">Exibir bandeira do país ao lado do nome</span>
+                  <span class="text-label-sm text-on-surface-variant">Mostra a bandeira correspondente ao seu país no cabeçalho do seu perfil e nos cards.</span>
+                </div>
+              </label>
             </section>
 
             <section

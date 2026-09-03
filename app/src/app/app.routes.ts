@@ -66,6 +66,17 @@ export const routes: Routes = [
     title: 'Kyofuse | Torneios & Campeonatos',
   },
   {
+    path: 'ranking',
+    canActivate: [authGuard, profileSetupGuard],
+    loadComponent: () =>
+      import('./pages/leaderboard/leaderboard').then((m) => m.LeaderboardComponent),
+    title: 'Kyofuse | Ranking Global',
+  },
+  {
+    path: 'leaderboard',
+    redirectTo: 'ranking',
+  },
+  {
     path: 'roadmap',
     canActivate: [authGuard, profileSetupGuard],
     loadComponent: () =>

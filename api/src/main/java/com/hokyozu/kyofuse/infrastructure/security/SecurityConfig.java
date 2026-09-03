@@ -2,6 +2,7 @@ package com.hokyozu.kyofuse.infrastructure.security;
 
 import com.hokyozu.kyofuse.infrastructure.security.jwt.AuthCookieService;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.JwtAuthConverter;
+import com.hokyozu.kyofuse.infrastructure.security.jwt.JwtBlacklistValidator;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import jakarta.servlet.http.Cookie;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,11 +13,10 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtEncoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
@@ -65,6 +65,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/disconnect-account").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/reactivate/confirm").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/reactivate/resend").permitAll()
+                        .requestMatchers("/ws", "/ws/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 ->
@@ -106,8 +107,8 @@ public class SecurityConfig {
 
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:4200"
+        configuration.setAllowedOriginPatterns(List.of(
+                "*"
         ));
 
         configuration.setAllowedMethods(List.of(
@@ -142,15 +143,27 @@ public class SecurityConfig {
     }
 
     @Bean
-    public JwtDecoder jwtDecoder(@Value("${security.jwt.secret}") String secret) {
+    public JwtDecoder jwtDecoder(
+            @Value("${security.jwt.secret}") String secret,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) JwtBlacklistValidator jwtBlacklistValidator
+    ) {
         SecretKey secretKey = new SecretKeySpec(
                 secret.getBytes(StandardCharsets.UTF_8),
                 "HmacSHA256"
         );
 
-        return NimbusJwtDecoder.withSecretKey(secretKey)
+        NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withSecretKey(secretKey)
                 .macAlgorithm(MacAlgorithm.HS256)
                 .build();
+
+        OAuth2TokenValidator<Jwt> defaultValidator = JwtValidators.createDefault();
+        if (jwtBlacklistValidator != null) {
+            OAuth2TokenValidator<Jwt> delegatingValidator = new DelegatingOAuth2TokenValidator<>(defaultValidator, jwtBlacklistValidator);
+            jwtDecoder.setJwtValidator(delegatingValidator);
+        } else {
+            jwtDecoder.setJwtValidator(defaultValidator);
+        }
+        return jwtDecoder;
     }
 
     @Bean

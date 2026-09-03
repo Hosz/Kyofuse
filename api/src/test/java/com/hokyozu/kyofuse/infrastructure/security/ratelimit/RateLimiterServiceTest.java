@@ -1,96 +1,86 @@
 package com.hokyozu.kyofuse.infrastructure.security.ratelimit;
 
 import com.hokyozu.kyofuse.shared.exception.TooManyAttemptsException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class RateLimiterServiceTest {
 
-    private final RateLimiterService rateLimiterService = new RateLimiterService();
+    @Mock
+    private StringRedisTemplate redisTemplate;
+
+    @Mock
+    private ValueOperations<String, String> valueOperations;
+
+    private RateLimiterService rateLimiterService;
 
     private static final RateLimitPolicy POLICY = new RateLimitPolicy(
             3,
             Duration.ofMinutes(15),
-            List.of(Duration.ofMillis(200), Duration.ofSeconds(2), Duration.ofSeconds(10))
+            List.of(Duration.ofSeconds(60), Duration.ofMinutes(5))
     );
+
+    @BeforeEach
+    void setUp() {
+        lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        rateLimiterService = new RateLimiterService(redisTemplate);
+    }
 
     @Test
     void allowsAttemptsWithinCapacity() {
-        rateLimiterService.checkAndConsume("key-a", POLICY);
-        rateLimiterService.checkAndConsume("key-a", POLICY);
-        rateLimiterService.checkAndConsume("key-a", POLICY);
-        // as 3 tentativas permitidas pela política não devem lançar exceção
+        when(valueOperations.get("ratelimit:lockout:test-key")).thenReturn(null);
+        when(valueOperations.increment("ratelimit:attempts:test-key")).thenReturn(1L);
+
+        rateLimiterService.checkAndConsume("test-key", POLICY);
+
+        verify(redisTemplate).expire(eq("ratelimit:attempts:test-key"), eq(POLICY.window()));
     }
 
     @Test
-    void blocksOnceCapacityIsExhaustedAndEscalatesOnRepeatedTrip() {
-        exhaust("key-b");
+    void throwsWhenCurrentlyLockedOut() {
+        long futureEpoch = Instant.now().plusSeconds(60).toEpochMilli();
+        when(valueOperations.get("ratelimit:lockout:locked-key")).thenReturn(String.valueOf(futureEpoch));
 
-        TooManyAttemptsException firstTrip = catchTooManyAttempts("key-b");
-        assertThat(firstTrip.getRetryAfterSeconds()).isLessThanOrEqualTo(1);
-
-        awaitLockoutExpiry(POLICY.lockoutTiers().get(0));
-
-        TooManyAttemptsException secondTrip = catchTooManyAttempts("key-b");
-        assertThat(secondTrip.getRetryAfterSeconds()).isGreaterThanOrEqualTo(1);
-    }
-
-    @Test
-    void rejectsFurtherAttemptsWhileLockedWithoutConsumingMoreTokens() {
-        exhaust("key-c");
-        catchTooManyAttempts("key-c");
-
-        assertThatThrownBy(() -> rateLimiterService.checkAndConsume("key-c", POLICY))
+        assertThatThrownBy(() -> rateLimiterService.checkAndConsume("locked-key", POLICY))
                 .isInstanceOf(TooManyAttemptsException.class);
     }
 
     @Test
-    void recordSuccessResetsBucketAndLockout() {
-        exhaust("key-d");
-        catchTooManyAttempts("key-d");
+    void blocksAndEscalatesWhenAttemptsExceedCapacity() {
+        when(valueOperations.get("ratelimit:lockout:burst-key")).thenReturn(null);
+        when(valueOperations.increment("ratelimit:attempts:burst-key")).thenReturn(4L);
+        when(valueOperations.get("ratelimit:tier:burst-key")).thenReturn(null);
 
-        rateLimiterService.recordSuccess("key-d");
+        assertThatThrownBy(() -> rateLimiterService.checkAndConsume("burst-key", POLICY))
+                .isInstanceOf(TooManyAttemptsException.class);
 
-        rateLimiterService.checkAndConsume("key-d", POLICY);
-        rateLimiterService.checkAndConsume("key-d", POLICY);
-        rateLimiterService.checkAndConsume("key-d", POLICY);
-        // depois do reset, a política volta a tolerar 3 tentativas antes de bloquear
+        verify(valueOperations).set(eq("ratelimit:lockout:burst-key"), any(), eq(POLICY.lockoutTiers().get(0)));
+        verify(valueOperations).set(eq("ratelimit:tier:burst-key"), eq("0"), eq(Duration.ofHours(24)));
     }
 
     @Test
-    void differentKeysHaveIndependentBudgets() {
-        exhaust("key-e");
-        catchTooManyAttempts("key-e");
+    void recordSuccessDeletesRedisKeys() {
+        rateLimiterService.recordSuccess("success-key");
 
-        rateLimiterService.checkAndConsume("key-f", POLICY);
-    }
-
-    private void exhaust(String key) {
-        for (int i = 0; i < POLICY.maxAttempts(); i++) {
-            rateLimiterService.checkAndConsume(key, POLICY);
-        }
-    }
-
-    private TooManyAttemptsException catchTooManyAttempts(String key) {
-        try {
-            rateLimiterService.checkAndConsume(key, POLICY);
-        } catch (TooManyAttemptsException exception) {
-            return exception;
-        }
-
-        throw new AssertionError("Esperava TooManyAttemptsException para a chave " + key);
-    }
-
-    private void awaitLockoutExpiry(Duration tier) {
-        try {
-            Thread.sleep(tier.toMillis() + 50);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        verify(redisTemplate).delete(List.of(
+                "ratelimit:attempts:success-key",
+                "ratelimit:lockout:success-key",
+                "ratelimit:tier:success-key"
+        ));
     }
 }

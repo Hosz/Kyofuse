@@ -5,12 +5,16 @@
 #   postgres   Database. Sole source of truth for persisted data. Reachable
 #              from the host (DBeaver) via the published port, but only the
 #              `api` service can reach it over the network.
+#   mailpit    Mock SMTP server and web dashboard for dev email testing.
 #   api        Spring Boot backend, built locally from ./api/Dockerfile
 #              (no prebuilt image is pulled for it).
+#   app        Angular frontend, built locally from ./app/Dockerfile
+#              and served via Nginx with API/WebSocket reverse proxy.
+#   minio      S3-compatible object storage for local file/image uploads.
 #
-# Adding services later (Angular dev server, Redis, Nginx, ...) means adding
-# a new service block below plus attaching it to `kyofuse-internal` and/or
-# `kyofuse-public` (see the networks section) — no restructuring needed.
+# Adding services later (Redis, etc.) means adding a new service block below
+# plus attaching it to `kyofuse-internal` and/or `kyofuse-public` (see the
+# networks section) — no restructuring needed.
 # =============================================================================
 
 services:
@@ -44,6 +48,26 @@ services:
       - kyofuse-internal
 
   # ---------------------------------------------------------------------------
+  # Redis — In-memory data store for caching, distributed rate limiting & presence
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:8-alpine
+    container_name: kyofuse-redis
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning --requirepass ${REDIS_PASSWORD:-kyofuse_redis_secret}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - kyofuse_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-kyofuse_redis_secret}", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - kyofuse-internal
+
+  # ---------------------------------------------------------------------------
   # Mailpit — local mock SMTP server & Web UI for development email testing.
   # ---------------------------------------------------------------------------
   mailpit:
@@ -71,6 +95,10 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      minio:
+        condition: service_started
+      redis:
+        condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
       SERVER_PORT: ${SERVER_PORT}
@@ -88,6 +116,14 @@ services:
       MAIL_PORT: ${MAIL_PORT:-1025}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4200}
 
+      # Storage (MinIO)
+      STORAGE_ENDPOINT: ${STORAGE_ENDPOINT:-http://minio:9000}
+      STORAGE_PUBLIC_URL: ${STORAGE_PUBLIC_URL:-http://localhost:9000}
+      STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY:-kyofuse_storage_user}
+      STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY:-kyofuse_storage_secret}
+      STORAGE_BUCKET: ${STORAGE_BUCKET:-kyofuse-media}
+      STORAGE_REGION: ${STORAGE_REGION:-us-east-1}
+
       # Auth
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES}
@@ -97,6 +133,11 @@ services:
       MFA_JWT_SECRET: ${MFA_JWT_SECRET}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       STEAM_API_KEY: ${STEAM_API_KEY:-}
+
+      # Redis
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-kyofuse_redis_secret}
 
       # JVM memory/GC tuning, read automatically by the `java` launcher.
       # Balanced for a small monolith on a dev machine with limited RAM
@@ -129,6 +170,24 @@ services:
       resources:
         limits:
           memory: 768M
+
+  # ---------------------------------------------------------------------------
+  # Angular Frontend (Kyofuse App) — built locally from ./app/Dockerfile.
+  # Serves the Angular SPA through Nginx and reverse-proxies /api and /ws
+  # traffic to the Spring Boot API service.
+  # ---------------------------------------------------------------------------
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: kyofuse-app
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${APP_PORT:-4200}:80"
+    networks:
+      - kyofuse-public
 
   # ---------------------------------------------------------------------------
   # MinIO — S3-compatible Object Storage for local file/image uploads
@@ -204,3 +263,4 @@ volumes:
   #     -v kyofuse_postgres_data:/to alpine cp -a /from/. /to/
   kyofuse_postgres_data:
   kyofuse_minio_data:
+  kyofuse_redis_data:

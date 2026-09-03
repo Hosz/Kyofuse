@@ -235,6 +235,15 @@ export class NotificationsComponent {
   ngOnInit(): void {
     this.loadPage(0);
     this.loadFriendRequests();
+    this.notificationService.newNotification$.subscribe({
+      next: (notification) => {
+        const appNotif = this.toAppNotification(notification);
+        this.notifications.update((list) => {
+          if (list.some((n) => n.id === appNotif.id)) return list;
+          return [appNotif, ...list];
+        });
+      },
+    });
   }
 
   setView(view: ViewMode): void {
@@ -358,10 +367,14 @@ export class NotificationsComponent {
     this.setFriendRequestPending(request.id, true);
 
     this.friendshipService.acceptRequest(request.id).subscribe({
-      next: () => this.removeFriendRequest(request.id),
+      next: () => {
+        this.removeFriendRequest(request.id);
+        this.toastService.success('Solicitação de amizade aceita com sucesso!');
+      },
       error: (error) => {
         console.error('Failed to accept friend request:', error);
         this.setFriendRequestPending(request.id, false);
+        this.toastService.error(error?.error?.message ?? 'Não foi possível aceitar a solicitação.');
       },
     });
   }
@@ -371,10 +384,14 @@ export class NotificationsComponent {
     this.setFriendRequestPending(request.id, true);
 
     this.friendshipService.declineRequest(request.id).subscribe({
-      next: () => this.removeFriendRequest(request.id),
+      next: () => {
+        this.removeFriendRequest(request.id);
+        this.toastService.info('Solicitação de amizade recusada.');
+      },
       error: (error) => {
         console.error('Failed to decline friend request:', error);
         this.setFriendRequestPending(request.id, false);
+        this.toastService.error(error?.error?.message ?? 'Não foi possível recusar a solicitação.');
       },
     });
   }

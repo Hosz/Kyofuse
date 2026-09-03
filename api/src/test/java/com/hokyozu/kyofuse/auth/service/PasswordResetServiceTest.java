@@ -4,6 +4,7 @@ import com.hokyozu.kyofuse.auth.entity.PasswordResetToken;
 import com.hokyozu.kyofuse.auth.repository.PasswordResetTokenRepository;
 import com.hokyozu.kyofuse.auth.repository.UserRepository;
 import com.hokyozu.kyofuse.infrastructure.security.crypto.EmailCipherService;
+import com.hokyozu.kyofuse.infrastructure.security.jwt.AccountSwitchSessionRepository;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.RefreshTokenRepository;
 import com.hokyozu.kyofuse.infrastructure.security.ratelimit.RateLimitPolicies;
 import com.hokyozu.kyofuse.infrastructure.security.ratelimit.RateLimiterService;
@@ -19,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -42,7 +44,7 @@ class PasswordResetServiceTest {
     private RefreshTokenRepository refreshTokenRepository;
 
     @Mock
-    private com.hokyozu.kyofuse.infrastructure.security.jwt.AccountSwitchSessionRepository accountSwitchSessionRepository;
+    private AccountSwitchSessionRepository accountSwitchSessionRepository;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -86,26 +88,12 @@ class PasswordResetServiceTest {
 
         passwordResetService.requestPasswordReset("test@example.com", "127.0.0.1");
 
-        verify(tokenRepository).deleteAllByUser(user);
+        verify(tokenRepository).findByUserId(user.getId());
         ArgumentCaptor<PasswordResetToken> tokenCaptor = ArgumentCaptor.forClass(PasswordResetToken.class);
         verify(tokenRepository).save(tokenCaptor.capture());
         PasswordResetToken saved = tokenCaptor.getValue();
-        assertThat(saved.getUser()).isEqualTo(user);
+        assertThat(saved.getUserId()).isEqualTo(user.getId());
         assertThat(saved.getTokenHash()).isNotBlank();
-        assertThat(saved.getExpiresAt()).isAfter(Instant.now());
-        assertThat(saved.getUsedAt()).isNull();
-
-        verify(mailService).sendPasswordResetEmail(eq("test@example.com"), anyString());
-    }
-
-    @Test
-    void requestPasswordReset_whenUserFoundByUsername_shouldDeleteOldTokensSaveNewAndSendEmail() {
-        when(userRepository.findByUsernameIgnoreCase("testuser")).thenReturn(Optional.of(user));
-
-        passwordResetService.requestPasswordReset("testuser", "127.0.0.1");
-
-        verify(tokenRepository).deleteAllByUser(user);
-        verify(tokenRepository).save(any(PasswordResetToken.class));
         verify(mailService).sendPasswordResetEmail(eq("test@example.com"), anyString());
     }
 
@@ -116,29 +104,20 @@ class PasswordResetServiceTest {
 
         passwordResetService.requestPasswordReset("unknown@example.com", "127.0.0.1");
 
-        verify(tokenRepository, never()).deleteAllByUser(any());
         verify(tokenRepository, never()).save(any());
         verifyNoInteractions(mailService);
     }
 
     @Test
     void validateToken_whenValid_shouldNotThrow() {
-        PasswordResetToken token = PasswordResetToken.builder()
-                .id(UUID.randomUUID())
-                .user(user)
-                .tokenHash("some_hash")
-                .expiresAt(Instant.now().plusSeconds(600))
-                .createdAt(Instant.now())
-                .build();
-
-        when(tokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(token));
+        when(tokenRepository.existsById(anyString())).thenReturn(true);
 
         passwordResetService.validateToken("some_raw_token");
     }
 
     @Test
     void validateToken_whenTokenNotFound_shouldThrowBadRequestException() {
-        when(tokenRepository.findByTokenHash(anyString())).thenReturn(Optional.empty());
+        when(tokenRepository.existsById(anyString())).thenReturn(false);
 
         assertThatThrownBy(() -> passwordResetService.validateToken("invalid_raw_token"))
                 .isInstanceOf(BadRequestException.class)
@@ -146,59 +125,23 @@ class PasswordResetServiceTest {
     }
 
     @Test
-    void validateToken_whenTokenExpired_shouldThrowBadRequestException() {
+    void resetPassword_whenValid_shouldUpdatePasswordHashAndRevokeSession() {
         PasswordResetToken token = PasswordResetToken.builder()
-                .id(UUID.randomUUID())
-                .user(user)
+                .userId(user.getId())
                 .tokenHash("some_hash")
-                .expiresAt(Instant.now().minusSeconds(10))
-                .createdAt(Instant.now().minusSeconds(1000))
-                .build();
-
-        when(tokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(token));
-
-        assertThatThrownBy(() -> passwordResetService.validateToken("expired_raw_token"))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessage("Token de recuperação inválido ou expirado.");
-    }
-
-    @Test
-    void validateToken_whenTokenUsed_shouldThrowBadRequestException() {
-        PasswordResetToken token = PasswordResetToken.builder()
-                .id(UUID.randomUUID())
-                .user(user)
-                .tokenHash("some_hash")
-                .expiresAt(Instant.now().plusSeconds(600))
-                .usedAt(Instant.now().minusSeconds(60))
-                .createdAt(Instant.now().minusSeconds(120))
-                .build();
-
-        when(tokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(token));
-
-        assertThatThrownBy(() -> passwordResetService.validateToken("used_raw_token"))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessage("Token de recuperação inválido ou expirado.");
-    }
-
-    @Test
-    void resetPassword_whenValid_shouldUpdatePasswordHashMarkUsedAndRevokeRefreshTokens() {
-        PasswordResetToken token = PasswordResetToken.builder()
-                .id(UUID.randomUUID())
-                .user(user)
-                .tokenHash("some_hash")
-                .expiresAt(Instant.now().plusSeconds(600))
                 .createdAt(Instant.now())
                 .build();
 
-        when(tokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(token));
+        when(tokenRepository.findById(anyString())).thenReturn(Optional.of(token));
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(passwordEncoder.encode("NewSecretPassword123!")).thenReturn("new_encoded_hash");
 
         passwordResetService.resetPassword("raw_token", "NewSecretPassword123!");
 
         assertThat(user.getPasswordHash()).isEqualTo("new_encoded_hash");
-        assertThat(token.getUsedAt()).isNotNull();
         verify(userRepository).save(user);
-        verify(tokenRepository).save(token);
+        verify(tokenRepository).deleteById(anyString());
         verify(refreshTokenRepository).deleteAllByUser(user);
+        verify(accountSwitchSessionRepository).deleteAllByUserId(user.getId());
     }
 }

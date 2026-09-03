@@ -3,72 +3,87 @@ package com.hokyozu.kyofuse.infrastructure.security.totp;
 import com.hokyozu.kyofuse.shared.exception.UnauthorizedException;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.enums.UserRole;
-import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import org.junit.jupiter.api.Test;
-import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
-import org.springframework.security.oauth2.jwt.JwsHeader;
-import org.springframework.security.oauth2.jwt.JwtClaimsSet;
-import org.springframework.security.oauth2.jwt.JwtEncoder;
-import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
-import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class MfaTokenServiceTest {
 
-    private static final String SECRET = "mfa-test-secret-key-with-at-least-32-bytes!!";
+    @Mock
+    private MfaSessionRepository mfaSessionRepository;
 
-    private final MfaTokenService mfaTokenService = new MfaTokenService(SECRET, 5);
+    @InjectMocks
+    private MfaTokenService mfaTokenService;
 
     @Test
-    void generateThenResolveUserIdRoundTrips() {
+    void generateCreatesAndSavesSessionInRedis() {
         User user = User.builder().id(UUID.randomUUID()).role(UserRole.USER).build();
 
         String token = mfaTokenService.generate(user);
 
-        assertThat(mfaTokenService.resolveUserId(token)).isEqualTo(user.getId());
+        assertThat(token).isNotBlank();
+        ArgumentCaptor<MfaSession> captor = ArgumentCaptor.forClass(MfaSession.class);
+        verify(mfaSessionRepository).save(captor.capture());
+        MfaSession saved = captor.getValue();
+        assertThat(saved.getMfaToken()).isEqualTo(token);
+        assertThat(saved.getUserId()).isEqualTo(user.getId());
+        assertThat(saved.getRemainingAttempts()).isEqualTo(3);
     }
 
     @Test
-    void resolveUserIdRejectsGarbageToken() {
-        assertThatThrownBy(() -> mfaTokenService.resolveUserId("not-a-jwt"))
-                .isInstanceOf(UnauthorizedException.class);
-    }
-
-    @Test
-    void resolveUserIdRejectsTokenSignedWithADifferentSecret() {
-        MfaTokenService otherInstance = new MfaTokenService("a-completely-different-secret-key-32-bytes!", 5);
-        User user = User.builder().id(UUID.randomUUID()).role(UserRole.USER).build();
-
-        String token = otherInstance.generate(user);
-
-        assertThatThrownBy(() -> mfaTokenService.resolveUserId(token))
-                .isInstanceOf(UnauthorizedException.class);
-    }
-
-    @Test
-    void resolveUserIdRejectsTokenWithoutMfaPendingPurpose() {
-        SecretKey secretKey = new SecretKeySpec(SECRET.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-        JwtEncoder rawEncoder = new NimbusJwtEncoder(new ImmutableSecret<>(secretKey));
-
-        JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
-        JwtClaimsSet claims = JwtClaimsSet.builder()
-                .issuer("kyofuse-api")
-                .issuedAt(Instant.now())
-                .expiresAt(Instant.now().plusSeconds(300))
-                .subject(UUID.randomUUID().toString())
+    void resolveAndValidateUserIdReturnsUserIdWhenSessionExists() {
+        UUID userId = UUID.randomUUID();
+        MfaSession session = MfaSession.builder()
+                .mfaToken("valid-token")
+                .userId(userId)
+                .remainingAttempts(3)
+                .createdAt(Instant.now())
                 .build();
 
-        String tokenWithoutPurpose = rawEncoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
+        when(mfaSessionRepository.findById("valid-token")).thenReturn(Optional.of(session));
 
-        assertThatThrownBy(() -> mfaTokenService.resolveUserId(tokenWithoutPurpose))
+        UUID resolved = mfaTokenService.resolveAndValidateUserId("valid-token");
+        assertThat(resolved).isEqualTo(userId);
+    }
+
+    @Test
+    void resolveAndValidateUserIdThrowsWhenNotFound() {
+        when(mfaSessionRepository.findById("invalid-token")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> mfaTokenService.resolveAndValidateUserId("invalid-token"))
                 .isInstanceOf(UnauthorizedException.class);
+    }
+
+    @Test
+    void recordFailedAttemptDecrementsAndDeletesWhenExhausted() {
+        MfaSession session = MfaSession.builder()
+                .mfaToken("test-token")
+                .userId(UUID.randomUUID())
+                .remainingAttempts(1)
+                .build();
+
+        when(mfaSessionRepository.findById("test-token")).thenReturn(Optional.of(session));
+
+        mfaTokenService.recordFailedAttempt("test-token");
+
+        verify(mfaSessionRepository).deleteById("test-token");
+    }
+
+    @Test
+    void consumeDeletesSession() {
+        mfaTokenService.consume("some-token");
+        verify(mfaSessionRepository).deleteById("some-token");
     }
 }

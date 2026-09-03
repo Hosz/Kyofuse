@@ -9,6 +9,8 @@ import com.hokyozu.kyofuse.auth.service.EmailVerificationService;
 import com.hokyozu.kyofuse.auth.service.PasswordResetService;
 import com.hokyozu.kyofuse.auth.service.TwoFactorAuthService;
 import com.hokyozu.kyofuse.infrastructure.client.ClientIpResolver;
+import com.hokyozu.kyofuse.infrastructure.ratelimit.RateLimit;
+import com.hokyozu.kyofuse.infrastructure.ratelimit.RateLimitType;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.AuthCookieService;
 import com.hokyozu.kyofuse.infrastructure.security.steam.SteamService;
 import com.hokyozu.kyofuse.profiles.repository.GamerProfileRepository;
@@ -44,6 +46,7 @@ public class AuthController {
     private final com.hokyozu.kyofuse.auth.repository.UserRepository userRepository;
     private final com.hokyozu.kyofuse.infrastructure.security.totp.MfaTokenService mfaTokenService;
 
+    @RateLimit(key = "register", limit = 5, period = 3600, type = RateLimitType.IP)
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
     public RegisterResponse register(
@@ -71,6 +74,7 @@ public class AuthController {
         emailVerificationService.validateToken(token);
     }
 
+    @RateLimit(key = "resend_verification", limit = 3, period = 900, type = RateLimitType.IP)
     @PostMapping("/resend-verification")
     @ResponseStatus(HttpStatus.OK)
     public void resendVerification(
@@ -80,6 +84,7 @@ public class AuthController {
         emailVerificationService.resendVerification(request.emailOrUsername(), clientIp(httpRequest));
     }
 
+    @RateLimit(key = "login", limit = 5, period = 60, type = RateLimitType.IP)
     @PostMapping("/login")
     public ResponseEntity<?> login(
             @RequestBody @Valid LoginRequest request,
@@ -187,6 +192,7 @@ public class AuthController {
         accountReactivationService.resendReactivationCode(request.reactivationToken());
     }
 
+    @RateLimit(key = "2fa_verify", limit = 5, period = 300, type = RateLimitType.IP)
     @PostMapping("/2fa/verify")
     public AuthResponse verifyMfa(
             @RequestBody @Valid MfaVerifyRequest request,
@@ -270,8 +276,14 @@ public class AuthController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void logout(
             @CookieValue(name = AuthCookieService.REFRESH_TOKEN_COOKIE, required = false) String refreshToken,
+            @AuthenticationPrincipal Jwt jwt,
             HttpServletResponse response
     ) {
+        authService.logout(refreshToken, jwt);
+        clearAuthCookies(response);
+    }
+
+    public void logout(String refreshToken, HttpServletResponse response) {
         authService.logout(refreshToken);
         clearAuthCookies(response);
     }
@@ -301,6 +313,7 @@ public class AuthController {
         );
     }
 
+    @RateLimit(key = "forgot_password", limit = 3, period = 900, type = RateLimitType.IP)
     @PostMapping("/forgot-password")
     @ResponseStatus(HttpStatus.OK)
     public void forgotPassword(@RequestBody @Valid ForgotPasswordRequest request, HttpServletRequest httpRequest) {

@@ -8,6 +8,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -48,6 +50,10 @@ public class GamerProfile {
     @Column(name = "city", length = 80)
     private String city;
 
+    @Column(name = "show_country_flag", nullable = false)
+    @Builder.Default
+    private Boolean showCountryFlag = true;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "main_role", length = 40)
     private PlayerRole mainRole;
@@ -86,4 +92,8 @@ public class GamerProfile {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    @OneToMany(mappedBy = "profile", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<GamerProfileFavoriteMap> favoriteMaps = new ArrayList<>();
 }

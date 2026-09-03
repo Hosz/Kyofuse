@@ -11,8 +11,11 @@ import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.users.entity.User;
 import jakarta.validation.Valid;
 
-import java.time.Instant;
+import com.hokyozu.kyofuse.chat.entity.Message;
+import com.hokyozu.kyofuse.chat.entity.MessageMedia;
 
+import java.time.Instant;
+import java.util.List;
 
 public class ConversationMapper {
     public static Conversation toEntityGroup(@Valid ConversationRequest request, User user) {
@@ -31,18 +34,31 @@ public class ConversationMapper {
     }
 
     public static ConversationResponse toResponse(Conversation conversation) {
-        return toResponse(conversation, null, null);
+        return toResponse(conversation, null, null, null, null, null, 0L);
     }
 
-    /**
-     * Os perfis dos participantes de uma conversa DIRECT são opcionais: quem só precisa
-     * do envelope da conversa (aceitar, recusar, revogar) chama a sobrecarga sem eles e
-     * os avatares saem nulos. A listagem de conversas passa os dois para o front poder
-     * exibir a foto de quem está do outro lado.
-     */
     public static ConversationResponse toResponse(Conversation conversation,
                                                   GamerProfile directUserOneProfile,
                                                   GamerProfile directUserTwoProfile) {
+        return toResponse(conversation, directUserOneProfile, directUserTwoProfile, null, null, null, 0L);
+    }
+
+    public static ConversationResponse toResponse(Conversation conversation,
+                                                  GamerProfile directUserOneProfile,
+                                                  GamerProfile directUserTwoProfile,
+                                                  Message lastMessage,
+                                                  GamerProfile lastMessageSenderProfile,
+                                                  List<MessageMedia> lastMessageMedia,
+                                                  Long unreadCount) {
+        String lastMessageContent = lastMessage != null ? lastMessage.getContent() : null;
+        String lastMessageSenderUsername = (lastMessage != null && lastMessage.getSender() != null)
+                ? lastMessage.getSender().getUsername()
+                : null;
+        String lastMessageSenderNickname = lastMessageSenderProfile != null ? lastMessageSenderProfile.getNickname() : null;
+        boolean hasMedia = lastMessageMedia != null && !lastMessageMedia.isEmpty();
+        String mediaType = hasMedia ? lastMessageMedia.getFirst().getContentType() : null;
+        Instant lastMessageCreatedAt = lastMessage != null ? lastMessage.getCreatedAt() : null;
+
         return new ConversationResponse(
                 conversation.getId(),
                 conversation.getType(),
@@ -62,6 +78,14 @@ public class ConversationMapper {
                 directUserTwoProfile != null ? directUserTwoProfile.getNickname() : null,
                 directUserTwoProfile != null ? directUserTwoProfile.getAvatarUrl() : null,
                 conversation.getDirectMessageStatus(),
+                conversation.getRevokedBy() != null ? conversation.getRevokedBy().getId() : null,
+                lastMessageContent,
+                lastMessageSenderUsername,
+                lastMessageSenderNickname,
+                hasMedia,
+                mediaType,
+                lastMessageCreatedAt,
+                unreadCount != null ? unreadCount : 0L,
                 conversation.getCreatedAt(),
                 conversation.getUpdatedAt()
         );

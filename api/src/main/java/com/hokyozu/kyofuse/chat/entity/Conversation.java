@@ -54,6 +54,10 @@ public class Conversation {
     @Column(name = "direct_message_status", length = 20)
     private DirectConversationStatus directMessageStatus;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "revoked_by")
+    private User revokedBy;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

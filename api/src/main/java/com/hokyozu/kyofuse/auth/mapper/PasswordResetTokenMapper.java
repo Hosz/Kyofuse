@@ -5,13 +5,13 @@ import com.hokyozu.kyofuse.users.entity.User;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.UUID;
 
 public class PasswordResetTokenMapper {
-    public static PasswordResetToken toEntity(User user, String tokenHash, Duration TOKEN_TTL) {
+    public static PasswordResetToken toEntity(UUID userId, String tokenHash) {
         return PasswordResetToken.builder()
-                .user(user)
+                .userId(userId)
                 .tokenHash(tokenHash)
-                .expiresAt(Instant.now().plus(TOKEN_TTL))
                 .createdAt(Instant.now())
                 .build();
     }

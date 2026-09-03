@@ -23,6 +23,13 @@
             {{ unreadNotificationsCount() > 99 ? '99+' : unreadNotificationsCount() }}
           </span>
         }
+        @if (item.route === '/chats' && unreadChatsCount() > 0) {
+          <span
+            class="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-on-primary"
+          >
+            {{ unreadChatsCount() > 99 ? '+99' : unreadChatsCount() }}
+          </span>
+        }
       </span>
       <span>{{ item.label }}</span>
     </a>

@@ -1,0 +1,29 @@
+# Dependencies & local runtime caches — installed inside the container
+node_modules/
+.angular/
+dist/
+.npm/
+
+# IDE / editor metadata
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Version control
+.git/
+.gitignore
+
+# Docker files themselves
+Dockerfile*
+.dockerignore
+
+# Misc
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.claude/
+.editorconfig
+.prettierrc
+README.md

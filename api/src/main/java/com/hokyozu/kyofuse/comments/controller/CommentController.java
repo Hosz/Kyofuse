@@ -21,6 +21,7 @@ public class CommentController {
 
     private final CommentService commentService;
 
+    @com.hokyozu.kyofuse.infrastructure.ratelimit.RateLimit(key = "create_comment", limit = 20, period = 60, type = com.hokyozu.kyofuse.infrastructure.ratelimit.RateLimitType.USER_ID)
     @PostMapping("/post/{postId}")
     @ResponseStatus(HttpStatus.CREATED)
     public CommentResponse postComment(@AuthenticationPrincipal Jwt jwt,

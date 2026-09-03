@@ -26,6 +26,9 @@ import com.hokyozu.kyofuse.users.enums.UserStatus;
 import com.hokyozu.kyofuse.users.finder.UserFinder;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -50,10 +53,15 @@ public class GamerProfileService {
     private final UpdateFavoriteMapsService updateFavoriteMapsService;
     private final ProfilePermissionService profilePermissionService;
     private final ImageProcessingService imageProcessingService;
-
     private final GamerProfileFinder gamerProfileFinder;
     private final UserFinder userFinder;
+    private final com.hokyozu.kyofuse.leaderboard.service.LeaderboardService leaderboardService;
+    private final ProfileAnalyticsService profileAnalyticsService;
 
+    @Caching(evict = {
+            @CacheEvict(value = "user_profiles", key = "'id:' + #userId"),
+            @CacheEvict(value = "user_profiles", allEntries = true)
+    })
     @Transactional
     public GamerProfileResponse uploadAvatar(UUID userId, MultipartFile file) throws IOException {
         GamerProfile profile = gamerProfileFinder.findProfileByUserId(userId);
@@ -66,6 +74,10 @@ public class GamerProfileService {
         return GamerProfileMapper.toResponse(profile, favoriteMaps);
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "user_profiles", key = "'id:' + #userId"),
+            @CacheEvict(value = "user_profiles", allEntries = true)
+    })
     @Transactional
     public GamerProfileResponse uploadBanner(UUID userId, MultipartFile file) throws IOException {
         GamerProfile profile = gamerProfileFinder.findProfileByUserId(userId);
@@ -89,6 +101,10 @@ public class GamerProfileService {
         gamerProfileRepository.save(profile);
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "user_profiles", key = "'id:' + #userId"),
+            @CacheEvict(value = "user_profiles", allEntries = true)
+    })
     @Transactional
     public GamerProfileResponse editProfile(UUID userId, GamerProfileRequest request) {
 
@@ -122,25 +138,25 @@ public class GamerProfileService {
         profile.setSetupStatus(newStatus);
 
         GamerProfile savedProfile = gamerProfileRepository.save(profile);
+        if (request.premierRating() != null) {
+            leaderboardService.updateScore(userId, request.premierRating());
+        }
         List<GamerProfileFavoriteMap> favoriteMaps =
                 gamerProfileFavoriteMapRepository.findByProfile_Id(savedProfile.getId());
         return GamerProfileMapper.toResponse(savedProfile, favoriteMaps);
     }
 
+    @Cacheable(value = "user_profiles", key = "'id:' + #userId")
     @Transactional(readOnly = true)
     public GamerProfileResponse viewMyProfile(UUID userId) {
-        GamerProfile gamerProfile = gamerProfileFinder.findProfileByUserId(userId);
+        GamerProfile gamerProfile = gamerProfileFinder.findFullProfileByUserId(userId);
 
-        List<GamerProfileFavoriteMap> favoriteMaps =
-                gamerProfileFavoriteMapRepository.findByProfile_Id(gamerProfile.getId());
-
-        return GamerProfileMapper.toResponse(gamerProfile, favoriteMaps);
+        return GamerProfileMapper.toResponse(gamerProfile, gamerProfile.getFavoriteMaps());
     }
 
     @Transactional(readOnly = true)
     public GamerProfileResponse viewUserProfile(String username, UUID userId) {
         User requestingUser = userFinder.findProfileByUsername(username);
-        GamerProfile userRequestedProfile = gamerProfileFinder.findProfileByUserUsername(username);
         User user = userFinder.findProfileByUserId(userId);
 
         if (userId.equals(requestingUser.getId())) {
@@ -149,10 +165,10 @@ public class GamerProfileService {
 
         profilePermissionService.validateViewProfile(user, requestingUser);
 
-        List<GamerProfileFavoriteMap> favoriteMaps =
-                gamerProfileFavoriteMapRepository.findByProfile_Id(userRequestedProfile.getId());
+        GamerProfile userRequestedProfile = gamerProfileFinder.findFullProfileByUserUsername(username);
+        profileAnalyticsService.recordProfileVisit(userRequestedProfile.getUser().getId(), userId);
 
-        return GamerProfileMapper.toResponse(userRequestedProfile, favoriteMaps);
+        return GamerProfileMapper.toResponse(userRequestedProfile, userRequestedProfile.getFavoriteMaps());
     }
 
     @Transactional(readOnly = true)

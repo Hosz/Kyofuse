@@ -69,7 +69,7 @@ public class UserPinnedCommunityService {
         }
 
         // Nova fixada entra no fim da barra.
-        int nextPosition = userPinnedCommunityRepository.findByUserIdOrderByPositionAsc(userId).size();
+        int nextPosition = userPinnedCommunityRepository.countByUserId(userId);
 
         userPinnedCommunityRepository.save(
                 UserPinnedCommunityMapper.toEntity(user, community, nextPosition)

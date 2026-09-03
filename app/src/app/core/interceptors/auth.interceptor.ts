@@ -2,6 +2,7 @@ import { HttpErrorResponse, HttpInterceptorFn } from "@angular/common/http";
 import { inject } from "@angular/core";
 import { AuthService } from "../services/auth/auth.service";
 import { AccountManagerService } from "../services/auth/account-manager.service";
+import { ToastService } from "../services/ui/toast.service";
 import { catchError, switchMap, throwError } from "rxjs";
 
 /**
@@ -78,6 +79,19 @@ export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
                         return throwError(() => error);
                     }),
                 );
+            }
+
+            /**
+             * 🛡️ Tratar 429 Too Many Requests (Rate Limiter do Redis)
+             */
+            if (error.status === 429) {
+                const retryAfter = error.headers.get('Retry-After');
+                const toastService = inject(ToastService, { optional: true });
+                const message = error.error?.message || (retryAfter ? `Muitas requisições. Aguarde ${retryAfter} segundos antes de tentar novamente.` : 'Limite de requisições excedido. Tente novamente em instantes.');
+                if (toastService) {
+                    toastService.error(message);
+                }
+                return throwError(() => error);
             }
 
             return throwError(() => error);

@@ -123,8 +123,8 @@ class UserBlockServiceTest {
         when(userFinder.findProfileByUserId(blocker.getId())).thenReturn(blocker);
         when(userBlockRepository.findAllByBlocker(blocker, pageable))
                 .thenReturn(new PageImpl<>(List.of(block), pageable, 1));
-        when(gamerProfileFinder.findProfileByUserId(blocked.getId()))
-                .thenReturn(GamerProfile.builder().nickname("Blocked One").avatarUrl("https://example.com/a.png").build());
+        when(gamerProfileFinder.findAllByUserIds(List.of(blocked.getId())))
+                .thenReturn(List.of(GamerProfile.builder().user(blocked).nickname("Blocked One").avatarUrl("https://example.com/a.png").build()));
 
         Page<UserBlockResponse> response = userBlockService.getBlockedUsers(blocker.getId(), pageable);
 

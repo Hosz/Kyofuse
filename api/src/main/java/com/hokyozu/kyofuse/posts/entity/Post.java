@@ -61,6 +61,10 @@ public class Post {
     @Builder.Default
     private Integer commentCount = 0;
 
+    @Column(name = "view_count", nullable = false)
+    @Builder.Default
+    private Long viewCount = 0L;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

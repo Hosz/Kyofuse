@@ -33,4 +33,14 @@ public class GamerProfileFinder {
         return gamerProfileRepository.findByUserUsername(username)
                 .orElseThrow(() -> new RuntimeException("Gamer profile not found for username: " + username));
     }
+
+    public GamerProfile findFullProfileByUserId(UUID userId) {
+        return gamerProfileRepository.findFullByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Full gamer profile not found for user ID: " + userId));
+    }
+
+    public GamerProfile findFullProfileByUserUsername(String username) {
+        return gamerProfileRepository.findFullByUserUsername(username)
+                .orElseThrow(() -> new RuntimeException("Full gamer profile not found for username: " + username));
+    }
 }

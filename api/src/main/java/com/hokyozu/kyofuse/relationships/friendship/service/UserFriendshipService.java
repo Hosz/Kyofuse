@@ -25,7 +25,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -80,20 +84,30 @@ public class UserFriendshipService {
         userFriendRequestRepository.delete(friendRequest);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<UserFriendshipResponse> showMyFriends(UUID userId, Pageable pageable) {
         User user = userFinder.findProfileByUserId(userId);
         userChecker.checkActive(user);
 
         Page<UserFriendship> friends = userFriendshipRepository.findAllByUserOneOrUserTwo(user, user, pageable);
+        List<UUID> friendIds = friends.getContent().stream()
+                .map(f -> UserFriendshipMapper.resolveFriend(f, userId).getId())
+                .distinct()
+                .toList();
+
+        Map<UUID, GamerProfile> profileMap = friendIds.isEmpty()
+                ? Map.of()
+                : gamerProfileFinder.findAllByUserIds(friendIds).stream()
+                        .collect(Collectors.toMap(p -> p.getUser().getId(), Function.identity(), (a, b) -> a));
+
         return friends.map(friendship -> {
             User friend = UserFriendshipMapper.resolveFriend(friendship, userId);
-            GamerProfile gamerProfile = gamerProfileFinder.findProfileByUserId(friend.getId());
+            GamerProfile gamerProfile = profileMap.get(friend.getId());
             return UserFriendshipMapper.toResponse(friendship, userId, gamerProfile);
         });
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<UserFriendshipResponse> showUserFriends(UUID userAuthId, UUID userId, Pageable pageable) {
         User userAuth = userFinder.findProfileByUserId(userAuthId);
         User user = userFinder.findProfileByUserId(userId);
@@ -103,9 +117,19 @@ public class UserFriendshipService {
         profilePermissionService.validateViewFriends(userAuth, user);
 
         Page<UserFriendship> friends = userFriendshipRepository.findAllByUserOneOrUserTwo(user, user, pageable);
+        List<UUID> friendIds = friends.getContent().stream()
+                .map(f -> UserFriendshipMapper.resolveFriend(f, userId).getId())
+                .distinct()
+                .toList();
+
+        Map<UUID, GamerProfile> profileMap = friendIds.isEmpty()
+                ? Map.of()
+                : gamerProfileFinder.findAllByUserIds(friendIds).stream()
+                        .collect(Collectors.toMap(p -> p.getUser().getId(), Function.identity(), (a, b) -> a));
+
         return friends.map(friendship -> {
             User friend = UserFriendshipMapper.resolveFriend(friendship, userId);
-            GamerProfile gamerProfile = gamerProfileFinder.findProfileByUserId(friend.getId());
+            GamerProfile gamerProfile = profileMap.get(friend.getId());
             return UserFriendshipMapper.toResponse(friendship, userId, gamerProfile);
         });
     }
@@ -119,7 +143,8 @@ public class UserFriendshipService {
         userChecker.checkActive(friend);
 
         friendshipPermissionService.validateRemoveFriendship(user, friend);
-        UserFriendship friendship = userFriendshipRepository.findByUserOneAndUserTwo(user, friend);
+        UserFriendship friendship = userFriendshipRepository.findFriendshipBetween(user, friend)
+                .orElseThrow(() -> new NotFoundException("Friendship not found"));
 
         userFriendshipRepository.delete(friendship);
     }
@@ -127,13 +152,45 @@ public class UserFriendshipService {
     @Transactional(readOnly = true)
     public long showMyFriendsQuantity(UUID userId) {
         User user = userFinder.findProfileByUserId(userId);
-        return userFriendshipRepository.countUserFriendshipByUserOne(user);
+        return userFriendshipRepository.countTotalFriends(user);
     }
 
     @Transactional(readOnly = true)
     public long showUserFriendsQuantity(UUID userAuthId, UUID userId) {
-        //User userAuth = userFinder.findProfileByUserId(userAuthId);
         User user = userFinder.findProfileByUserId(userId);
-        return userFriendshipRepository.countUserFriendshipByUserOne(user);
+        return userFriendshipRepository.countTotalFriends(user);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isFriend(UUID userAuthId, UUID userId) {
+        User userAuth = userFinder.findProfileByUserId(userAuthId);
+        User user = userFinder.findProfileByUserId(userId);
+        return userFriendshipRepository.existsMutualFriendship(userAuth, user);
+    }
+
+    @Transactional(readOnly = true)
+    public com.hokyozu.kyofuse.relationships.friendship.dto.response.FriendshipStatusResponse getFriendshipStatus(UUID userAuthId, UUID userId) {
+        User userAuth = userFinder.findProfileByUserId(userAuthId);
+        User user = userFinder.findProfileByUserId(userId);
+
+        if (userAuth.equals(user)) {
+            return new com.hokyozu.kyofuse.relationships.friendship.dto.response.FriendshipStatusResponse(false, false, false, null);
+        }
+
+        if (userFriendshipRepository.existsMutualFriendship(userAuth, user)) {
+            return new com.hokyozu.kyofuse.relationships.friendship.dto.response.FriendshipStatusResponse(true, false, false, null);
+        }
+
+        var sentReq = userFriendRequestRepository.findBySenderAndReceiver(userAuth, user);
+        if (sentReq.isPresent()) {
+            return new com.hokyozu.kyofuse.relationships.friendship.dto.response.FriendshipStatusResponse(false, true, false, sentReq.get().getId());
+        }
+
+        var recvReq = userFriendRequestRepository.findBySenderAndReceiver(user, userAuth);
+        if (recvReq.isPresent()) {
+            return new com.hokyozu.kyofuse.relationships.friendship.dto.response.FriendshipStatusResponse(false, false, true, recvReq.get().getId());
+        }
+
+        return new com.hokyozu.kyofuse.relationships.friendship.dto.response.FriendshipStatusResponse(false, false, false, null);
     }
 }

@@ -32,8 +32,74 @@ export function toPost(post: postResponse): Post {
       reposts: 0,
       likes: post.likeCount,
       reactions: post.reactionCount,
+      views: post.viewCount ?? 0,
     },
   };
+}
+
+/**
+ * Formata o preview da última mensagem para a lista de conversas:
+ * - Trunca textos longos adicionando "..."
+ * - Converte mídias para etiquetas descritivas como "[Imagem]", "[Vídeo]", "[GIF]", etc.
+ */
+export function formatMessagePreview(
+  content?: string | null,
+  hasMedia?: boolean | null,
+  mediaType?: string | null,
+  senderName?: string | null,
+  isGroupOrCommunity?: boolean,
+  isMe?: boolean,
+): string {
+  let mediaLabel = '';
+  if (hasMedia) {
+    if (mediaType?.includes('gif') || mediaType?.includes('image/gif')) {
+      mediaLabel = 'GIF';
+    } else if (mediaType?.startsWith('video/')) {
+      mediaLabel = 'Vídeo';
+    } else if (mediaType?.startsWith('audio/')) {
+      mediaLabel = 'Áudio';
+    } else if (mediaType?.startsWith('image/')) {
+      mediaLabel = 'Imagem';
+    } else {
+      mediaLabel = 'Arquivo';
+    }
+  }
+
+  let text = '';
+  const trimmedContent = content?.trim() ?? '';
+
+  if (mediaLabel && trimmedContent) {
+    text = `[${mediaLabel}] ${trimmedContent}`;
+  } else if (mediaLabel) {
+    text = `[${mediaLabel}]`;
+  } else if (trimmedContent) {
+    text = trimmedContent;
+  }
+
+  if (!text) {
+    return '';
+  }
+
+  const maxLength = 45;
+  if (text.length > maxLength) {
+    text = text.slice(0, maxLength).trimEnd() + '...';
+  }
+
+  if (isMe) {
+    return `Você: ${text}`;
+  } else if (isGroupOrCommunity && senderName) {
+    return `${senderName}: ${text}`;
+  }
+
+  return text;
+}
+
+export function previewFromChatMessage(message: ChatMessage, isGroupOrCommunity = false): string {
+  const hasMedia = !!message.media && message.media.length > 0;
+  const mediaType = hasMedia ? message.media![0].contentType : null;
+  const senderName = message.senderNickname || message.senderUsername;
+  const isMe = message.author === 'me';
+  return formatMessagePreview(message.content, hasMedia, mediaType, senderName, isGroupOrCommunity, isMe);
 }
 
 /**
@@ -42,6 +108,9 @@ export function toPost(post: postResponse): Post {
  * vinculada.
  */
 export function toConversation(conversation: ConversationResponse, myUserId: string): Conversation {
+  const unreadCount = conversation.unreadCount ?? 0;
+  const lastTime = conversation.lastMessageCreatedAt || conversation.updatedAt;
+
   if (conversation.type === 'DIRECT') {
     const iAmUserOne = conversation.directUserOneId === myUserId;
     const otherId = (iAmUserOne ? conversation.directUserTwoId : conversation.directUserOneId) ?? '';
@@ -49,6 +118,28 @@ export function toConversation(conversation: ConversationResponse, myUserId: str
     const otherNickname = iAmUserOne ? conversation.directUserTwoNickname : conversation.directUserOneNickname;
     const otherAvatarUrl = iAmUserOne ? conversation.directUserTwoAvatarUrl : conversation.directUserOneAvatarUrl;
     const isCreator = conversation.createdById === myUserId;
+    const relationship = toRelationship(conversation.directMessageStatus, isCreator);
+
+    const isMe = iAmUserOne
+      ? conversation.lastMessageSenderUsername === conversation.directUserOneUsername
+      : conversation.lastMessageSenderUsername === conversation.directUserTwoUsername;
+
+    const senderName = isMe ? 'Você' : (otherNickname || otherUsername);
+    let preview = formatMessagePreview(
+      conversation.lastMessageContent,
+      conversation.lastMessageHasMedia,
+      conversation.lastMessageMediaType,
+      senderName,
+      false,
+      isMe,
+    );
+
+    if (!preview) {
+      if (relationship === 'request-received') preview = 'Quer trocar mensagens com você';
+      else if (relationship === 'request-sent') preview = 'Solicitação enviada';
+      else if (relationship === 'declined') preview = 'Conversa encerrada';
+      else preview = 'Toque para conversar';
+    }
 
     return {
       id: conversation.id,
@@ -60,9 +151,13 @@ export function toConversation(conversation: ConversationResponse, myUserId: str
         handle: otherUsername,
         avatarUrl: otherAvatarUrl || FALLBACK_AVATAR_URL,
       },
-      relationship: toRelationship(conversation.directMessageStatus, isCreator),
-      lastMessageAt: toTimeAgo(conversation.updatedAt),
+      relationship,
+      lastMessageAt: toTimeAgo(lastTime),
+      lastMessagePreview: preview,
+      unread: unreadCount > 0 || relationship === 'request-received',
+      unreadCount,
       messages: [],
+      revokedById: conversation.revokedById ?? undefined,
     };
   }
 
@@ -71,6 +166,20 @@ export function toConversation(conversation: ConversationResponse, myUserId: str
   // GROUP tem foto própria (conversations.avatar_url); COMMUNITY exibe a da comunidade
   // vinculada, que vem junto da conversa.
   const avatarUrl = (isCommunity ? conversation.communityAvatarUrl : conversation.avatarUrl) || FALLBACK_AVATAR_URL;
+
+  const senderName = conversation.lastMessageSenderNickname || conversation.lastMessageSenderUsername;
+  let preview = formatMessagePreview(
+    conversation.lastMessageContent,
+    conversation.lastMessageHasMedia,
+    conversation.lastMessageMediaType,
+    senderName,
+    true,
+    false,
+  );
+
+  if (!preview) {
+    preview = isCommunity ? 'Canal da comunidade' : 'Grupo de conversa';
+  }
 
   return {
     id: conversation.id,
@@ -81,7 +190,10 @@ export function toConversation(conversation: ConversationResponse, myUserId: str
       avatarUrl,
     },
     relationship: 'mutual',
-    lastMessageAt: toTimeAgo(conversation.updatedAt),
+    lastMessageAt: toTimeAgo(lastTime),
+    lastMessagePreview: preview,
+    unread: unreadCount > 0,
+    unreadCount,
     messages: [],
     communityId: isCommunity ? (conversation.communityId ?? undefined) : undefined,
   };
@@ -110,6 +222,7 @@ export function toChatMessage(message: MessageResponse, myUserId: string): ChatM
     exactTime: toExactTime(message.createdAt),
     tooltipTime: toFullDateTimeTooltip(message.createdAt),
     createdAt: message.createdAt,
+    status: message.status || (message.senderId === myUserId ? 'SENT' : 'READ'),
     senderUsername: message.senderUsername,
     senderNickname: message.senderNickname ?? undefined,
     senderAvatarUrl: message.senderAvatarUrl ?? undefined,
@@ -119,11 +232,22 @@ export function toChatMessage(message: MessageResponse, myUserId: string): ChatM
 /** Janela em que mensagens seguidas do mesmo autor são consideradas uma rajada só. */
 const MESSAGE_GROUP_WINDOW_MS = 5 * 60 * 1000;
 
-export function toChatMessageGroups(messages: ChatMessage[]): ChatMessageGroup[] {
+export function toChatMessageGroups(
+  messages: ChatMessage[],
+  unreadDividerMessageId?: string | null,
+): ChatMessageGroup[] {
   const groups: ChatMessageGroup[] = [];
+  const seenMessageIds = new Set<string>();
   let lastDayKey = '';
 
   for (const message of messages) {
+    if (seenMessageIds.has(message.id)) {
+      continue;
+    }
+    seenMessageIds.add(message.id);
+
+    const isUnreadDivider = !!unreadDividerMessageId && unreadDividerMessageId === message.id;
+
     const current = groups.at(-1);
     const previous = current?.messages.at(-1);
     const messageDayKey = getMessageDayKey(message.createdAt);
@@ -133,6 +257,7 @@ export function toChatMessageGroups(messages: ChatMessage[]): ChatMessageGroup[]
       current?.author === message.author && current?.senderUsername === message.senderUsername;
     const withinWindow =
       !isNewDay &&
+      !isUnreadDivider &&
       !!previous &&
       new Date(message.createdAt).getTime() - new Date(previous.createdAt).getTime() <= MESSAGE_GROUP_WINDOW_MS;
 
@@ -152,6 +277,7 @@ export function toChatMessageGroups(messages: ChatMessage[]): ChatMessageGroup[]
     groups.push({
       key: message.id,
       dayDivider,
+      unreadDivider: isUnreadDivider ? 'Novas mensagens' : undefined,
       author: message.author,
       senderUsername: message.senderUsername,
       senderNickname: message.senderNickname,

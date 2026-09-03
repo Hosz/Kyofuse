@@ -166,8 +166,16 @@ Compare com a Fase 0: falta de rate-limiting é um risco que existe **agora**, i
 2. Meça o ganho de verdade usando o Grafana que você montou na Fase 1 — antes/depois. Não assuma que cache ajuda; confirme.
 3. Aproveite o Redis já disponível para o rate-limiting da Fase 0 (migrar contador de memória para Redis) e para presença online/offline (abaixo).
 
-**Status online/offline:** esse item do seu backlog tem uma dependência técnica que não estava explícita na lista original — hoje o chat é REST puro, **não existe WebSocket no projeto**. "Ver quem está online" em tempo real exige uma conexão persistente (WebSocket/STOMP), não só um cache. Redis entra aqui como apoio (guardar o conjunto de usuários online com TTL/heartbeat, e Pub/Sub se um dia você tiver mais de uma instância da API), mas o pré-requisito real é adicionar WebSocket ao chat primeiro.
-**Estudar:** `spring-boot-starter-websocket` + STOMP para a conexão; depois um padrão simples de presença (heartbeat do client a cada N segundos, TTL no Redis, se expirar o usuário "sai" da lista de online).
+**Status online/offline e evoluções de tempo real (WebSocket):**
+A base de WebSocket/STOMP e chat em tempo real já foi implementada (conexão autenticada via cookies e JWT, recibos de entrega/leitura, histórico por adesão e notificações em tempo real). As próximas evoluções utilizando essa infraestrutura incluem:
+
+- **Presença em tempo real (Online / Offline / Jogando):** Escutar eventos de ciclo de vida da sessão (`SessionConnectedEvent`, `SessionDisconnectEvent`) no backend e integrar com Redis (conjunto de usuários ativos com TTL/heartbeat). Broadcast do status dos amigos (Online, Ausente, Offline) e status rico no Gamer Profile (*"Jogando CS2"*, *"Em partida"*).
+- **Indicador de digitação ("Digitando..."):** Mensagens efêmeras via STOMP (`/app/conversations/{id}/typing` -> `/topic/conversations/{id}/typing`) sem persistência no banco, exibindo animação com debounce de ~3s.
+- **Reações a mensagens com Emojis:** Broadcast via `/topic/conversations/{id}/reactions` para atualização instantânea dos contadores de reações (👍, 🔥, ❤️, 🎮).
+- **Eventos de grupo e moderação ao vivo:** Notificação via `/topic/conversations/{id}/events` quando membros entram, saem, são promovidos a admin ou quando nome/foto do grupo são alterados, atualizando a UI sem refresh.
+- **Sincronização multi-aba / multi-dispositivo:** Envio de sinal em `/user/queue/read-sync` para zerar badges de não lidas em todas as abas abertas simultaneamente.
+- **Canais de voz com sinalização WebRTC:** Utilização do WebSocket STOMP como servidor de sinalização (troca de SDP Offer/Answer e ICE Candidates) para salas de voz de times e comunidades estilo Discord.
+- **Interações sociais do feed em tempo real:** Atualização ao vivo de contadores de curtidas e novos comentários nos posts via `/user/queue/feed-events` ou `/topic/posts/{id}`.
 
 ---
 

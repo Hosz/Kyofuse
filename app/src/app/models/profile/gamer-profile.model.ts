@@ -9,6 +9,7 @@ export interface gamerProfileResponse {
     country: string;
     city: string;
     state: string;
+    showCountryFlag?: boolean;
     mainRole: string;
     secondaryRole: string;
     premierRating: number;
@@ -31,6 +32,7 @@ export interface gamerProfileCard {
     country?: string;
     city?: string;
     state?: string;
+    showCountryFlag?: boolean;
 }
 
 export interface ProfileFilter {

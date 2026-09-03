@@ -15,6 +15,7 @@ export interface postResponse  {
     reactionCount: number;
     likeCount: number;
     commentCount: number;
+    viewCount?: number;
     maps: string[];
     media: PostMediaResponse[];
     createdAt: string;

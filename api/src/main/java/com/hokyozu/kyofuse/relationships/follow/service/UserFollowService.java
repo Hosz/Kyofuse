@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -109,8 +110,18 @@ public class UserFollowService {
         profilePermissionService.validateViewFollowers(user, followedUser);
 
         Page<UserFollow> userFollow = userFollowRepository.findAllByFollowed(followedUser, pageable);
+        List<UUID> followerIds = userFollow.getContent().stream()
+                .map(f -> f.getFollower().getId())
+                .distinct()
+                .toList();
+
+        Map<UUID, GamerProfile> profileMap = followerIds.isEmpty()
+                ? Map.of()
+                : gamerProfileFinder.findAllByUserIds(followerIds).stream()
+                        .collect(Collectors.toMap(p -> p.getUser().getId(), Function.identity(), (a, b) -> a));
+
         return userFollow.map(follow -> {
-            GamerProfile followerProfile = gamerProfileFinder.findProfileByUserId(follow.getFollower().getId());
+            GamerProfile followerProfile = profileMap.get(follow.getFollower().getId());
             return UserFollowMapper.toResponse(follow, followerProfile);
         });
     }
@@ -121,8 +132,18 @@ public class UserFollowService {
         userChecker.checkActive(user);
 
         Page<UserFollow> userFollows = userFollowRepository.findAllByFollowed(user, pageable);
+        List<UUID> followerIds = userFollows.getContent().stream()
+                .map(f -> f.getFollower().getId())
+                .distinct()
+                .toList();
+
+        Map<UUID, GamerProfile> profileMap = followerIds.isEmpty()
+                ? Map.of()
+                : gamerProfileFinder.findAllByUserIds(followerIds).stream()
+                        .collect(Collectors.toMap(p -> p.getUser().getId(), Function.identity(), (a, b) -> a));
+
         return userFollows.map(follow -> {
-            GamerProfile followerProfile = gamerProfileFinder.findProfileByUserId(follow.getFollower().getId());
+            GamerProfile followerProfile = profileMap.get(follow.getFollower().getId());
             return UserFollowMapper.toResponse(follow, followerProfile);
         });
     }
@@ -161,8 +182,18 @@ public class UserFollowService {
         userChecker.checkActive(user);
 
         Page<UserFollow> userFollows = userFollowRepository.findAllByFollower(user, pageable);
+        List<UUID> followedIds = userFollows.getContent().stream()
+                .map(f -> f.getFollowed().getId())
+                .distinct()
+                .toList();
+
+        Map<UUID, GamerProfile> profileMap = followedIds.isEmpty()
+                ? Map.of()
+                : gamerProfileFinder.findAllByUserIds(followedIds).stream()
+                        .collect(Collectors.toMap(p -> p.getUser().getId(), Function.identity(), (a, b) -> a));
+
         return userFollows.map(follow -> {
-            GamerProfile followedProfile = gamerProfileFinder.findProfileByUserId(follow.getFollowed().getId());
+            GamerProfile followedProfile = profileMap.get(follow.getFollowed().getId());
             return UserFollowMapper.toResponse(follow, followedProfile);
         });
     }
@@ -178,8 +209,18 @@ public class UserFollowService {
         profilePermissionService.validateViewFollowing(user, followedUser);
 
         Page<UserFollow> userFollows = userFollowRepository.findAllByFollower(followedUser, pageable);
+        List<UUID> followedIds = userFollows.getContent().stream()
+                .map(f -> f.getFollowed().getId())
+                .distinct()
+                .toList();
+
+        Map<UUID, GamerProfile> profileMap = followedIds.isEmpty()
+                ? Map.of()
+                : gamerProfileFinder.findAllByUserIds(followedIds).stream()
+                        .collect(Collectors.toMap(p -> p.getUser().getId(), Function.identity(), (a, b) -> a));
+
         return userFollows.map(follow -> {
-            GamerProfile followedProfile = gamerProfileFinder.findProfileByUserId(follow.getFollowed().getId());
+            GamerProfile followedProfile = profileMap.get(follow.getFollowed().getId());
             return UserFollowMapper.toResponse(follow, followedProfile);
         });
     }

@@ -37,7 +37,10 @@ export class UserProfileCardComponent {
   isDropdownOpen = signal(false);
   switchingUserId = signal<string | null>(null);
 
-  flagUrl = computed(() => getCountryFlagUrl(this.user().country));
+  flagUrl = computed(() => {
+    const showFlag = this.user().showCountryFlag ?? true;
+    return showFlag ? getCountryFlagUrl(this.user().country) : null;
+  });
 
   otherAccounts = computed(() => {
     const activeUserId = this.currentUserId();
@@ -71,6 +74,7 @@ export class UserProfileCardComponent {
           country: response.country,
           city: response.city,
           state: response.state,
+          showCountryFlag: response.showCountryFlag ?? true,
         });
         this.currentUserId.set(response.userId);
 
@@ -80,6 +84,7 @@ export class UserProfileCardComponent {
           nickname: response.nickname,
           avatarUrl: response.avatarUrl,
           country: response.country,
+          showCountryFlag: response.showCountryFlag ?? true,
         });
 
         // Garante que o switchToken esteja sincronizado e válido no backend para a conta atual

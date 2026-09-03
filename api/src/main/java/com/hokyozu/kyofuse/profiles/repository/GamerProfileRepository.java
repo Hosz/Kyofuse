@@ -2,6 +2,7 @@ package com.hokyozu.kyofuse.profiles.repository;
 
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.teams.entity.Team;
+import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.enums.UserStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -64,4 +65,20 @@ public interface GamerProfileRepository extends JpaRepository<GamerProfile, UUID
             @Param("status") UserStatus status,
             Pageable pageable
     );
+
+    @Query("""
+    SELECT DISTINCT gp FROM GamerProfile gp
+    JOIN FETCH gp.user u
+    LEFT JOIN FETCH gp.favoriteMaps fm
+    WHERE gp.user.id = :userId
+    """)
+    Optional<GamerProfile> findFullByUserId(@Param("userId") UUID userId);
+
+    @Query("""
+    SELECT DISTINCT gp FROM GamerProfile gp
+    JOIN FETCH gp.user u
+    LEFT JOIN FETCH gp.favoriteMaps fm
+    WHERE LOWER(u.username) = LOWER(:username)
+    """)
+    Optional<GamerProfile> findFullByUserUsername(@Param("username") String username);
 }

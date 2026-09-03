@@ -1,0 +1,209 @@
+<div class="tactical-grid flex h-screen w-full overflow-hidden bg-surface">
+  <div class="shell-container flex h-screen w-full">
+    <app-sidebar />
+
+    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto bg-surface">
+      <div class="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-8 sm:px-8">
+        
+        <!-- Header -->
+        <header class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-outline-variant/60 pb-6">
+          <div>
+            <div class="flex items-center gap-3">
+              <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-container/20 text-primary-container">
+                <span class="material-symbols-outlined text-[32px]">military_tech</span>
+              </span>
+              <div>
+                <h1 class="text-headline-md font-bold text-on-surface">Ranking Global de Jogadores</h1>
+                <p class="text-body-sm text-on-surface-variant">Classificação oficial por Rating Premier de Counter-Strike 2</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- My Rank Card -->
+          @if (myRank(); as me) {
+            <div class="flex items-center gap-4 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
+              <div class="flex flex-col">
+                <span class="text-label-xs font-semibold uppercase text-primary">Sua Posição</span>
+                <span class="text-headline-sm font-bold text-on-surface">
+                  @if (me.rank) {
+                    #{{ me.rank }}
+                  } @else {
+                    Não ranqueado
+                  }
+                </span>
+              </div>
+              <div class="h-8 w-px bg-outline-variant/50"></div>
+              <div class="flex flex-col">
+                <span class="text-label-xs font-semibold uppercase text-on-surface-variant">Rating</span>
+                <span class="text-headline-sm font-bold text-primary-container">{{ me.score | number }}</span>
+              </div>
+            </div>
+          }
+        </header>
+
+        <!-- Tabs de Visualização -->
+        <div class="mb-6 flex gap-2 border-b border-outline-variant/40 pb-2">
+          <button
+            type="button"
+            (click)="activeTab.set('top')"
+            [class.border-primary]="activeTab() === 'top'"
+            [class.text-primary]="activeTab() === 'top'"
+            [class.text-on-surface-variant]="activeTab() !== 'top'"
+            class="flex items-center gap-2 border-b-2 border-transparent px-4 py-2 text-label-md font-bold transition-colors hover:text-on-surface"
+          >
+            <span class="material-symbols-outlined text-[18px]">trophy</span>
+            TOP 50 Jogadores
+          </button>
+          <button
+            type="button"
+            (click)="activeTab.set('around')"
+            [class.border-primary]="activeTab() === 'around'"
+            [class.text-primary]="activeTab() === 'around'"
+            [class.text-on-surface-variant]="activeTab() !== 'around'"
+            class="flex items-center gap-2 border-b-2 border-transparent px-4 py-2 text-label-md font-bold transition-colors hover:text-on-surface"
+          >
+            <span class="material-symbols-outlined text-[18px]">radar</span>
+            Ao Seu Redor
+          </button>
+        </div>
+
+        <!-- Conteúdo do Ranking -->
+        @if (loading()) {
+          <div class="flex flex-col items-center justify-center py-16 text-on-surface-variant">
+            <span class="material-symbols-outlined animate-spin text-[36px] text-primary">progress_activity</span>
+            <p class="mt-4 text-body-md">Calculando classificações em tempo real...</p>
+          </div>
+        } @else {
+          <!-- Lista TOP 50 -->
+          @if (activeTab() === 'top') {
+            @if (topPlayers().length === 0) {
+              <div class="flex flex-col items-center justify-center rounded-2xl border border-outline-variant/40 bg-surface-container-low py-16 text-center">
+                <span class="material-symbols-outlined text-[48px] text-on-surface-variant/40">leaderboard</span>
+                <p class="mt-2 text-body-md font-semibold text-on-surface">Nenhum jogador pontuado ainda</p>
+                <p class="text-body-sm text-on-surface-variant">Complete seu perfil com o rating Premier para entrar no ranking!</p>
+              </div>
+            } @else {
+              <div class="overflow-hidden rounded-2xl border border-outline-variant/50 bg-surface-container-low shadow-sm">
+                <table class="w-full text-left">
+                  <thead>
+                    <tr class="border-b border-outline-variant/40 text-label-xs font-bold uppercase text-on-surface-variant/70">
+                      <th class="px-6 py-4">Posição</th>
+                      <th class="px-6 py-4">Jogador</th>
+                      <th class="px-6 py-4">País</th>
+                      <th class="px-6 py-4 text-right">Rating Premier</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-outline-variant/20">
+                    @for (player of topPlayers(); track player.userId) {
+                      <tr class="transition-colors hover:bg-surface-container/50">
+                        <!-- Rank -->
+                        <td class="px-6 py-4">
+                          <span [class]="getRankBadgeClass(player.rank)" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border text-label-sm font-bold">
+                            @if (player.rank <= 3) {
+                              <span class="material-symbols-outlined text-[16px]">
+                                {{ player.rank === 1 ? 'workspace_premium' : player.rank === 2 ? 'military_tech' : 'hotel_class' }}
+                              </span>
+                            } @else {
+                              #{{ player.rank }}
+                            }
+                          </span>
+                        </td>
+
+                        <!-- Jogador -->
+                        <td class="px-6 py-4">
+                          <a
+                            [routerLink]="['/perfil', player.nickname]"
+                            class="flex items-center gap-3 group focus-visible:outline-none"
+                          >
+                            <img
+                              [src]="player.avatarUrl || fallbackAvatar"
+                              [alt]="player.nickname"
+                              class="h-10 w-10 rounded-full object-cover border border-outline-variant/40 transition-transform group-hover:scale-105"
+                            />
+                            <div class="flex flex-col">
+                              <span class="font-bold text-on-surface group-hover:text-primary group-hover:underline">{{ player.nickname }}</span>
+                            </div>
+                          </a>
+                        </td>
+
+                        <!-- País -->
+                        <td class="px-6 py-4 text-body-sm text-on-surface-variant">
+                          {{ player.country || 'Brasil' }}
+                        </td>
+
+                        <!-- Score -->
+                        <td class="px-6 py-4 text-right">
+                          <span class="font-mono text-title-md font-bold text-primary-container">
+                            {{ player.score | number }}
+                          </span>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          }
+
+          <!-- Lista Ao Seu Redor -->
+          @if (activeTab() === 'around') {
+            @if (surroundingPlayers().length === 0) {
+              <div class="flex flex-col items-center justify-center rounded-2xl border border-outline-variant/40 bg-surface-container-low py-16 text-center">
+                <span class="material-symbols-outlined text-[48px] text-on-surface-variant/40">radar</span>
+                <p class="mt-2 text-body-md font-semibold text-on-surface">Competidores ao redor não encontrados</p>
+                <p class="text-body-sm text-on-surface-variant">Adicione seu rating no perfil para ver seus rivais diretos!</p>
+              </div>
+            } @else {
+              <div class="overflow-hidden rounded-2xl border border-outline-variant/50 bg-surface-container-low shadow-sm">
+                <table class="w-full text-left">
+                  <thead>
+                    <tr class="border-b border-outline-variant/40 text-label-xs font-bold uppercase text-on-surface-variant/70">
+                      <th class="px-6 py-4">Posição</th>
+                      <th class="px-6 py-4">Jogador</th>
+                      <th class="px-6 py-4">País</th>
+                      <th class="px-6 py-4 text-right">Rating Premier</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-outline-variant/20">
+                    @for (player of surroundingPlayers(); track player.userId) {
+                      <tr class="transition-colors hover:bg-surface-container/50">
+                        <td class="px-6 py-4">
+                          <span [class]="getRankBadgeClass(player.rank)" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border text-label-sm font-bold">
+                            #{{ player.rank }}
+                          </span>
+                        </td>
+                        <td class="px-6 py-4">
+                          <a
+                            [routerLink]="['/perfil', player.nickname]"
+                            class="flex items-center gap-3 group focus-visible:outline-none"
+                          >
+                            <img
+                              [src]="player.avatarUrl || fallbackAvatar"
+                              [alt]="player.nickname"
+                              class="h-10 w-10 rounded-full object-cover border border-outline-variant/40 transition-transform group-hover:scale-105"
+                            />
+                            <span class="font-bold text-on-surface group-hover:text-primary group-hover:underline">{{ player.nickname }}</span>
+                          </a>
+                        </td>
+                        <td class="px-6 py-4 text-body-sm text-on-surface-variant">
+                          {{ player.country || 'Brasil' }}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                          <span class="font-mono text-title-md font-bold text-primary-container">
+                            {{ player.score | number }}
+                          </span>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          }
+        }
+      </div>
+    </main>
+
+    <app-discovery-sidebar />
+  </div>
+</div>

@@ -26,6 +26,8 @@ import com.hokyozu.kyofuse.users.finder.UserFinder;
 import com.hokyozu.kyofuse.users.service.UserChecker;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -51,6 +53,7 @@ public class CommunityService {
     private final TeamRepository teamRepository;
     private final TeamChecker teamChecker;
 
+    @CacheEvict(value = "communities_public", allEntries = true)
     @Transactional
     public CommunityResponse uploadAvatar(UUID userId, UUID communityId, MultipartFile file) throws IOException {
         User user = userFinder.findProfileByUserId(userId);
@@ -65,6 +68,7 @@ public class CommunityService {
         return CommunityMapper.toResponse(community);
     }
 
+    @CacheEvict(value = "communities_public", allEntries = true)
     @Transactional
     public CommunityResponse uploadBanner(UUID userId, UUID communityId, MultipartFile file) throws IOException {
         User user = userFinder.findProfileByUserId(userId);
@@ -88,6 +92,7 @@ public class CommunityService {
         return community;
     }
 
+    @CacheEvict(value = "communities_public", allEntries = true)
     @Transactional
     public CommunityResponse createCommunity(@Valid CommunityRequest request, UUID userId) {
         User user = userFinder.findProfileByUserId(userId);
@@ -112,6 +117,7 @@ public class CommunityService {
      * aquele texto, resolve um slug disponível antes de criar em vez de deixar
      * estourar a constraint do banco e derrubar a criação do Team inteira.
      */
+    @CacheEvict(value = "communities_public", allEntries = true)
     @Transactional
     public Community autoCreateTeamCommunity(User user, Team team) {
         String slug = resolveAvailableSlug(team.getSlug());
@@ -143,6 +149,7 @@ public class CommunityService {
         return candidate;
     }
 
+    @CacheEvict(value = "communities_public", allEntries = true)
     @Transactional
     public CommunityResponse editCommunity(UUID userId, UUID communityId, @Valid UpdateCommunityRequest request) {
         User user = userFinder.findProfileByUserId(userId);
@@ -162,6 +169,7 @@ public class CommunityService {
         return CommunityMapper.toResponse(community);
     }
 
+    @Cacheable(value = "communities_public", key = "#identifier")
     @Transactional(readOnly = true)
     public CommunityResponse detailCommunity(String identifier) {
         Community community;
@@ -180,6 +188,7 @@ public class CommunityService {
         return CommunityMapper.toResponse(community);
     }
 
+    @CacheEvict(value = "communities_public", allEntries = true)
     @Transactional
     public void deleteCommunity(UUID userId, UUID communityId) {
         User user = userFinder.findProfileByUserId(userId);
@@ -193,6 +202,7 @@ public class CommunityService {
         communityRepository.delete(community);
     }
 
+    @CacheEvict(value = "communities_public", allEntries = true)
     @Transactional
     public void archiveCommunity(UUID userId, UUID communityId) {
         User user = userFinder.findProfileByUserId(userId);

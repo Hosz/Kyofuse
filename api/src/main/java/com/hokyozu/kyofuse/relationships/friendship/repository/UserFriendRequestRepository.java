@@ -4,6 +4,7 @@ import com.hokyozu.kyofuse.relationships.friendship.entity.UserFriendRequest;
 import com.hokyozu.kyofuse.users.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.UUID;
@@ -11,7 +12,11 @@ import java.util.UUID;
 public interface UserFriendRequestRepository extends JpaRepository<UserFriendRequest, UUID> {
     boolean existsBySenderAndReceiver(User user, User userFriendRequest);
 
+    java.util.Optional<UserFriendRequest> findBySenderAndReceiver(User sender, User receiver);
+
+    @EntityGraph(attributePaths = {"sender", "receiver"})
     Page<UserFriendRequest> findAllByReceiver(User user, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"sender", "receiver"})
     Page<UserFriendRequest> findAllBySender(User user, Pageable pageable);
 }

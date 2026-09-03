@@ -150,8 +150,31 @@ class ConversationMapperTest {
         assertThat(response.directUserTwoId()).isEqualTo(directUserTwo.getId());
         assertThat(response.directUserTwoUsername()).isEqualTo("bob");
         assertThat(response.directMessageStatus()).isEqualTo(DirectConversationStatus.ACCEPTED);
+        assertThat(response.revokedById()).isNull();
         assertThat(response.createdAt()).isEqualTo(now);
         assertThat(response.updatedAt()).isEqualTo(now);
+    }
+
+    @Test
+    void toResponseMapsRevokedByWhenPresent() {
+        User creator = user("creator");
+        User directUserOne = user("alice");
+        User directUserTwo = user("bob");
+        Conversation conversation = Conversation.builder()
+                .id(UUID.randomUUID())
+                .type(ConversationType.DIRECT)
+                .createdBy(creator)
+                .directUserOne(directUserOne)
+                .directUserTwo(directUserTwo)
+                .directMessageStatus(DirectConversationStatus.DECLINED)
+                .revokedBy(directUserOne)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+
+        ConversationResponse response = ConversationMapper.toResponse(conversation);
+
+        assertThat(response.revokedById()).isEqualTo(directUserOne.getId());
     }
 
     @Test

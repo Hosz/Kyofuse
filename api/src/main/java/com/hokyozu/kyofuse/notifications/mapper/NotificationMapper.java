@@ -37,6 +37,10 @@ public class NotificationMapper {
     }
 
     public NotificationResponse toResponse(Notification notification) {
+        return toResponse(notification, notification.getActor() != null ? gamerProfileRepository.findByUserId(notification.getActor().getId()).orElse(null) : null);
+    }
+
+    public NotificationResponse toResponse(Notification notification, GamerProfile actorProfile) {
         return NotificationResponse.builder()
                 .id(notification.getId())
                 .type(notification.getType())
@@ -45,22 +49,20 @@ public class NotificationMapper {
                 .status(notification.getStatus())
                 .createdAt(notification.getCreatedAt())
                 .readAt(notification.getReadAt())
-                .actor(toActor(notification.getActor()))
+                .actor(toActor(notification.getActor(), actorProfile))
                 .target(toTarget(notification))
                 .metadata(notification.getMetadataJson())
                 .build();
     }
 
-    private NotificationActorResponse toActor(User actor) {
+    private NotificationActorResponse toActor(User actor, GamerProfile actorProfile) {
         if (actor == null) {
             return null;
         }
-        GamerProfile gamerProfile = gamerProfileRepository.findByUserId(actor.getId())
-                .orElseThrow(() -> new NotFoundException("Gamer profile not found for user ID: " + actor.getId()));
 
         return NotificationActorResponse.builder()
                 .username(actor.getUsername())
-                .avatarUrl(gamerProfile.getAvatarUrl())
+                .avatarUrl(actorProfile != null ? actorProfile.getAvatarUrl() : null)
                 .build();
     }
 

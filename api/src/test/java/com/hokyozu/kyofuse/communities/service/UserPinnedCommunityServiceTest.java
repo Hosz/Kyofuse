@@ -183,9 +183,7 @@ class UserPinnedCommunityServiceTest {
         when(userFinder.findProfileByUserId(userId)).thenReturn(user);
         when(communityRepository.findById(community.getId())).thenReturn(Optional.of(community));
         when(userPinnedCommunityRepository.existsByUserIdAndCommunityId(userId, community.getId())).thenReturn(false);
-        when(userPinnedCommunityRepository.findByUserIdOrderByPositionAsc(userId))
-                .thenReturn(List.of(pinned(user, community(CommunityStatus.ACTIVE), 0),
-                                    pinned(user, community(CommunityStatus.ACTIVE), 1)));
+        when(userPinnedCommunityRepository.countByUserId(userId)).thenReturn(2);
 
         userPinnedCommunityService.pinCommunity(userId, community.getId());
 

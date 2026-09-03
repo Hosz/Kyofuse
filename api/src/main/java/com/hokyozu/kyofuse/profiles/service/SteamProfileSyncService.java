@@ -6,6 +6,7 @@ import com.hokyozu.kyofuse.profiles.mapper.GamerProfileMapper;
 import com.hokyozu.kyofuse.profiles.repository.GamerProfileRepository;
 import com.hokyozu.kyofuse.users.entity.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,7 @@ public class SteamProfileSyncService {
     private final GamerProfileRepository gamerProfileRepository;
     private final UserRepository userRepository;
 
+    @CacheEvict(value = "user_profiles", key = "'id:' + #user.id")
     @Transactional
     public void syncIfMissing(User user, SteamPlayerSummary summary) {
         if (summary == null || user == null) {

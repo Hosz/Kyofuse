@@ -50,6 +50,7 @@ class GamerProfileMapperTest {
                 null,
                 null,
                 null,
+                null,
                 null
         ));
 
@@ -101,5 +102,18 @@ class GamerProfileMapperTest {
         assertThat(profile.getNickname()).isEqualTo("CustomNick");
         assertThat(profile.getAvatarUrl()).isEqualTo("https://custom.avatar");
         assertThat(profile.getCountry()).isEqualTo("US");
+    }
+
+    @Test
+    void updateEntityUpdatesShowCountryFlag() {
+        GamerProfile profile = GamerProfile.builder()
+                .showCountryFlag(true)
+                .build();
+
+        GamerProfileMapper.updateEntity(profile, new GamerProfileRequest(
+                null, null, null, null, null, null, null, false, null, null, null, null, null, null, null, null, null
+        ));
+
+        assertThat(profile.getShowCountryFlag()).isFalse();
     }
 }

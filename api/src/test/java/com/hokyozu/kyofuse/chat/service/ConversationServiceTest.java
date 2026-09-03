@@ -11,6 +11,9 @@ import com.hokyozu.kyofuse.chat.enums.ConversationType;
 import com.hokyozu.kyofuse.chat.enums.DirectConversationStatus;
 import com.hokyozu.kyofuse.chat.repository.ConversationMemberRepository;
 import com.hokyozu.kyofuse.chat.repository.ConversationRepository;
+import com.hokyozu.kyofuse.chat.repository.MessageMediaRepository;
+import com.hokyozu.kyofuse.chat.repository.MessageReceiptRepository;
+import com.hokyozu.kyofuse.chat.repository.MessageRepository;
 import com.hokyozu.kyofuse.communities.entity.Community;
 import com.hokyozu.kyofuse.communities.entity.CommunityMember;
 import com.hokyozu.kyofuse.communities.enums.CommunityMemberRole;
@@ -77,6 +80,18 @@ class ConversationServiceTest {
 
     @Mock
     private ConversationMemberRepository conversationMemberRepository;
+
+    @Mock
+    private MessageRepository messageRepository;
+
+    @Mock
+    private MessageReceiptRepository messageReceiptRepository;
+
+    @Mock
+    private MessageMediaRepository messageMediaRepository;
+
+    @Mock
+    private ChatCounterService chatCounterService;
 
     @Spy
     private UserChecker userChecker = new UserChecker();
@@ -379,6 +394,7 @@ class ConversationServiceTest {
         ConversationResponse response = conversationService.revokeDirectConversationPermission(conversation.getId(), userOne.getId());
 
         assertThat(response.directMessageStatus()).isEqualTo(DirectConversationStatus.DECLINED);
+        assertThat(conversation.getRevokedBy()).isEqualTo(userOne);
         verify(conversationRepository).save(conversation);
     }
 
@@ -397,6 +413,7 @@ class ConversationServiceTest {
         ConversationResponse response = conversationService.revokeDirectConversationPermission(conversation.getId(), userOne.getId());
 
         assertThat(response.directMessageStatus()).isEqualTo(DirectConversationStatus.DECLINED);
+        assertThat(conversation.getRevokedBy()).isEqualTo(userOne);
     }
 
     @Test
@@ -462,6 +479,123 @@ class ConversationServiceTest {
     }
 
     @Test
+    void allowDirectConversationPermissionMarksDeclinedConversationAsAccepted() {
+        User userOne = activeUser(UUID.randomUUID(), "alice");
+        User userTwo = activeUser(UUID.randomUUID(), "bob");
+        Conversation conversation = directConversation(userOne, userTwo, DirectConversationStatus.DECLINED);
+        conversation.setRevokedBy(userOne);
+
+        when(userFinder.findProfileByUserId(userOne.getId())).thenReturn(userOne);
+        when(conversationRepository.findById(conversation.getId())).thenReturn(Optional.of(conversation));
+        when(conversationRepository.save(conversation)).thenReturn(conversation);
+
+        ConversationResponse response = conversationService.allowDirectConversationPermission(conversation.getId(), userOne.getId());
+
+        assertThat(response.directMessageStatus()).isEqualTo(DirectConversationStatus.ACCEPTED);
+        assertThat(conversation.getDirectMessageStatus()).isEqualTo(DirectConversationStatus.ACCEPTED);
+        assertThat(conversation.getRevokedBy()).isNull();
+        verify(blockValidator).validate(userOne, userTwo);
+        verify(conversationRepository).save(conversation);
+    }
+
+    @Test
+    void allowDirectConversationPermissionRejectsUserOtherThanRevoker() {
+        User userOne = activeUser(UUID.randomUUID(), "alice");
+        User userTwo = activeUser(UUID.randomUUID(), "bob");
+        Conversation conversation = directConversation(userOne, userTwo, DirectConversationStatus.DECLINED);
+        conversation.setRevokedBy(userOne);
+
+        when(userFinder.findProfileByUserId(userTwo.getId())).thenReturn(userTwo);
+        when(conversationRepository.findById(conversation.getId())).thenReturn(Optional.of(conversation));
+
+        assertThatThrownBy(() -> conversationService.allowDirectConversationPermission(conversation.getId(), userTwo.getId()))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("Only the user who revoked the conversation can allow it again.");
+
+        verify(conversationRepository, never()).save(any());
+    }
+
+    @Test
+    void allowDirectConversationPermissionRejectsNonDeclinedConversation() {
+        User userOne = activeUser(UUID.randomUUID(), "alice");
+        User userTwo = activeUser(UUID.randomUUID(), "bob");
+        Conversation conversation = directConversation(userOne, userTwo, DirectConversationStatus.ACCEPTED);
+
+        when(userFinder.findProfileByUserId(userOne.getId())).thenReturn(userOne);
+        when(conversationRepository.findById(conversation.getId())).thenReturn(Optional.of(conversation));
+
+        assertThatThrownBy(() -> conversationService.allowDirectConversationPermission(conversation.getId(), userOne.getId()))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("This conversation is not currently declined.");
+
+        verify(conversationRepository, never()).save(any());
+    }
+
+    @Test
+    void allowDirectConversationPermissionRejectsNonParticipant() {
+        User userOne = activeUser(UUID.randomUUID(), "alice");
+        User userTwo = activeUser(UUID.randomUUID(), "bob");
+        User stranger = activeUser(UUID.randomUUID(), "stranger");
+        Conversation conversation = directConversation(userOne, userTwo, DirectConversationStatus.DECLINED);
+
+        when(userFinder.findProfileByUserId(stranger.getId())).thenReturn(stranger);
+        when(conversationRepository.findById(conversation.getId())).thenReturn(Optional.of(conversation));
+
+        assertThatThrownBy(() -> conversationService.allowDirectConversationPermission(conversation.getId(), stranger.getId()))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("User is not a participant in this conversation.");
+    }
+
+    @Test
+    void allowDirectConversationPermissionRejectsBlockedUser() {
+        User userOne = activeUser(UUID.randomUUID(), "alice");
+        User userTwo = activeUser(UUID.randomUUID(), "bob");
+        Conversation conversation = directConversation(userOne, userTwo, DirectConversationStatus.DECLINED);
+
+        when(userFinder.findProfileByUserId(userOne.getId())).thenReturn(userOne);
+        when(conversationRepository.findById(conversation.getId())).thenReturn(Optional.of(conversation));
+        org.mockito.Mockito.doThrow(new ForbiddenException("User is blocked by the profile owner."))
+                .when(blockValidator).validate(userOne, userTwo);
+
+        assertThatThrownBy(() -> conversationService.allowDirectConversationPermission(conversation.getId(), userOne.getId()))
+                .isInstanceOf(ForbiddenException.class);
+
+        verify(conversationRepository, never()).save(any());
+    }
+
+    @Test
+    void allowDirectConversationPermissionRejectsMissingConversation() {
+        User user = activeUser(UUID.randomUUID(), "alice");
+        UUID conversationId = UUID.randomUUID();
+
+        when(userFinder.findProfileByUserId(user.getId())).thenReturn(user);
+        when(conversationRepository.findById(conversationId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> conversationService.allowDirectConversationPermission(conversationId, user.getId()))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void allowDirectConversationPermissionRejectsNonDirectConversation() {
+        User creator = activeUser(UUID.randomUUID(), "creator");
+        Conversation conversation = Conversation.builder()
+                .id(UUID.randomUUID())
+                .type(ConversationType.GROUP)
+                .name("Squad")
+                .createdBy(creator)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+
+        when(userFinder.findProfileByUserId(creator.getId())).thenReturn(creator);
+        when(conversationRepository.findById(conversation.getId())).thenReturn(Optional.of(conversation));
+
+        assertThatThrownBy(() -> conversationService.allowDirectConversationPermission(conversation.getId(), creator.getId()))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Only DIRECT conversations support this action.");
+    }
+
+    @Test
     void listDirectConversationsReturnsMappedPage() {
         UUID userId = UUID.randomUUID();
         Pageable pageable = PageRequest.of(0, 10);
@@ -494,13 +628,12 @@ class ConversationServiceTest {
         when(userFinder.findProfileByUserId(userId)).thenReturn(user);
         when(communityMemberRepository.findByUserAndStatus(user, CommunityMemberStatus.ACTIVE, pageable))
                 .thenReturn(new PageImpl<>(List.of(activeMembership, archivedMembership), pageable, 2));
-        when(conversationRepository.findByCommunity(activeCommunity)).thenReturn(Optional.of(activeConversation));
+        when(conversationRepository.findByCommunityIn(List.of(activeCommunity))).thenReturn(List.of(activeConversation));
 
         Page<ConversationResponse> response = conversationService.listCommunityConversations(userId, pageable);
 
         assertThat(response.getContent()).hasSize(1);
         assertThat(response.getContent().get(0).communityId()).isEqualTo(activeCommunity.getId());
-        verify(conversationRepository, never()).findByCommunity(archivedCommunity);
     }
 
     @Test
@@ -520,8 +653,7 @@ class ConversationServiceTest {
                         List.of(communityMembership(user, withoutConversation), communityMembership(user, withConversation)),
                         pageable,
                         2));
-        when(conversationRepository.findByCommunity(withoutConversation)).thenReturn(Optional.empty());
-        when(conversationRepository.findByCommunity(withConversation)).thenReturn(Optional.of(conversation));
+        when(conversationRepository.findByCommunityIn(List.of(withoutConversation, withConversation))).thenReturn(List.of(conversation));
 
         Page<ConversationResponse> response = conversationService.listCommunityConversations(userId, pageable);
 

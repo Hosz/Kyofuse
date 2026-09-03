@@ -225,6 +225,8 @@ class PostReactionServiceTest {
         when(postFinder.findVisibleActivePost(postId, userId)).thenReturn(post);
         when(postReactionRepository.findByPostId(postId, pageable))
                 .thenReturn(new PageImpl<>(List.of(reaction(ReactionType.FIRE), reaction(ReactionType.LIKE)), pageable, 2));
+        when(gamerProfileFinder.findAllByUserIds(any()))
+                .thenReturn(List.of(GamerProfile.builder().user(user).build()));
 
         Page<PostReactionResponse> result = service.getReactions(userId, postId, pageable);
 
@@ -241,6 +243,8 @@ class PostReactionServiceTest {
         when(postFinder.findVisibleActivePost(postId, userId)).thenReturn(post);
         when(postReactionRepository.findByPostIdAndReactionType(postId, ReactionType.LIKE, pageable))
                 .thenReturn(new PageImpl<>(List.of(reaction), pageable, 1));
+        when(gamerProfileFinder.findAllByUserIds(any()))
+                .thenReturn(List.of(GamerProfile.builder().user(user).build()));
 
         Page<PostReactionResponse> result = service.getLikes(userId, postId, pageable);
 

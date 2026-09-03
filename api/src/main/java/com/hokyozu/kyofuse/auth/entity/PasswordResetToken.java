@@ -1,14 +1,14 @@
 package com.hokyozu.kyofuse.auth.entity;
 
-import com.hokyozu.kyofuse.users.entity.User;
-import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.redis.core.RedisHash;
+import org.springframework.data.redis.core.index.Indexed;
 
 import java.time.Instant;
 import java.util.UUID;
 
-@Entity
-@Table(name = "password_reset_tokens")
+@RedisHash(value = "password_reset_tokens", timeToLive = 900)
 @Getter
 @Setter
 @Builder
@@ -17,30 +17,10 @@ import java.util.UUID;
 public class PasswordResetToken {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    @Column(name = "token_hash", length = 64, nullable = false)
     private String tokenHash;
 
-    @Column(name = "expires_at", nullable = false)
-    private Instant expiresAt;
+    @Indexed
+    private UUID userId;
 
-    @Column(name = "used_at")
-    private Instant usedAt;
-
-    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
-
-    public boolean isExpired() {
-        return Instant.now().isAfter(expiresAt);
-    }
-
-    public boolean isUsed() {
-        return usedAt != null;
-    }
 }

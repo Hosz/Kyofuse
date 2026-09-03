@@ -13,6 +13,8 @@ import jakarta.validation.Valid;
 import java.time.Instant;
 import java.util.List;
 
+import com.hokyozu.kyofuse.chat.enums.MessageStatus;
+
 public class MessageMapper {
     public static Message toEntity(Conversation conversation, User user, @Valid MessageRequest request) {
         return Message.builder()
@@ -24,14 +26,18 @@ public class MessageMapper {
     }
 
     public static MessageResponse toResponse(Message message) {
-        return toResponse(message, List.of(), null);
+        return toResponse(message, List.of(), null, MessageStatus.SENT);
     }
 
     public static MessageResponse toResponse(Message message, GamerProfile senderProfile) {
-        return toResponse(message, List.of(), senderProfile);
+        return toResponse(message, List.of(), senderProfile, MessageStatus.SENT);
     }
 
     public static MessageResponse toResponse(Message message, List<MessageMedia> mediaList, GamerProfile senderProfile) {
+        return toResponse(message, mediaList, senderProfile, MessageStatus.SENT);
+    }
+
+    public static MessageResponse toResponse(Message message, List<MessageMedia> mediaList, GamerProfile senderProfile, MessageStatus status) {
         List<MessageMediaResponse> mediaResponses = mediaList == null
                 ? List.of()
                 : mediaList.stream().map(MessageMediaMapper::toResponse).toList();
@@ -45,7 +51,8 @@ public class MessageMapper {
                 senderProfile != null ? senderProfile.getAvatarUrl() : null,
                 message.getContent(),
                 mediaResponses,
-                message.getCreatedAt()
+                message.getCreatedAt(),
+                status != null ? status : MessageStatus.SENT
         );
     }
 }

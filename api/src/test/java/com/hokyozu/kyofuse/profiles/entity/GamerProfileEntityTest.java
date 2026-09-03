@@ -29,6 +29,7 @@ class GamerProfileEntityTest {
                 .avatarUrl("https://example.com/avatar.png")
                 .bannerUrl("https://example.com/banner.png")
                 .country("USA")
+                .showCountryFlag(false)
                 .mainRole(PlayerRole.AWPER)
                 .secondaryRole(PlayerRole.RIFLER)
                 .premierRating(2500)
@@ -47,6 +48,7 @@ class GamerProfileEntityTest {
         assertThat(profile.getAvatarUrl()).isEqualTo("https://example.com/avatar.png");
         assertThat(profile.getBannerUrl()).isEqualTo("https://example.com/banner.png");
         assertThat(profile.getCountry()).isEqualTo("USA");
+        assertThat(profile.getShowCountryFlag()).isFalse();
         assertThat(profile.getMainRole()).isEqualTo(PlayerRole.AWPER);
         assertThat(profile.getSecondaryRole()).isEqualTo(PlayerRole.RIFLER);
         assertThat(profile.getPremierRating()).isEqualTo(2500);

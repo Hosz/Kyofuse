@@ -146,6 +146,7 @@ public class TeamInviteService {
         return invites.map(TeamInviteMapper::toResponse);
     }
 
+    @com.hokyozu.kyofuse.infrastructure.redis.DistributedLock(key = "'team:invite:' + #inviteId", leaseTimeSeconds = 5)
     @Transactional
     public void acceptInvite(UUID userId, UUID inviteId) {
         User user = userFinder.findProfileByUserId(userId);

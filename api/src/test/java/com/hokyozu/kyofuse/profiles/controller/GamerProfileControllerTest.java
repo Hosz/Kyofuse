@@ -25,6 +25,9 @@ class GamerProfileControllerTest {
     @Mock
     private GamerProfileService gamerProfileService;
 
+    @Mock
+    private com.hokyozu.kyofuse.profiles.service.ProfileAnalyticsService profileAnalyticsService;
+
     @InjectMocks
     private GamerProfileController controller;
 
@@ -92,6 +95,7 @@ class GamerProfileControllerTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
     }
@@ -108,6 +112,7 @@ class GamerProfileControllerTest {
                 null,
                 null,
                 null,
+                true,
                 null,
                 null,
                 null,

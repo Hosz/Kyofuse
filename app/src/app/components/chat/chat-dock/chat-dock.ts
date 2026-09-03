@@ -1,7 +1,7 @@
-import { Component, ElementRef, afterRenderEffect, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, afterRenderEffect, computed, inject, OnDestroy, signal, viewChild } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { filter, forkJoin, map, startWith } from 'rxjs';
+import { filter, forkJoin, map, startWith, Subscription } from 'rxjs';
 import { ConversationService } from '../../../core/services/chat/conversation.service';
 import { MessageService } from '../../../core/services/chat/message.service';
 import { ProfileService } from '../../../core/services/profile/profile.service';
@@ -10,9 +10,9 @@ import { ConversationInfoPanelComponent } from '../conversation-info-panel/conve
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog';
 import { SkeletonComponent } from '../../shared/skeleton/skeleton';
 import { ToastService } from '../../../core/services/ui/toast.service';
-import { ConversationResponse } from '../../../models/chat/chat.model';
+import { ConversationResponse, MessageResponse } from '../../../models/chat/chat.model';
 import { Conversation } from '../../../shared/models/chat.model';
-import { toChatMessage, toChatMessageGroups, toConversation } from '../../../shared/utils/mappers.util';
+import { previewFromChatMessage, toChatMessage, toChatMessageGroups, toConversation } from '../../../shared/utils/mappers.util';
 
 const CONVERSATIONS_PAGE_SIZE = 30;
 const MESSAGES_PAGE_SIZE = 30;
@@ -37,7 +37,7 @@ function normalize(value: string): string {
   templateUrl: './chat-dock.html',
   styleUrl: './chat-dock.css',
 })
-export class ChatDockComponent {
+export class ChatDockComponent implements OnDestroy {
   private router = inject(Router);
   private conversationService = inject(ConversationService);
   private messageService = inject(MessageService);
@@ -46,6 +46,9 @@ export class ChatDockComponent {
   private toastService = inject(ToastService);
 
   private scroller = viewChild<ElementRef<HTMLElement>>('scroller');
+  private chatSub: Subscription | null = null;
+  private userQueueSub: Subscription | null = null;
+  private statusSub: Subscription | null = null;
 
   private currentUrl = toSignal(
     this.router.events.pipe(
@@ -77,6 +80,7 @@ export class ChatDockComponent {
   /** Conversa aberta dentro da janelinha. null = mostrando a lista. */
   activeId = signal<string | null>(null);
   messagesLoading = signal(false);
+  loadingOlderMessages = signal(false);
   sending = signal(false);
   draft = signal('');
 
@@ -85,6 +89,10 @@ export class ChatDockComponent {
   private myUserId = signal<string | null>(null);
   private loaded = false;
   private loadedMessagesFor = new Set<string>();
+  private previousScrollHeight: number | null = null;
+  private previousScrollTop: number | null = null;
+  private lastMessageCount = 0;
+  private currentConvId: string | null = null;
 
   /** Aba e busca se somam: a busca procura dentro do que a aba já deixou passar. */
   visibleConversations = computed(() => {
@@ -107,7 +115,9 @@ export class ChatDockComponent {
 
   active = computed(() => this.conversations().find((conversation) => conversation.id === this.activeId()) ?? null);
 
-  messageGroups = computed(() => toChatMessageGroups(this.active()?.messages ?? []));
+  messageGroups = computed(() =>
+    toChatMessageGroups(this.active()?.messages ?? [], this.active()?.unreadDividerMessageId),
+  );
 
   /** Mesma regra da janela grande: quem recebeu um pedido ainda não aceito não pode
    * responder, e quem enviou só tem direito a uma mensagem até ser aceito. */
@@ -128,19 +138,76 @@ export class ChatDockComponent {
         return 'Abra a conversa para aceitar ou recusar a solicitação.';
       case 'request-sent':
         return 'Aguardando a outra pessoa aceitar sua solicitação.';
+      case 'declined': {
+        const myId = this.myUserId();
+        const canAllow = !conversation.revokedById || conversation.revokedById === myId;
+        return canAllow
+          ? 'Conversa encerrada por você. Abra para permitir novamente.'
+          : `Conversa encerrada por ${conversation.participant.name}.`;
+      }
       default:
         return 'Esta conversa não está disponível.';
     }
   });
 
   constructor() {
+    this.statusSub = this.messageService.messageStatus$.subscribe({
+      next: (event) => {
+        this.updateConversation(event.conversationId, (c) => ({
+          ...c,
+          messages: c.messages.map((m) => (m.id === event.messageId ? { ...m, status: event.status } : m)),
+        }));
+      },
+      error: (err) => console.error('[ChatDock] Realtime status error:', err),
+    });
+
+    this.userQueueSub = this.conversationService.newMessage$.subscribe({
+      next: (messageResponse) => {
+        const myId = this.myUserId();
+        if (!myId) return;
+        this.handleIncomingMessage(messageResponse, myId);
+      },
+      error: (err) => console.error('[ChatDock] User queue error:', err),
+    });
+
     // Rola pro fim sempre que a conversa aberta muda ou recebe mensagem nova. Precisa
     // rodar depois do render: a altura só é a final quando as mensagens já estão no DOM.
     afterRenderEffect({
       write: () => {
         this.messageGroups();
+        const conv = this.active();
         const element = this.scroller()?.nativeElement;
-        if (element) element.scrollTop = element.scrollHeight;
+        if (!element) return;
+
+        const convChanged = conv?.id !== this.currentConvId;
+        this.currentConvId = conv?.id ?? null;
+
+        const totalMessages = conv?.messages.length ?? 0;
+        const hasNewMessages = totalMessages > this.lastMessageCount;
+        this.lastMessageCount = totalMessages;
+
+        if (this.previousScrollHeight !== null && this.previousScrollTop !== null) {
+          const heightDiff = element.scrollHeight - this.previousScrollHeight;
+          element.scrollTop = this.previousScrollTop + heightDiff;
+          this.previousScrollHeight = null;
+          this.previousScrollTop = null;
+        } else if (convChanged) {
+          const unreadDividerEl = element.querySelector('#dock-unread-divider') as HTMLElement | null;
+          if (unreadDividerEl) {
+            unreadDividerEl.scrollIntoView({ block: 'start', behavior: 'instant' });
+          } else {
+            element.scrollTop = element.scrollHeight;
+          }
+        } else if (hasNewMessages) {
+          const isMe = conv?.messages.at(-1)?.author === 'me';
+          const isNearBottom = element.scrollHeight - element.scrollTop - element.clientHeight < 120;
+          if (isMe || isNearBottom) {
+            element.scrollTo({
+              top: element.scrollHeight,
+              behavior: 'smooth',
+            });
+          }
+        }
       },
     });
   }
@@ -169,6 +236,9 @@ export class ChatDockComponent {
     this.updateConversation(response.id, (c) => ({ ...mapped, messages: c.messages }));
   }
 
+  readonly totalUnreadCount = this.conversationService.unreadCount;
+  readonly hasUnread = this.conversationService.hasUnread;
+
   toggle(): void {
     const next = !this.open();
     this.open.set(next);
@@ -179,17 +249,40 @@ export class ChatDockComponent {
   }
 
   close(): void {
+    this.chatSub?.unsubscribe();
     this.open.set(false);
   }
 
   openConversation(conversation: Conversation): void {
+    const unreadToClear = conversation.unreadCount ?? 0;
+    if (unreadToClear > 0) {
+      this.conversationService.decrementUnread(unreadToClear);
+    }
     this.activeId.set(conversation.id);
     this.draft.set('');
+
+    let unreadDividerMessageId: string | null = null;
+    if (unreadToClear > 0 && conversation.messages.length > 0) {
+      const firstUnreadIndex = Math.max(0, conversation.messages.length - unreadToClear);
+      unreadDividerMessageId = conversation.messages[firstUnreadIndex]?.id ?? null;
+    }
+
+    this.updateConversation(conversation.id, (c) => ({
+      ...c,
+      unread: false,
+      unreadCount: 0,
+      unreadDividerMessageId: unreadToClear > 0 ? (unreadDividerMessageId ?? c.unreadDividerMessageId) : null,
+    }));
     const myId = this.myUserId();
-    if (myId) this.ensureMessagesLoaded(conversation.id, myId);
+    if (myId) {
+      this.ensureMessagesLoaded(conversation.id, myId, unreadToClear);
+      this.subscribeToRealtimeMessages(conversation.id, myId);
+      this.messageService.markAsRead(conversation.id).subscribe();
+    }
   }
 
   back(): void {
+    this.chatSub?.unsubscribe();
     this.activeId.set(null);
     this.infoPanelOpen.set(false);
   }
@@ -211,17 +304,19 @@ export class ChatDockComponent {
     const myId = this.myUserId();
     if (!conversation || !content || !myId || !this.canType() || this.sending()) return;
 
+    // Respondeu à conversa: limpa a marcação de novas mensagens imediatamente
+    this.updateConversation(conversation.id, (c) => ({
+      ...c,
+      unreadDividerMessageId: null,
+    }));
+
     this.sending.set(true);
 
     this.messageService.sendMessage(conversation.id, { content }).subscribe({
       next: (response) => {
         this.draft.set('');
         this.sending.set(false);
-        this.updateConversation(conversation.id, (c) => ({
-          ...c,
-          lastMessageAt: 'Agora',
-          messages: [...c.messages, toChatMessage(response, myId)],
-        }));
+        this.handleIncomingMessage(response, myId);
       },
       error: (error) => {
         console.error('Failed to send message:', error);
@@ -258,7 +353,92 @@ export class ChatDockComponent {
     });
   }
 
-  private ensureMessagesLoaded(conversationId: string, myId: string): void {
+  private handleIncomingMessage(messageResponse: MessageResponse, myId: string): void {
+    const chatMsg = toChatMessage(messageResponse, myId);
+    const conversationId = messageResponse.conversationId;
+    const isCurrent = this.open() && this.activeId() === conversationId;
+
+    this.conversations.update((list) => {
+      const targetIndex = list.findIndex((c) => c.id === conversationId);
+      if (targetIndex === -1) return list;
+
+      const target = list[targetIndex];
+      const exists = target.messages.some((m) => m.id === chatMsg.id);
+      const newMessages = exists ? target.messages : [...target.messages, chatMsg];
+      const preview = previewFromChatMessage(chatMsg, target.type !== 'DIRECT');
+
+      const isThem = messageResponse.senderId !== myId;
+      const unreadCount = isCurrent || !isThem ? 0 : (target.unreadCount ?? 0) + (exists ? 0 : 1);
+
+      const updated: Conversation = {
+        ...target,
+        lastMessageAt: 'Agora',
+        lastMessagePreview: preview,
+        unread: unreadCount > 0 || (target.relationship === 'request-received' && !isCurrent),
+        unreadCount,
+        messages: newMessages,
+      };
+
+      const filtered = list.filter((c) => c.id !== conversationId);
+      return [updated, ...filtered];
+    });
+
+    if (messageResponse.senderId !== myId) {
+      this.messageService.markAsDelivered([messageResponse.id]).subscribe();
+      if (isCurrent) {
+        this.messageService.markAsRead(conversationId).subscribe();
+        this.conversationService.decrementUnread(1);
+      }
+    }
+  }
+
+  onScroll(): void {
+    const element = this.scroller()?.nativeElement;
+    const conversation = this.active();
+    if (!element || !conversation) return;
+
+    if (element.scrollTop < 60 && conversation.hasMoreMessages && !this.loadingOlderMessages() && !this.messagesLoading()) {
+      this.previousScrollHeight = element.scrollHeight;
+      this.previousScrollTop = element.scrollTop;
+      this.loadOlderMessages();
+    }
+  }
+
+  loadOlderMessages(): void {
+    const conversation = this.active();
+    const myId = this.myUserId();
+    if (!conversation || !myId || this.loadingOlderMessages() || !conversation.hasMoreMessages) return;
+
+    const nextPage = (conversation.messagesPage ?? 0) + 1;
+    this.loadingOlderMessages.set(true);
+
+    this.messageService.getMessages(conversation.id, nextPage, MESSAGES_PAGE_SIZE).subscribe({
+      next: (response) => {
+        const olderMessages = response.content
+          .slice()
+          .reverse()
+          .map((message) => toChatMessage(message, myId));
+
+        this.updateConversation(conversation.id, (c) => {
+          const existingIds = new Set(c.messages.map((m) => m.id));
+          const filteredOlder = olderMessages.filter((m) => !existingIds.has(m.id));
+          return {
+            ...c,
+            messages: [...filteredOlder, ...c.messages],
+            hasMoreMessages: !response.last,
+            messagesPage: nextPage,
+          };
+        });
+        this.loadingOlderMessages.set(false);
+      },
+      error: (error) => {
+        console.error('Failed to load older messages in dock:', error);
+        this.loadingOlderMessages.set(false);
+      },
+    });
+  }
+
+  private ensureMessagesLoaded(conversationId: string, myId: string, unreadCountBeforeClear: number = 0): void {
     if (this.loadedMessagesFor.has(conversationId)) return;
     this.loadedMessagesFor.add(conversationId);
     this.messagesLoading.set(true);
@@ -270,7 +450,22 @@ export class ChatDockComponent {
           .slice()
           .reverse()
           .map((message) => toChatMessage(message, myId));
-        this.updateConversation(conversationId, (c) => ({ ...c, messages }));
+
+        let unreadDividerMessageId: string | null = null;
+        if (unreadCountBeforeClear > 0 && messages.length > 0) {
+          const firstUnreadIndex = Math.max(0, messages.length - unreadCountBeforeClear);
+          unreadDividerMessageId = messages[firstUnreadIndex]?.id ?? null;
+        }
+
+        this.updateConversation(conversationId, (c) => ({
+          ...c,
+          messages,
+          unread: false,
+          unreadCount: 0,
+          hasMoreMessages: !response.last,
+          messagesPage: 0,
+          unreadDividerMessageId: unreadDividerMessageId ?? c.unreadDividerMessageId ?? null,
+        }));
         this.messagesLoading.set(false);
       },
       error: (error) => {
@@ -295,7 +490,11 @@ export class ChatDockComponent {
         }).subscribe({
           next: ({ direct, group, community }) => {
             const responses = [...direct.content, ...group.content, ...community.content].sort(
-              (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+              (a, b) => {
+                const timeA = new Date(a.lastMessageCreatedAt ?? a.updatedAt).getTime();
+                const timeB = new Date(b.lastMessageCreatedAt ?? b.updatedAt).getTime();
+                return timeB - timeA;
+              },
             );
             this.conversations.set(responses.map((response) => toConversation(response, profile.userId)));
             this.loading.set(false);
@@ -311,6 +510,22 @@ export class ChatDockComponent {
         this.loading.set(false);
       },
     });
+  }
+
+  private subscribeToRealtimeMessages(conversationId: string, myId: string): void {
+    this.chatSub?.unsubscribe();
+    this.chatSub = this.messageService.watchConversation(conversationId).subscribe({
+      next: (messageResponse) => {
+        this.handleIncomingMessage(messageResponse, myId);
+      },
+      error: (err) => console.error('[ChatDock] Realtime WebSocket error:', err),
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.chatSub?.unsubscribe();
+    this.statusSub?.unsubscribe();
+    this.userQueueSub?.unsubscribe();
   }
 
   private updateConversation(id: string, updater: (conversation: Conversation) => Conversation): void {

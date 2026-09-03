@@ -77,6 +77,24 @@ describe('toChatMessageGroups', () => {
   it('devolve lista vazia sem mensagens', () => {
     expect(toChatMessageGroups([])).toEqual([]);
   });
+
+  it('insere o divisor de novas mensagens na primeira mensagem não lida e separa os grupos', () => {
+    const groups = toChatMessageGroups(
+      [
+        message({ id: '1', createdAt: '2026-08-20T10:00:00Z', author: 'them', senderUsername: 'ana' }),
+        message({ id: '2', createdAt: '2026-08-20T10:02:00Z', author: 'them', senderUsername: 'ana' }),
+        message({ id: '3', createdAt: '2026-08-20T10:03:00Z', author: 'them', senderUsername: 'ana' }),
+      ],
+      '2',
+    );
+
+    expect(groups).toHaveLength(2);
+    expect(groups[0].messages.map((m) => m.id)).toEqual(['1']);
+    expect(groups[0].unreadDivider).toBeUndefined();
+
+    expect(groups[1].messages.map((m) => m.id)).toEqual(['2', '3']);
+    expect(groups[1].unreadDivider).toBe('Novas mensagens');
+  });
 });
 
 describe('toConversation', () => {
@@ -155,6 +173,24 @@ describe('toConversation', () => {
     );
 
     expect(conversation.relationship).toBe('request-received');
+  });
+
+  it('mapeia revokedById quando a conversa foi revogada', () => {
+    const conversation = toConversation(
+      {
+        ...base,
+        type: 'DIRECT',
+        directUserOneId: 'me',
+        directUserTwoId: 'other',
+        directUserTwoUsername: 'jogador1',
+        directMessageStatus: 'DECLINED',
+        revokedById: 'me',
+      } as unknown as ConversationResponse,
+      'me',
+    );
+
+    expect(conversation.relationship).toBe('declined');
+    expect(conversation.revokedById).toBe('me');
   });
 
   it('numa comunidade, usa o nome e a foto da comunidade', () => {

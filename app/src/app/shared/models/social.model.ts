@@ -36,6 +36,7 @@ export interface PostStats {
   reposts: number;
   likes: number;
   reactions: number;
+  views?: number;
 }
 
 export interface Post {

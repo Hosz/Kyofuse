@@ -133,6 +133,7 @@ export class ProfileEditComponent implements OnDestroy {
   country = signal('');
   city = signal('');
   state = signal('');
+  showCountryFlag = signal(true);
 
   readonly countryOptions = getCountryOptions();
   readonly flagUrl = computed(() => getCountryFlagUrl(this.country()));
@@ -315,6 +316,7 @@ export class ProfileEditComponent implements OnDestroy {
       country: this.country().trim(),
       city: this.city().trim(),
       state: this.state().trim(),
+      showCountryFlag: this.showCountryFlag(),
       mainRole: this.mainRole() ? (this.mainRole() as PlayerRole) : null,
       secondaryRole: this.secondaryRole() ? (this.secondaryRole() as PlayerRole) : null,
       premierRating: this.premierRating() ?? undefined,
@@ -349,6 +351,7 @@ export class ProfileEditComponent implements OnDestroy {
     const normalizedState = normalizeState(normalizedCountry, p.state ?? '');
     this.state.set(normalizedState);
     this.city.set(p.city ?? '');
+    this.showCountryFlag.set(p.showCountryFlag ?? true);
     this.mainRole.set((p.mainRole as PlayerRole) || '');
     this.secondaryRole.set((p.secondaryRole as PlayerRole) || '');
     this.premierRating.set(p.premierRating || null);

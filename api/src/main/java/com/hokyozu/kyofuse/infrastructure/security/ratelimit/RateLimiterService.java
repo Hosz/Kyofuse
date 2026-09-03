@@ -1,76 +1,80 @@
 package com.hokyozu.kyofuse.infrastructure.security.ratelimit;
 
 import com.hokyozu.kyofuse.shared.exception.TooManyAttemptsException;
-import io.github.bucket4j.Bandwidth;
-import io.github.bucket4j.Bucket;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.List;
 
 /**
- * Combina duas coisas por chave (ex: "login:ip:1.2.3.4" ou "login:user:hideo"):
+ * Rate Limiter distribuído baseado em Redis com bloqueio progressivo por chave:
  *
- * 1. Um bucket Bucket4j que tolera {@code maxAttempts} tentativas dentro da janela da
- *    política — é isso que permite o burst normal (alguém errando a senha 2-3 vezes).
- * 2. Um bloqueio com duração progressiva: toda vez que o bucket estoura, a chave entra
- *    em lockout por um tempo maior que o anterior (lockoutTiers), até um teto. Um
- *    sucesso (recordSuccess) zera os dois.
- *
- * O estado é local (ConcurrentHashMap) — funciona para uma única instância da API. Pra
- * escalar horizontalmente, troque o Map por buckets obtidos de um ProxyManager
- * distribuído (bucket4j-redis) e o Map de lockouts por algo compartilhado (ex: Redis
- * também); a lógica de tiers abaixo não muda.
+ * 1. Contador atômico de tentativas (INCR) com TTL na janela configurada.
+ * 2. Bloqueio escalonado (lockout tiers) persistido no Redis com TTL automático.
+ * 3. Sucesso (recordSuccess) limpa as chaves no Redis.
  */
 @Component
+@RequiredArgsConstructor
 public class RateLimiterService {
 
-    private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
-    private final Map<String, LockoutState> lockouts = new ConcurrentHashMap<>();
+    private final StringRedisTemplate redisTemplate;
 
-    private record LockoutState(int tier, Instant lockedUntil) {}
+    private static final String ATTEMPTS_PREFIX = "ratelimit:attempts:";
+    private static final String LOCKOUT_PREFIX = "ratelimit:lockout:";
+    private static final String TIER_PREFIX = "ratelimit:tier:";
 
     public void checkAndConsume(String key, RateLimitPolicy policy) {
-        LockoutState lockout = lockouts.get(key);
+        String lockoutKey = LOCKOUT_PREFIX + key;
+        String lockoutVal = redisTemplate.opsForValue().get(lockoutKey);
 
-        if (lockout != null && lockout.lockedUntil().isAfter(Instant.now())) {
-            throw tooManyAttempts(lockout.lockedUntil());
+        if (lockoutVal != null) {
+            long lockedUntilEpoch = Long.parseLong(lockoutVal);
+            Instant lockedUntil = Instant.ofEpochMilli(lockedUntilEpoch);
+            if (lockedUntil.isAfter(Instant.now())) {
+                throw tooManyAttempts(lockedUntil);
+            }
         }
 
-        Bucket bucket = buckets.computeIfAbsent(key, k -> newBucket(policy));
+        String attemptsKey = ATTEMPTS_PREFIX + key;
+        Long attempts = redisTemplate.opsForValue().increment(attemptsKey);
 
-        if (!bucket.tryConsume(1)) {
-            LockoutState escalated = escalate(lockout, policy);
-            lockouts.put(key, escalated);
-            throw tooManyAttempts(escalated.lockedUntil());
+        if (attempts != null && attempts == 1) {
+            redisTemplate.expire(attemptsKey, policy.window());
+        }
+
+        if (attempts != null && attempts > policy.maxAttempts()) {
+            Instant lockedUntil = escalateLockout(key, policy);
+            throw tooManyAttempts(lockedUntil);
         }
     }
 
     public void recordSuccess(String key) {
-        lockouts.remove(key);
+        redisTemplate.delete(List.of(
+                ATTEMPTS_PREFIX + key,
+                LOCKOUT_PREFIX + key,
+                TIER_PREFIX + key
+        ));
+    }
 
-        Bucket bucket = buckets.get(key);
-        if (bucket != null) {
-            bucket.reset();
+    private Instant escalateLockout(String key, RateLimitPolicy policy) {
+        String tierKey = TIER_PREFIX + key;
+        String currentTierVal = redisTemplate.opsForValue().get(tierKey);
+
+        int nextTier = 0;
+        if (currentTierVal != null) {
+            nextTier = Math.min(Integer.parseInt(currentTierVal) + 1, policy.lockoutTiers().size() - 1);
         }
-    }
 
-    private LockoutState escalate(LockoutState previous, RateLimitPolicy policy) {
-        int tier = previous == null ? 0 : Math.min(previous.tier() + 1, policy.lockoutTiers().size() - 1);
-        Instant lockedUntil = Instant.now().plus(policy.lockoutTiers().get(tier));
+        Duration lockoutDuration = policy.lockoutTiers().get(nextTier);
+        Instant lockedUntil = Instant.now().plus(lockoutDuration);
 
-        return new LockoutState(tier, lockedUntil);
-    }
+        redisTemplate.opsForValue().set(LOCKOUT_PREFIX + key, String.valueOf(lockedUntil.toEpochMilli()), lockoutDuration);
+        redisTemplate.opsForValue().set(tierKey, String.valueOf(nextTier), Duration.ofHours(24));
 
-    private Bucket newBucket(RateLimitPolicy policy) {
-        Bandwidth limit = Bandwidth.builder()
-                .capacity(policy.maxAttempts())
-                .refillIntervally(policy.maxAttempts(), policy.window())
-                .build();
-
-        return Bucket.builder().addLimit(limit).build();
+        return lockedUntil;
     }
 
     private TooManyAttemptsException tooManyAttempts(Instant lockedUntil) {

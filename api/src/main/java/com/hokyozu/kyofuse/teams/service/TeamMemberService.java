@@ -163,8 +163,10 @@ public class TeamMemberService {
                 .map(member -> member.getUser().getId())
                 .distinct()
                 .toList();
-        Map<UUID, GamerProfile> profiles = gamerProfileFinder.findAllByUserIds(memberIds).stream()
-                .collect(Collectors.toMap(profile -> profile.getUser().getId(), profile -> profile));
+        Map<UUID, GamerProfile> profiles = memberIds.isEmpty()
+                ? Map.of()
+                : gamerProfileFinder.findAllByUserIds(memberIds).stream()
+                        .collect(Collectors.toMap(profile -> profile.getUser().getId(), java.util.function.Function.identity(), (a, b) -> a));
 
         return teamMembers.map(member -> TeamMemberMapper.toResponse(member, profiles.get(member.getUser().getId())));
     }

@@ -8,6 +8,7 @@ export interface GamerProfileEditRequest {
   country?: string;
   city?: string;
   state?: string;
+  showCountryFlag?: boolean;
   mainRole?: PlayerRole | null;
   secondaryRole?: PlayerRole | null;
   premierRating?: number | null;

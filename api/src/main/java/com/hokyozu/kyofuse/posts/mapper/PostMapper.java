@@ -67,6 +67,7 @@ public class PostMapper {
                 savedPost.getReactionCount(),
                 savedPost.getLikeCount(),
                 savedPost.getCommentCount(),
+                savedPost.getViewCount() != null ? savedPost.getViewCount() : 0L,
                 maps,
                 mediaResponses,
                 savedPost.getCreatedAt(),

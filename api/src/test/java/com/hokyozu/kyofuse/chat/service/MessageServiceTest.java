@@ -52,10 +52,13 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 @ExtendWith(MockitoExtension.class)
 class MessageServiceTest {
@@ -84,6 +87,15 @@ class MessageServiceTest {
     @Mock
     private MessageMediaRepository messageMediaRepository;
 
+    @Mock
+    private SimpMessagingTemplate messagingTemplate;
+
+    @Mock
+    private com.hokyozu.kyofuse.chat.repository.MessageReceiptRepository messageReceiptRepository;
+
+    @Mock
+    private ChatCounterService chatCounterService;
+
     @Spy
     private UserChecker userChecker = new UserChecker();
 
@@ -109,14 +121,8 @@ class MessageServiceTest {
         assertThat(captor.getValue().getSender()).isEqualTo(sender);
         assertThat(response.content()).isEqualTo("hello there");
 
-        ArgumentCaptor<CreateNotificationRequest> notificationCaptor = ArgumentCaptor.forClass(CreateNotificationRequest.class);
-        verify(notificationService).createNotification(notificationCaptor.capture());
-        CreateNotificationRequest notification = notificationCaptor.getValue();
-        assertThat(notification.recipient()).isEqualTo(other);
-        assertThat(notification.actor()).isEqualTo(sender);
-        assertThat(notification.type()).isEqualTo(NotificationType.NEW_MESSAGE);
-        assertThat(notification.targetType()).isEqualTo(NotificationTargetType.CONVERSATION);
-        assertThat(notification.targetId()).isEqualTo(conversation.getId());
+        verify(notificationService, never()).createNotification(any());
+        verify(messagingTemplate).convertAndSendToUser(eq(other.getId().toString()), eq("/queue/messages"), any(MessageResponse.class));
     }
 
     @Test
@@ -145,9 +151,8 @@ class MessageServiceTest {
 
         messageService.sendMessage(conversation.getId(), request, directUserTwo.getId());
 
-        ArgumentCaptor<CreateNotificationRequest> notificationCaptor = ArgumentCaptor.forClass(CreateNotificationRequest.class);
-        verify(notificationService).createNotification(notificationCaptor.capture());
-        assertThat(notificationCaptor.getValue().recipient()).isEqualTo(directUserOne);
+        verify(notificationService, never()).createNotification(any());
+        verify(messagingTemplate).convertAndSendToUser(eq(directUserOne.getId().toString()), eq("/queue/messages"), any(MessageResponse.class));
     }
 
     @Test
@@ -172,10 +177,9 @@ class MessageServiceTest {
 
         messageService.sendMessage(conversation.getId(), request, sender.getId());
 
-        ArgumentCaptor<CreateNotificationRequest> notificationCaptor = ArgumentCaptor.forClass(CreateNotificationRequest.class);
-        verify(notificationService, times(2)).createNotification(notificationCaptor.capture());
-        List<User> recipients = notificationCaptor.getAllValues().stream().map(CreateNotificationRequest::recipient).toList();
-        assertThat(recipients).containsExactlyInAnyOrder(memberOne, memberTwo);
+        verify(notificationService, never()).createNotification(any());
+        verify(messagingTemplate).convertAndSendToUser(eq(memberOne.getId().toString()), eq("/queue/messages"), any(MessageResponse.class));
+        verify(messagingTemplate).convertAndSendToUser(eq(memberTwo.getId().toString()), eq("/queue/messages"), any(MessageResponse.class));
     }
 
     @Test
@@ -199,9 +203,8 @@ class MessageServiceTest {
 
         messageService.sendMessage(conversation.getId(), request, sender.getId());
 
-        ArgumentCaptor<CreateNotificationRequest> notificationCaptor = ArgumentCaptor.forClass(CreateNotificationRequest.class);
-        verify(notificationService).createNotification(notificationCaptor.capture());
-        assertThat(notificationCaptor.getValue().recipient()).isEqualTo(memberOne);
+        verify(notificationService, never()).createNotification(any());
+        verify(messagingTemplate).convertAndSendToUser(eq(memberOne.getId().toString()), eq("/queue/messages"), any(MessageResponse.class));
     }
 
     @Test
@@ -240,10 +243,11 @@ class MessageServiceTest {
         assertThat(captor.getValue().type()).isEqualTo(NotificationType.MESSAGE_REQUEST);
         assertThat(captor.getValue().recipient()).isEqualTo(other);
         assertThat(captor.getValue().targetId()).isEqualTo(conversation.getId());
+        verify(messagingTemplate).convertAndSendToUser(eq(other.getId().toString()), eq("/queue/messages"), any(MessageResponse.class));
     }
 
     @Test
-    void sendMessageNotifiesAcceptedDirectConversationAsANormalMessage() {
+    void sendMessageDoesNotNotifyNotificationServiceForAcceptedDirectConversation() {
         User sender = activeUser("alice");
         User other = activeUser("bob");
         Conversation conversation = directConversation(sender, other, DirectConversationStatus.ACCEPTED);
@@ -254,9 +258,8 @@ class MessageServiceTest {
 
         messageService.sendMessage(conversation.getId(), new MessageRequest("oi"), sender.getId());
 
-        ArgumentCaptor<CreateNotificationRequest> captor = ArgumentCaptor.forClass(CreateNotificationRequest.class);
-        verify(notificationService).createNotification(captor.capture());
-        assertThat(captor.getValue().type()).isEqualTo(NotificationType.NEW_MESSAGE);
+        verify(notificationService, never()).createNotification(any());
+        verify(messagingTemplate).convertAndSendToUser(eq(other.getId().toString()), eq("/queue/messages"), any(MessageResponse.class));
     }
 
     @Test
@@ -551,6 +554,85 @@ class MessageServiceTest {
 
         assertThatThrownBy(() -> messageService.deleteMessage(sender.getId(), conversation.getId(), messageId))
                 .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void markMessagesAsDeliveredUpdatesReceiptsAndNotifiesSender() {
+        User sender = activeUser("alice");
+        User recipient = activeUser("bob");
+        Conversation conversation = groupConversation(sender);
+        Message message = message(conversation, sender, "test");
+        com.hokyozu.kyofuse.chat.entity.MessageReceipt receipt = com.hokyozu.kyofuse.chat.entity.MessageReceipt.builder()
+                .id(UUID.randomUUID())
+                .message(message)
+                .user(recipient)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+
+        when(messageReceiptRepository.findByMessageIdInAndUserId(List.of(message.getId()), recipient.getId()))
+                .thenReturn(List.of(receipt));
+
+        messageService.markMessagesAsDelivered(List.of(message.getId()), recipient.getId());
+
+        assertThat(receipt.getDeliveredAt()).isNotNull();
+        verify(messageReceiptRepository).saveAll(List.of(receipt));
+        verify(messagingTemplate).convertAndSendToUser(eq(sender.getId().toString()), eq("/queue/message-status"), any(com.hokyozu.kyofuse.chat.dto.event.MessageStatusEvent.class));
+    }
+
+    @Test
+    void markConversationAsReadUpdatesUnreadReceiptsAndNotifiesSender() {
+        User sender = activeUser("alice");
+        User recipient = activeUser("bob");
+        Conversation conversation = groupConversation(sender);
+        Message message = message(conversation, sender, "test");
+        com.hokyozu.kyofuse.chat.entity.MessageReceipt receipt = com.hokyozu.kyofuse.chat.entity.MessageReceipt.builder()
+                .id(UUID.randomUUID())
+                .message(message)
+                .user(recipient)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+
+        when(userFinder.findProfileByUserId(recipient.getId())).thenReturn(recipient);
+        when(conversationRepository.findById(conversation.getId())).thenReturn(Optional.of(conversation));
+        when(messageReceiptRepository.findUnreadByConversationAndUser(conversation.getId(), recipient.getId()))
+                .thenReturn(List.of(receipt));
+
+        messageService.markConversationAsRead(conversation.getId(), recipient.getId());
+
+        assertThat(receipt.getReadAt()).isNotNull();
+        assertThat(receipt.getDeliveredAt()).isNotNull();
+        verify(messageReceiptRepository).saveAll(List.of(receipt));
+        verify(messagingTemplate).convertAndSendToUser(eq(sender.getId().toString()), eq("/queue/message-status"), any(com.hokyozu.kyofuse.chat.dto.event.MessageStatusEvent.class));
+    }
+
+    @Test
+    void getMessageInfoReturnsReceiptsForMessage() {
+        User sender = activeUser("alice");
+        User recipient = activeUser("bob");
+        Conversation conversation = groupConversation(sender);
+        Message message = message(conversation, sender, "test");
+        Instant now = Instant.now();
+        com.hokyozu.kyofuse.chat.entity.MessageReceipt receipt = com.hokyozu.kyofuse.chat.entity.MessageReceipt.builder()
+                .id(UUID.randomUUID())
+                .message(message)
+                .user(recipient)
+                .deliveredAt(now)
+                .readAt(now)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+
+        when(messageRepository.findById(message.getId())).thenReturn(Optional.of(message));
+        when(messageReceiptRepository.findAllWithUserByMessageId(message.getId())).thenReturn(List.of(receipt));
+
+        var response = messageService.getMessageInfo(conversation.getId(), message.getId(), sender.getId());
+
+        assertThat(response.messageId()).isEqualTo(message.getId());
+        assertThat(response.receipts()).hasSize(1);
+        assertThat(response.receipts().get(0).username()).isEqualTo("bob");
+        assertThat(response.receipts().get(0).readAt()).isEqualTo(now);
     }
 
     private User activeUser(String username) {

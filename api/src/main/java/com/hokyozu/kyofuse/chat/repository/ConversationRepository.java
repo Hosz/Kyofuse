@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -19,8 +20,19 @@ public interface ConversationRepository extends JpaRepository<Conversation, UUID
 
     Optional<Conversation> findByCommunity(Community community);
 
-    // Busca o usuário tanto em directUserOne quanto em directUserTwo, já que ele
-    // pode estar de qualquer um dos dois lados da conversa DIRECT.
-    @Query("SELECT c FROM Conversation c WHERE c.type = :type AND (c.directUserOne = :user OR c.directUserTwo = :user)")
+    List<Conversation> findByCommunityIn(java.util.List<Community> communities);
+
+    @Query(
+        value = """
+        SELECT c FROM Conversation c
+        LEFT JOIN FETCH c.directUserOne u1
+        LEFT JOIN FETCH c.directUserTwo u2
+        WHERE c.type = :type AND (c.directUserOne = :user OR c.directUserTwo = :user)
+        """,
+        countQuery = """
+            SELECT COUNT(c) FROM Conversation c
+            WHERE c.type = :type AND (c.directUserOne = :user OR c.directUserTwo = :user)
+        """
+    )
     Page<Conversation> findAllByTypeAndDirectUser(@Param("type") ConversationType type, @Param("user") User user, Pageable pageable);
 }

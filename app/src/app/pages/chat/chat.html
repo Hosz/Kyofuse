@@ -12,10 +12,13 @@
     <app-chat-window
       [conversation]="selectedConversation()"
       [myUserId]="myUserIdValue()"
+      [loadingOlderMessages]="loadingOlderMessages()"
+      (loadOlderMessages)="onLoadOlderMessages()"
       (groupUpdated)="onGroupUpdated($event)"
       (accept)="onAccept()"
       (decline)="onDecline()"
       (revoke)="onRevoke()"
+      (allow)="onAllow()"
       (sendMessage)="onSendMessage($event)"
       (deleteMessage)="onDeleteMessage($event)"
     />

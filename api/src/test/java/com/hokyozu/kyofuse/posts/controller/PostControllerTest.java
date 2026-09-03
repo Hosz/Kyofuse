@@ -40,6 +40,9 @@ class PostControllerTest {
     @Mock
     private PostService postService;
 
+    @Mock
+    private com.hokyozu.kyofuse.posts.service.PostViewsBufferService postViewsBufferService;
+
     @InjectMocks
     private PostController controller;
 
@@ -229,6 +232,15 @@ class PostControllerTest {
         assertThat(violations)
                 .extracting(violation -> violation.getPropertyPath().toString())
                 .contains("getFeed.size");
+    }
+
+    @Test
+    void recordViewDelegatesToBufferService() {
+        UUID postId = UUID.randomUUID();
+
+        controller.recordView(postId);
+
+        verify(postViewsBufferService).recordView(postId);
     }
 
     private static Jwt jwt(UUID userId) {

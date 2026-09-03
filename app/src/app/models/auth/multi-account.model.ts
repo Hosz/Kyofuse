@@ -4,6 +4,7 @@ export interface SavedAccount {
   nickname: string;
   avatarUrl?: string;
   country?: string;
+  showCountryFlag?: boolean;
   email?: string;
   role: string;
   switchToken?: string;

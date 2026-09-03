@@ -1,20 +1,21 @@
 package com.hokyozu.kyofuse.chat.service;
 
+import com.hokyozu.kyofuse.chat.dto.event.MessageStatusEvent;
 import com.hokyozu.kyofuse.chat.dto.request.MessageRequest;
+import com.hokyozu.kyofuse.chat.dto.response.MessageInfoResponse;
+import com.hokyozu.kyofuse.chat.dto.response.MessageReceiptItemResponse;
 import com.hokyozu.kyofuse.chat.dto.response.MessageResponse;
-import com.hokyozu.kyofuse.chat.entity.Conversation;
-import com.hokyozu.kyofuse.chat.entity.ConversationMember;
-import com.hokyozu.kyofuse.chat.entity.Message;
+import com.hokyozu.kyofuse.chat.entity.*;
 import com.hokyozu.kyofuse.chat.enums.ConversationMemberStatus;
 import com.hokyozu.kyofuse.chat.enums.DirectConversationStatus;
+import com.hokyozu.kyofuse.chat.enums.MessageStatus;
 import com.hokyozu.kyofuse.chat.mapper.MessageMapper;
-import com.hokyozu.kyofuse.chat.repository.ConversationMemberRepository;
-import com.hokyozu.kyofuse.chat.repository.ConversationRepository;
-import com.hokyozu.kyofuse.chat.repository.MessageRepository;
+import com.hokyozu.kyofuse.chat.repository.*;
 import com.hokyozu.kyofuse.communities.entity.CommunityMember;
 import com.hokyozu.kyofuse.communities.enums.CommunityMemberStatus;
 import com.hokyozu.kyofuse.communities.repository.CommunityMemberRepository;
 import com.hokyozu.kyofuse.notifications.dto.request.CreateNotificationRequest;
+import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import com.hokyozu.kyofuse.notifications.enums.NotificationTargetType;
 import com.hokyozu.kyofuse.notifications.enums.NotificationType;
@@ -28,6 +29,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,11 +37,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
-import com.hokyozu.kyofuse.chat.entity.MessageMedia;
-import com.hokyozu.kyofuse.chat.repository.MessageMediaRepository;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -56,7 +57,10 @@ public class MessageService {
     private final CommunityMemberRepository communityMemberRepository;
     private final MessageRepository messageRepository;
     private final MessageMediaRepository messageMediaRepository;
+    private final MessageReceiptRepository messageReceiptRepository;
     private final NotificationService notificationService;
+    private final SimpMessagingTemplate messagingTemplate;
+    private final ChatCounterService chatCounterService;
 
     @Transactional
     public MessageResponse sendMessage(UUID conversationId, @Valid MessageRequest request, UUID userId) {
@@ -95,9 +99,15 @@ public class MessageService {
             messageMedias = messageMediaRepository.saveAll(mediaEntities);
         }
 
-        notifyRecipients(conversation, user);
+        createReceiptsForRecipients(conversation, message, user);
 
-        return MessageMapper.toResponse(message, messageMedias, gamerProfileFinder.findProfileByUserId(user.getId()));
+        conversation.setUpdatedAt(Instant.now());
+        conversationRepository.save(conversation);
+
+        MessageResponse response = MessageMapper.toResponse(message, messageMedias, gamerProfileFinder.findProfileByUserId(user.getId()), MessageStatus.SENT);
+        notifyRecipients(conversation, user, response);
+
+        return response;
     }
 
     @Transactional(readOnly = true)
@@ -109,7 +119,19 @@ public class MessageService {
 
         validateParticipant(conversation, user);
 
-        Page<Message> messages = messageRepository.findByConversation(conversation, pageable);
+        Page<Message> messages;
+        if (conversation.getType() == com.hokyozu.kyofuse.chat.enums.ConversationType.GROUP) {
+            ConversationMember member = conversationMemberRepository.findByConversationAndUser(conversation, user)
+                    .filter(m -> m.getStatus() == ConversationMemberStatus.ACTIVE)
+                    .orElseThrow(() -> new ForbiddenException("User is not an active member of this conversation."));
+            if (member.getJoinedAt() != null) {
+                messages = messageRepository.findByConversationAndCreatedAtGreaterThanEqual(conversation, member.getJoinedAt(), pageable);
+            } else {
+                messages = messageRepository.findByConversation(conversation, pageable);
+            }
+        } else {
+            messages = messageRepository.findByConversation(conversation, pageable);
+        }
         List<UUID> messageIds = messages.getContent().stream().map(Message::getId).toList();
 
         Map<UUID, List<MessageMedia>> mediaByMessage = messageIds.isEmpty()
@@ -117,11 +139,30 @@ public class MessageService {
                 : messageMediaRepository.findByMessageIdIn(messageIds).stream()
                         .collect(Collectors.groupingBy(media -> media.getMessage().getId()));
 
-        return messages.map(item -> MessageMapper.toResponse(
-                item,
-                mediaByMessage.getOrDefault(item.getId(), List.of()),
-                gamerProfileFinder.findProfileByUserId(item.getSender().getId())
-        ));
+        Map<UUID, List<MessageReceipt>> receiptsByMessage = messageIds.isEmpty()
+                ? Map.of()
+                : messageReceiptRepository.findByMessageIdIn(messageIds).stream()
+                        .collect(Collectors.groupingBy(receipt -> receipt.getMessage().getId()));
+
+        List<UUID> senderIds = messages.getContent().stream()
+                .map(message -> message.getSender().getId())
+                .distinct()
+                .toList();
+
+        Map<UUID, GamerProfile> profilesBySender = senderIds.isEmpty()
+                ? Map.of()
+                : gamerProfileFinder.findAllByUserIds(senderIds).stream()
+                        .collect(Collectors.toMap(profile -> profile.getUser().getId(), Function.identity(), (a, b) -> a));
+
+        return messages.map(item -> {
+            MessageStatus status = computeMessageStatus(item, userId, receiptsByMessage.getOrDefault(item.getId(), List.of()));
+            return MessageMapper.toResponse(
+                    item,
+                    mediaByMessage.getOrDefault(item.getId(), List.of()),
+                    profilesBySender.get(item.getSender().getId()),
+                    status
+            );
+        });
     }
 
     @Transactional
@@ -144,61 +185,136 @@ public class MessageService {
         messageRepository.delete(message);
     }
 
+    @Transactional
+    public void markMessagesAsDelivered(List<UUID> messageIds, UUID recipientId) {
+        List<MessageReceipt> receipts = messageReceiptRepository.findByMessageIdInAndUserId(messageIds, recipientId);
+
+        for (MessageReceipt receipt : receipts) {
+            if (receipt.getDeliveredAt() == null) {
+                receipt.setDeliveredAt(Instant.now());
+                receipt.setUpdatedAt(Instant.now());
+
+                notifyStatusUpdate(receipt.getMessage(), MessageStatus.DELIVERED, Instant.now());
+            }
+        }
+        messageReceiptRepository.saveAll(receipts);
+    }
+
+    @Transactional
+    public void markConversationAsRead(UUID conversationId, UUID userId) {
+        User user = userFinder.findProfileByUserId(userId);
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new NotFoundException("Conversation not found"));
+
+        conversationMemberRepository.findByConversationAndUser(conversation, user)
+                .ifPresent(member -> {
+                    member.setLastReadAt(Instant.now());
+                    conversationMemberRepository.save(member);
+                });
+
+        List<MessageReceipt> unreadReceipts = messageReceiptRepository.findUnreadByConversationAndUser(conversationId, userId);
+        for (MessageReceipt receipt : unreadReceipts) {
+            if (receipt.getDeliveredAt() == null) {
+                receipt.setDeliveredAt(Instant.now());
+            }
+
+            receipt.setReadAt(Instant.now());
+            receipt.setUpdatedAt(Instant.now());
+
+            notifyStatusUpdate(receipt.getMessage(), MessageStatus.READ, Instant.now());
+        }
+        messageReceiptRepository.saveAll(unreadReceipts);
+        if (!unreadReceipts.isEmpty()) {
+            chatCounterService.decrementBy(userId, unreadReceipts.size());
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public MessageInfoResponse getMessageInfo(UUID conversationId, UUID messageId, UUID userId) {
+        Message message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new NotFoundException("Message not found"));
+
+        List<MessageReceipt> receipts = messageReceiptRepository.findAllWithUserByMessageId(messageId);
+
+        List<UUID> userIds = receipts.stream().map(r -> r.getUser().getId()).distinct().toList();
+        Map<UUID, GamerProfile> profilesMap = userIds.isEmpty()
+                ? Map.of()
+                : gamerProfileFinder.findAllByUserIds(userIds).stream()
+                        .collect(Collectors.toMap(profile -> profile.getUser().getId(), Function.identity(), (a, b) -> a));
+
+        List<MessageReceiptItemResponse> items = receipts.stream().map(r -> {
+            var profile = profilesMap.get(r.getUser().getId());
+            return new MessageReceiptItemResponse(
+                    r.getUser().getId(),
+                    r.getUser().getUsername(),
+                    profile != null ? profile.getNickname() : r.getUser().getUsername(),
+                    profile != null ? profile.getAvatarUrl() : null,
+                    r.getDeliveredAt(),
+                    r.getReadAt()
+            );
+        }).toList();
+
+        return new MessageInfoResponse(message.getId(), message.getCreatedAt(), items);
+    }
+
     /**
-     * DIRECT: notifica o outro participante fixo da conversa.
-     * GROUP: notifica todo ConversationMember ACTIVE, exceto quem mandou.
-     * COMMUNITY: notifica todo CommunityMember ACTIVE da comunidade vinculada, exceto
-     * quem mandou (conversas COMMUNITY não têm ConversationMember próprio).
+     * DIRECT: notifica solicitação de mensagem apenas se a conversa for PENDING. Mensagens
+     * comuns não geram notificação na área de notificações, apenas são transmitidas via WebSocket.
+     * GROUP/COMMUNITY: transmite a mensagem via WebSocket para os membros ativos.
      */
-    private void notifyRecipients(Conversation conversation, User sender) {
+    private void notifyRecipients(Conversation conversation, User sender, MessageResponse response) {
+        // Transmite em tempo real para quem estiver com o canal da conversa aberto
+        messagingTemplate.convertAndSend(
+                "/topic/conversations/" + conversation.getId(),
+                response
+        );
+
         switch (conversation.getType()) {
             case DIRECT -> {
                 User recipient = conversation.getDirectUserOne().getId().equals(sender.getId())
                         ? conversation.getDirectUserTwo()
                         : conversation.getDirectUserOne();
 
-                // Numa conversa ainda PENDING, essa é a primeira mensagem — ou seja, a
-                // solicitação pra trocar mensagens. Notificar como MESSAGE_REQUEST deixa a
-                // aba de notificações separar o pedido (que exige uma decisão) de uma
-                // mensagem comum, sem gerar duas notificações pro mesmo evento.
                 boolean isRequest = conversation.getDirectMessageStatus() == DirectConversationStatus.PENDING;
-                notify(recipient, sender, conversation,
-                        isRequest ? NotificationType.MESSAGE_REQUEST : NotificationType.NEW_MESSAGE,
-                        isRequest ? "Solicitação de mensagem" : "Nova mensagem",
-                        isRequest
-                                ? sender.getUsername() + " quer trocar mensagens com você."
-                                : sender.getUsername() + " te enviou uma mensagem.");
+                if (isRequest) {
+                    notificationService.createNotification(
+                            CreateNotificationRequest.builder()
+                                    .recipient(recipient)
+                                    .actor(sender)
+                                    .type(NotificationType.MESSAGE_REQUEST)
+                                    .title("Solicitação de mensagem")
+                                    .message(sender.getUsername() + " quer trocar mensagens com você.")
+                                    .targetType(NotificationTargetType.CONVERSATION)
+                                    .targetId(conversation.getId())
+                                    .build()
+                    );
+                }
+
+                messagingTemplate.convertAndSendToUser(
+                        recipient.getId().toString(),
+                        "/queue/messages",
+                        response
+                );
             }
             case GROUP -> conversationMemberRepository
                     .findByConversationAndStatus(conversation, ConversationMemberStatus.ACTIVE).stream()
                     .map(ConversationMember::getUser)
                     .filter(member -> !member.getId().equals(sender.getId()))
-                    .forEach(recipient -> notify(recipient, sender, conversation,
-                            NotificationType.NEW_MESSAGE, "Nova mensagem",
-                            sender.getUsername() + " enviou uma mensagem em " + conversation.getName() + "."));
+                    .forEach(recipient -> messagingTemplate.convertAndSendToUser(
+                            recipient.getId().toString(),
+                            "/queue/messages",
+                            response
+                    ));
             case COMMUNITY -> communityMemberRepository
                     .findByCommunityAndStatus(conversation.getCommunity(), CommunityMemberStatus.ACTIVE).stream()
                     .map(CommunityMember::getUser)
                     .filter(member -> !member.getId().equals(sender.getId()))
-                    .forEach(recipient -> notify(recipient, sender, conversation,
-                            NotificationType.NEW_MESSAGE, "Nova mensagem",
-                            sender.getUsername() + " enviou uma mensagem em " + conversation.getCommunity().getName() + "."));
+                    .forEach(recipient -> messagingTemplate.convertAndSendToUser(
+                            recipient.getId().toString(),
+                            "/queue/messages",
+                            response
+                    ));
         }
-    }
-
-    private void notify(User recipient, User sender, Conversation conversation,
-                        NotificationType type, String title, String message) {
-        notificationService.createNotification(
-                CreateNotificationRequest.builder()
-                        .recipient(recipient)
-                        .actor(sender)
-                        .type(type)
-                        .title(title)
-                        .message(message)
-                        .targetType(NotificationTargetType.CONVERSATION)
-                        .targetId(conversation.getId())
-                        .build()
-        );
     }
 
     /**
@@ -247,5 +363,77 @@ public class MessageService {
                     .filter(member -> member.getStatus() == CommunityMemberStatus.ACTIVE)
                     .orElseThrow(() -> new ForbiddenException("User is not an active member of this community."));
         }
+    }
+
+    private List<User> getConversationRecipients(Conversation conversation, User sender) {
+        return switch (conversation.getType()) {
+            case DIRECT -> {
+                User recipient = conversation.getDirectUserOne().getId().equals(sender.getId())
+                        ? conversation.getDirectUserTwo()
+                        : conversation.getDirectUserOne();
+                yield List.of(recipient);
+            }
+            case GROUP -> conversationMemberRepository
+                    .findByConversationAndStatus(conversation, ConversationMemberStatus.ACTIVE).stream()
+                    .map(ConversationMember::getUser)
+                    .filter(member -> !member.getId().equals(sender.getId()))
+                    .toList();
+            case COMMUNITY -> communityMemberRepository
+                    .findByCommunityAndStatus(conversation.getCommunity(), CommunityMemberStatus.ACTIVE).stream()
+                    .map(CommunityMember::getUser)
+                    .filter(member -> !member.getId().equals(sender.getId()))
+                    .toList();
+        };
+    }
+
+    private MessageStatus computeMessageStatus(Message message, UUID currentUserId, List<MessageReceipt> receipts) {
+        if (!message.getSender().getId().equals(currentUserId)) {
+            return MessageStatus.READ;
+        }
+        if (receipts.isEmpty()) {
+            return MessageStatus.SENT;
+        }
+        boolean allRead = receipts.stream().allMatch(r -> r.getReadAt() != null);
+        if (allRead) {
+            return MessageStatus.READ;
+        }
+        boolean allDelivered = receipts.stream().allMatch(r -> r.getDeliveredAt() != null);
+        if (allDelivered) {
+            return MessageStatus.DELIVERED;
+        }
+        return MessageStatus.SENT;
+    }
+
+    private void createReceiptsForRecipients(Conversation conversation, Message message, User sender) {
+        List<User> recipients = getConversationRecipients(conversation, sender);
+        List<MessageReceipt> receipts = recipients.stream()
+                .map(recipient -> MessageReceipt.builder()
+                        .message(message)
+                        .user(recipient)
+                        .createdAt(Instant.now())
+                        .updatedAt(Instant.now())
+                        .build())
+                .toList();
+        messageReceiptRepository.saveAll(receipts);
+        recipients.forEach(recipient -> chatCounterService.increment(recipient.getId()));
+    }
+
+    private void notifyStatusUpdate(Message message, MessageStatus status, Instant timestamp) {
+        MessageStatusEvent event = new MessageStatusEvent(
+                message.getId(),
+                message.getConversation().getId(),
+                message.getSender().getId(),
+                status,
+                timestamp
+        );
+        messagingTemplate.convertAndSendToUser(
+                message.getSender().getId().toString(),
+                "/queue/message-status",
+                event
+        );
+        messagingTemplate.convertAndSend(
+                "/topic/conversations/" + message.getConversation().getId() + "/status",
+                event
+        );
     }
 }

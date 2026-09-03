@@ -28,6 +28,7 @@ import java.util.UUID;
 public class GamerProfileController {
 
     private final GamerProfileService gamerProfileService;
+    private final com.hokyozu.kyofuse.profiles.service.ProfileAnalyticsService profileAnalyticsService;
 
     @PatchMapping("/edit")
     @ResponseStatus(HttpStatus.OK)
@@ -62,6 +63,12 @@ public class GamerProfileController {
         UUID userId = UUID.fromString(jwt.getSubject());
 
         return gamerProfileService.viewMyProfile(userId);
+    }
+
+    @GetMapping("/me/analytics")
+    public com.hokyozu.kyofuse.profiles.dto.response.ProfileAnalyticsResponse myAnalytics(@AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return profileAnalyticsService.getAnalytics(userId);
     }
 
     @GetMapping("/{username}")

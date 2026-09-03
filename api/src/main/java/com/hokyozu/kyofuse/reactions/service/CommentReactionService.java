@@ -31,8 +31,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -118,9 +121,18 @@ public class CommentReactionService {
         userChecker.checkActive(user);
 
         Page<CommentReaction> whoLiked = commentReactionRepository.findByComment_Post_IdAndComment_IdAndReactionType(postId, commentId, ReactionType.LIKE, pageable);
+        List<UUID> userIds = whoLiked.getContent().stream()
+                .map(wl -> wl.getUser().getId())
+                .distinct()
+                .toList();
+
+        Map<UUID, GamerProfile> profileMap = userIds.isEmpty()
+                ? Map.of()
+                : gamerProfileFinder.findAllByUserIds(userIds).stream()
+                        .collect(Collectors.toMap(p -> p.getUser().getId(), Function.identity(), (a, b) -> a));
 
         return whoLiked.map(wl -> {
-            GamerProfile profile = gamerProfileFinder.findProfileByUserId(wl.getUser().getId());
+            GamerProfile profile = profileMap.get(wl.getUser().getId());
             return CommentReactionMapper.toResponse(wl, profile);
         });
     }
@@ -138,9 +150,18 @@ public class CommentReactionService {
         userChecker.checkActive(user);
 
         Page<CommentReaction> whoReacted = commentReactionRepository.findByComment_Post_IdAndComment_Id(postId, commentId, pageable);
+        List<UUID> userIds = whoReacted.getContent().stream()
+                .map(wr -> wr.getUser().getId())
+                .distinct()
+                .toList();
+
+        Map<UUID, GamerProfile> profileMap = userIds.isEmpty()
+                ? Map.of()
+                : gamerProfileFinder.findAllByUserIds(userIds).stream()
+                        .collect(Collectors.toMap(p -> p.getUser().getId(), Function.identity(), (a, b) -> a));
 
         return whoReacted.map(wr -> {
-            GamerProfile profile = gamerProfileFinder.findProfileByUserId(wr.getUser().getId());
+            GamerProfile profile = profileMap.get(wr.getUser().getId());
             return CommentReactionMapper.toResponse(wr, profile);
         });
     }

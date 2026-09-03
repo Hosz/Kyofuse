@@ -68,6 +68,12 @@ class GamerProfileServiceTest {
     @Mock
     private com.hokyozu.kyofuse.storage.service.ImageProcessingService imageProcessingService;
 
+    @Mock
+    private com.hokyozu.kyofuse.leaderboard.service.LeaderboardService leaderboardService;
+
+    @Mock
+    private ProfileAnalyticsService profileAnalyticsService;
+
     @InjectMocks
     private GamerProfileService service;
 
@@ -113,6 +119,7 @@ class GamerProfileServiceTest {
                 " BR ",
                 " Sao Paulo ",
                 " SP ",
+                false,
                 PlayerRole.AWPER,
                 PlayerRole.RIFLER,
                 15000,
@@ -139,6 +146,7 @@ class GamerProfileServiceTest {
         verify(updateFavoriteMapsService).execute(profile, request.favoriteMaps());
         assertThat(profile.getNickname()).isEqualTo("newNick");
         assertThat(profile.getBio()).isEqualTo("new bio");
+        assertThat(profile.getShowCountryFlag()).isFalse();
         assertThat(profile.getSetupStatus()).isEqualTo(GamerProfileSetupStatus.COMPLETED);
         assertThat(response.userId()).isEqualTo(userId);
         assertThat(response.favoriteMaps()).containsExactly(Cs2Map.MIRAGE);
@@ -173,6 +181,7 @@ class GamerProfileServiceTest {
                 null,
                 null,
                 null,
+                null,
                 List.of()
         );
 
@@ -190,6 +199,7 @@ class GamerProfileServiceTest {
     void editProfileThrowsWhenNicknameIsBlank() {
         GamerProfileRequest request = new GamerProfileRequest(
                 "   ",
+                null,
                 null,
                 null,
                 null,
@@ -241,6 +251,7 @@ class GamerProfileServiceTest {
                 null,
                 null,
                 null,
+                null,
                 PlayerRole.AWPER,
                 PlayerRole.AWPER,
                 null,
@@ -269,6 +280,7 @@ class GamerProfileServiceTest {
 
         GamerProfileRequest request = new GamerProfileRequest(
                 "nickname",
+                null,
                 null,
                 null,
                 null,
@@ -304,6 +316,7 @@ class GamerProfileServiceTest {
 
         GamerProfileRequest request = new GamerProfileRequest(
                 "nickname",
+                null,
                 null,
                 null,
                 null,
@@ -353,6 +366,7 @@ class GamerProfileServiceTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
 
@@ -371,8 +385,8 @@ class GamerProfileServiceTest {
                 .mapName(Cs2Map.INFERNO)
                 .createdAt(Instant.now())
                 .build();
-        when(gamerProfileFinder.findProfileByUserId(userId)).thenReturn(profile);
-        when(favoriteMapRepository.findByProfile_Id(profile.getId())).thenReturn(List.of(favoriteMap));
+        profile.setFavoriteMaps(List.of(favoriteMap));
+        when(gamerProfileFinder.findFullProfileByUserId(userId)).thenReturn(profile);
 
         GamerProfileResponse response = service.viewMyProfile(userId);
 
@@ -383,12 +397,12 @@ class GamerProfileServiceTest {
     @Test
     void viewMyProfileThrowsWhenProfileDoesNotExist() {
         UUID userId = UUID.randomUUID();
-        when(gamerProfileFinder.findProfileByUserId(userId))
-                .thenThrow(new RuntimeException("Gamer profile not found for user ID: " + userId));
+        when(gamerProfileFinder.findFullProfileByUserId(userId))
+                .thenThrow(new RuntimeException("Full gamer profile not found for user ID: " + userId));
 
         assertThatThrownBy(() -> service.viewMyProfile(userId))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessage("Gamer profile not found for user ID: " + userId);
+                .hasMessage("Full gamer profile not found for user ID: " + userId);
     }
 
     @Test
@@ -401,8 +415,7 @@ class GamerProfileServiceTest {
         GamerProfile profile = profile(targetUserId);
         when(userFinder.findProfileByUsername(username)).thenReturn(targetUser);
         when(userFinder.findProfileByUserId(viewerId)).thenReturn(viewer);
-        when(gamerProfileFinder.findProfileByUserUsername(username)).thenReturn(profile);
-        when(favoriteMapRepository.findByProfile_Id(profile.getId())).thenReturn(List.of());
+        when(gamerProfileFinder.findFullProfileByUserUsername(username)).thenReturn(profile);
 
         GamerProfileResponse response = service.viewUserProfile(username, viewerId);
 
@@ -452,6 +465,7 @@ class GamerProfileServiceTest {
 
     private static GamerProfileRequest emptyRequest() {
         return new GamerProfileRequest(
+                null,
                 null,
                 null,
                 null,

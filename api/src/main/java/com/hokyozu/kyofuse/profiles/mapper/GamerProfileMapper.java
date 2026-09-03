@@ -45,6 +45,10 @@ public class GamerProfileMapper {
             profile.setCity(request.city().trim());
         }
 
+        if (request.showCountryFlag() != null) {
+            profile.setShowCountryFlag(request.showCountryFlag());
+        }
+
         if (request.mainRole() != null) {
             profile.setMainRole(request.mainRole());
         }
@@ -96,6 +100,7 @@ public class GamerProfileMapper {
                 savedProfile.getCountry(),
                 savedProfile.getCity(),
                 savedProfile.getState(),
+                savedProfile.getShowCountryFlag() != null ? savedProfile.getShowCountryFlag() : true,
                 savedProfile.getMainRole(),
                 savedProfile.getSecondaryRole(),
                 savedProfile.getPremierRating(),
@@ -122,6 +127,7 @@ public class GamerProfileMapper {
                 .nickname((nickname != null && !nickname.isBlank()) ? nickname.trim() : user.getUsername())
                 .avatarUrl(avatarUrl)
                 .country(country)
+                .showCountryFlag(true)
                 .lookingForDuo(false)
                 .lookingForTeam(false)
                 .setupStatus(GamerProfileSetupStatus.PENDING)
