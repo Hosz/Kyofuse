@@ -8,6 +8,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { ChatComponent } from './chat';
 import { ConversationService } from '../../core/services/chat/conversation.service';
 import { MessageService } from '../../core/services/chat/message.service';
+import { PresenceService } from '../../core/services/presence/presence.service';
 import { ProfileService } from '../../core/services/profile/profile.service';
 import { ToastService } from '../../core/services/ui/toast.service';
 import { NotificationService } from '../../core/services/notifications/notification.service';
@@ -149,8 +150,11 @@ describe('ChatComponent', () => {
   const newMessage$ = new Subject<MessageResponse>();
   const unreadCountSignal = signal(0);
 
+  const typingSubjects = new Map<string, Subject<any>>();
+
   beforeEach(async () => {
     unreadCountSignal.set(0);
+    typingSubjects.clear();
 
     conversationServiceMock = {
       unreadCount: unreadCountSignal,
@@ -172,6 +176,13 @@ describe('ChatComponent', () => {
         return of(page === 0 ? mockMessagesPage0 : mockMessagesPage1);
       }),
       watchConversation: vi.fn().mockReturnValue(of(mockMessageResponse)),
+      watchTyping: vi.fn().mockImplementation((id: string) => {
+        if (!typingSubjects.has(id)) {
+          typingSubjects.set(id, new Subject<any>());
+        }
+        return typingSubjects.get(id)!;
+      }),
+      sendTyping: vi.fn(),
       markAsRead: vi.fn().mockReturnValue(of(undefined)),
       markAsDelivered: vi.fn().mockReturnValue(of(undefined)),
       sendMessage: vi.fn().mockReturnValue(of({
@@ -220,6 +231,7 @@ describe('ChatComponent', () => {
         provideHttpClientTesting(),
         { provide: ConversationService, useValue: conversationServiceMock },
         { provide: MessageService, useValue: messageServiceMock },
+        { provide: PresenceService, useValue: { presenceMap: signal(new Map()), fetchBatchPresence: vi.fn() } },
         { provide: ProfileService, useValue: profileServiceMock },
         { provide: ToastService, useValue: toastServiceMock },
         { provide: NotificationService, useValue: notificationServiceMock },
@@ -288,5 +300,154 @@ describe('ChatComponent', () => {
     expect(selected?.messages[0].id).toBe('msg-0');
     expect(selected?.messages[1].id).toBe('msg-1');
     expect(selected?.hasMoreMessages).toBe(false);
+  });
+
+  it('should update typing status in direct conversation to "Está digitando..."', async () => {
+    fixture = TestBed.createComponent(ChatComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    const typingSub = typingSubjects.get('conv-1');
+    expect(typingSub).toBeTruthy();
+
+    // Outro usuário começa a digitar
+    typingSub!.next({
+      conversationId: 'conv-1',
+      userId: 'user-2',
+      username: 'otheruser',
+      nickname: 'Other User',
+      isTyping: true,
+    });
+    fixture.detectChanges();
+
+    const conv = component.allConversations().find((c) => c.id === 'conv-1');
+    expect(conv?.isTyping).toBe(true);
+    expect(conv?.typingText).toBe('Está digitando...');
+
+    // Outro usuário para de digitar
+    typingSub!.next({
+      conversationId: 'conv-1',
+      userId: 'user-2',
+      username: 'otheruser',
+      nickname: 'Other User',
+      isTyping: false,
+    });
+    fixture.detectChanges();
+
+    const convStopped = component.allConversations().find((c) => c.id === 'conv-1');
+    expect(convStopped?.isTyping).toBe(false);
+    expect(convStopped?.typingText).toBeUndefined();
+  });
+
+  it('should update typing status in group with correct user names and count', async () => {
+    const mockGroupResponse: ConversationResponse = {
+      ...mockConversationResponse,
+      id: 'conv-group',
+      type: 'GROUP',
+      name: 'Amigos do CS',
+    };
+
+    conversationServiceMock.listGroupConversations.mockReturnValue(
+      of({
+        content: [mockGroupResponse],
+        number: 0,
+        size: 50,
+        totalElements: 1,
+        totalPages: 1,
+        last: true,
+      }),
+    );
+
+    fixture = TestBed.createComponent(ChatComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    const groupTypingSub = typingSubjects.get('conv-group');
+    expect(groupTypingSub).toBeTruthy();
+
+    // 1 pessoa digitando
+    groupTypingSub!.next({
+      conversationId: 'conv-group',
+      userId: 'user-2',
+      username: 'fallen',
+      nickname: 'FalleN',
+      isTyping: true,
+    });
+    fixture.detectChanges();
+
+    let conv = component.allConversations().find((c) => c.id === 'conv-group');
+    expect(conv?.isTyping).toBe(true);
+    expect(conv?.typingText).toBe('FalleN está digitando...');
+
+    // 2 pessoas digitando ao mesmo tempo
+    groupTypingSub!.next({
+      conversationId: 'conv-group',
+      userId: 'user-3',
+      username: 'coldzera',
+      nickname: 'Coldzera',
+      isTyping: true,
+    });
+    fixture.detectChanges();
+
+    conv = component.allConversations().find((c) => c.id === 'conv-group');
+    expect(conv?.isTyping).toBe(true);
+    expect(conv?.typingText).toBe('FalleN e Coldzera estão digitando...');
+
+    // 3 pessoas digitando ao mesmo tempo
+    groupTypingSub!.next({
+      conversationId: 'conv-group',
+      userId: 'user-4',
+      username: 'fer',
+      nickname: 'Fer',
+      isTyping: true,
+    });
+    fixture.detectChanges();
+
+    conv = component.allConversations().find((c) => c.id === 'conv-group');
+    expect(conv?.isTyping).toBe(true);
+    expect(conv?.typingText).toBe('3 pessoas estão digitando...');
+
+    // FalleN para de digitar: volta para 2 pessoas
+    groupTypingSub!.next({
+      conversationId: 'conv-group',
+      userId: 'user-2',
+      username: 'fallen',
+      nickname: 'FalleN',
+      isTyping: false,
+    });
+    fixture.detectChanges();
+
+    conv = component.allConversations().find((c) => c.id === 'conv-group');
+    expect(conv?.isTyping).toBe(true);
+    expect(conv?.typingText).toBe('Coldzera e Fer estão digitando...');
+  });
+
+  it('should clear typing indicator when a message arrives from the typing user', async () => {
+    fixture = TestBed.createComponent(ChatComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    const typingSub = typingSubjects.get('conv-1');
+    typingSub!.next({
+      conversationId: 'conv-1',
+      userId: 'user-2',
+      username: 'otheruser',
+      nickname: 'Other User',
+      isTyping: true,
+    });
+    fixture.detectChanges();
+
+    expect(component.allConversations()[0].isTyping).toBe(true);
+
+    // Chega uma nova mensagem do usuário que estava digitando
+    newMessage$.next({
+      ...mockMessageResponse,
+      id: 'msg-new',
+      content: 'Cheguei!',
+    });
+    fixture.detectChanges();
+
+    expect(component.allConversations()[0].isTyping).toBe(false);
+    expect(component.allConversations()[0].typingText).toBeUndefined();
   });
 });

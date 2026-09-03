@@ -90,6 +90,9 @@ class ConversationServiceTest {
     @Mock
     private MessageMediaRepository messageMediaRepository;
 
+    @Mock
+    private ChatCounterService chatCounterService;
+
     @Spy
     private UserChecker userChecker = new UserChecker();
 
@@ -625,13 +628,12 @@ class ConversationServiceTest {
         when(userFinder.findProfileByUserId(userId)).thenReturn(user);
         when(communityMemberRepository.findByUserAndStatus(user, CommunityMemberStatus.ACTIVE, pageable))
                 .thenReturn(new PageImpl<>(List.of(activeMembership, archivedMembership), pageable, 2));
-        when(conversationRepository.findByCommunity(activeCommunity)).thenReturn(Optional.of(activeConversation));
+        when(conversationRepository.findByCommunityIn(List.of(activeCommunity))).thenReturn(List.of(activeConversation));
 
         Page<ConversationResponse> response = conversationService.listCommunityConversations(userId, pageable);
 
         assertThat(response.getContent()).hasSize(1);
         assertThat(response.getContent().get(0).communityId()).isEqualTo(activeCommunity.getId());
-        verify(conversationRepository, never()).findByCommunity(archivedCommunity);
     }
 
     @Test
@@ -651,8 +653,7 @@ class ConversationServiceTest {
                         List.of(communityMembership(user, withoutConversation), communityMembership(user, withConversation)),
                         pageable,
                         2));
-        when(conversationRepository.findByCommunity(withoutConversation)).thenReturn(Optional.empty());
-        when(conversationRepository.findByCommunity(withConversation)).thenReturn(Optional.of(conversation));
+        when(conversationRepository.findByCommunityIn(List.of(withoutConversation, withConversation))).thenReturn(List.of(conversation));
 
         Page<ConversationResponse> response = conversationService.listCommunityConversations(userId, pageable);
 

@@ -23,6 +23,7 @@ public class MessageController {
 
     private final MessageService messageService;
 
+    @com.hokyozu.kyofuse.infrastructure.ratelimit.RateLimit(key = "send_message", limit = 30, period = 60, type = com.hokyozu.kyofuse.infrastructure.ratelimit.RateLimitType.USER_ID)
     @PostMapping("/{conversationId}/send-message")
     public MessageResponse sendMessage(@PathVariable UUID conversationId,
                                        @RequestBody @Valid MessageRequest request,

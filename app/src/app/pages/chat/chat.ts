@@ -5,9 +5,10 @@ import { AppSidebarComponent } from '../../components/layout/app-sidebar/app-sid
 import { ConversationListComponent } from '../../components/chat/conversation-list/conversation-list';
 import { ChatWindowComponent } from '../../components/chat/chat-window/chat-window';
 import { NewConversationModalComponent } from '../../components/chat/new-conversation-modal/new-conversation-modal';
-import { Conversation } from '../../shared/models/chat.model';
+import { Conversation, TypingEvent } from '../../shared/models/chat.model';
 import { ConversationService } from '../../core/services/chat/conversation.service';
 import { MessageService } from '../../core/services/chat/message.service';
+import { PresenceService } from '../../core/services/presence/presence.service';
 import { ProfileService } from '../../core/services/profile/profile.service';
 import { ToastService } from '../../core/services/ui/toast.service';
 import { ConversationResponse, MessageResponse } from '../../models/chat/chat.model';
@@ -29,6 +30,7 @@ export class ChatComponent implements OnDestroy {
   private readonly router = inject(Router);
   private readonly conversationService = inject(ConversationService);
   private readonly messageService = inject(MessageService);
+  private readonly presenceService = inject(PresenceService);
   private readonly profileService = inject(ProfileService);
   private readonly toastService = inject(ToastService);
 
@@ -42,11 +44,30 @@ export class ChatComponent implements OnDestroy {
   private chatSub?: Subscription;
   private statusSub?: Subscription;
   private userQueueSub?: Subscription;
+  private readonly typingSubs = new Map<string, Subscription>();
+  private readonly typingTrackers = new Map<string, Map<string, { name: string; timeoutId: any }>>();
 
-  readonly allConversations = this.conversations.asReadonly();
+  readonly allConversations = computed(() => {
+    const list = this.conversations();
+    const presenceMap = this.presenceService.presenceMap();
+    return list.map((conv) => {
+      if (conv.type === 'DIRECT' && conv.participant.id) {
+        const presence = presenceMap.get(conv.participant.id);
+        const online = presence?.status === 'ONLINE';
+        return {
+          ...conv,
+          participant: {
+            ...conv.participant,
+            online,
+          },
+        };
+      }
+      return conv;
+    });
+  });
   readonly selectedId = computed(() => this.chatId() ?? null);
   readonly selectedConversation = computed(
-    () => this.conversations().find((c) => c.id === this.selectedId()) ?? null,
+    () => this.allConversations().find((c) => c.id === this.selectedId()) ?? null,
   );
   readonly myUserIdValue = this.myUserId.asReadonly();
 
@@ -240,12 +261,32 @@ export class ChatComponent implements OnDestroy {
           responses.map((response) => {
             const uiConv = this.toUiConversation(response);
             const existing = existingMap.get(response.id);
-            return existing && existing.messages.length > 0 ? { ...uiConv, messages: existing.messages } : uiConv;
+            return existing
+              ? {
+                  ...uiConv,
+                  messages: existing.messages.length > 0 ? existing.messages : uiConv.messages,
+                  isTyping: existing.isTyping,
+                  typingText: existing.typingText,
+                }
+              : uiConv;
           }),
         );
 
         const selectedId = this.selectedId();
         const myId = this.myUserId();
+
+        if (myId) {
+          this.syncTypingSubscriptions(responses.map((r) => r.id), myId);
+        }
+
+        // Busca o status de presença de todos os participantes das conversas diretas
+        const directUserIds = direct.content
+          .flatMap((c) => [c.directUserOneId, c.directUserTwoId])
+          .filter((id): id is string => !!id && id !== myId);
+        if (directUserIds.length > 0) {
+          this.presenceService.fetchBatchPresence(directUserIds);
+        }
+
         if (selectedId && myId) {
           const current = this.conversations().find((c) => c.id === selectedId);
           if (current && current.messages.length === 0) {
@@ -403,6 +444,16 @@ export class ChatComponent implements OnDestroy {
     });
 
     if (messageResponse.senderId !== myId) {
+      const userMap = this.typingTrackers.get(conversationId);
+      if (userMap && userMap.has(messageResponse.senderId)) {
+        const tracker = userMap.get(messageResponse.senderId);
+        if (tracker) {
+          clearTimeout(tracker.timeoutId);
+        }
+        userMap.delete(messageResponse.senderId);
+        this.applyTypingState(conversationId);
+      }
+
       this.messageService.markAsDelivered([messageResponse.id]).subscribe();
       if (isCurrent) {
         this.messageService.markAsRead(conversationId).subscribe();
@@ -411,19 +462,30 @@ export class ChatComponent implements OnDestroy {
     }
   }
 
-  /** Preserva as mensagens já carregadas — a resposta desses endpoints é só o
+  /** Preserva as mensagens e o estado de digitação já carregados — a resposta desses endpoints é só o
    * envelope da conversa, não vem com o histórico de mensagens junto. */
   private replaceConversation(response: ConversationResponse): void {
     const mapped = this.toUiConversation(response);
-    this.updateConversation(response.id, (c) => ({ ...mapped, messages: c.messages }));
+    this.updateConversation(response.id, (c) => ({
+      ...mapped,
+      messages: c.messages,
+      isTyping: c.isTyping,
+      typingText: c.typingText,
+    }));
   }
 
   private upsertConversation(response: ConversationResponse): void {
     const mapped = this.toUiConversation(response);
     this.conversations.update((list) => {
       const exists = list.some((c) => c.id === mapped.id);
-      return exists ? list.map((c) => (c.id === mapped.id ? { ...mapped, messages: c.messages } : c)) : [mapped, ...list];
+      return exists
+        ? list.map((c) => (c.id === mapped.id ? { ...mapped, messages: c.messages, isTyping: c.isTyping, typingText: c.typingText } : c))
+        : [mapped, ...list];
     });
+    const myId = this.myUserId();
+    if (myId) {
+      this.syncTypingSubscriptions([response.id], myId);
+    }
   }
 
   private toUiConversation(response: ConversationResponse): Conversation {
@@ -440,10 +502,95 @@ export class ChatComponent implements OnDestroy {
     });
   }
 
+  private syncTypingSubscriptions(conversationIds: string[], myId: string): void {
+    for (const id of conversationIds) {
+      if (!this.typingSubs.has(id)) {
+        const sub = this.messageService.watchTyping(id).subscribe({
+          next: (event) => this.handleTypingEvent(event, myId),
+          error: (err) => console.debug('[ChatComponent] Typing error:', err),
+        });
+        this.typingSubs.set(id, sub);
+      }
+    }
+  }
+
+  private handleTypingEvent(event: TypingEvent, myId: string): void {
+    if (event.userId === myId) return;
+
+    const convId = event.conversationId;
+    let userMap = this.typingTrackers.get(convId);
+    if (!userMap) {
+      userMap = new Map();
+      this.typingTrackers.set(convId, userMap);
+    }
+
+    const existing = userMap.get(event.userId);
+    if (existing) {
+      clearTimeout(existing.timeoutId);
+      userMap.delete(event.userId);
+    }
+
+    if (event.isTyping) {
+      const name = event.nickname?.trim() || event.username || 'Alguém';
+      const timeoutId = setTimeout(() => {
+        const currentMap = this.typingTrackers.get(convId);
+        if (currentMap) {
+          currentMap.delete(event.userId);
+          this.applyTypingState(convId);
+        }
+      }, 3500);
+
+      userMap.set(event.userId, { name, timeoutId });
+    }
+
+    this.applyTypingState(convId);
+  }
+
+  private applyTypingState(convId: string): void {
+    const userMap = this.typingTrackers.get(convId);
+    const users = userMap ? Array.from(userMap.values()) : [];
+    const isTyping = users.length > 0;
+
+    this.updateConversation(convId, (conv) => {
+      let typingText: string | undefined = undefined;
+      if (isTyping) {
+        if (conv.type === 'DIRECT') {
+          typingText = 'Está digitando...';
+        } else {
+          if (users.length === 1) {
+            typingText = `${users[0].name} está digitando...`;
+          } else if (users.length === 2) {
+            typingText = `${users[0].name} e ${users[1].name} estão digitando...`;
+          } else {
+            typingText = `${users.length} pessoas estão digitando...`;
+          }
+        }
+      }
+      return {
+        ...conv,
+        isTyping,
+        typingText,
+      };
+    });
+  }
+
   ngOnDestroy(): void {
     this.chatSub?.unsubscribe();
     this.statusSub?.unsubscribe();
     this.userQueueSub?.unsubscribe();
+
+    for (const sub of this.typingSubs.values()) {
+      sub.unsubscribe();
+    }
+    this.typingSubs.clear();
+
+    for (const userMap of this.typingTrackers.values()) {
+      for (const tracker of userMap.values()) {
+        clearTimeout(tracker.timeoutId);
+      }
+      userMap.clear();
+    }
+    this.typingTrackers.clear();
   }
 
   private updateConversation(id: string, updater: (conversation: Conversation) => Conversation): void {

@@ -68,6 +68,12 @@ class GamerProfileServiceTest {
     @Mock
     private com.hokyozu.kyofuse.storage.service.ImageProcessingService imageProcessingService;
 
+    @Mock
+    private com.hokyozu.kyofuse.leaderboard.service.LeaderboardService leaderboardService;
+
+    @Mock
+    private ProfileAnalyticsService profileAnalyticsService;
+
     @InjectMocks
     private GamerProfileService service;
 
@@ -379,8 +385,8 @@ class GamerProfileServiceTest {
                 .mapName(Cs2Map.INFERNO)
                 .createdAt(Instant.now())
                 .build();
-        when(gamerProfileFinder.findProfileByUserId(userId)).thenReturn(profile);
-        when(favoriteMapRepository.findByProfile_Id(profile.getId())).thenReturn(List.of(favoriteMap));
+        profile.setFavoriteMaps(List.of(favoriteMap));
+        when(gamerProfileFinder.findFullProfileByUserId(userId)).thenReturn(profile);
 
         GamerProfileResponse response = service.viewMyProfile(userId);
 
@@ -391,12 +397,12 @@ class GamerProfileServiceTest {
     @Test
     void viewMyProfileThrowsWhenProfileDoesNotExist() {
         UUID userId = UUID.randomUUID();
-        when(gamerProfileFinder.findProfileByUserId(userId))
-                .thenThrow(new RuntimeException("Gamer profile not found for user ID: " + userId));
+        when(gamerProfileFinder.findFullProfileByUserId(userId))
+                .thenThrow(new RuntimeException("Full gamer profile not found for user ID: " + userId));
 
         assertThatThrownBy(() -> service.viewMyProfile(userId))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessage("Gamer profile not found for user ID: " + userId);
+                .hasMessage("Full gamer profile not found for user ID: " + userId);
     }
 
     @Test
@@ -409,8 +415,7 @@ class GamerProfileServiceTest {
         GamerProfile profile = profile(targetUserId);
         when(userFinder.findProfileByUsername(username)).thenReturn(targetUser);
         when(userFinder.findProfileByUserId(viewerId)).thenReturn(viewer);
-        when(gamerProfileFinder.findProfileByUserUsername(username)).thenReturn(profile);
-        when(favoriteMapRepository.findByProfile_Id(profile.getId())).thenReturn(List.of());
+        when(gamerProfileFinder.findFullProfileByUserUsername(username)).thenReturn(profile);
 
         GamerProfileResponse response = service.viewUserProfile(username, viewerId);
 

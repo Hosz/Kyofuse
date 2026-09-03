@@ -9,6 +9,7 @@ import com.hokyozu.kyofuse.chat.enums.ConversationType;
 import com.hokyozu.kyofuse.chat.mapper.ConversationMemberMapper;
 import com.hokyozu.kyofuse.chat.repository.ConversationMemberRepository;
 import com.hokyozu.kyofuse.chat.repository.ConversationRepository;
+import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import com.hokyozu.kyofuse.relationships.shared.validator.BlockValidator;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
@@ -24,7 +25,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -91,11 +96,22 @@ public class ConversationMemberService {
                 .filter(m -> m.getStatus() == ConversationMemberStatus.ACTIVE)
                 .orElseThrow(() -> new ForbiddenException("User is not an active member of the conversation"));
 
-        return conversationMemberRepository.findByConversation(conversation, pageable)
-                .map(member -> ConversationMemberMapper.toResponse(
-                        member,
-                        gamerProfileFinder.findProfileByUserId(member.getUser().getId())
-                ));
+        Page<ConversationMember> members = conversationMemberRepository.findByConversation(conversation, pageable);
+
+        List<UUID> userIds = members.getContent().stream()
+                .map(m -> m.getUser().getId())
+                .distinct()
+                .toList();
+
+        Map<UUID, GamerProfile> profileMap = userIds.isEmpty()
+                ? Map.of()
+                : gamerProfileFinder.findAllByUserIds(userIds).stream()
+                  .collect(Collectors.toMap(p -> p.getUser().getId(), Function.identity(), (a, b) -> a));
+
+        return members.map(member -> ConversationMemberMapper.toResponse(
+                    member,
+                    profileMap.get(member.getUser().getId())
+            ));
     }
 
     @Transactional

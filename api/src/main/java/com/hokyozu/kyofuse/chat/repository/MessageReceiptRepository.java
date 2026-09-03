@@ -25,7 +25,7 @@ public interface MessageReceiptRepository extends JpaRepository<MessageReceipt, 
     @Query("SELECT r FROM MessageReceipt r JOIN FETCH r.user WHERE r.message.id = :messageId")
     List<MessageReceipt> findAllWithUserByMessageId(@Param("messageId") UUID messageId);
 
-    @Query("SELECT r FROM MessageReceipt r WHERE r.message.conversation.id = :conversationId AND r.user.id = :userId AND r.readAt IS NULL")
+    @Query("SELECT r FROM MessageReceipt r JOIN FETCH r.message m JOIN FETCH m.conversation c JOIN FETCH m.sender s WHERE c.id = :conversationId AND r.user.id = :userId AND r.readAt IS NULL")
     List<MessageReceipt> findUnreadByConversationAndUser(@Param("conversationId") UUID conversationId, @Param("userId") UUID userId);
 
     @Query("SELECT r.message.conversation.id, COUNT(r) FROM MessageReceipt r WHERE r.message.conversation.id IN :conversationIds AND r.user.id = :userId AND r.readAt IS NULL GROUP BY r.message.conversation.id")

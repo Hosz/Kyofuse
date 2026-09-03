@@ -15,6 +15,7 @@ import com.hokyozu.kyofuse.communities.entity.CommunityMember;
 import com.hokyozu.kyofuse.communities.enums.CommunityMemberStatus;
 import com.hokyozu.kyofuse.communities.repository.CommunityMemberRepository;
 import com.hokyozu.kyofuse.notifications.dto.request.CreateNotificationRequest;
+import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import com.hokyozu.kyofuse.notifications.enums.NotificationTargetType;
 import com.hokyozu.kyofuse.notifications.enums.NotificationType;
@@ -39,6 +40,7 @@ import java.util.UUID;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -58,6 +60,7 @@ public class MessageService {
     private final MessageReceiptRepository messageReceiptRepository;
     private final NotificationService notificationService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ChatCounterService chatCounterService;
 
     @Transactional
     public MessageResponse sendMessage(UUID conversationId, @Valid MessageRequest request, UUID userId) {
@@ -141,12 +144,22 @@ public class MessageService {
                 : messageReceiptRepository.findByMessageIdIn(messageIds).stream()
                         .collect(Collectors.groupingBy(receipt -> receipt.getMessage().getId()));
 
+        List<UUID> senderIds = messages.getContent().stream()
+                .map(message -> message.getSender().getId())
+                .distinct()
+                .toList();
+
+        Map<UUID, GamerProfile> profilesBySender = senderIds.isEmpty()
+                ? Map.of()
+                : gamerProfileFinder.findAllByUserIds(senderIds).stream()
+                        .collect(Collectors.toMap(profile -> profile.getUser().getId(), Function.identity(), (a, b) -> a));
+
         return messages.map(item -> {
             MessageStatus status = computeMessageStatus(item, userId, receiptsByMessage.getOrDefault(item.getId(), List.of()));
             return MessageMapper.toResponse(
                     item,
                     mediaByMessage.getOrDefault(item.getId(), List.of()),
-                    gamerProfileFinder.findProfileByUserId(item.getSender().getId()),
+                    profilesBySender.get(item.getSender().getId()),
                     status
             );
         });
@@ -211,6 +224,9 @@ public class MessageService {
             notifyStatusUpdate(receipt.getMessage(), MessageStatus.READ, Instant.now());
         }
         messageReceiptRepository.saveAll(unreadReceipts);
+        if (!unreadReceipts.isEmpty()) {
+            chatCounterService.decrementBy(userId, unreadReceipts.size());
+        }
     }
 
     @Transactional(readOnly = true)
@@ -220,8 +236,14 @@ public class MessageService {
 
         List<MessageReceipt> receipts = messageReceiptRepository.findAllWithUserByMessageId(messageId);
 
+        List<UUID> userIds = receipts.stream().map(r -> r.getUser().getId()).distinct().toList();
+        Map<UUID, GamerProfile> profilesMap = userIds.isEmpty()
+                ? Map.of()
+                : gamerProfileFinder.findAllByUserIds(userIds).stream()
+                        .collect(Collectors.toMap(profile -> profile.getUser().getId(), Function.identity(), (a, b) -> a));
+
         List<MessageReceiptItemResponse> items = receipts.stream().map(r -> {
-            var profile = gamerProfileFinder.findProfileByUserId(r.getUser().getId());
+            var profile = profilesMap.get(r.getUser().getId());
             return new MessageReceiptItemResponse(
                     r.getUser().getId(),
                     r.getUser().getUsername(),
@@ -393,6 +415,7 @@ public class MessageService {
                         .build())
                 .toList();
         messageReceiptRepository.saveAll(receipts);
+        recipients.forEach(recipient -> chatCounterService.increment(recipient.getId()));
     }
 
     private void notifyStatusUpdate(Message message, MessageStatus status, Instant timestamp) {

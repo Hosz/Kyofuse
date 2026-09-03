@@ -35,8 +35,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -116,18 +119,27 @@ public class CommentService {
     public Page<CommentResponse> listComments(UUID postId, Pageable pageable, UUID userId) {
         User user = userFinder.findProfileByUserId(userId);
         userChecker.checkActive(user);
-        postFinder.findPostByIdAndStatus(postId, PostStatus.ACTIVE);
+        Post post = postFinder.findPostByIdAndStatus(postId, PostStatus.ACTIVE);
+        postPermissionService.validateViewPost(user, post);
 
         Page<Comment> comments = commentRepository
                 .findByPostIdAndStatus(postId, CommentStatus.ACTIVE, pageable);
 
-        for (Comment comment : comments) {
-            commentPermissionService.validateViewComment(user, comment);
-        }
+        List<UUID> authorIds = comments.getContent().stream()
+                .map(c -> c.getAuthor().getId())
+                .distinct()
+                .toList();
+
+        Map<UUID, GamerProfile> profilesByAuthor = authorIds.isEmpty()
+                ? Map.of()
+                : gamerProfileFinder.findAllByUserIds(authorIds).stream()
+                        .collect(Collectors.toMap(p -> p.getUser().getId(), Function.identity(), (a, b) -> a));
 
         return comments.map(comment -> {
-            GamerProfile authorProfile = gamerProfileFinder.findProfileByUserId(comment.getAuthor().getId());
-            return CommentMapper.toResponse(comment, authorProfile.getAvatarUrl(), authorProfile.getNickname());
+            GamerProfile authorProfile = profilesByAuthor.get(comment.getAuthor().getId());
+            String avatarUrl = authorProfile != null ? authorProfile.getAvatarUrl() : null;
+            String nickname = authorProfile != null ? authorProfile.getNickname() : comment.getAuthor().getUsername();
+            return CommentMapper.toResponse(comment, avatarUrl, nickname);
         });
     }
 

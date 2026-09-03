@@ -4,6 +4,7 @@ import com.hokyozu.kyofuse.relationships.block.dto.response.UserBlockResponse;
 import com.hokyozu.kyofuse.relationships.block.entity.UserBlock;
 import com.hokyozu.kyofuse.relationships.block.mapper.UserBlockMapper;
 import com.hokyozu.kyofuse.relationships.block.repository.UserBlockRepository;
+import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.users.entity.User;
@@ -15,7 +16,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -57,9 +62,19 @@ public class UserBlockService {
         userChecker.checkActive(user);
 
         Page<UserBlock> blocks = userBlockRepository.findAllByBlocker(user, pageable);
+        List<UUID> blockedIds = blocks.getContent().stream()
+                .map(b -> b.getBlocked().getId())
+                .distinct()
+                .toList();
+
+        Map<UUID, GamerProfile> profileMap = blockedIds.isEmpty()
+                ? Map.of()
+                : gamerProfileFinder.findAllByUserIds(blockedIds).stream()
+                        .collect(Collectors.toMap(p -> p.getUser().getId(), Function.identity(), (a, b) -> a));
+
         return blocks.map(block -> UserBlockMapper.toResponse(
                 block,
-                gamerProfileFinder.findProfileByUserId(block.getBlocked().getId())
+                profileMap.get(block.getBlocked().getId())
         ));
     }
 

@@ -18,6 +18,12 @@ public class NotificationController {
 
     private final NotificationService notificationService;
 
+    @GetMapping("/unread-count")
+    public java.util.Map<String, Long> getUnreadCount(@AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return java.util.Map.of("unreadCount", notificationService.getUnreadCount(userId));
+    }
+
     @GetMapping
     public Page<NotificationResponse> listNotifications(@AuthenticationPrincipal Jwt jwt,
                                                         Pageable pageable) {

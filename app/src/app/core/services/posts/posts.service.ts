@@ -85,4 +85,7 @@ export class PostsService {
     return this.http.patch<void>(this.url + `/post/${postId}`, null);
   }
 
+  public recordView(postId: string): Observable<void> {
+    return this.http.post<void>(this.url + `/post/${postId}/view`, null);
+  }
 }

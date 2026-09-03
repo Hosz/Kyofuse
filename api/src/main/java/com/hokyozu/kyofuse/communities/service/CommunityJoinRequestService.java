@@ -39,6 +39,7 @@ public class CommunityJoinRequestService {
     private final CommunityMemberRepository communityMemberRepository;
     private final CommunityJoinRequestRepository communityJoinRequestRepository;
 
+    @com.hokyozu.kyofuse.infrastructure.redis.DistributedLock(key = "'community:join:' + #communityId + ':' + #userId", leaseTimeSeconds = 5)
     @Transactional
     public CommunityJoinRequestResponse requestToJoinCommunity(UUID userId, UUID communityId) {
         User user = userFinder.findProfileByUserId(userId);
@@ -75,6 +76,7 @@ public class CommunityJoinRequestService {
         return CommunityJoinRequestMapper.toResponse(communityJoinRequest);
     }
 
+    @com.hokyozu.kyofuse.infrastructure.redis.DistributedLock(key = "'community:request:' + #requestId", leaseTimeSeconds = 5)
     @Transactional
     public void approveJoinRequest(UUID userId, UUID requestId) {
         User user = userFinder.findProfileByUserId(userId);

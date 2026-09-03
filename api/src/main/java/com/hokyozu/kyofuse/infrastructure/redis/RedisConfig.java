@@ -41,6 +41,7 @@ public class RedisConfig {
         Map<String, RedisCacheConfiguration> cacheConfigurations = new HashMap<>();
         cacheConfigurations.put("user_profiles", defaultConfig.entryTtl(Duration.ofMinutes(15)));
         cacheConfigurations.put("communities_public", defaultConfig.entryTtl(Duration.ofMinutes(30)));
+        cacheConfigurations.put("teams_public", defaultConfig.entryTtl(Duration.ofMinutes(30)));
         cacheConfigurations.put("posts_feed", defaultConfig.entryTtl(Duration.ofMinutes(2)));
 
         return RedisCacheManager.builder(connectionFactory)

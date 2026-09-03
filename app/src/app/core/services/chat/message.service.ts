@@ -3,6 +3,7 @@ import { API_URL } from '../../../models/api-url.model';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { PageResponse } from '../../../models/page-response.model';
 import { MessageInfoResponse, MessageRequest, MessageResponse, MessageStatusEvent } from '../../../models/chat/chat.model';
+import { TypingEvent } from '../../../shared/models/chat.model';
 import { WebSocketService } from '../websocket/websocket.service';
 import { Observable } from 'rxjs';
 
@@ -27,6 +28,20 @@ export class MessageService {
    */
   public watchConversation(conversationId: string): Observable<MessageResponse> {
     return this.websocketService.watch<MessageResponse>(`/topic/conversations/${conversationId}`);
+  }
+
+  /**
+   * Assina eventos de "está digitando..." de uma conversa em tempo real.
+   */
+  public watchTyping(conversationId: string): Observable<TypingEvent> {
+    return this.websocketService.watch<TypingEvent>(`/topic/conversations/${conversationId}/typing`);
+  }
+
+  /**
+   * Envia evento de typing via WebSocket STOMP (e fallback HTTP).
+   */
+  public sendTyping(conversationId: string, isTyping: boolean): void {
+    this.websocketService.publish(`/app/chat/${conversationId}/typing`, { isTyping });
   }
 
   public sendMessage(conversationId: string, request: MessageRequest) {

@@ -348,11 +348,12 @@ class CommentServiceTest {
         when(postFinder.findPostByIdAndStatus(postId, PostStatus.ACTIVE)).thenReturn(post);
         when(commentRepository.findByPostIdAndStatus(postId, CommentStatus.ACTIVE, pageable))
                 .thenReturn(new PageImpl<>(List.of(firstComment, secondComment), pageable, 2));
-        when(gamerProfileFinder.findProfileByUserId(authorId)).thenReturn(profileOf(author));
+        when(gamerProfileFinder.findAllByUserIds(List.of(authorId))).thenReturn(List.of(profileOf(author)));
 
         Page<CommentResponse> response = commentService.listComments(postId, pageable, authorId);
 
         verify(postFinder).findPostByIdAndStatus(postId, PostStatus.ACTIVE);
+        verify(postPermissionService).validateViewPost(author, post);
         verify(commentRepository).findByPostIdAndStatus(postId, CommentStatus.ACTIVE, pageable);
         assertThat(response.getTotalElements()).isEqualTo(2);
         assertThat(response.getContent())

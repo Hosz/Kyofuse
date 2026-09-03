@@ -11,13 +11,9 @@ import com.hokyozu.kyofuse.chat.enums.ConversationType;
 import com.hokyozu.kyofuse.chat.enums.DirectConversationStatus;
 import com.hokyozu.kyofuse.chat.entity.Message;
 import com.hokyozu.kyofuse.chat.entity.MessageMedia;
-import com.hokyozu.kyofuse.chat.repository.MessageMediaRepository;
-import com.hokyozu.kyofuse.chat.repository.MessageReceiptRepository;
-import com.hokyozu.kyofuse.chat.repository.MessageRepository;
+import com.hokyozu.kyofuse.chat.repository.*;
 import com.hokyozu.kyofuse.chat.mapper.ConversationMapper;
 import com.hokyozu.kyofuse.chat.mapper.ConversationMemberMapper;
-import com.hokyozu.kyofuse.chat.repository.ConversationMemberRepository;
-import com.hokyozu.kyofuse.chat.repository.ConversationRepository;
 import com.hokyozu.kyofuse.communities.entity.Community;
 import com.hokyozu.kyofuse.communities.entity.CommunityMember;
 import com.hokyozu.kyofuse.communities.enums.CommunityMemberStatus;
@@ -43,12 +39,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -68,6 +59,7 @@ public class ConversationService {
     private final ConversationMemberRepository conversationMemberRepository;
     private final MessageRepository messageRepository;
     private final MessageReceiptRepository messageReceiptRepository;
+    private final ChatCounterService chatCounterService;
     private final MessageMediaRepository messageMediaRepository;
 
     @Transactional
@@ -142,10 +134,15 @@ public class ConversationService {
     /** Uma conversa DIRECT só fica completa pro front com o nickname e o avatar dos dois
      * participantes — sem eles a conversa apareceria sem nome nem foto na listagem. */
     private ConversationResponse directResponse(Conversation conversation) {
+        Map<UUID, GamerProfile> profileMap = gamerProfileFinder.findAllByUserIds(List.of(
+                conversation.getDirectUserOne().getId(),
+                conversation.getDirectUserTwo().getId()
+        )).stream().collect(Collectors.toMap(p -> p.getUser().getId(), Function.identity(), (a, b) -> a));
+
         return ConversationMapper.toResponse(
                 conversation,
-                gamerProfileFinder.findProfileByUserId(conversation.getDirectUserOne().getId()),
-                gamerProfileFinder.findProfileByUserId(conversation.getDirectUserTwo().getId())
+                profileMap.get(conversation.getDirectUserOne().getId()),
+                profileMap.get(conversation.getDirectUserTwo().getId())
         );
     }
 
@@ -348,11 +345,14 @@ public class ConversationService {
         Page<CommunityMember> memberships = communityMemberRepository
                 .findByUserAndStatus(user, CommunityMemberStatus.ACTIVE, pageable);
 
-        List<Conversation> conversations = memberships.getContent().stream()
+        List<Community> activeCommunities = memberships.getContent().stream()
                 .map(CommunityMember::getCommunity)
                 .filter(community -> community.getStatus() != CommunityStatus.ARCHIVED)
-                .flatMap(community -> conversationRepository.findByCommunity(community).stream())
                 .toList();
+
+        List<Conversation> conversations = activeCommunities.isEmpty()
+                ? List.of()
+                : conversationRepository.findByCommunityIn(activeCommunities);
         List<ConversationResponse> responses = enrichConversations(conversations, userId);
 
         return new PageImpl<>(responses, pageable, memberships.getTotalElements());
@@ -414,7 +414,7 @@ public class ConversationService {
                         row -> ((Number) row[1]).longValue()
                 ));
 
-        List<Message> latestMessagesList = messageRepository.findByConversationIdInOrderByCreatedAtDesc(conversationIds);
+        List<Message> latestMessagesList = messageRepository.findLatestMessagesByConversationIds(conversationIds);
         Map<UUID, Message> latestMessageMap = latestMessagesList.stream()
                 .collect(Collectors.toMap(
                         m -> m.getConversation().getId(),
@@ -443,9 +443,23 @@ public class ConversationService {
                                 (existing, replacement) -> existing
                         ));
 
+        Set<UUID> allUserIds = new LinkedHashSet<>();
+        for (Conversation c : conversations) {
+            if (c.getDirectUserOne() != null) allUserIds.add(c.getDirectUserOne().getId());
+            if (c.getDirectUserTwo() != null) allUserIds.add(c.getDirectUserTwo().getId());
+        }
+        for (Message m : latestMessageMap.values()) {
+            if (m.getSender() != null) allUserIds.add(m.getSender().getId());
+        }
+
+        Map<UUID, GamerProfile> profileMap = allUserIds.isEmpty()
+                ? Map.of()
+                : gamerProfileFinder.findAllByUserIds(new ArrayList<>(allUserIds)).stream()
+                  .collect(Collectors.toMap(p -> p.getUser().getId(), Function.identity(), (a, b) -> a));
+
         return conversations.stream().map(c -> {
-            GamerProfile profileOne = c.getDirectUserOne() != null ? gamerProfileFinder.findProfileByUserId(c.getDirectUserOne().getId()) : null;
-            GamerProfile profileTwo = c.getDirectUserTwo() != null ? gamerProfileFinder.findProfileByUserId(c.getDirectUserTwo().getId()) : null;
+            GamerProfile profileOne = c.getDirectUserOne() != null ? profileMap.get(c.getDirectUserOne().getId()) : null;
+            GamerProfile profileTwo = c.getDirectUserTwo() != null ? profileMap.get(c.getDirectUserTwo().getId()) : null;
 
             Message lastMessage = latestMessageMap.get(c.getId());
             if (c.getType() == ConversationType.GROUP && lastMessage != null) {
@@ -456,7 +470,7 @@ public class ConversationService {
             }
 
             GamerProfile lastMessageSenderProfile = (lastMessage != null && lastMessage.getSender() != null)
-                    ? gamerProfileFinder.findProfileByUserId(lastMessage.getSender().getId())
+                    ? profileMap.get(lastMessage.getSender().getId())
                     : null;
             List<MessageMedia> messageMedia = lastMessage != null ? mediaMap.getOrDefault(lastMessage.getId(), List.of()) : List.of();
             Long unreadCount = unreadCounts.getOrDefault(c.getId(), 0L);
@@ -482,7 +496,7 @@ public class ConversationService {
         User user = userFinder.findProfileByUserId(userId);
         userChecker.checkActive(user);
 
-        long count = messageReceiptRepository.countTotalUnreadByUserId(userId);
+        long count = chatCounterService.getTotalUnreadCount(userId);
         return Map.of("unreadCount", count);
     }
 }

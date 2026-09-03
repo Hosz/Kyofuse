@@ -37,6 +37,8 @@ import com.hokyozu.kyofuse.users.finder.UserFinder;
 import com.hokyozu.kyofuse.users.service.UserChecker;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -70,6 +72,7 @@ public class TeamService {
     private final TeamMemberRepository teamMemberRepository;
     private final GamerProfileRepository gamerProfileRepository;
 
+    @CacheEvict(value = "teams_public", allEntries = true)
     @Transactional
     public TeamResponse uploadAvatar(UUID userId, UUID teamId, MultipartFile file) throws IOException {
         User user = userFinder.findProfileByUserId(userId);
@@ -84,6 +87,7 @@ public class TeamService {
         return detailTeam(teamId.toString());
     }
 
+    @CacheEvict(value = "teams_public", allEntries = true)
     @Transactional
     public TeamResponse uploadBanner(UUID userId, UUID teamId, MultipartFile file) throws IOException {
         User user = userFinder.findProfileByUserId(userId);
@@ -98,6 +102,7 @@ public class TeamService {
         return detailTeam(teamId.toString());
     }
 
+    @CacheEvict(value = "teams_public", allEntries = true)
     @Transactional
     public TeamResponse createTeams(@Valid TeamRequest request, UUID userId) {
         User user = userFinder.findProfileByUserId(userId);
@@ -123,6 +128,7 @@ public class TeamService {
         return TeamMapper.toResponse(teamSaved, requiredRolesSaved);
     }
 
+    @Cacheable(value = "teams_public", key = "#identifier")
     @Transactional(readOnly = true)
     public TeamResponse detailTeam(String identifier) {
 
@@ -174,6 +180,7 @@ public class TeamService {
         ));
     }
 
+    @CacheEvict(value = "teams_public", allEntries = true)
     @Transactional
     public TeamResponse editTeam(UUID userId, UUID teamId, UpdateTeamRequest updateTeamRequest) {
         User user = userFinder.findProfileByUserId(userId);
@@ -231,6 +238,7 @@ public class TeamService {
         return TeamMapper.toResponse(updatedTeam, requiredRoles);
     }
 
+    @CacheEvict(value = "teams_public", allEntries = true)
     @Transactional
     public TeamResponse inactiveTeam(UUID userId, UUID teamId) {
         User user = userFinder.findProfileByUserId(userId);
@@ -250,6 +258,7 @@ public class TeamService {
         return TeamMapper.toResponse(teamSaved, requiredRoles);
     }
 
+    @CacheEvict(value = "teams_public", allEntries = true)
     @Transactional
     public TeamResponse manageRequiredRoles(UUID userId, UUID teamId, UpdateTeamRequiredRolesRequest request) {
         User user = userFinder.findProfileByUserId(userId);
@@ -380,9 +389,18 @@ public class TeamService {
                 .toList();
 
         Page<Team> teams = teamRepository.findByIdIn(teamIds, pageable);
-        return teams.map(team -> {
-            List<TeamRequiredRole> requiredRoles = teamRequiredRoleRepository.findByTeamId(team.getId());
-            return TeamMapper.toResponse(team, requiredRoles);
-        });
+        List<UUID> pagedTeamIds = teams.getContent().stream()
+                .map(Team::getId)
+                .toList();
+
+        Map<UUID, List<TeamRequiredRole>> rolesByTeamId = pagedTeamIds.isEmpty()
+                ? Map.of()
+                : teamRequiredRoleRepository.findByTeamIdIn(pagedTeamIds).stream()
+                        .collect(Collectors.groupingBy(role -> role.getTeam().getId()));
+
+        return teams.map(team -> TeamMapper.toResponse(
+                team,
+                rolesByTeamId.getOrDefault(team.getId(), List.of())
+        ));
     }
 }

@@ -27,7 +27,9 @@ import java.util.UUID;
 public class PostController {
 
     private final PostService postService;
+    private final com.hokyozu.kyofuse.posts.service.PostViewsBufferService postViewsBufferService;
 
+    @com.hokyozu.kyofuse.infrastructure.ratelimit.RateLimit(key = "create_post", limit = 10, period = 60, type = com.hokyozu.kyofuse.infrastructure.ratelimit.RateLimitType.USER_ID)
     @PostMapping("/post")
     @ResponseStatus(HttpStatus.CREATED)
     public PostResponse post(@AuthenticationPrincipal Jwt jwt,
@@ -35,6 +37,12 @@ public class PostController {
         UUID userId = UUID.fromString(jwt.getSubject());
 
         return postService.post(userId, request);
+    }
+
+    @PostMapping("/post/{postId}/view")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void recordView(@PathVariable UUID postId) {
+        postViewsBufferService.recordView(postId);
     }
 
     @GetMapping("/post/{postId}")

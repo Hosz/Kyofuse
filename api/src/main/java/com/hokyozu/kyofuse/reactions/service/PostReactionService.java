@@ -27,8 +27,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -120,9 +124,18 @@ public class PostReactionService {
         userChecker.checkActive(user);
 
         Page<PostReaction> postReactionExist = postReactionRepository.findByPostId(postId, pageable);
+        List<UUID> userIds = postReactionExist.getContent().stream()
+                .map(pr -> pr.getUser().getId())
+                .distinct()
+                .toList();
+
+        Map<UUID, GamerProfile> profileMap = userIds.isEmpty()
+                ? Map.of()
+                : gamerProfileFinder.findAllByUserIds(userIds).stream()
+                        .collect(Collectors.toMap(p -> p.getUser().getId(), Function.identity(), (a, b) -> a));
 
         return postReactionExist.map(postReaction -> {
-            GamerProfile profile = gamerProfileFinder.findProfileByUserId(postReaction.getUser().getId());
+            GamerProfile profile = profileMap.get(postReaction.getUser().getId());
             return PostReactionMapper.toResponse(postReaction, profile);
         });
     }
@@ -135,9 +148,18 @@ public class PostReactionService {
         userChecker.checkActive(user);
 
         Page<PostReaction> postReactionExist = postReactionRepository.findByPostIdAndReactionType(postId, ReactionType.LIKE, pageable);
+        List<UUID> userIds = postReactionExist.getContent().stream()
+                .map(pr -> pr.getUser().getId())
+                .distinct()
+                .toList();
+
+        Map<UUID, GamerProfile> profileMap = userIds.isEmpty()
+                ? Map.of()
+                : gamerProfileFinder.findAllByUserIds(userIds).stream()
+                        .collect(Collectors.toMap(p -> p.getUser().getId(), Function.identity(), (a, b) -> a));
 
         return postReactionExist.map(postReaction -> {
-            GamerProfile profile = gamerProfileFinder.findProfileByUserId(postReaction.getUser().getId());
+            GamerProfile profile = profileMap.get(postReaction.getUser().getId());
             return PostReactionMapper.toResponse(postReaction, profile);
         });
 

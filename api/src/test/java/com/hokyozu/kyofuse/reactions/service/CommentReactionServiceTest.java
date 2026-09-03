@@ -195,6 +195,8 @@ class CommentReactionServiceTest {
         when(reactionRepository.findByComment_Post_IdAndComment_IdAndReactionType(
                 postId, commentId, ReactionType.LIKE, pageable))
                 .thenReturn(new PageImpl<>(List.of(existing), pageable, 1));
+        when(gamerProfileFinder.findAllByUserIds(any()))
+                .thenReturn(List.of(GamerProfile.builder().user(user).build()));
 
         Page<CommentReactionResponse> result = service.getLikes(postId, commentId, userId, pageable);
 
@@ -209,6 +211,8 @@ class CommentReactionServiceTest {
         Pageable pageable = PageRequest.of(0, 10);
         when(reactionRepository.findByComment_Post_IdAndComment_Id(postId, commentId, pageable))
                 .thenReturn(new PageImpl<>(List.of(reaction(ReactionType.FIRE), reaction(ReactionType.LIKE)), pageable, 2));
+        when(gamerProfileFinder.findAllByUserIds(any()))
+                .thenReturn(List.of(GamerProfile.builder().user(user).build()));
 
         Page<CommentReactionResponse> result = service.getReactions(postId, commentId, userId, pageable);
 

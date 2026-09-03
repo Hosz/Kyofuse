@@ -29,10 +29,14 @@
           <span class="flex items-center gap-1.5 text-label-sm text-on-surface-variant">
             @if (conv.type === 'DIRECT') {
               <span>&#64;{{ conv.participant.handle }}</span>
+              <span>&middot;</span>
             }
             @if (conv.participant.online) {
-              <span class="h-2 w-2 rounded-full bg-tertiary"></span>
-              Online
+              <span class="h-2 w-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-500/50"></span>
+              <span class="font-medium text-emerald-400">Online</span>
+            } @else if (conv.type === 'DIRECT') {
+              <span class="h-2 w-2 rounded-full bg-outline-variant"></span>
+              <span>Offline</span>
             }
             @if (conv.participant.statusLabel) {
               <span>&middot; {{ conv.participant.statusLabel }}</span>
@@ -354,6 +358,17 @@
           <div class="flex items-center gap-2 px-2 pb-1 text-label-sm text-primary">
             <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
             <span>Enviando imagem...</span>
+          </div>
+        }
+
+        @if (typingText()) {
+          <div class="flex items-center gap-2 px-3 py-1 text-label-sm text-emerald-400 animate-pulse">
+            <span class="flex items-center gap-1">
+              <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-bounce"></span>
+              <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-bounce [animation-delay:0.2s]"></span>
+              <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-bounce [animation-delay:0.4s]"></span>
+            </span>
+            <span class="italic font-medium">{{ typingText() }}</span>
           </div>
         }
 

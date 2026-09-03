@@ -25,6 +25,9 @@ class GamerProfileControllerTest {
     @Mock
     private GamerProfileService gamerProfileService;
 
+    @Mock
+    private com.hokyozu.kyofuse.profiles.service.ProfileAnalyticsService profileAnalyticsService;
+
     @InjectMocks
     private GamerProfileController controller;
 

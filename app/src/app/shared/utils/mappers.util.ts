@@ -32,6 +32,7 @@ export function toPost(post: postResponse): Post {
       reposts: 0,
       likes: post.likeCount,
       reactions: post.reactionCount,
+      views: post.viewCount ?? 0,
     },
   };
 }

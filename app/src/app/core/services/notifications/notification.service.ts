@@ -43,11 +43,11 @@ export class NotificationService {
     return this.http.get<PageResponse<NotificationResponse>>(`${this.url}`, { params });
   }
 
-  /** Não existe endpoint de contagem — busca uma página grande e conta as não lidas nela. */
+  /** Busca a contagem atômica de notificações não lidas diretamente do Redis via backend */
   public refreshUnreadCount(): void {
-    this.listNotifications(0, UNREAD_COUNT_SAMPLE_SIZE).subscribe({
+    this.http.get<{ unreadCount: number }>(`${this.url}/unread-count`).subscribe({
       next: (response) => {
-        this.unreadCount.set(response.content.filter((n) => n.status === 'UNREAD').length);
+        this.unreadCount.set(response.unreadCount ?? 0);
       },
       error: (error) => console.error('Failed to fetch unread notifications count:', error),
     });

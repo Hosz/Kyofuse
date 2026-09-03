@@ -52,12 +52,73 @@ class GamerProfileFinderTest {
     }
 
     @Test
-    void rejectsMissingProfileById() {
-        UUID profileId = UUID.randomUUID();
-        when(repository.findById(profileId)).thenReturn(Optional.empty());
+    void findsProfileByUserUsername() {
+        String username = "player";
+        GamerProfile profile = GamerProfile.builder().build();
+        when(repository.findByUserUsername(username)).thenReturn(Optional.of(profile));
 
-        assertThatThrownBy(() -> finder.findProfileById(profileId))
+        assertThat(finder.findProfileByUserUsername(username)).isSameAs(profile);
+    }
+
+    @Test
+    void rejectsMissingProfileByUserUsername() {
+        String username = "player";
+        when(repository.findByUserUsername(username)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> finder.findProfileByUserUsername(username))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessage("Gamer profile not found for profile ID: " + profileId);
+                .hasMessage("Gamer profile not found for username: " + username);
+    }
+
+    @Test
+    void findsAllByUserIds() {
+        UUID userId = UUID.randomUUID();
+        GamerProfile profile = GamerProfile.builder().build();
+        when(repository.findByUserIdIn(java.util.List.of(userId))).thenReturn(java.util.List.of(profile));
+
+        assertThat(finder.findAllByUserIds(java.util.List.of(userId))).containsExactly(profile);
+    }
+
+    @Test
+    void findsAllByUserIdsReturnsEmptyWhenEmptyList() {
+        assertThat(finder.findAllByUserIds(java.util.List.of())).isEmpty();
+    }
+
+    @Test
+    void findsFullProfileByUserId() {
+        UUID userId = UUID.randomUUID();
+        GamerProfile profile = GamerProfile.builder().build();
+        when(repository.findFullByUserId(userId)).thenReturn(Optional.of(profile));
+
+        assertThat(finder.findFullProfileByUserId(userId)).isSameAs(profile);
+    }
+
+    @Test
+    void rejectsMissingFullProfileByUserId() {
+        UUID userId = UUID.randomUUID();
+        when(repository.findFullByUserId(userId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> finder.findFullProfileByUserId(userId))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Full gamer profile not found for user ID: " + userId);
+    }
+
+    @Test
+    void findsFullProfileByUserUsername() {
+        String username = "player";
+        GamerProfile profile = GamerProfile.builder().build();
+        when(repository.findFullByUserUsername(username)).thenReturn(Optional.of(profile));
+
+        assertThat(finder.findFullProfileByUserUsername(username)).isSameAs(profile);
+    }
+
+    @Test
+    void rejectsMissingFullProfileByUserUsername() {
+        String username = "player";
+        when(repository.findFullByUserUsername(username)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> finder.findFullProfileByUserUsername(username))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Full gamer profile not found for username: " + username);
     }
 }

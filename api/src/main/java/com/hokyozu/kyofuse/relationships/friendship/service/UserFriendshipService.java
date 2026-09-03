@@ -25,7 +25,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -80,20 +84,30 @@ public class UserFriendshipService {
         userFriendRequestRepository.delete(friendRequest);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<UserFriendshipResponse> showMyFriends(UUID userId, Pageable pageable) {
         User user = userFinder.findProfileByUserId(userId);
         userChecker.checkActive(user);
 
         Page<UserFriendship> friends = userFriendshipRepository.findAllByUserOneOrUserTwo(user, user, pageable);
+        List<UUID> friendIds = friends.getContent().stream()
+                .map(f -> UserFriendshipMapper.resolveFriend(f, userId).getId())
+                .distinct()
+                .toList();
+
+        Map<UUID, GamerProfile> profileMap = friendIds.isEmpty()
+                ? Map.of()
+                : gamerProfileFinder.findAllByUserIds(friendIds).stream()
+                        .collect(Collectors.toMap(p -> p.getUser().getId(), Function.identity(), (a, b) -> a));
+
         return friends.map(friendship -> {
             User friend = UserFriendshipMapper.resolveFriend(friendship, userId);
-            GamerProfile gamerProfile = gamerProfileFinder.findProfileByUserId(friend.getId());
+            GamerProfile gamerProfile = profileMap.get(friend.getId());
             return UserFriendshipMapper.toResponse(friendship, userId, gamerProfile);
         });
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<UserFriendshipResponse> showUserFriends(UUID userAuthId, UUID userId, Pageable pageable) {
         User userAuth = userFinder.findProfileByUserId(userAuthId);
         User user = userFinder.findProfileByUserId(userId);
@@ -103,9 +117,19 @@ public class UserFriendshipService {
         profilePermissionService.validateViewFriends(userAuth, user);
 
         Page<UserFriendship> friends = userFriendshipRepository.findAllByUserOneOrUserTwo(user, user, pageable);
+        List<UUID> friendIds = friends.getContent().stream()
+                .map(f -> UserFriendshipMapper.resolveFriend(f, userId).getId())
+                .distinct()
+                .toList();
+
+        Map<UUID, GamerProfile> profileMap = friendIds.isEmpty()
+                ? Map.of()
+                : gamerProfileFinder.findAllByUserIds(friendIds).stream()
+                        .collect(Collectors.toMap(p -> p.getUser().getId(), Function.identity(), (a, b) -> a));
+
         return friends.map(friendship -> {
             User friend = UserFriendshipMapper.resolveFriend(friendship, userId);
-            GamerProfile gamerProfile = gamerProfileFinder.findProfileByUserId(friend.getId());
+            GamerProfile gamerProfile = profileMap.get(friend.getId());
             return UserFriendshipMapper.toResponse(friendship, userId, gamerProfile);
         });
     }

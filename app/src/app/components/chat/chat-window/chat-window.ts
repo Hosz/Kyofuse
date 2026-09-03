@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, afterRenderEffect, computed, inject, input, output, signal, untracked, viewChild } from '@angular/core';
+import { Component, ElementRef, ViewChild, afterRenderEffect, computed, effect, inject, input, OnDestroy, output, signal, untracked, viewChild } from '@angular/core';
 import { Conversation } from '../../../shared/models/chat.model';
 import { toChatMessageGroups } from '../../../shared/utils/mappers.util';
 import { FALLBACK_AVATAR_URL } from '../../../shared/utils/format.util';
@@ -12,6 +12,7 @@ import { MediaService } from '../../../core/services/media/media.service';
 import { MessageService } from '../../../core/services/chat/message.service';
 import { ToastService } from '../../../core/services/ui/toast.service';
 import { PostMediaItemRequest } from '../../../models/posts/post-request.model';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-chat-window',
@@ -19,7 +20,7 @@ import { PostMediaItemRequest } from '../../../models/posts/post-request.model';
   templateUrl: './chat-window.html',
   styleUrl: './chat-window.css',
 })
-export class ChatWindowComponent {
+export class ChatWindowComponent implements OnDestroy {
   @ViewChild('fileInput') fileInput?: ElementRef<HTMLInputElement>;
   private scroller = viewChild<ElementRef<HTMLElement>>('scroller');
 
@@ -30,6 +31,10 @@ export class ChatWindowComponent {
   conversation = input<Conversation | null>(null);
   myUserId = input<string | null>(null);
   loadingOlderMessages = input(false);
+
+  typingText = computed(() => (this.conversation()?.isTyping ? this.conversation()?.typingText ?? null : null));
+  private myTypingTimeout?: any;
+  private isCurrentlyTyping = false;
 
   comingSoon(feature: string): void {
     this.toastService.info(`${feature} estará disponível em breve!`);
@@ -288,12 +293,31 @@ export class ChatWindowComponent {
 
   onDraftChange(value: string): void {
     this.draft.set(value);
+    const conv = this.conversation();
+    if (conv?.id) {
+      if (!this.isCurrentlyTyping && value.trim().length > 0) {
+        this.isCurrentlyTyping = true;
+        this.messageService.sendTyping(conv.id, true);
+      }
+      clearTimeout(this.myTypingTimeout);
+      this.myTypingTimeout = setTimeout(() => {
+        this.isCurrentlyTyping = false;
+        this.messageService.sendTyping(conv.id, false);
+      }, 2500);
+    }
   }
 
   onSend(): void {
     const content = this.draft().trim();
     const media = this.pendingMedia();
     if ((!content && media.length === 0) || !this.canType() || this.uploadingMedia()) return;
+
+    const conv = this.conversation();
+    if (conv?.id && this.isCurrentlyTyping) {
+      this.isCurrentlyTyping = false;
+      clearTimeout(this.myTypingTimeout);
+      this.messageService.sendTyping(conv.id, false);
+    }
 
     this.sendMessage.emit({
       content: content || undefined,
@@ -306,5 +330,9 @@ export class ChatWindowComponent {
     setTimeout(() => {
       this.scrollToBottom('smooth');
     }, 50);
+  }
+
+  ngOnDestroy(): void {
+    clearTimeout(this.myTypingTimeout);
   }
 }

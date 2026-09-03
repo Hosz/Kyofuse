@@ -93,6 +93,9 @@ class MessageServiceTest {
     @Mock
     private com.hokyozu.kyofuse.chat.repository.MessageReceiptRepository messageReceiptRepository;
 
+    @Mock
+    private ChatCounterService chatCounterService;
+
     @Spy
     private UserChecker userChecker = new UserChecker();
 

@@ -38,4 +38,8 @@ export class ProfileService {
     
     return this.http.get<PageResponse<gamerProfileResponse>>(`${this.url}`, { params });
   }
+
+  public getMyAnalytics() {
+    return this.http.get<{ profileId: string; dailyUniqueVisitors: number; monthlyUniqueVisitors: number }>(`${this.url}/me/analytics`);
+  }
 }

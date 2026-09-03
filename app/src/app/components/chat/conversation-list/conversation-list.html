@@ -64,8 +64,8 @@
             [alt]="conversation.participant.name"
             class="h-12 w-12 rounded-full object-cover"
           />
-          @if (conversation.participant.online) {
-            <span class="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-surface bg-tertiary"></span>
+          @if (conversation.type === 'DIRECT' && conversation.participant.online) {
+            <span class="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-surface bg-emerald-400 shadow-sm shadow-emerald-500/50"></span>
           }
         </div>
 
@@ -75,9 +75,16 @@
             <span class="shrink-0 text-label-sm text-on-surface-variant">{{ conversation.lastMessageAt }}</span>
           </div>
           <div class="flex items-center justify-between gap-2">
-            <span class="truncate text-label-md text-on-surface-variant" [class.font-semibold]="conversation.unread" [class.text-on-surface]="conversation.unread">
-              {{ previewLabel(conversation) }}
-            </span>
+            @if (conversation.isTyping) {
+              <span class="flex items-center gap-1.5 truncate text-label-md italic font-medium text-emerald-400">
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                {{ conversation.typingText || 'Está digitando...' }}
+              </span>
+            } @else {
+              <span class="truncate text-label-md text-on-surface-variant" [class.font-semibold]="conversation.unread" [class.text-on-surface]="conversation.unread">
+                {{ previewLabel(conversation) }}
+              </span>
+            }
             @if (conversation.unreadCount && conversation.unreadCount > 0) {
               <span class="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-label-sm font-bold text-on-primary shadow-sm">
                 {{ conversation.unreadCount > 99 ? '99+' : conversation.unreadCount }}

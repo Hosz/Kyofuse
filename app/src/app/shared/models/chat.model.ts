@@ -1,5 +1,13 @@
 import { ConversationType } from '../../models/chat/chat.model';
 
+export interface TypingEvent {
+  conversationId: string;
+  userId: string;
+  username: string;
+  nickname: string;
+  isTyping: boolean;
+}
+
 export interface ChatParticipant {
   /** Id do usuário (users.id) — só preenchido em conversas DIRECT, onde participant
    * representa uma pessoa de verdade (em GROUP/COMMUNITY é o nome do grupo/comunidade). */
@@ -77,6 +85,7 @@ export interface Conversation {
   unread?: boolean;
   unreadCount?: number;
   isTyping?: boolean;
+  typingText?: string;
   messages: ChatMessage[];
   /** Só preenchido em conversas COMMUNITY — usado pra linkar de volta pra página da comunidade. */
   communityId?: string;
