@@ -28,4 +28,5 @@ export interface SwitchAccountResponse {
 export interface DisconnectAccountRequest {
   targetUserId: string;
   deviceId: string;
+  switchToken?: string;
 }

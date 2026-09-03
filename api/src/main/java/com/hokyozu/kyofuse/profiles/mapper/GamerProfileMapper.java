@@ -18,11 +18,11 @@ public class GamerProfileMapper {
 
     public static void updateEntity(GamerProfile profile, GamerProfileRequest request) {
         if (request.nickname() != null) {
-            profile.setNickname(request.nickname().trim());
+            profile.setNickname(sanitizeHtml(request.nickname()));
         }
 
         if (request.bio() != null) {
-            profile.setBio(request.bio().trim());
+            profile.setBio(sanitizeHtml(request.bio()));
         }
 
         if (request.avatarUrl() != null) {
@@ -122,9 +122,10 @@ public class GamerProfileMapper {
 
     public static GamerProfile toEntity(User user, String nickname, String avatarUrl, String country) {
         Instant now = Instant.now();
+        String safeNickname = (nickname != null && !nickname.isBlank()) ? sanitizeHtml(nickname) : user.getUsername();
         return GamerProfile.builder()
                 .user(user)
-                .nickname((nickname != null && !nickname.isBlank()) ? nickname.trim() : user.getUsername())
+                .nickname(safeNickname)
                 .avatarUrl(avatarUrl)
                 .country(country)
                 .showCountryFlag(true)
@@ -134,6 +135,14 @@ public class GamerProfileMapper {
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
+    }
+
+    public static String sanitizeHtml(String text) {
+        if (text == null) {
+            return null;
+        }
+        String withoutScripts = text.replaceAll("(?is)<(script|style)[^>]*>.*?</\\1>", "");
+        return withoutScripts.replaceAll("<[^>]*>", "").trim();
     }
 
     public static boolean updateFromSteam(GamerProfile profile, String personaName, String avatarUrl, String country) {

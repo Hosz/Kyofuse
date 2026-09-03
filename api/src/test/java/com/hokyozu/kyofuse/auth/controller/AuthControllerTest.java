@@ -323,13 +323,15 @@ class AuthControllerTest {
     }
 
     @Test
-    void disconnectAccountDelegatesToAuthService() {
+    void disconnectAccountDelegatesToAuthServiceWithAuthenticatedUser() {
+        UUID userId = UUID.randomUUID();
+        Jwt jwt = jwt(userId, Map.of("email", "john@example.com", "username", "john", "role", "USER"));
         com.hokyozu.kyofuse.auth.dto.request.DisconnectAccountRequest request =
-                new com.hokyozu.kyofuse.auth.dto.request.DisconnectAccountRequest(UUID.randomUUID(), "device-1");
+                new com.hokyozu.kyofuse.auth.dto.request.DisconnectAccountRequest(userId, "device-1");
 
-        controller.disconnectAccount(request);
+        controller.disconnectAccount(request, jwt);
 
-        verify(authService).disconnectAccount(request);
+        verify(authService).disconnectAccount(request, userId);
     }
 
     @Test

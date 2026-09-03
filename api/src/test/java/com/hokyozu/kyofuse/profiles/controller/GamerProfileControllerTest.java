@@ -1,5 +1,6 @@
 package com.hokyozu.kyofuse.profiles.controller;
 
+import com.hokyozu.kyofuse.profiles.dto.request.ProfileFilter;
 import com.hokyozu.kyofuse.profiles.dto.request.GamerProfileRequest;
 import com.hokyozu.kyofuse.profiles.dto.response.GamerProfileResponse;
 import com.hokyozu.kyofuse.profiles.enums.GamerProfileSetupStatus;
@@ -9,6 +10,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.time.Instant;
@@ -67,6 +72,21 @@ class GamerProfileControllerTest {
 
         assertThat(result).isSameAs(expected);
         verify(gamerProfileService).viewUserProfile(username, userId);
+    }
+
+    @Test
+    void listingProfilesPassesViewerIdFromJwt() {
+        UUID userId = UUID.randomUUID();
+        ProfileFilter filter = new ProfileFilter("test", null);
+        Pageable pageable = PageRequest.of(0, 20);
+        Page<GamerProfileResponse> expected = new PageImpl<>(List.of(response(userId)));
+
+        when(gamerProfileService.listingProfiles(filter, userId, pageable)).thenReturn(expected);
+
+        Page<GamerProfileResponse> result = controller.listingProfiles(filter, jwt(userId), pageable);
+
+        assertThat(result).isSameAs(expected);
+        verify(gamerProfileService).listingProfiles(filter, userId, pageable);
     }
 
     private static Jwt jwt(UUID userId) {

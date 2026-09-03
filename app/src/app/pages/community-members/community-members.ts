@@ -65,6 +65,14 @@ export class CommunityMembersComponent {
     return mine?.role === 'ADMIN' || mine?.role === 'MODERATOR';
   });
 
+  myRole = computed<'OWNER' | 'ADMIN' | 'MODERATOR' | 'MEMBER' | null>(() => {
+    const myUserId = this.myUserId();
+    if (!myUserId) return null;
+    if (this.community()?.ownerId === myUserId) return 'OWNER';
+    const mine = this.members().find((member) => member.memberId === myUserId);
+    return (mine?.role as 'ADMIN' | 'MODERATOR' | 'MEMBER') ?? null;
+  });
+
   private visibleMembers = computed(() => {
     const query = this.query().trim().toLowerCase();
     if (!query) return this.members();
@@ -132,7 +140,14 @@ export class CommunityMembersComponent {
   }
 
   canRemove(member: CommunityMemberResponse): boolean {
-    return this.iAmStaff() && !this.isOwner(member) && member.memberId !== this.myUserId();
+    if (!this.iAmStaff() || this.isOwner(member) || member.memberId === this.myUserId()) {
+      return false;
+    }
+    const role = this.myRole();
+    if (role === 'OWNER') return true;
+    if (role === 'ADMIN') return member.role !== 'ADMIN';
+    if (role === 'MODERATOR') return member.role === 'MEMBER';
+    return false;
   }
 
   openRemoveConfirm(member: CommunityMemberResponse): void {

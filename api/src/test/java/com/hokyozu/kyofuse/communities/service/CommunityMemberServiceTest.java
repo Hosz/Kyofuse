@@ -399,13 +399,120 @@ class CommunityMemberServiceTest {
                 .build();
     }
 
+    @Test
+    void removeMemberRejectsModeratorRemovingAdmin() {
+        UUID modId = UUID.randomUUID();
+        UUID adminId = UUID.randomUUID();
+        UUID communityId = UUID.randomUUID();
+        User mod = activeUser(modId, "mod");
+        User admin = activeUser(adminId, "admin");
+        User owner = activeUser(UUID.randomUUID(), "owner");
+        Community community = community(communityId, CommunityVisibility.PUBLIC, CommunityStatus.ACTIVE);
+        community.setOwner(owner);
+
+        CommunityMember modMembership = memberWithRoleAndStatus(community, mod, CommunityMemberRole.MODERATOR, CommunityMemberStatus.ACTIVE);
+        CommunityMember adminMembership = memberWithRoleAndStatus(community, admin, CommunityMemberRole.ADMIN, CommunityMemberStatus.ACTIVE);
+
+        when(userFinder.findProfileByUserId(modId)).thenReturn(mod);
+        when(communityRepository.findById(communityId)).thenReturn(Optional.of(community));
+        when(communityMemberRepository.findByUserIdAndCommunityId(modId, communityId)).thenReturn(Optional.of(modMembership));
+        when(communityMemberRepository.findByUserIdAndCommunityId(adminId, communityId)).thenReturn(Optional.of(adminMembership));
+
+        assertThatThrownBy(() -> communityMemberService.removeMember(modId, communityId, adminId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("Moderators cannot remove administrators");
+
+        verify(communityMemberRepository, never()).save(any());
+    }
+
+    @Test
+    void removeMemberRejectsModeratorRemovingAnotherModerator() {
+        UUID mod1Id = UUID.randomUUID();
+        UUID mod2Id = UUID.randomUUID();
+        UUID communityId = UUID.randomUUID();
+        User mod1 = activeUser(mod1Id, "mod1");
+        User mod2 = activeUser(mod2Id, "mod2");
+        User owner = activeUser(UUID.randomUUID(), "owner");
+        Community community = community(communityId, CommunityVisibility.PUBLIC, CommunityStatus.ACTIVE);
+        community.setOwner(owner);
+
+        CommunityMember mod1Membership = memberWithRoleAndStatus(community, mod1, CommunityMemberRole.MODERATOR, CommunityMemberStatus.ACTIVE);
+        CommunityMember mod2Membership = memberWithRoleAndStatus(community, mod2, CommunityMemberRole.MODERATOR, CommunityMemberStatus.ACTIVE);
+
+        when(userFinder.findProfileByUserId(mod1Id)).thenReturn(mod1);
+        when(communityRepository.findById(communityId)).thenReturn(Optional.of(community));
+        when(communityMemberRepository.findByUserIdAndCommunityId(mod1Id, communityId)).thenReturn(Optional.of(mod1Membership));
+        when(communityMemberRepository.findByUserIdAndCommunityId(mod2Id, communityId)).thenReturn(Optional.of(mod2Membership));
+
+        assertThatThrownBy(() -> communityMemberService.removeMember(mod1Id, communityId, mod2Id))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("Moderators cannot remove other moderators");
+
+        verify(communityMemberRepository, never()).save(any());
+    }
+
+    @Test
+    void removeMemberRejectsAdminRemovingAnotherAdmin() {
+        UUID admin1Id = UUID.randomUUID();
+        UUID admin2Id = UUID.randomUUID();
+        UUID communityId = UUID.randomUUID();
+        User admin1 = activeUser(admin1Id, "admin1");
+        User admin2 = activeUser(admin2Id, "admin2");
+        User owner = activeUser(UUID.randomUUID(), "owner");
+        Community community = community(communityId, CommunityVisibility.PUBLIC, CommunityStatus.ACTIVE);
+        community.setOwner(owner);
+
+        CommunityMember admin1Membership = memberWithRoleAndStatus(community, admin1, CommunityMemberRole.ADMIN, CommunityMemberStatus.ACTIVE);
+        CommunityMember admin2Membership = memberWithRoleAndStatus(community, admin2, CommunityMemberRole.ADMIN, CommunityMemberStatus.ACTIVE);
+
+        when(userFinder.findProfileByUserId(admin1Id)).thenReturn(admin1);
+        when(communityRepository.findById(communityId)).thenReturn(Optional.of(community));
+        when(communityMemberRepository.findByUserIdAndCommunityId(admin1Id, communityId)).thenReturn(Optional.of(admin1Membership));
+        when(communityMemberRepository.findByUserIdAndCommunityId(admin2Id, communityId)).thenReturn(Optional.of(admin2Membership));
+
+        assertThatThrownBy(() -> communityMemberService.removeMember(admin1Id, communityId, admin2Id))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("Admins cannot remove other administrators. Only the community owner can remove an admin.");
+
+        verify(communityMemberRepository, never()).save(any());
+    }
+
+    @Test
+    void removeMemberAllowsModeratorRemovingRegularMember() {
+        UUID modId = UUID.randomUUID();
+        UUID memberId = UUID.randomUUID();
+        UUID communityId = UUID.randomUUID();
+        User mod = activeUser(modId, "mod");
+        User member = activeUser(memberId, "regular");
+        User owner = activeUser(UUID.randomUUID(), "owner");
+        Community community = community(communityId, CommunityVisibility.PUBLIC, CommunityStatus.ACTIVE);
+        community.setOwner(owner);
+
+        CommunityMember modMembership = memberWithRoleAndStatus(community, mod, CommunityMemberRole.MODERATOR, CommunityMemberStatus.ACTIVE);
+        CommunityMember memberMembership = memberWithRoleAndStatus(community, member, CommunityMemberRole.MEMBER, CommunityMemberStatus.ACTIVE);
+
+        when(userFinder.findProfileByUserId(modId)).thenReturn(mod);
+        when(communityRepository.findById(communityId)).thenReturn(Optional.of(community));
+        when(communityMemberRepository.findByUserIdAndCommunityId(modId, communityId)).thenReturn(Optional.of(modMembership));
+        when(communityMemberRepository.findByUserIdAndCommunityId(memberId, communityId)).thenReturn(Optional.of(memberMembership));
+
+        communityMemberService.removeMember(modId, communityId, memberId);
+
+        assertThat(memberMembership.getStatus()).isEqualTo(CommunityMemberStatus.REMOVED);
+        verify(communityMemberRepository).save(memberMembership);
+    }
+
     private CommunityMember memberWithStatus(Community community, User user, CommunityMemberStatus status) {
+        return memberWithRoleAndStatus(community, user, CommunityMemberRole.MEMBER, status);
+    }
+
+    private CommunityMember memberWithRoleAndStatus(Community community, User user, CommunityMemberRole role, CommunityMemberStatus status) {
         Instant now = Instant.now();
         return CommunityMember.builder()
                 .id(UUID.randomUUID())
                 .community(community)
                 .user(user)
-                .role(CommunityMemberRole.MEMBER)
+                .role(role)
                 .status(status)
                 .joinedAt(now)
                 .createdAt(now)

@@ -20,9 +20,11 @@ public record CommunityRequest(
         String communityDescription,
 
         @Size(max = 500)
+        @Pattern(regexp = "^(https?://.+)?$", message = "Community Avatar URL must be a valid HTTP or HTTPS URL")
         String communityAvatarUrl,
 
         @Size(max = 500)
+        @Pattern(regexp = "^(https?://.+)?$", message = "Community Banner URL must be a valid HTTP or HTTPS URL")
         String communityBannerUrl,
 
         @NotNull

@@ -107,9 +107,11 @@ export class AccountManagerService {
   }
 
   public disconnectAccount(targetUserId: string): Observable<void> {
+    const saved = this.loadAccounts().find((a) => a.userId === targetUserId);
     const request: DisconnectAccountRequest = {
       targetUserId,
       deviceId: this.getDeviceId(),
+      switchToken: saved?.switchToken,
     };
 
     return this.http.post<void>(`${this.url}/disconnect-account`, request, { withCredentials: true })

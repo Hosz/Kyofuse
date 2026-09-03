@@ -177,4 +177,51 @@ class AccountSwitchServiceTest {
         accountSwitchService.revokeAllForUser(userId);
         verify(sessionRepository).deleteAllByUserId(userId);
     }
+
+    @Test
+    @DisplayName("Deve revogar sessão com sucesso quando chamador autenticado for o próprio usuário alvo")
+    void revokeSessionWithValidation_whenCallerIsTargetUser_succeeds() {
+        accountSwitchService.revokeSessionWithValidation(userId, deviceId, null, userId);
+        verify(sessionRepository).deleteByUserIdAndDeviceId(userId, deviceId);
+    }
+
+    @Test
+    @DisplayName("Deve revogar sessão com sucesso quando switchToken válido correspondente for apresentado")
+    void revokeSessionWithValidation_whenValidSwitchTokenProvided_succeeds() {
+        AccountSwitchSession session = AccountSwitchSession.builder()
+                .user(user)
+                .deviceId(deviceId)
+                .build();
+
+        when(sessionRepository.findBySwitchTokenHash(anyString())).thenReturn(Optional.of(session));
+
+        accountSwitchService.revokeSessionWithValidation(userId, deviceId, "valid-switch-token", null);
+
+        verify(sessionRepository).delete(session);
+    }
+
+    @Test
+    @DisplayName("Deve lançar UnauthorizedException quando nem usuário autenticado nem switchToken forem válidos")
+    void revokeSessionWithValidation_whenUnauthorized_throwsUnauthorized() {
+        UUID otherUserId = UUID.randomUUID();
+
+        assertThatThrownBy(() -> accountSwitchService.revokeSessionWithValidation(userId, deviceId, null, otherUserId))
+                .isInstanceOf(UnauthorizedException.class)
+                .hasMessageContaining("Não autorizado a desconectar");
+
+        verify(sessionRepository, never()).delete(any());
+        verify(sessionRepository, never()).deleteByUserIdAndDeviceId(any(), any());
+    }
+
+    @Test
+    @DisplayName("Deve lançar UnauthorizedException quando switchToken não for encontrado no banco")
+    void revokeSessionWithValidation_whenTokenNotFound_throwsUnauthorized() {
+        when(sessionRepository.findBySwitchTokenHash(anyString())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> accountSwitchService.revokeSessionWithValidation(userId, deviceId, "invalid-token", null))
+                .isInstanceOf(UnauthorizedException.class)
+                .hasMessageContaining("Não autorizado a desconectar");
+
+        verify(sessionRepository, never()).delete(any());
+    }
 }

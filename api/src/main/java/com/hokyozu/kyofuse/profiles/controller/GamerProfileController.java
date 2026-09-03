@@ -81,7 +81,9 @@ public class GamerProfileController {
 
     @GetMapping
     public Page<GamerProfileResponse> listingProfiles(@Valid @ModelAttribute ProfileFilter filter,
+                                                   @AuthenticationPrincipal Jwt jwt,
                                                    @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return gamerProfileService.listingProfiles(filter, pageable);
+        UUID viewerId = jwt != null && jwt.getSubject() != null ? UUID.fromString(jwt.getSubject()) : null;
+        return gamerProfileService.listingProfiles(filter, viewerId, pageable);
     }
 }

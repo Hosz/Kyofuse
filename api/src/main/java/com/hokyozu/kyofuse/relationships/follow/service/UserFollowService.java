@@ -226,16 +226,19 @@ public class UserFollowService {
     }
 
     @Transactional
-    public void removeFollower(UUID userId, UUID userIdFollowing) {
+    public void removeFollower(UUID userId, UUID userIdFollower) {
         User user = userFinder.findProfileByUserId(userId);
-        User followedUser = userFinder.findProfileByUserId(userIdFollowing);
+        User follower = userFinder.findProfileByUserId(userIdFollower);
 
         userChecker.checkActive(user);
-        userChecker.checkActive(followedUser);
+        userChecker.checkActive(follower);
 
-        followPermissionService.validateRemoveFollower(user, followedUser);
+        followPermissionService.validateRemoveFollower(user, follower);
 
-        UserFollow userFollow = userFollowRepository.findByFollowerAndFollowed(user, followedUser);
+        UserFollow userFollow = userFollowRepository.findByFollowerAndFollowed(follower, user);
+        if (userFollow == null) {
+            throw new NotFoundException("Follow relationship not found");
+        }
 
         userFollowRepository.delete(userFollow);
     }

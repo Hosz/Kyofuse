@@ -1,8 +1,10 @@
 package com.hokyozu.kyofuse.chat.controller;
 
 import com.hokyozu.kyofuse.chat.dto.event.TypingEvent;
+import com.hokyozu.kyofuse.chat.service.ConversationPermissionService;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
+import com.hokyozu.kyofuse.shared.exception.ForbiddenException;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.finder.UserFinder;
 import org.junit.jupiter.api.Test;
@@ -18,9 +20,9 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ChatTypingControllerTest {
@@ -34,11 +36,14 @@ class ChatTypingControllerTest {
     @Mock
     private GamerProfileFinder gamerProfileFinder;
 
+    @Mock
+    private ConversationPermissionService conversationPermissionService;
+
     @InjectMocks
     private ChatTypingController controller;
 
     @Test
-    void handleTypingBroadcastsTypingEvent() {
+    void handleTypingBroadcastsTypingEventWhenAuthorized() {
         UUID convId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         Principal principal = () -> userId.toString();
@@ -46,6 +51,7 @@ class ChatTypingControllerTest {
         User user = User.builder().id(userId).username("player1").build();
         GamerProfile profile = GamerProfile.builder().nickname("Nick1").build();
 
+        when(conversationPermissionService.isParticipant(convId, userId)).thenReturn(true);
         when(userFinder.findProfileByUserId(userId)).thenReturn(user);
         when(gamerProfileFinder.findProfileByUserId(userId)).thenReturn(profile);
 
@@ -56,7 +62,20 @@ class ChatTypingControllerTest {
     }
 
     @Test
-    void handleTypingRestBroadcastsTypingEvent() {
+    void handleTypingIgnoresUnauthorizedUser() {
+        UUID convId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Principal principal = () -> userId.toString();
+
+        when(conversationPermissionService.isParticipant(convId, userId)).thenReturn(false);
+
+        controller.handleTyping(convId, Map.of("typing", true), principal);
+
+        verifyNoInteractions(messagingTemplate);
+    }
+
+    @Test
+    void handleTypingRestBroadcastsTypingEventWhenAuthorized() {
         UUID convId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
 
@@ -68,11 +87,33 @@ class ChatTypingControllerTest {
                 .build();
 
         User user = User.builder().id(userId).username("player1").build();
+        when(conversationPermissionService.isParticipant(convId, userId)).thenReturn(true);
         when(userFinder.findProfileByUserId(userId)).thenReturn(user);
 
         controller.handleTypingRest(convId, Map.of("isTyping", true), jwt);
 
         TypingEvent expected = new TypingEvent(convId, userId, "player1", "player1", true);
         verify(messagingTemplate).convertAndSend(eq("/topic/conversations/" + convId + "/typing"), eq(expected));
+    }
+
+    @Test
+    void handleTypingRestThrowsForbiddenForUnauthorizedUser() {
+        UUID convId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+
+        Jwt jwt = Jwt.withTokenValue("token")
+                .header("alg", "HS256")
+                .subject(userId.toString())
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(3600))
+                .build();
+
+        when(conversationPermissionService.isParticipant(convId, userId)).thenReturn(false);
+
+        assertThrows(ForbiddenException.class, () ->
+                controller.handleTypingRest(convId, Map.of("isTyping", true), jwt)
+        );
+
+        verifyNoInteractions(messagingTemplate);
     }
 }

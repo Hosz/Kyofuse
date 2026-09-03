@@ -10,6 +10,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -65,5 +67,31 @@ class SecurityConfigTest {
         BearerTokenResolver resolver = securityConfig.bearerTokenResolver();
 
         assertThat(resolver.resolve(new MockHttpServletRequest())).isNull();
+    }
+
+    @Test
+    void bearerTokenResolverFallsBackToAuthorizationBearerHeaderWhenNoCookiePresent() {
+        BearerTokenResolver resolver = securityConfig.bearerTokenResolver();
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer header-jwt-value");
+
+        assertThat(resolver.resolve(request)).isEqualTo("header-jwt-value");
+    }
+
+    @Test
+    void corsConfigurationSourceRestrictsOriginsAndRejectsWildcards() {
+        CorsConfigurationSource source = securityConfig.corsConfigurationSource();
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/api/test");
+
+        CorsConfiguration config = source.getCorsConfiguration(request);
+        assertThat(config).isNotNull();
+        assertThat(config.getAllowedOrigins()).containsExactly("http://localhost:4200");
+        assertThat(config.getAllowedOriginPatterns()).isNullOrEmpty();
+        assertThat(config.getAllowCredentials()).isTrue();
+        assertThat(config.getAllowedMethods()).contains("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS");
+        assertThat(config.getAllowedHeaders()).contains("Authorization", "Content-Type", "X-Device-Id", "X-Requested-With");
+        assertThat(config.getExposedHeaders()).contains("Set-Cookie", "Retry-After");
     }
 }

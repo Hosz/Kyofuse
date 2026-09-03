@@ -98,6 +98,34 @@ public class AccountSwitchService {
     }
 
     @Transactional
+    public void revokeSessionWithValidation(UUID targetUserId, String deviceId, String rawSwitchToken, UUID currentAuthenticatedUserId) {
+        if (targetUserId == null || deviceId == null || deviceId.isBlank()) {
+            throw new UnauthorizedException("Parâmetros de desconexão inválidos.");
+        }
+
+        // Cenário 1: O usuário autenticado está desconectando sua própria conta deste dispositivo
+        if (currentAuthenticatedUserId != null && currentAuthenticatedUserId.equals(targetUserId)) {
+            revokeSession(targetUserId, deviceId);
+            return;
+        }
+
+        // Cenário 2: O chamador fornece o switchToken correspondente à conta e dispositivo
+        if (rawSwitchToken != null && !rawSwitchToken.isBlank()) {
+            String tokenHash = hash(rawSwitchToken);
+            Optional<AccountSwitchSession> sessionOpt = sessionRepository.findBySwitchTokenHash(tokenHash);
+            if (sessionOpt.isPresent()) {
+                AccountSwitchSession session = sessionOpt.get();
+                if (session.getUser().getId().equals(targetUserId) && session.getDeviceId().equals(deviceId.trim())) {
+                    sessionRepository.delete(session);
+                    return;
+                }
+            }
+        }
+
+        throw new UnauthorizedException("Não autorizado a desconectar esta conta.");
+    }
+
+    @Transactional
     public void revokeSession(UUID userId, String deviceId) {
         if (userId != null && deviceId != null && !deviceId.isBlank()) {
             sessionRepository.deleteByUserIdAndDeviceId(userId, deviceId.trim());

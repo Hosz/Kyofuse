@@ -10,6 +10,11 @@ public record DisconnectAccountRequest(
         UUID targetUserId,
 
         @NotBlank(message = "O identificador do dispositivo é obrigatório.")
-        String deviceId
+        String deviceId,
+
+        String switchToken
 ) {
+    public DisconnectAccountRequest(UUID targetUserId, String deviceId) {
+        this(targetUserId, deviceId, null);
+    }
 }

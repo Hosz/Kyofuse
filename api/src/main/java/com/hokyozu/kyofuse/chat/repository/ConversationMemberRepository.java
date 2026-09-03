@@ -34,4 +34,6 @@ public interface ConversationMemberRepository extends JpaRepository<Conversation
 
     @Query("SELECT cm FROM ConversationMember cm WHERE cm.conversation.id IN :conversationIds AND cm.user.id = :userId")
     List<ConversationMember> findByConversationIdInAndUserId(@Param("conversationIds") List<UUID> conversationIds, @Param("userId") UUID userId);
+
+    boolean existsByConversationIdAndUserIdAndStatus(UUID conversationId, UUID userId, ConversationMemberStatus status);
 }

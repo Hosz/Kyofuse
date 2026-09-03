@@ -220,9 +220,11 @@ public class AuthController {
     @PostMapping("/disconnect-account")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void disconnectAccount(
-            @RequestBody @Valid DisconnectAccountRequest request
+            @RequestBody @Valid DisconnectAccountRequest request,
+            @AuthenticationPrincipal Jwt jwt
     ) {
-        authService.disconnectAccount(request);
+        UUID currentUserId = jwt != null && jwt.getSubject() != null ? UUID.fromString(jwt.getSubject()) : null;
+        authService.disconnectAccount(request, currentUserId);
     }
 
     @PostMapping("/switch-token")
