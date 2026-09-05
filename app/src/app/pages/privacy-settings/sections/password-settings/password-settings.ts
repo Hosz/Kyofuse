@@ -3,10 +3,11 @@ import { FormsModule } from '@angular/forms';
 import { UserAccountService } from '../../../../core/services/account/user-account.service';
 import { UserAccountResponse } from '../../../../models/account/user-account.model';
 import { SkeletonComponent } from '../../../../components/shared/skeleton/skeleton';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-password-settings',
-  imports: [FormsModule, SkeletonComponent],
+  imports: [FormsModule, SkeletonComponent, TranslatePipe],
   templateUrl: './password-settings.html',
   styleUrl: './password-settings.css',
 })

@@ -1,7 +1,7 @@
-<app-modal [open]="open()" title="Criar comunidade" (closed)="onClose()">
+<app-modal [open]="open()" [title]="'modals.createCommunityTitle' | trans" (closed)="onClose()">
   <div class="flex flex-col gap-md">
     <label class="flex flex-col gap-1.5">
-      <span class="text-label-sm font-semibold text-on-surface-variant">Nome</span>
+      <span class="text-label-sm font-semibold text-on-surface-variant">{{ 'communities.name' | trans }}</span>
       <input
         type="text"
         maxlength="80"
@@ -13,7 +13,7 @@
     </label>
 
     <label class="flex flex-col gap-1.5">
-      <span class="text-label-sm font-semibold text-on-surface-variant">Slug</span>
+      <span class="text-label-sm font-semibold text-on-surface-variant">{{ 'communities.slug' | trans }}</span>
       <input
         type="text"
         maxlength="100"
@@ -22,11 +22,11 @@
         (input)="onSlugChange($any($event.target).value)"
         class="rounded-lg border border-outline-variant bg-surface px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
       />
-      <span class="text-label-sm text-on-surface-variant">Só letras minúsculas, números e hífens.</span>
+      <span class="text-label-sm text-on-surface-variant">{{ 'communities.slugRule' | trans }}</span>
     </label>
 
     <label class="flex flex-col gap-1.5">
-      <span class="text-label-sm font-semibold text-on-surface-variant">Descrição</span>
+      <span class="text-label-sm font-semibold text-on-surface-variant">{{ 'communities.description' | trans }}</span>
       <textarea
         rows="3"
         maxlength="500"
@@ -45,7 +45,7 @@
         class="hidden"
       />
       <div class="flex items-center justify-between">
-        <span class="text-label-sm font-semibold text-on-surface-variant">Avatar da comunidade</span>
+        <span class="text-label-sm font-semibold text-on-surface-variant">{{ 'communities.avatarTitle' | trans }}</span>
         <button
           type="button"
           (click)="modalAvatarInput.click()"
@@ -54,24 +54,24 @@
         >
           @if (uploadingAvatar()) {
             <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
-            <span>Enviando...</span>
+            <span>{{ 'common.uploading' | trans }}</span>
           } @else {
             <span class="material-symbols-outlined text-[16px]">upload</span>
-            <span>{{ avatarUrl() ? 'Alterar foto' : 'Enviar foto' }}</span>
+            <span>{{ avatarUrl() ? ('profileEdit.changeAvatar' | trans) : ('profileEdit.uploadPhoto' | trans) }}</span>
           }
         </button>
       </div>
       <div class="flex items-center gap-3 rounded-lg border border-outline-variant bg-surface-container-low p-2">
         <img [src]="avatarUrl() || defaultAvatar" alt="Avatar" class="h-12 w-12 rounded-lg object-cover" />
         <span class="flex-1 truncate text-label-sm text-on-surface">
-          {{ avatarUrl() ? 'Foto selecionada' : 'Foto padrão (opcional)' }}
+          {{ avatarUrl() ? ('communities.photoSelected' | trans) : ('communities.defaultPhotoOptional' | trans) }}
         </span>
         @if (avatarUrl()) {
           <button
             type="button"
             (click)="removeAvatar()"
             class="cursor-pointer text-on-surface-variant hover:text-error"
-            title="Remover foto"
+            [title]="'profileEdit.removePhoto' | trans"
           >
             <span class="material-symbols-outlined text-[18px]">delete</span>
           </button>
@@ -88,7 +88,7 @@
         class="hidden"
       />
       <div class="flex items-center justify-between">
-        <span class="text-label-sm font-semibold text-on-surface-variant">Banner da comunidade</span>
+        <span class="text-label-sm font-semibold text-on-surface-variant">{{ 'communities.bannerTitle' | trans }}</span>
         <button
           type="button"
           (click)="modalBannerInput.click()"
@@ -97,10 +97,10 @@
         >
           @if (uploadingBanner()) {
             <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
-            <span>Enviando...</span>
+            <span>{{ 'common.uploading' | trans }}</span>
           } @else {
             <span class="material-symbols-outlined text-[16px]">upload</span>
-            <span>{{ bannerUrl() ? 'Alterar banner' : 'Enviar banner' }}</span>
+            <span>{{ bannerUrl() ? ('profileEdit.changeBanner' | trans) : ('profileEdit.uploadBanner' | trans) }}</span>
           }
         </button>
       </div>
@@ -111,7 +111,7 @@
             type="button"
             (click)="removeBanner()"
             class="absolute right-2 top-2 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white hover:bg-error"
-            title="Remover banner"
+            [title]="'profileEdit.removeBanner' | trans"
           >
             <span class="material-symbols-outlined text-[16px]">close</span>
           </button>
@@ -120,14 +120,14 @@
     </div>
 
     <label class="flex flex-col gap-1.5">
-      <span class="text-label-sm font-semibold text-on-surface-variant">Visibilidade</span>
+      <span class="text-label-sm font-semibold text-on-surface-variant">{{ 'communities.visibility' | trans }}</span>
       <select
         [value]="visibility()"
         (change)="visibility.set($any($event.target).value)"
         class="rounded-lg border border-outline-variant bg-surface px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
       >
-        <option value="PUBLIC">Pública — qualquer um entra na hora</option>
-        <option value="PRIVATE">Privada — entrada precisa de aprovação</option>
+        <option value="PUBLIC">{{ 'communities.visibilityPublicDesc' | trans }}</option>
+        <option value="PRIVATE">{{ 'communities.visibilityPrivateDesc' | trans }}</option>
       </select>
     </label>
 
@@ -142,7 +142,7 @@
         [disabled]="saving()"
         class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
       >
-        Cancelar
+        {{ 'common.cancel' | trans }}
       </button>
       <button
         type="button"
@@ -150,7 +150,7 @@
         [disabled]="saving() || uploadingAvatar() || uploadingBanner()"
         class="cursor-pointer rounded-full bg-primary-container px-4 py-2 text-label-md font-bold text-on-primary-container transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {{ saving() ? 'Criando...' : 'Criar comunidade' }}
+        {{ saving() ? ('common.loading' | trans) : ('modals.createCommunityTitle' | trans) }}
       </button>
     </div>
   </div>

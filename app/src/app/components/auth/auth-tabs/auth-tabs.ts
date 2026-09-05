@@ -1,9 +1,10 @@
 import { Component, input, output } from '@angular/core';
 import { AuthTab, AuthTabId } from '../../../shared/models/auth.model';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-auth-tabs',
-  imports: [],
+  imports: [TranslatePipe],
   templateUrl: './auth-tabs.html',
   styleUrl: './auth-tabs.css',
 })

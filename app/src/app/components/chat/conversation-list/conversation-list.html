@@ -1,13 +1,13 @@
 <aside class="scrollbar-minimal flex h-screen w-96 shrink-0 flex-col overflow-y-auto border-r border-outline-variant bg-surface">
   <div class="sticky top-0 z-10 flex flex-col gap-md border-b border-outline-variant bg-surface/90 px-lg py-lg backdrop-blur-md supports-[backdrop-filter]:bg-surface/70">
-    <app-search-bar placeholder="Buscar conversas..." />
+    <app-search-bar [placeholder]="'chat.search' | trans" />
 
     <div class="flex items-center justify-between">
-      <h2 class="text-label-md font-bold uppercase tracking-[0.05em] text-on-surface">Conversas</h2>
+      <h2 class="text-label-md font-bold uppercase tracking-[0.05em] text-on-surface">{{ 'chat.conversations' | trans }}</h2>
       <button
         type="button"
         (click)="newConversation.emit()"
-        aria-label="Nova conversa"
+        [attr.aria-label]="'chat.newConversation' | trans"
         class="cursor-pointer rounded-full p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
       >
         <span class="material-symbols-outlined text-[22px]">chat_add_on</span>
@@ -27,7 +27,7 @@
               : 'text-on-surface-variant hover:text-on-surface'
           "
         >
-          {{ filter.label }}
+          {{ filter.key | trans }}
         </button>
       }
     </div>
@@ -42,7 +42,7 @@
       >
         <span class="flex items-center gap-2">
           <span class="h-2 w-2 rounded-full bg-on-primary-container"></span>
-          {{ requestsCount() }} {{ requestsCount() === 1 ? 'SOLICITAÇÃO' : 'SOLICITAÇÕES' }}
+          {{ requestsCount() }} {{ 'chat.requests' | trans }}
         </span>
         <span class="material-symbols-outlined text-[18px]">{{ showRequestsOnly() ? 'close' : 'arrow_forward' }}</span>
       </button>
@@ -78,7 +78,7 @@
             @if (conversation.isTyping) {
               <span class="flex items-center gap-1.5 truncate text-label-md italic font-medium text-emerald-400">
                 <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                {{ conversation.typingText || 'Está digitando...' }}
+                {{ conversation.typingText || ('chat.isTyping' | trans) }}
               </span>
             } @else {
               <span class="truncate text-label-md text-on-surface-variant" [class.font-semibold]="conversation.unread" [class.text-on-surface]="conversation.unread">
@@ -96,7 +96,7 @@
         </div>
       </button>
     } @empty {
-      <p class="px-lg py-10 text-center text-body-sm text-on-surface-variant">Nenhuma conversa por aqui.</p>
+      <p class="px-lg py-10 text-center text-body-sm text-on-surface-variant">{{ 'chat.noMessages' | trans }}</p>
     }
   </div>
 </aside>

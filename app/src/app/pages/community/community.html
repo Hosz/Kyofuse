@@ -23,7 +23,7 @@
     <div class="shell-container flex h-screen">
       <app-sidebar />
 
-      <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto bg-surface">
+      <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto bg-surface pb-24 lg:pb-0">
         <div class="mx-auto flex w-full max-w-4xl flex-col gap-lg px-lg py-lg">
           <section class="flex flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container-low">
             <div class="tactical-grid relative h-36 w-full shrink-0 overflow-hidden bg-surface-container sm:h-48">
@@ -47,21 +47,21 @@
                     <div class="flex flex-wrap items-center gap-2">
                       <h1 class="text-headline-lg-mobile font-headline-lg text-on-surface">{{ community()!.communityName }}</h1>
                       <span class="shrink-0 rounded-md border border-outline-variant px-2 py-0.5 text-label-sm text-on-surface-variant">
-                        {{ visibilityLabel(community()!.visibility) }}
+                        {{ (community()!.visibility === 'PRIVATE' ? 'common.private' : 'common.public') | trans }}
                       </span>
                       @if (community()!.status === 'ARCHIVED') {
-                        <span class="shrink-0 rounded-md border border-error px-2 py-0.5 text-label-sm text-error">Arquivada</span>
+                        <span class="shrink-0 rounded-md border border-error px-2 py-0.5 text-label-sm text-error">{{ 'communities.archive' | trans }}</span>
                       }
                     </div>
                     <span class="text-body-sm text-on-surface-variant">/{{ community()!.communitySlug }}</span>
                     <span class="text-label-sm text-on-surface-variant">
-                      Dono:
+                      {{ 'communities.owner' | trans }}
                       <a
                         [routerLink]="['/perfil', community()!.ownerUsername]"
                         class="font-semibold text-primary hover:underline"
                       >&#64;{{ community()!.ownerUsername }}</a>
                     </span>
-                    <p class="max-w-[36rem] text-body-sm text-on-surface">{{ community()!.communityDescription || 'Sem descrição.' }}</p>
+                    <p class="max-w-[36rem] text-body-sm text-on-surface">{{ community()!.communityDescription || ('common.noDescription' | trans) }}</p>
                   </div>
                 </div>
 
@@ -84,7 +84,7 @@
                       }
 
                       <span class="flex min-w-0 flex-col">
-                        <span class="text-label-sm uppercase tracking-[0.05em] text-on-surface-variant">Time da comunidade</span>
+                        <span class="text-label-sm uppercase tracking-[0.05em] text-on-surface-variant">{{ 'communities.teamCommunity' | trans }}</span>
                         <span class="truncate text-body-sm font-bold text-on-surface">{{ community()!.teamName }}</span>
                       </span>
 
@@ -101,7 +101,7 @@
                         class="flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full bg-primary-container px-4 py-2 text-label-sm font-bold text-on-primary-container transition-all hover:brightness-110 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         <span class="material-symbols-outlined text-[16px]">forum</span>
-                        {{ openingChat() ? 'Abrindo...' : 'Abrir chat' }}
+                        {{ (openingChat() ? 'communities.openingChat' : 'communities.openChat') | trans }}
                       </button>
                     }
                     @if (isOwner()) {
@@ -110,21 +110,21 @@
                         (click)="openEdit()"
                         class="cursor-pointer whitespace-nowrap rounded-full bg-secondary-fixed px-4 py-2 text-label-sm font-bold text-on-secondary transition-all hover:brightness-95 active:scale-[0.97]"
                       >
-                        Editar
+                        {{ 'communities.edit' | trans }}
                       </button>
                       <button
                         type="button"
                         (click)="openConfirmAction('archive')"
                         class="cursor-pointer whitespace-nowrap rounded-full border border-outline-variant px-4 py-2 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high"
                       >
-                        Arquivar
+                        {{ 'communities.archive' | trans }}
                       </button>
                       <button
                         type="button"
                         (click)="openConfirmAction('delete')"
                         class="cursor-pointer whitespace-nowrap rounded-full border border-error px-4 py-2 text-label-sm font-bold text-error transition-colors hover:bg-error/10"
                       >
-                        Excluir
+                        {{ 'common.delete' | trans }}
                       </button>
                     } @else if (isMember()) {
                       <button
@@ -133,7 +133,7 @@
                         [disabled]="leaving()"
                         class="cursor-pointer whitespace-nowrap rounded-full border border-outline-variant px-4 py-2 text-label-sm font-bold text-on-surface transition-colors hover:border-error hover:text-error disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        {{ leaving() ? 'Saindo...' : 'Sair da comunidade' }}
+                        {{ (leaving() ? 'communities.leaving' : 'communities.leaveCommunity') | trans }}
                       </button>
                     } @else if (community()!.visibility === 'PUBLIC') {
                       <button
@@ -142,12 +142,12 @@
                         [disabled]="joining()"
                         class="cursor-pointer whitespace-nowrap rounded-full bg-primary-container px-4 py-2 text-label-sm font-bold text-on-primary-container transition-all hover:brightness-110 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        {{ joining() ? 'Entrando...' : 'Entrar' }}
+                        {{ (joining() ? 'communities.joining' : 'communities.join') | trans }}
                       </button>
                     } @else if (joinRequestSent()) {
                       <span class="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-outline-variant px-4 py-2 text-label-sm text-on-surface-variant">
                         <span class="material-symbols-outlined text-[16px]">schedule</span>
-                        Solicitação enviada
+                        {{ 'communities.requestSent' | trans }}
                       </span>
                     } @else {
                       <button
@@ -156,7 +156,7 @@
                         [disabled]="requestingJoin()"
                         class="cursor-pointer whitespace-nowrap rounded-full bg-primary-container px-4 py-2 text-label-sm font-bold text-on-primary-container transition-all hover:brightness-110 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        {{ requestingJoin() ? 'Enviando...' : 'Solicitar entrada' }}
+                        {{ (requestingJoin() ? 'communities.requestingJoin' : 'communities.requestJoin') | trans }}
                       </button>
                     }
                   </div>
@@ -522,7 +522,7 @@
           [disabled]="saving()"
           class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Cancelar
+          {{ 'common.cancel' | trans }}
         </button>
         <button
           type="button"
@@ -530,7 +530,7 @@
           [disabled]="saving()"
           class="cursor-pointer rounded-full bg-primary-container px-4 py-2 text-label-md font-bold text-on-primary-container transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {{ saving() ? 'Salvando...' : 'Salvar' }}
+          {{ saving() ? ('common.loading' | trans) : ('common.save' | trans) }}
         </button>
       </div>
     </div>
@@ -561,7 +561,7 @@
           [disabled]="actionLoading()"
           class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Cancelar
+          {{ 'common.cancel' | trans }}
         </button>
         <button
           type="button"

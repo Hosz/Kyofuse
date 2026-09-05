@@ -27,6 +27,7 @@ import { ToastService } from '../../core/services/ui/toast.service';
 
 import { PostMediaItemRequest } from '../../models/posts/post-request.model';
 import { ImageModalComponent } from '../../components/shared/image-modal/image-modal';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 const ROLE_LABEL: Record<CommunityMemberRole, string> = {
   ADMIN: 'Admin',
@@ -38,7 +39,7 @@ type ConfirmAction = 'archive' | 'delete' | null;
 
 @Component({
   selector: 'app-community',
-  imports: [RouterLink, AppSidebarComponent, ModalComponent, ConfirmDialogComponent, SkeletonComponent, ImageModalComponent],
+  imports: [RouterLink, AppSidebarComponent, ModalComponent, ConfirmDialogComponent, SkeletonComponent, ImageModalComponent, TranslatePipe],
   templateUrl: './community.html',
   styleUrl: './community.css',
 })

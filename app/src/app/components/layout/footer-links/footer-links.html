@@ -1,9 +1,9 @@
 <footer class="flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-label-sm text-on-surface-variant">
-  <a routerLink="/configuracoes/privacidade" class="rounded transition-colors hover:text-on-surface hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface">Privacidade</a>
+  <a routerLink="/configuracoes/privacidade" class="rounded transition-colors hover:text-on-surface hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface">{{ 'common.privacy' | trans }}</a>
   <span>·</span>
-  <button type="button" (click)="showPolicy('Termos de Uso')" class="cursor-pointer rounded transition-colors hover:text-on-surface hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface">Termos</button>
+  <button type="button" (click)="showPolicy('Termos de Uso')" class="cursor-pointer rounded transition-colors hover:text-on-surface hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface">{{ 'common.terms' | trans }}</button>
   <span>·</span>
-  <button type="button" (click)="showPolicy('Políticas de Cookies')" class="cursor-pointer rounded transition-colors hover:text-on-surface hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface">Cookies</button>
+  <button type="button" (click)="showPolicy('Políticas de Cookies')" class="cursor-pointer rounded transition-colors hover:text-on-surface hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface">{{ 'common.cookies' | trans }}</button>
   <span>·</span>
   <span>&#169; 2026 Kyofuse</span>
 </footer>

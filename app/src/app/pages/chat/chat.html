@@ -2,26 +2,39 @@
   <div class="shell-container flex h-screen">
     <app-sidebar />
 
-    <app-conversation-list
-      [conversations]="allConversations()"
-      [selectedId]="selectedId()"
-      (select)="onSelectConversation($event)"
-      (newConversation)="openNewConversationModal()"
-    />
+    <div
+      class="h-screen w-full shrink-0 pb-20 lg:w-96 lg:pb-0"
+      [class.hidden]="selectedId() !== null"
+      [class.lg:block]="true"
+    >
+      <app-conversation-list
+        [conversations]="allConversations()"
+        [selectedId]="selectedId()"
+        (select)="onSelectConversation($event)"
+        (newConversation)="openNewConversationModal()"
+      />
+    </div>
 
-    <app-chat-window
-      [conversation]="selectedConversation()"
-      [myUserId]="myUserIdValue()"
-      [loadingOlderMessages]="loadingOlderMessages()"
-      (loadOlderMessages)="onLoadOlderMessages()"
-      (groupUpdated)="onGroupUpdated($event)"
-      (accept)="onAccept()"
-      (decline)="onDecline()"
-      (revoke)="onRevoke()"
-      (allow)="onAllow()"
-      (sendMessage)="onSendMessage($event)"
-      (deleteMessage)="onDeleteMessage($event)"
-    />
+    <div
+      class="h-screen flex-1 min-w-0 pb-20 lg:pb-0"
+      [class.hidden]="selectedId() === null"
+      [class.lg:block]="true"
+    >
+      <app-chat-window
+        [conversation]="selectedConversation()"
+        [myUserId]="myUserIdValue()"
+        [loadingOlderMessages]="loadingOlderMessages()"
+        (loadOlderMessages)="onLoadOlderMessages()"
+        (groupUpdated)="onGroupUpdated($event)"
+        (accept)="onAccept()"
+        (decline)="onDecline()"
+        (revoke)="onRevoke()"
+        (allow)="onAllow()"
+        (sendMessage)="onSendMessage($event)"
+        (deleteMessage)="onDeleteMessage($event)"
+        (back)="onBackToConversations()"
+      />
+    </div>
   </div>
 
   <app-new-conversation-modal

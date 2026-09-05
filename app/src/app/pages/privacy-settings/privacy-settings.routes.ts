@@ -51,6 +51,13 @@ export const PRIVACY_SETTINGS_ROUTES: Routes = [
             (m) => m.SecuritySettingsSectionComponent,
           ),
       },
+      {
+        path: 'preferencias',
+        loadComponent: () =>
+          import('./sections/preferences-settings/preferences-settings').then(
+            (m) => m.PreferencesSettingsSectionComponent,
+          ),
+      },
     ],
   },
 ];

@@ -11,6 +11,7 @@ import {
   CommunityResponse,
 } from '../../models/communities/community.model';
 import { FALLBACK_AVATAR_URL } from '../../shared/utils/format.util';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 interface RoleGroup {
   role: CommunityMemberRole;
@@ -29,7 +30,7 @@ const MEMBERS_PAGE_SIZE = 100;
 
 @Component({
   selector: 'app-community-members',
-  imports: [RouterLink, AppSidebarComponent, ModalComponent],
+  imports: [RouterLink, AppSidebarComponent, ModalComponent, TranslatePipe],
   templateUrl: './community-members.html',
   styleUrl: './community-members.css',
 })

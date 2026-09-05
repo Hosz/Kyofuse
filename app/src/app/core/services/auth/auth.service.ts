@@ -69,6 +69,18 @@ export class AuthService {
       }));
   }
 
+  public getGoogleClientId(): Observable<string> {
+    if (!this.googleClientId$) {
+      this.googleClientId$ = this.http.get<{ clientId: string }>(`${this.url}/google/client-id`).pipe(
+        map((res) => res.clientId || ''),
+        shareReplay(1)
+      );
+    }
+    return this.googleClientId$;
+  }
+
+  private googleClientId$?: Observable<string>;
+
   public loginWithSteam(openIdParams: Record<string, string>): Observable<loginResult> {
     return this.http.post<loginResult>(`${this.url}/steam`, openIdParams, { withCredentials: true })
       .pipe(tap((result) => {

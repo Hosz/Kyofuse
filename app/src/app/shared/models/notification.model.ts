@@ -34,4 +34,5 @@ export interface AppNotification {
   targetId?: string;
   /** Preenchido quando a notificação aponta pra uma conversa, pra poder abri-la. */
   conversationId?: string;
+  rawResponse?: import('../../models/notifications/notification.model').NotificationResponse;
 }

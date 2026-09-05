@@ -107,7 +107,7 @@ security:
   steam:
     api-key: ${STEAM_API_KEY:}
   cookie:
-    secure: ${COOKIE_SECURE:false}
+    secure: ${COOKIE_SECURE:true}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:${app.frontend.url:http://localhost:4200}}
   rate-limit:
@@ -128,8 +128,8 @@ storage:
   s3:
     endpoint: ${STORAGE_ENDPOINT:http://localhost:9000}
     region: ${STORAGE_REGION:us-east-1}
-    access-key: ${STORAGE_ACCESS_KEY:kyofuse_storage_user}
-    secret-key: ${STORAGE_SECRET_KEY:kyofuse_storage_secret}
+    access-key: ${STORAGE_ACCESS_KEY}
+    secret-key: ${STORAGE_SECRET_KEY}
     bucket: ${STORAGE_BUCKET:kyofuse-media}
     public-url: ${STORAGE_PUBLIC_URL:http://localhost:9000}
 

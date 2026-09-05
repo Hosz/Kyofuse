@@ -8,9 +8,11 @@ import { AccountManagerService } from '../../../core/services/auth/account-manag
 import { AuthService } from '../../../core/services/auth/auth.service';
 import { ToastService } from '../../../core/services/ui/toast.service';
 
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-user-profile-card',
-  imports: [RouterLink],
+  imports: [RouterLink, TranslatePipe],
   templateUrl: './user-profile-card.html',
   styleUrl: './user-profile-card.css',
 })

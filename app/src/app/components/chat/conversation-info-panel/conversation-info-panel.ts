@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { forkJoin, Observable } from 'rxjs';
 import { ModalComponent } from '../../shared/modal/modal';
 import { UserOptionsMenuComponent } from '../../shared/user-options-menu/user-options-menu';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { ConversationService } from '../../../core/services/chat/conversation.service';
 import { ConversationMemberService } from '../../../core/services/chat/conversation-member.service';
 import { FriendshipService } from '../../../core/services/friendship/friendship.service';
@@ -37,7 +38,7 @@ type PanelView = 'members' | 'member' | 'edit' | 'add-members';
 
 @Component({
   selector: 'app-conversation-info-panel',
-  imports: [RouterLink, ModalComponent, UserOptionsMenuComponent],
+  imports: [RouterLink, ModalComponent, UserOptionsMenuComponent, TranslatePipe],
   templateUrl: './conversation-info-panel.html',
   styleUrl: './conversation-info-panel.css',
 })

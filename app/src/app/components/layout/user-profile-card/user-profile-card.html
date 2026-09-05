@@ -8,10 +8,10 @@
       <div class="flex items-center justify-between px-2 pb-2 border-b border-outline-variant/60">
         <div class="flex items-center gap-1.5 text-label-md font-semibold text-on-surface">
           <span class="material-symbols-outlined text-[18px] text-primary">switch_account</span>
-          <span>Trocar de Conta</span>
+          <span>{{ 'accounts.switchAccount' | trans }}</span>
         </div>
         <span class="text-label-sm text-on-surface-variant font-medium">
-          {{ accountManager.savedAccounts().length }} {{ accountManager.savedAccounts().length === 1 ? 'conta' : 'contas' }}
+          {{ accountManager.savedAccounts().length }} {{ accountManager.savedAccounts().length === 1 ? ('accounts.accountSingular' | trans) : ('accounts.accountPlural' | trans) }}
         </span>
       </div>
 
@@ -30,14 +30,14 @@
         </div>
         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary-container text-on-primary-container text-[11px] font-semibold">
           <span class="material-symbols-outlined text-[13px]">check_circle</span>
-          Ativa
+          {{ 'accounts.active' | trans }}
         </span>
       </div>
 
       <!-- Other Saved Accounts -->
       @if (otherAccounts().length > 0) {
         <div class="mt-2 space-y-1">
-          <span class="block px-2 pt-1 text-[11px] font-medium uppercase tracking-wider text-on-surface-variant/80">Outras Contas</span>
+          <span class="block px-2 pt-1 text-[11px] font-medium uppercase tracking-wider text-on-surface-variant/80">{{ 'accounts.otherAccounts' | trans }}</span>
           @for (account of otherAccounts(); track account.userId) {
             <div
               (click)="switchAccount(account.userId, $event)"
@@ -65,7 +65,7 @@
                   <button
                     type="button"
                     (click)="disconnectAccount(account.userId, $event)"
-                    title="Desconectar conta"
+                    [title]="'accounts.disconnectAccount' | trans"
                     class="opacity-0 group-hover:opacity-100 p-1 rounded-lg text-on-surface-variant hover:text-error hover:bg-error-container/20 transition-all"
                   >
                     <span class="material-symbols-outlined text-[18px]">close</span>
@@ -85,7 +85,7 @@
           class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-outline-variant p-2 text-label-md font-medium text-on-surface-variant transition-colors hover:border-primary hover:bg-primary/5 hover:text-primary active:bg-primary/10"
         >
           <span class="material-symbols-outlined text-[18px]">add_circle</span>
-          <span>Adicionar outra conta</span>
+          <span>{{ 'accounts.addAnotherAccount' | trans }}</span>
         </button>
       </div>
     </div>
@@ -124,8 +124,8 @@
       [class.bg-surface-container-high]="isDropdownOpen()"
       [class.text-primary]="isDropdownOpen() || otherAccounts().length > 0"
       class="relative cursor-pointer rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high active:bg-surface-container-highest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-      aria-label="Alternar conta"
-      title="Alternar conta"
+      [attr.aria-label]="'accounts.switchAccountTooltip' | trans"
+      [title]="'accounts.switchAccountTooltip' | trans"
     >
       <span class="material-symbols-outlined text-[20px]">switch_account</span>
       @if (otherAccounts().length > 0) {
@@ -137,8 +137,8 @@
     <a
       routerLink="/configuracoes"
       class="cursor-pointer rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high active:bg-surface-container-highest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-      aria-label="Configurações da conta"
-      title="Configurações da conta"
+      [attr.aria-label]="'accounts.accountSettingsTooltip' | trans"
+      [title]="'accounts.accountSettingsTooltip' | trans"
     >
       <span class="material-symbols-outlined text-[20px]">badge</span>
     </a>

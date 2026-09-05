@@ -31,6 +31,8 @@ class StartupSecurityValidatorTest {
         validator.setEmailIndexSecret("YW5vdGhlci12YWxpZC1iYXNlNjQta2V5LWZvci1pbmRleC1zZWNyZXQh");
         validator.setTotpEncryptionKey("eWV0LWFub3RoZXItdmFsaWQtYmFzZTY0LWtleS1mb3ItdG90cC1zZWNyZXQ=");
         validator.setDbPassword("AStrongDbPassword123!");
+        validator.setRedisPassword("AStrongRedisPassword123!");
+        validator.setStorageSecretKey("AStrongStorageSecretKey123!");
         validator.setCookieSecure(true);
     }
 
@@ -77,6 +79,28 @@ class StartupSecurityValidatorTest {
         assertThatThrownBy(() -> validator.validateSecurityConfiguration())
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("security.cookie.secure deve ser 'true'");
+    }
+
+    @Test
+    @DisplayName("Deve bloquear inicialização em produção quando senha do Redis for fraca ou conhecida")
+    void validateSecurityConfiguration_whenWeakRedisPasswordInProduction_throwsException() {
+        when(environment.getActiveProfiles()).thenReturn(new String[]{"prod"});
+        validator.setRedisPassword("kyofuse_redis_secret");
+
+        assertThatThrownBy(() -> validator.validateSecurityConfiguration())
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("spring.data.redis.password está utilizando um valor padrão/conhecido inseguro");
+    }
+
+    @Test
+    @DisplayName("Deve bloquear inicialização em produção quando storage secret for fraco ou conhecido")
+    void validateSecurityConfiguration_whenWeakStorageSecretInProduction_throwsException() {
+        when(environment.getActiveProfiles()).thenReturn(new String[]{"prod"});
+        validator.setStorageSecretKey("kyofuse_storage_secret");
+
+        assertThatThrownBy(() -> validator.validateSecurityConfiguration())
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("storage.s3.secret-key está utilizando um valor padrão/conhecido inseguro");
     }
 
     @Test

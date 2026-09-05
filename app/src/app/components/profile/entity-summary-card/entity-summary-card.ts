@@ -1,10 +1,11 @@
 import { Component, computed, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ProfileEntity } from '../../../shared/models/profile.model';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-entity-summary-card',
-  imports: [RouterLink],
+  imports: [RouterLink, TranslatePipe],
   templateUrl: './entity-summary-card.html',
   styleUrl: './entity-summary-card.css',
 })

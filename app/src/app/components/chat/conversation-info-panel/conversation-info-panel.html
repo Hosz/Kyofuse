@@ -89,7 +89,7 @@
           [disabled]="saving()"
           class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Cancelar
+          {{ 'common.cancel' | trans }}
         </button>
         <button
           type="button"
@@ -97,7 +97,7 @@
           [disabled]="saving()"
           class="cursor-pointer rounded-full bg-primary-container px-4 py-2 text-label-md font-bold text-on-primary-container transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {{ saving() ? 'Salvando...' : 'Salvar' }}
+          {{ saving() ? ('common.loading' | trans) : ('common.save' | trans) }}
         </button>
       </div>
     </div>
@@ -270,7 +270,7 @@
             [disabled]="addingMembers()"
             class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Cancelar
+            {{ 'common.cancel' | trans }}
           </button>
           <button
             type="button"

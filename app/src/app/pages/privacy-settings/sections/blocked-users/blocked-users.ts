@@ -3,12 +3,13 @@ import { RouterLink } from '@angular/router';
 import { BlockService } from '../../../../core/services/block/block.service';
 import { UserBlockResponse } from '../../../../models/block/block.model';
 import { FALLBACK_AVATAR_URL } from '../../../../shared/utils/format.util';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 
 const PAGE_SIZE = 20;
 
 @Component({
   selector: 'app-blocked-users-section',
-  imports: [RouterLink],
+  imports: [RouterLink, TranslatePipe],
   templateUrl: './blocked-users.html',
   styleUrl: './blocked-users.css',
 })

@@ -1,5 +1,6 @@
 import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { ModalComponent } from '../../shared/modal/modal';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { TeamService } from '../../../core/services/teams/team.service';
 import { MediaService } from '../../../core/services/media/media.service';
 import { TeamRequest, TeamResponse } from '../../../models/teams/team.model';
@@ -9,7 +10,7 @@ import { getCountryFlagUrl, getCountryOptions } from '../../../shared/models/loc
 
 @Component({
   selector: 'app-create-team-modal',
-  imports: [ModalComponent],
+  imports: [ModalComponent, TranslatePipe],
   templateUrl: './create-team-modal.html',
   styleUrl: './create-team-modal.css',
 })

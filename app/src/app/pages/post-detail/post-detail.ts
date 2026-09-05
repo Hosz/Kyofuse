@@ -10,10 +10,11 @@ import { PostsService } from '../../core/services/posts/posts.service';
 import { CommentsService } from '../../core/services/comments/comments.service';
 import { Comment, Post } from '../../shared/models/social.model';
 import { toComment, toPost } from '../../shared/utils/mappers.util';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-post-detail',
-  imports: [MentionInputComponent, RouterLink, FormsModule, AppSidebarComponent, DiscoverySidebarComponent, PostCardComponent, CommentCardComponent],
+  imports: [MentionInputComponent, RouterLink, FormsModule, AppSidebarComponent, DiscoverySidebarComponent, PostCardComponent, CommentCardComponent, TranslatePipe],
   templateUrl: './post-detail.html',
   styleUrl: './post-detail.css',
 })

@@ -3,7 +3,7 @@
     @if (restricted()) {
       <div class="flex flex-col items-center gap-2 py-8 text-center">
         <span class="material-symbols-outlined text-[28px] text-on-surface-variant">lock</span>
-        <p class="text-body-sm text-on-surface-variant">Esta conta é privada. Siga para ver esta lista.</p>
+        <p class="text-body-sm text-on-surface-variant">{{ 'profile.privateAccountDesc' | trans }}</p>
       </div>
     } @else {
       @for (user of users(); track user.id) {
@@ -14,6 +14,7 @@
           [avatarUrl]="user.avatarUrl"
           [isFollowing]="user.isFollowing ?? null"
           (actionClick)="toggleFollow.emit(user)"
+          (userClick)="closed.emit()"
         >
           <!-- O elemento com [rowActions] precisa ser estático: dentro de um @if, o
                seletor do ng-content não casa e o conteúdo é descartado. O @if fica aqui
@@ -35,7 +36,7 @@
           </span>
         </app-user-row>
       } @empty {
-        <p class="py-6 text-center text-body-sm text-on-surface-variant">Ninguém por aqui ainda.</p>
+        <p class="py-6 text-center text-body-sm text-on-surface-variant">{{ 'modals.noUsersFound' | trans }}</p>
       }
     }
 
@@ -46,7 +47,7 @@
         [disabled]="loadingMore()"
         class="mx-auto cursor-pointer whitespace-nowrap rounded-full border border-outline-variant px-5 py-2 text-label-sm font-bold text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {{ loadingMore() ? 'Carregando...' : 'Carregar mais' }}
+        {{ (loadingMore() ? 'common.loading' : 'profile.loadMore') | trans }}
       </button>
     }
   </div>

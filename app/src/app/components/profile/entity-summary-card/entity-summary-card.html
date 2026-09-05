@@ -22,7 +22,7 @@
         </div>
       </a>
     } @empty {
-      <p class="text-body-sm text-on-surface-variant">Nenhum registro ainda.</p>
+      <p class="text-body-sm text-on-surface-variant">{{ 'common.noRecords' | trans }}</p>
     }
   </div>
 
@@ -32,7 +32,7 @@
       (click)="viewAll.emit()"
       class="cursor-pointer self-start rounded text-label-md font-semibold text-primary-container transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"
     >
-      Ver mais
+      {{ 'common.seeMore' | trans }}
     </button>
   }
 </section>

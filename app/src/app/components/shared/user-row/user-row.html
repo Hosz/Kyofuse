@@ -2,6 +2,7 @@
   @if (handle()) {
     <a
       [routerLink]="['/perfil', handle()]"
+      (click)="userClick.emit()"
       class="flex flex-1 items-center gap-3 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"
     >
       <img [src]="avatarUrl() || fallbackAvatar" [alt]="name()" class="h-11 w-11 rounded-full object-cover" />
@@ -31,7 +32,7 @@
           : 'bg-secondary-fixed text-on-secondary hover:brightness-110'
       "
     >
-      {{ isFollowing() ? 'Seguindo' : 'Seguir' }}
+      {{ (isFollowing() ? 'profile.unfollow' : 'profile.follow') | trans }}
     </button>
   }
 

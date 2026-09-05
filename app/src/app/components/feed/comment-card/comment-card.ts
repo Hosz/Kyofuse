@@ -6,13 +6,14 @@ import { ReactionButtonComponent } from '../../shared/reaction-button/reaction-b
 import { UserOptionsMenuComponent } from '../../shared/user-options-menu/user-options-menu';
 import { ReactionSummaryComponent } from '../../shared/reaction-summary/reaction-summary';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { CommentsService } from '../../../core/services/comments/comments.service';
 import { CurrentUserService } from '../../../core/services/profile/current-user.service';
 import { ToastService } from '../../../core/services/ui/toast.service';
 
 @Component({
   selector: 'app-comment-card',
-  imports: [PostContentComponent, RouterLink, ReactionButtonComponent, UserOptionsMenuComponent, ReactionSummaryComponent, ConfirmDialogComponent],
+  imports: [PostContentComponent, RouterLink, ReactionButtonComponent, UserOptionsMenuComponent, ReactionSummaryComponent, ConfirmDialogComponent, TranslatePipe],
   templateUrl: './comment-card.html',
   styleUrl: './comment-card.css',
 })

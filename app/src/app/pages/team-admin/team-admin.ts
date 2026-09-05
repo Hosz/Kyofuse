@@ -10,7 +10,7 @@ import { MediaService } from '../../core/services/media/media.service';
 import { ToastService } from '../../core/services/ui/toast.service';
 import { TeamResponse, UpdateTeamRequest } from '../../models/teams/team.model';
 import { TeamMemberEditRequest, TeamMemberResponse } from '../../models/teams/team-member.model';
-import { PLAYER_ROLE_OPTIONS, PlayerRole } from '../../shared/models/profile-options.model';
+import { PLAYER_ROLE_OPTIONS, PlayerRole, getPlayerRoleLabel } from '../../shared/models/profile-options.model';
 import {
   TEAM_MEMBER_STATUS_LABEL,
   TEAM_MEMBER_TYPE_OPTIONS,
@@ -24,6 +24,8 @@ import { FALLBACK_AVATAR_URL, TEAM_FALLBACK_AVATAR_URL } from '../../shared/util
 import { TeamMemberRowComponent } from '../../components/team/team-member-row/team-member-row';
 import { TeamMemberModalComponent } from '../../components/team/team-member-modal/team-member-modal';
 import { getCountryFlagUrl, getCountryOptions } from '../../shared/models/location-options.model';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { I18nService } from '../../core/i18n/i18n.service';
 
 type SectionId = 'geral' | 'requisitos' | 'papeis' | 'membros' | 'recrutamento';
 
@@ -42,7 +44,7 @@ import { RoleIconComponent } from '../../components/shared/role-icon/role-icon';
 
 @Component({
   selector: 'app-team-admin',
-  imports: [RouterLink, AppSidebarComponent, ModalComponent, ConfirmDialogComponent, TeamMemberRowComponent, TeamMemberModalComponent, RoleIconComponent],
+  imports: [RouterLink, AppSidebarComponent, ModalComponent, ConfirmDialogComponent, TeamMemberRowComponent, TeamMemberModalComponent, RoleIconComponent, TranslatePipe],
   templateUrl: './team-admin.html',
   styleUrl: './team-admin.css',
 })
@@ -57,6 +59,7 @@ export class TeamAdminComponent {
   private profileService = inject(ProfileService);
   private mediaService = inject(MediaService);
   private toastService = inject(ToastService);
+  private i18n = inject(I18nService);
   private observer?: IntersectionObserver;
   private inviteSearchDebounce?: ReturnType<typeof setTimeout>;
 
@@ -64,6 +67,10 @@ export class TeamAdminComponent {
   readonly memberTypeOptions = TEAM_MEMBER_TYPE_OPTIONS;
   readonly statusOptions = TEAM_STATUS_OPTIONS;
   readonly memberStatusLabel = TEAM_MEMBER_STATUS_LABEL;
+
+  roleLabel(role: string): string {
+    return getPlayerRoleLabel(role, this.i18n) ?? role;
+  }
 
   readonly sections: { id: SectionId; label: string; icon: string }[] = [
     { id: 'geral', label: 'Informações Gerais', icon: 'info' },

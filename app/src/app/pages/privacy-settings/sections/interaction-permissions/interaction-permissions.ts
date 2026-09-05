@@ -6,10 +6,11 @@ import {
   MESSAGE_PERMISSION_OPTIONS,
   TEAM_INVITE_PERMISSION_OPTIONS,
 } from '../../../../shared/models/privacy-options.model';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-interaction-permissions-section',
-  imports: [RouterLink],
+  imports: [RouterLink, TranslatePipe],
   templateUrl: './interaction-permissions.html',
   styleUrl: './interaction-permissions.css',
 })

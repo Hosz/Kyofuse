@@ -35,6 +35,12 @@ public class StartupSecurityValidator {
 
     private final Environment environment;
 
+    @Value("${spring.data.redis.password:}")
+    private String redisPassword;
+
+    @Value("${storage.s3.secret-key:}")
+    private String storageSecretKey;
+
     @Value("${security.jwt.secret:}")
     private String jwtSecret;
 
@@ -70,6 +76,8 @@ public class StartupSecurityValidator {
     public void setEmailIndexSecret(String emailIndexSecret) { this.emailIndexSecret = emailIndexSecret; }
     public void setTotpEncryptionKey(String totpEncryptionKey) { this.totpEncryptionKey = totpEncryptionKey; }
     public void setDbPassword(String dbPassword) { this.dbPassword = dbPassword; }
+    public void setRedisPassword(String redisPassword) { this.redisPassword = redisPassword; }
+    public void setStorageSecretKey(String storageSecretKey) { this.storageSecretKey = storageSecretKey; }
     public void setCookieSecure(boolean cookieSecure) { this.cookieSecure = cookieSecure; }
     public void setEnforceExplicit(Boolean enforceExplicit) { this.enforceExplicit = enforceExplicit; }
 
@@ -85,6 +93,8 @@ public class StartupSecurityValidator {
 
         checkSecret("security.jwt.secret", jwtSecret, 32, violations);
         checkSecret("security.jwt.mfa-secret", mfaJwtSecret, 32, violations);
+        checkSecret("spring.data.redis.password", redisPassword, 16, violations);
+        checkSecret("storage.s3.secret-key", storageSecretKey, 16, violations);
 
         if (jwtSecret != null && !jwtSecret.isBlank() && jwtSecret.equals(mfaJwtSecret)) {
             violations.add("security.jwt.secret e security.jwt.mfa-secret não podem ser idênticos.");

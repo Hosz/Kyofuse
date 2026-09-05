@@ -2,7 +2,7 @@
   <button
     type="button"
     (click)="toggleMenu()"
-    aria-label="Mais opções"
+    [attr.aria-label]="'postOptions.moreOptions' | trans"
     class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
   >
     <span class="material-symbols-outlined text-[20px]">more_horiz</span>
@@ -12,7 +12,7 @@
     <button
       type="button"
       class="fixed inset-0 z-10 cursor-default"
-      aria-label="Fechar menu"
+      [attr.aria-label]="'common.close' | trans"
       (click)="closeMenu()"
     ></button>
 
@@ -25,7 +25,7 @@
 </div>
 
 @if (presentation() === 'modal') {
-  <app-modal [open]="menuOpen()" title="Opções" size="compact" (closed)="closeMenu()" (click)="$event.stopPropagation()">
+  <app-modal [open]="menuOpen()" [title]="'postOptions.options' | trans" size="compact" (closed)="closeMenu()" (click)="$event.stopPropagation()">
     <div class="flex flex-col">
       <ng-container *ngTemplateOutlet="optionsList"></ng-container>
     </div>
@@ -42,7 +42,7 @@
         class="flex cursor-not-allowed items-center gap-2 px-4 py-2.5 text-left text-body-sm text-on-surface-variant opacity-60"
       >
         <span class="material-symbols-outlined text-[18px]">edit</span>
-        Editar
+        {{ 'postOptions.edit' | trans }}
       </button>
     } @else {
       <button
@@ -51,7 +51,7 @@
         class="flex cursor-pointer items-center gap-2 px-4 py-2.5 text-left text-body-sm text-on-surface transition-colors hover:bg-surface-container-high"
       >
         <span class="material-symbols-outlined text-[18px]">edit</span>
-        Editar
+        {{ 'postOptions.edit' | trans }}
       </button>
     }
   }
@@ -62,7 +62,7 @@
       class="flex cursor-pointer items-center gap-2 px-4 py-2.5 text-left text-body-sm text-error transition-colors hover:bg-error-container hover:text-on-error-container"
     >
       <span class="material-symbols-outlined text-[18px]">delete</span>
-      Apagar {{ contentLabel() }}
+      {{ (contentLabel() === 'comentário' ? 'postOptions.deleteComment' : 'postOptions.deletePost') | trans }}
     </button>
   }
   @if (canRemoveFollower()) {
@@ -72,7 +72,7 @@
       class="flex cursor-pointer items-center gap-2 px-4 py-2.5 text-left text-body-sm text-on-surface transition-colors hover:bg-surface-container-high"
     >
       <span class="material-symbols-outlined text-[18px]">person_remove</span>
-      Remover seguidor
+      {{ 'postOptions.removeFollower' | trans }}
     </button>
   }
   @if (canUnfollow()) {
@@ -82,7 +82,7 @@
       class="flex cursor-pointer items-center gap-2 px-4 py-2.5 text-left text-body-sm text-on-surface transition-colors hover:bg-surface-container-high"
     >
       <span class="material-symbols-outlined text-[18px]">person_remove</span>
-      Deixar de seguir
+      {{ 'postOptions.unfollow' | trans }}
     </button>
   }
   @if (canRemoveFriend()) {
@@ -92,7 +92,7 @@
       class="flex cursor-pointer items-center gap-2 px-4 py-2.5 text-left text-body-sm text-on-surface transition-colors hover:bg-surface-container-high"
     >
       <span class="material-symbols-outlined text-[18px]">heart_broken</span>
-      Desfazer amizade
+      {{ 'postOptions.removeFriend' | trans }}
     </button>
   }
   @if (effectiveCanBlock()) {
@@ -102,25 +102,25 @@
       class="flex cursor-pointer items-center gap-2 px-4 py-2.5 text-left text-body-sm text-error transition-colors hover:bg-error-container hover:text-on-error-container"
     >
       <span class="material-symbols-outlined text-[18px]">block</span>
-      Bloquear
+      {{ 'postOptions.block' | trans }}
     </button>
     <button
       type="button"
       disabled
-      title="Denunciar ainda não está disponível"
+      [title]="'common.comingSoon' | trans"
       class="flex cursor-not-allowed items-center gap-2 px-4 py-2.5 text-left text-body-sm text-on-surface-variant opacity-60"
     >
       <span class="material-symbols-outlined text-[18px]">flag</span>
-      Denunciar
+      {{ 'postOptions.report' | trans }}
     </button>
   }
 </ng-template>
 
 <app-confirm-dialog
   [open]="confirmOpen()"
-  title="Bloquear usuário"
-  message="Depois de bloqueado, esse usuário não vai poder ver seu perfil nem interagir com você, e você deixa de ver o conteúdo dele."
-  confirmLabel="Bloquear"
+  [title]="'postOptions.blockTitle' | trans"
+  [message]="'postOptions.blockMessage' | trans"
+  [confirmLabel]="'postOptions.block' | trans"
   [pending]="blocking()"
   [error]="error()"
   (confirmed)="confirmBlock()"
@@ -129,9 +129,9 @@
 
 <app-confirm-dialog
   [open]="removeConfirmOpen()"
-  title="Remover seguidor"
-  message="Essa pessoa deixa de te seguir. Ela pode voltar a te seguir depois, a não ser que você bloqueie."
-  confirmLabel="Remover"
+  [title]="'postOptions.removeFollowerTitle' | trans"
+  [message]="'postOptions.removeFollowerMessage' | trans"
+  [confirmLabel]="'common.delete' | trans"
   [pending]="removing()"
   [error]="removeError()"
   (confirmed)="confirmRemoveFollower()"
@@ -140,9 +140,9 @@
 
 <app-confirm-dialog
   [open]="unfollowConfirmOpen()"
-  title="Deixar de seguir"
-  message="Você para de ver as publicações dessa pessoa no feed de Seguindo."
-  confirmLabel="Deixar de seguir"
+  [title]="'postOptions.unfollowTitle' | trans"
+  [message]="'postOptions.unfollowMessage' | trans"
+  [confirmLabel]="'postOptions.unfollow' | trans"
   [pending]="unfollowing()"
   [error]="unfollowError()"
   (confirmed)="confirmUnfollow()"
@@ -151,9 +151,9 @@
 
 <app-confirm-dialog
   [open]="friendConfirmOpen()"
-  title="Desfazer amizade"
-  message="Vocês deixam de ser amigos. Para voltar, alguém precisa mandar um novo pedido."
-  confirmLabel="Desfazer"
+  [title]="'postOptions.removeFriendTitle' | trans"
+  [message]="'postOptions.removeFriendMessage' | trans"
+  [confirmLabel]="'postOptions.removeFriend' | trans"
   [pending]="removingFriend()"
   [error]="friendError()"
   (confirmed)="confirmRemoveFriend()"

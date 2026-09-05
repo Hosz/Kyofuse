@@ -47,10 +47,11 @@ const MAP_ACCENT_HUE: Record<Cs2Map, number> = {
 };
 
 import { RoleIconComponent } from '../../components/shared/role-icon/role-icon';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-profile-edit',
-  imports: [RouterLink, AppSidebarComponent, RoleIconComponent],
+  imports: [RouterLink, AppSidebarComponent, RoleIconComponent, TranslatePipe],
   templateUrl: './profile-edit.html',
   styleUrl: './profile-edit.css',
 })
@@ -66,10 +67,10 @@ export class ProfileEditComponent implements OnDestroy {
   readonly playstyleOptions = PLAYSTYLE_OPTIONS;
   readonly mapOptions = CS2_MAP_OPTIONS;
 
-  readonly sections: { id: SectionId; label: string; icon: string }[] = [
-    { id: 'identidade', label: 'Identidade Visual', icon: 'palette' },
-    { id: 'pessoal', label: 'Informações Pessoais', icon: 'badge' },
-    { id: 'competitivo', label: 'Informações Competitivas', icon: 'military_tech' },
+  readonly sections: { id: SectionId; key: string; icon: string }[] = [
+    { id: 'identidade', key: 'profileEdit.identityVisual', icon: 'palette' },
+    { id: 'pessoal', key: 'profileEdit.about', icon: 'badge' },
+    { id: 'competitivo', key: 'profileEdit.competitive', icon: 'military_tech' },
   ];
 
   activeSection = signal<SectionId>('identidade');

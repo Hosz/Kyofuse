@@ -11,8 +11,11 @@ import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dial
 import { SkeletonComponent } from '../../shared/skeleton/skeleton';
 import { ToastService } from '../../../core/services/ui/toast.service';
 import { ConversationResponse, MessageResponse } from '../../../models/chat/chat.model';
-import { Conversation } from '../../../shared/models/chat.model';
+import { Conversation, TypingEvent } from '../../../shared/models/chat.model';
 import { previewFromChatMessage, toChatMessage, toChatMessageGroups, toConversation } from '../../../shared/utils/mappers.util';
+import { toTimeAgo } from '../../../shared/utils/format.util';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { I18nService } from '../../../core/i18n/i18n.service';
 
 const CONVERSATIONS_PAGE_SIZE = 30;
 const MESSAGES_PAGE_SIZE = 30;
@@ -33,11 +36,12 @@ function normalize(value: string): string {
  */
 @Component({
   selector: 'app-chat-dock',
-  imports: [ConversationInfoPanelComponent, ConfirmDialogComponent, SkeletonComponent],
+  imports: [ConversationInfoPanelComponent, ConfirmDialogComponent, SkeletonComponent, TranslatePipe],
   templateUrl: './chat-dock.html',
   styleUrl: './chat-dock.css',
 })
 export class ChatDockComponent implements OnDestroy {
+  readonly i18n = inject(I18nService);
   private router = inject(Router);
   private conversationService = inject(ConversationService);
   private messageService = inject(MessageService);
@@ -49,6 +53,8 @@ export class ChatDockComponent implements OnDestroy {
   private chatSub: Subscription | null = null;
   private userQueueSub: Subscription | null = null;
   private statusSub: Subscription | null = null;
+  private readonly typingSubs = new Map<string, Subscription>();
+  private readonly typingTrackers = new Map<string, Map<string, { name: string; timeoutId: any }>>();
 
   private currentUrl = toSignal(
     this.router.events.pipe(
@@ -71,10 +77,10 @@ export class ChatDockComponent implements OnDestroy {
   query = signal('');
   infoPanelOpen = signal(false);
 
-  readonly filters: { value: DockFilter; label: string }[] = [
-    { value: 'all', label: 'Geral' },
-    { value: 'groups', label: 'Grupos' },
-    { value: 'communities', label: 'Comunidades' },
+  readonly filters: { value: DockFilter; labelKey: string }[] = [
+    { value: 'all', labelKey: 'chat.all' },
+    { value: 'groups', labelKey: 'chat.groups' },
+    { value: 'communities', labelKey: 'chat.community' },
   ];
 
   /** Conversa aberta dentro da janelinha. null = mostrando a lista. */
@@ -116,7 +122,12 @@ export class ChatDockComponent implements OnDestroy {
   active = computed(() => this.conversations().find((conversation) => conversation.id === this.activeId()) ?? null);
 
   messageGroups = computed(() =>
-    toChatMessageGroups(this.active()?.messages ?? [], this.active()?.unreadDividerMessageId),
+    toChatMessageGroups(
+      this.active()?.messages ?? [],
+      this.active()?.unreadDividerMessageId,
+      this.i18n.currentLang(),
+      this.i18n.t('chat.newMessages'),
+    ),
   );
 
   /** Mesma regra da janela grande: quem recebeu um pedido ainda não aceito não pode
@@ -135,18 +146,18 @@ export class ChatDockComponent implements OnDestroy {
     if (!conversation || this.canType()) return null;
     switch (conversation.relationship) {
       case 'request-received':
-        return 'Abra a conversa para aceitar ou recusar a solicitação.';
+        return this.i18n.t('chat.blockedRequestReceived');
       case 'request-sent':
-        return 'Aguardando a outra pessoa aceitar sua solicitação.';
+        return this.i18n.t('chat.blockedRequestSent');
       case 'declined': {
         const myId = this.myUserId();
         const canAllow = !conversation.revokedById || conversation.revokedById === myId;
         return canAllow
-          ? 'Conversa encerrada por você. Abra para permitir novamente.'
-          : `Conversa encerrada por ${conversation.participant.name}.`;
+          ? this.i18n.t('chat.blockedEndedByYou')
+          : this.i18n.t('chat.blockedEndedByOther').replace('{name}', conversation.participant.name);
       }
       default:
-        return 'Esta conversa não está disponível.';
+        return this.i18n.t('chat.blockedUnavailable');
     }
   });
 
@@ -218,6 +229,27 @@ export class ChatDockComponent implements OnDestroy {
 
   onQueryChange(value: string): void {
     this.query.set(value);
+  }
+
+  previewLabel(conversation: Conversation): string {
+    const preview = conversation.lastMessagePreview;
+    if (!preview) {
+      if (conversation.type === 'DIRECT') return '@' + conversation.participant.handle;
+      return conversation.type === 'GROUP' ? this.i18n.t('chat.group') : this.i18n.t('chat.community');
+    }
+    if (preview === 'Quer trocar mensagens com você') return this.i18n.t('chat.requestReceivedPreview');
+    if (preview === 'Solicitação enviada') return this.i18n.t('chat.requestSentPreview');
+    if (preview === 'Conversa encerrada') return this.i18n.t('chat.declinedPreview');
+    if (preview === 'Toque para conversar') return this.i18n.t('chat.tapToChat');
+    if (preview === 'Canal da comunidade') return this.i18n.t('chat.channelCommunity');
+    if (preview === 'Grupo de conversa') return this.i18n.t('chat.groupChat');
+
+    const youWord = this.i18n.t('chat.you');
+    const youRegex = /^(Você|You|Tú|Toi|Du|Вы|你|あなた):\s*/i;
+    if (youRegex.test(preview)) {
+      return preview.replace(youRegex, `${youWord}: `);
+    }
+    return preview;
   }
 
   openInfoPanel(): void {
@@ -372,7 +404,7 @@ export class ChatDockComponent implements OnDestroy {
 
       const updated: Conversation = {
         ...target,
-        lastMessageAt: 'Agora',
+        lastMessageAt: toTimeAgo(new Date().toISOString(), this.i18n.currentLang()),
         lastMessagePreview: preview,
         unread: unreadCount > 0 || (target.relationship === 'request-received' && !isCurrent),
         unreadCount,
@@ -382,6 +414,8 @@ export class ChatDockComponent implements OnDestroy {
       const filtered = list.filter((c) => c.id !== conversationId);
       return [updated, ...filtered];
     });
+
+    this.syncTypingSubscriptions([conversationId], myId);
 
     if (messageResponse.senderId !== myId) {
       this.messageService.markAsDelivered([messageResponse.id]).subscribe();
@@ -496,7 +530,9 @@ export class ChatDockComponent implements OnDestroy {
                 return timeB - timeA;
               },
             );
-            this.conversations.set(responses.map((response) => toConversation(response, profile.userId)));
+            const mapped = responses.map((response) => toConversation(response, profile.userId, this.i18n.currentLang()));
+            this.conversations.set(mapped);
+            this.syncTypingSubscriptions(mapped.map((c) => c.id), profile.userId);
             this.loading.set(false);
           },
           error: (error) => {
@@ -522,10 +558,95 @@ export class ChatDockComponent implements OnDestroy {
     });
   }
 
+  private syncTypingSubscriptions(conversationIds: string[], myId: string): void {
+    for (const id of conversationIds) {
+      if (!this.typingSubs.has(id)) {
+        const sub = this.messageService.watchTyping(id).subscribe({
+          next: (event) => this.handleTypingEvent(event, myId),
+          error: (err) => console.debug('[ChatDock] Typing error:', err),
+        });
+        this.typingSubs.set(id, sub);
+      }
+    }
+  }
+
+  private handleTypingEvent(event: TypingEvent, myId: string): void {
+    if (event.userId === myId) return;
+
+    const convId = event.conversationId;
+    let userMap = this.typingTrackers.get(convId);
+    if (!userMap) {
+      userMap = new Map();
+      this.typingTrackers.set(convId, userMap);
+    }
+
+    const existing = userMap.get(event.userId);
+    if (existing) {
+      clearTimeout(existing.timeoutId);
+      userMap.delete(event.userId);
+    }
+
+    if (event.isTyping) {
+      const name = event.nickname?.trim() || event.username || 'Alguém';
+      const timeoutId = setTimeout(() => {
+        const currentMap = this.typingTrackers.get(convId);
+        if (currentMap) {
+          currentMap.delete(event.userId);
+          this.applyTypingState(convId);
+        }
+      }, 3500);
+
+      userMap.set(event.userId, { name, timeoutId });
+    }
+
+    this.applyTypingState(convId);
+  }
+
+  private applyTypingState(convId: string): void {
+    const userMap = this.typingTrackers.get(convId);
+    const users = userMap ? Array.from(userMap.values()) : [];
+    const isTyping = users.length > 0;
+
+    this.updateConversation(convId, (conv) => {
+      let typingText: string | undefined = undefined;
+      if (isTyping) {
+        if (conv.type === 'DIRECT') {
+          typingText = this.i18n.t('chat.isTyping');
+        } else {
+          if (users.length === 1) {
+            typingText = this.i18n.t('chat.typingSingular', { name: users[0].name });
+          } else if (users.length === 2) {
+            typingText = this.i18n.t('chat.typingDual', { name1: users[0].name, name2: users[1].name });
+          } else {
+            typingText = this.i18n.t('chat.typingMultiple', { count: users.length });
+          }
+        }
+      }
+      return {
+        ...conv,
+        isTyping,
+        typingText,
+      };
+    });
+  }
+
   ngOnDestroy(): void {
     this.chatSub?.unsubscribe();
     this.statusSub?.unsubscribe();
     this.userQueueSub?.unsubscribe();
+
+    for (const sub of this.typingSubs.values()) {
+      sub.unsubscribe();
+    }
+    this.typingSubs.clear();
+
+    for (const userMap of this.typingTrackers.values()) {
+      for (const tracker of userMap.values()) {
+        clearTimeout(tracker.timeoutId);
+      }
+      userMap.clear();
+    }
+    this.typingTrackers.clear();
   }
 
   private updateConversation(id: string, updater: (conversation: Conversation) => Conversation): void {

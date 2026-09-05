@@ -2,7 +2,7 @@
   <div class="shell-container flex h-screen w-full">
     <app-sidebar />
 
-    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto bg-surface">
+    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto bg-surface pb-24 lg:pb-0">
       <div class="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-8 sm:px-8">
         
         <!-- Header -->
@@ -13,8 +13,8 @@
                 <span class="material-symbols-outlined text-[32px]">military_tech</span>
               </span>
               <div>
-                <h1 class="text-headline-md font-bold text-on-surface">Ranking Global de Jogadores</h1>
-                <p class="text-body-sm text-on-surface-variant">Classificação oficial por Rating Premier de Counter-Strike 2</p>
+                <h1 class="text-headline-md font-bold text-on-surface">{{ 'leaderboard.title' | trans }}</h1>
+                <p class="text-body-sm text-on-surface-variant">{{ 'leaderboard.subtitle' | trans }}</p>
               </div>
             </div>
           </div>
@@ -23,18 +23,18 @@
           @if (myRank(); as me) {
             <div class="flex items-center gap-4 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
               <div class="flex flex-col">
-                <span class="text-label-xs font-semibold uppercase text-primary">Sua Posição</span>
+                <span class="text-label-xs font-semibold uppercase text-primary">{{ 'leaderboard.yourPosition' | trans }}</span>
                 <span class="text-headline-sm font-bold text-on-surface">
                   @if (me.rank) {
                     #{{ me.rank }}
                   } @else {
-                    Não ranqueado
+                    {{ 'leaderboard.unranked' | trans }}
                   }
                 </span>
               </div>
               <div class="h-8 w-px bg-outline-variant/50"></div>
               <div class="flex flex-col">
-                <span class="text-label-xs font-semibold uppercase text-on-surface-variant">Rating</span>
+                <span class="text-label-xs font-semibold uppercase text-on-surface-variant">{{ 'leaderboard.rating' | trans }}</span>
                 <span class="text-headline-sm font-bold text-primary-container">{{ me.score | number }}</span>
               </div>
             </div>
@@ -52,7 +52,7 @@
             class="flex items-center gap-2 border-b-2 border-transparent px-4 py-2 text-label-md font-bold transition-colors hover:text-on-surface"
           >
             <span class="material-symbols-outlined text-[18px]">trophy</span>
-            TOP 50 Jogadores
+            {{ 'leaderboard.top50' | trans }}
           </button>
           <button
             type="button"
@@ -63,7 +63,7 @@
             class="flex items-center gap-2 border-b-2 border-transparent px-4 py-2 text-label-md font-bold transition-colors hover:text-on-surface"
           >
             <span class="material-symbols-outlined text-[18px]">radar</span>
-            Ao Seu Redor
+            {{ 'leaderboard.aroundYou' | trans }}
           </button>
         </div>
 
@@ -71,7 +71,7 @@
         @if (loading()) {
           <div class="flex flex-col items-center justify-center py-16 text-on-surface-variant">
             <span class="material-symbols-outlined animate-spin text-[36px] text-primary">progress_activity</span>
-            <p class="mt-4 text-body-md">Calculando classificações em tempo real...</p>
+            <p class="mt-4 text-body-md">{{ 'leaderboard.calculating' | trans }}</p>
           </div>
         } @else {
           <!-- Lista TOP 50 -->
@@ -79,18 +79,18 @@
             @if (topPlayers().length === 0) {
               <div class="flex flex-col items-center justify-center rounded-2xl border border-outline-variant/40 bg-surface-container-low py-16 text-center">
                 <span class="material-symbols-outlined text-[48px] text-on-surface-variant/40">leaderboard</span>
-                <p class="mt-2 text-body-md font-semibold text-on-surface">Nenhum jogador pontuado ainda</p>
-                <p class="text-body-sm text-on-surface-variant">Complete seu perfil com o rating Premier para entrar no ranking!</p>
+                <p class="mt-2 text-body-md font-semibold text-on-surface">{{ 'leaderboard.noPlayersTitle' | trans }}</p>
+                <p class="text-body-sm text-on-surface-variant">{{ 'leaderboard.noPlayersDesc' | trans }}</p>
               </div>
             } @else {
               <div class="overflow-hidden rounded-2xl border border-outline-variant/50 bg-surface-container-low shadow-sm">
                 <table class="w-full text-left">
                   <thead>
                     <tr class="border-b border-outline-variant/40 text-label-xs font-bold uppercase text-on-surface-variant/70">
-                      <th class="px-6 py-4">Posição</th>
-                      <th class="px-6 py-4">Jogador</th>
-                      <th class="px-6 py-4">País</th>
-                      <th class="px-6 py-4 text-right">Rating Premier</th>
+                      <th class="px-6 py-4">{{ 'leaderboard.position' | trans }}</th>
+                      <th class="px-6 py-4">{{ 'leaderboard.player' | trans }}</th>
+                      <th class="px-6 py-4">{{ 'leaderboard.country' | trans }}</th>
+                      <th class="px-6 py-4 text-right">{{ 'leaderboard.premierRating' | trans }}</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-outline-variant/20">
@@ -150,18 +150,18 @@
             @if (surroundingPlayers().length === 0) {
               <div class="flex flex-col items-center justify-center rounded-2xl border border-outline-variant/40 bg-surface-container-low py-16 text-center">
                 <span class="material-symbols-outlined text-[48px] text-on-surface-variant/40">radar</span>
-                <p class="mt-2 text-body-md font-semibold text-on-surface">Competidores ao redor não encontrados</p>
-                <p class="text-body-sm text-on-surface-variant">Adicione seu rating no perfil para ver seus rivais diretos!</p>
+                <p class="mt-2 text-body-md font-semibold text-on-surface">{{ 'leaderboard.noPlayersTitle' | trans }}</p>
+                <p class="text-body-sm text-on-surface-variant">{{ 'leaderboard.noPlayersDesc' | trans }}</p>
               </div>
             } @else {
               <div class="overflow-hidden rounded-2xl border border-outline-variant/50 bg-surface-container-low shadow-sm">
                 <table class="w-full text-left">
                   <thead>
                     <tr class="border-b border-outline-variant/40 text-label-xs font-bold uppercase text-on-surface-variant/70">
-                      <th class="px-6 py-4">Posição</th>
-                      <th class="px-6 py-4">Jogador</th>
-                      <th class="px-6 py-4">País</th>
-                      <th class="px-6 py-4 text-right">Rating Premier</th>
+                      <th class="px-6 py-4">{{ 'leaderboard.position' | trans }}</th>
+                      <th class="px-6 py-4">{{ 'leaderboard.player' | trans }}</th>
+                      <th class="px-6 py-4">{{ 'leaderboard.country' | trans }}</th>
+                      <th class="px-6 py-4 text-right">{{ 'leaderboard.premierRating' | trans }}</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-outline-variant/20">

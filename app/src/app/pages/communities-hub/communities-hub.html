@@ -2,12 +2,12 @@
   <div class="shell-container flex h-screen">
     <app-sidebar />
 
-    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto bg-surface">
+    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto bg-surface pb-24 lg:pb-0">
       <div class="mx-auto flex w-full max-w-5xl flex-col gap-lg px-lg py-lg">
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div class="flex flex-col gap-1">
-            <h1 class="text-headline-lg-mobile font-headline-lg text-on-surface">Comunidades</h1>
-            <span class="text-body-sm text-on-surface-variant">Encontre espaços de discussão e torcida em torno do CS2</span>
+            <h1 class="text-headline-lg-mobile font-headline-lg text-on-surface">{{ 'communities.title' | trans }}</h1>
+            <span class="text-body-sm text-on-surface-variant">{{ 'communities.subtitle' | trans }}</span>
           </div>
           <button
             type="button"
@@ -15,7 +15,7 @@
             class="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full bg-primary-container px-4 py-2 text-label-md font-bold text-on-primary-container transition-all hover:brightness-110 active:scale-[0.97]"
           >
             <span class="material-symbols-outlined text-[18px]">add</span>
-            Criar comunidade
+            {{ 'communities.create' | trans }}
           </button>
         </div>
 
@@ -26,7 +26,7 @@
             class="cursor-pointer whitespace-nowrap border-b-2 px-2 pb-3 text-label-md font-bold transition-colors"
             [class]="activeTab() === 'discover' ? 'border-primary text-on-surface' : 'border-transparent text-on-surface-variant hover:text-on-surface'"
           >
-            Comunidades que existem
+            {{ 'communities.discoverTab' | trans }}
           </button>
           <button
             type="button"
@@ -34,7 +34,7 @@
             class="cursor-pointer whitespace-nowrap border-b-2 px-2 pb-3 text-label-md font-bold transition-colors"
             [class]="activeTab() === 'mine' ? 'border-primary text-on-surface' : 'border-transparent text-on-surface-variant hover:text-on-surface'"
           >
-            Comunidades que você é membro
+            {{ 'communities.mineTab' | trans }}
           </button>
         </div>
 
@@ -43,7 +43,7 @@
             <span class="material-symbols-outlined text-[18px] text-on-surface-variant">search</span>
             <input
               type="text"
-              placeholder="Buscar nas suas comunidades..."
+              [placeholder]="'communities.searchMinePlaceholder' | trans"
               [value]="myCommunitiesQuery()"
               (input)="onMyCommunitiesSearchInput($any($event.target).value)"
               class="w-full bg-transparent text-body-sm text-on-surface outline-none placeholder:text-on-surface-variant"
@@ -51,7 +51,7 @@
           </label>
 
           @if (myCommunitiesLoading()) {
-            <p class="py-8 text-center text-body-sm text-on-surface-variant">Carregando comunidades...</p>
+            <p class="py-8 text-center text-body-sm text-on-surface-variant">{{ 'communities.loading' | trans }}</p>
           } @else if (myCommunitiesError()) {
             <p class="py-8 text-center text-body-sm text-error">{{ myCommunitiesError() }}</p>
           } @else {
@@ -77,7 +77,7 @@
                     <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
                       <span class="truncate text-body-md font-bold text-on-surface">{{ community.communityName }}</span>
                       <span class="shrink-0 rounded-md border border-outline-variant px-2 py-0.5 text-label-sm text-on-surface-variant">
-                        {{ visibilityLabel(community.visibility) }}
+                        {{ (community.visibility === 'PRIVATE' ? 'common.private' : 'common.public') | trans }}
                       </span>
                     </div>
 
@@ -92,7 +92,7 @@
                     </div>
 
                     <p class="line-clamp-2 text-label-sm text-on-surface-variant">
-                      {{ community.communityDescription || 'Sem descrição.' }}
+                      {{ community.communityDescription || ('common.noDescription' | trans) }}
                     </p>
                   </div>
 
@@ -100,7 +100,7 @@
                 </a>
               } @empty {
                 <p class="py-8 text-center text-body-sm text-on-surface-variant">
-                  {{ myCommunitiesQuery() ? 'Nenhuma comunidade sua corresponde a essa busca.' : 'Você ainda não faz parte de nenhuma comunidade.' }}
+                  {{ (myCommunitiesQuery() ? 'communities.noMyCommunitiesFound' : 'communities.notMemberOfAny') | trans }}
                 </p>
               }
             </div>
@@ -116,7 +116,7 @@
                   <span class="material-symbols-outlined text-[18px]">chevron_left</span>
                 </button>
                 <span class="text-label-sm text-on-surface-variant">
-                  Página {{ myCommunitiesPage() + 1 }} de {{ myCommunitiesTotalPages() }}
+                  {{ 'common.page' | trans }} {{ myCommunitiesPage() + 1 }} {{ 'common.of' | trans }} {{ myCommunitiesTotalPages() }}
                 </span>
                 <button
                   type="button"
@@ -134,7 +134,7 @@
             <span class="material-symbols-outlined text-[18px] text-on-surface-variant">search</span>
             <input
               type="text"
-              placeholder="Buscar comunidades pelo nome..."
+              [placeholder]="'communities.searchPlaceholder' | trans"
               [value]="searchQuery()"
               (input)="onSearchInput($any($event.target).value)"
               class="w-full bg-transparent text-body-sm text-on-surface outline-none placeholder:text-on-surface-variant"
@@ -142,7 +142,7 @@
           </label>
 
           @if (loading()) {
-            <p class="py-8 text-center text-body-sm text-on-surface-variant">Carregando comunidades...</p>
+            <p class="py-8 text-center text-body-sm text-on-surface-variant">{{ 'communities.loading' | trans }}</p>
           } @else if (error()) {
             <p class="py-8 text-center text-body-sm text-error">{{ error() }}</p>
           } @else {
@@ -168,7 +168,7 @@
                     <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
                       <span class="truncate text-body-md font-bold text-on-surface">{{ community.communityName }}</span>
                       <span class="shrink-0 rounded-md border border-outline-variant px-2 py-0.5 text-label-sm text-on-surface-variant">
-                        {{ visibilityLabel(community.visibility) }}
+                        {{ (community.visibility === 'PRIVATE' ? 'common.private' : 'common.public') | trans }}
                       </span>
                     </div>
 
@@ -183,7 +183,7 @@
                     </div>
 
                     <p class="line-clamp-2 text-label-sm text-on-surface-variant">
-                      {{ community.communityDescription || 'Sem descrição.' }}
+                      {{ community.communityDescription || ('common.noDescription' | trans) }}
                     </p>
                   </div>
 
@@ -191,7 +191,7 @@
                 </a>
               } @empty {
                 <p class="py-8 text-center text-body-sm text-on-surface-variant">
-                  {{ searchQuery() ? 'Nenhuma comunidade encontrada para essa busca.' : 'Nenhuma comunidade encontrada.' }}
+                  {{ 'communities.noCommunitiesFound' | trans }}
                 </p>
               }
             </div>
@@ -207,7 +207,7 @@
                   <span class="material-symbols-outlined text-[18px]">chevron_left</span>
                 </button>
                 <span class="text-label-sm text-on-surface-variant">
-                  Página {{ page() + 1 }} de {{ totalPages() }}
+                  {{ 'common.page' | trans }} {{ page() + 1 }} {{ 'common.of' | trans }} {{ totalPages() }}
                 </span>
                 <button
                   type="button"

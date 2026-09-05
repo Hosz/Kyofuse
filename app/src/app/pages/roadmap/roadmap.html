@@ -2,7 +2,7 @@
   <div class="shell-container flex h-screen">
     <app-sidebar />
 
-    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto bg-surface">
+    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto bg-surface pb-24 lg:pb-0">
       <div class="mx-auto flex w-full max-w-5xl flex-col gap-lg px-lg py-lg">
         <!-- Cabeçalho do Roadmap -->
         <header class="flex flex-col gap-4 rounded-2xl border border-outline-variant/60 bg-surface-container-low p-6 sm:p-8">
@@ -12,15 +12,15 @@
                 <span class="material-symbols-outlined text-[28px]">route</span>
               </span>
               <div>
-                <h1 class="text-headline-lg-mobile font-headline-lg text-on-surface">Roadmap do Kyofuse</h1>
+                <h1 class="text-headline-lg-mobile font-headline-lg text-on-surface">{{ 'roadmap.title' | trans }}</h1>
                 <p class="text-body-sm text-on-surface-variant">
-                  Acompanhe os próximos recursos planejados para a plataforma.
+                  {{ 'roadmap.subtitle' | trans }}
                 </p>
               </div>
             </div>
             <span class="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-label-sm font-bold text-primary">
               <span class="material-symbols-outlined text-[16px]">map</span>
-              Recursos Planejados
+              {{ 'roadmap.plannedBadge' | trans }}
             </span>
           </div>
 
@@ -36,7 +36,7 @@
                   : 'border border-outline-variant text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
               "
             >
-              Todos ({{ roadmapItems.length }})
+              {{ 'roadmap.all' | trans }} ({{ roadmapItems.length }})
             </button>
             <button
               type="button"
@@ -48,7 +48,7 @@
                   : 'border border-outline-variant text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
               "
             >
-              Matchmaking & Times
+              {{ 'roadmap.matchmakingTeams' | trans }}
             </button>
             <button
               type="button"
@@ -60,7 +60,7 @@
                   : 'border border-outline-variant text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
               "
             >
-              Social & Comunidade
+              {{ 'roadmap.socialFeed' | trans }}
             </button>
             <button
               type="button"
@@ -72,7 +72,7 @@
                   : 'border border-outline-variant text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
               "
             >
-              Táticas & Guias
+              {{ 'roadmap.tacticsGuides' | trans }}
             </button>
           </div>
         </header>
@@ -87,28 +87,28 @@
                     <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-container-high text-primary">
                       <span class="material-symbols-outlined text-[22px]">{{ item.icon }}</span>
                     </span>
-                    <span class="text-label-sm font-bold uppercase tracking-wider text-on-surface-variant">{{ item.category }}</span>
+                    <span class="text-label-sm font-bold uppercase tracking-wider text-on-surface-variant">{{ item.categoryKey | trans }}</span>
                   </div>
                   <span class="rounded-md border border-outline-variant bg-surface-container-high px-2 py-0.5 text-[11px] font-bold tracking-wider text-on-surface-variant">
-                    PLANEJADO
+                    {{ 'roadmap.plannedStatus' | trans }}
                   </span>
                 </div>
 
-                <h2 class="text-title-sm font-bold text-on-surface">{{ item.title }}</h2>
+                <h2 class="text-title-sm font-bold text-on-surface">{{ item.titleKey | trans }}</h2>
 
                 <p class="text-body-sm text-on-surface-variant leading-relaxed">
-                  {{ item.description }}
+                  {{ item.descKey | trans }}
                 </p>
               </div>
 
               <div class="mt-4 flex items-center justify-between border-t border-outline-variant/40 pt-4">
-                <span class="text-label-sm text-on-surface-variant">Previsão: {{ item.estimatedQuarter }}</span>
+                <span class="text-label-sm text-on-surface-variant">{{ 'roadmap.estimatedPrefix' | trans }}: {{ item.estimatedQuarter }}</span>
                 <button
                   type="button"
                   (click)="notifyMe(item)"
                   class="cursor-pointer rounded-full border border-outline-variant px-3 py-1.5 text-label-sm font-bold text-on-surface transition-all hover:border-primary hover:bg-primary-container hover:text-on-primary-container active:scale-[0.97]"
                 >
-                  Me avisar
+                  {{ 'roadmap.notifyMe' | trans }}
                 </button>
               </div>
             </article>

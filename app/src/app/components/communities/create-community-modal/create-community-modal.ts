@@ -1,5 +1,6 @@
 import { Component, inject, input, output, signal } from '@angular/core';
 import { ModalComponent } from '../../shared/modal/modal';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { CommunityService } from '../../../core/services/communities/community.service';
 import { MediaService } from '../../../core/services/media/media.service';
 import { CommunityResponse, CommunityVisibility } from '../../../models/communities/community.model';
@@ -7,7 +8,7 @@ import { toSlug, COMMUNITY_FALLBACK_AVATAR_URL } from '../../../shared/utils/for
 
 @Component({
   selector: 'app-create-community-modal',
-  imports: [ModalComponent],
+  imports: [ModalComponent, TranslatePipe],
   templateUrl: './create-community-modal.html',
   styleUrl: './create-community-modal.css',
 })

@@ -1,0 +1,13 @@
+<button
+  type="button"
+  (click)="toggle()"
+  [title]="isDark() ? ('settings.lightMode' | trans) : ('settings.darkMode' | trans)"
+  [attr.aria-label]="isDark() ? ('settings.lightMode' | trans) : ('settings.darkMode' | trans)"
+  class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-outline-variant bg-surface-container text-on-surface-variant transition-all hover:bg-surface-container-high hover:text-on-surface active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
+>
+  @if (isDark()) {
+    <span class="material-symbols-outlined text-[22px] text-amber-400">light_mode</span>
+  } @else {
+    <span class="material-symbols-outlined text-[22px] text-indigo-500">dark_mode</span>
+  }
+</button>

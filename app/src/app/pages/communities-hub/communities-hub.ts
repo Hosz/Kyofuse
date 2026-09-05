@@ -5,13 +5,15 @@ import { CreateCommunityModalComponent } from '../../components/communities/crea
 import { CommunityService } from '../../core/services/communities/community.service';
 import { CommunityResponse } from '../../models/communities/community.model';
 
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
+
 type HubTab = 'mine' | 'discover';
 
 const SEARCH_DEBOUNCE_MS = 300;
 
 @Component({
   selector: 'app-communities-hub',
-  imports: [RouterLink, AppSidebarComponent, CreateCommunityModalComponent],
+  imports: [RouterLink, AppSidebarComponent, CreateCommunityModalComponent, TranslatePipe],
   templateUrl: './communities-hub.html',
   styleUrl: './communities-hub.css',
 })

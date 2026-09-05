@@ -2,7 +2,7 @@
   <div class="shell-container flex h-screen">
     <app-sidebar />
 
-    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto bg-surface">
+    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto bg-surface pb-24 lg:pb-0">
       <div class="mx-auto flex w-full max-w-6xl flex-col gap-lg px-lg py-lg">
         @if (viewMode() === 'restricted') {
           <app-profile-locked />
@@ -51,9 +51,9 @@
                   <span class="flex h-16 w-16 items-center justify-center rounded-full border-2 border-outline-variant text-on-surface-variant">
                     <span class="material-symbols-outlined text-[28px]">lock</span>
                   </span>
-                  <p class="text-body-md font-semibold text-on-surface">Esta conta é privada</p>
+                  <p class="text-body-md font-semibold text-on-surface">{{ 'profile.privateAccountTitle' | trans }}</p>
                   <p class="text-body-sm text-on-surface-variant leading-relaxed">
-                    Siga {{ profile().nickname || profile().username }} para ver as publicações, respostas e conexões.
+                    {{ 'profile.privateAccountDesc' | trans }}
                   </p>
                 </div>
               } @else if (activeTabId() === 'posts') {
@@ -72,12 +72,12 @@
                     [disabled]="postsLoadingMore()"
                     class="mx-lg my-md cursor-pointer rounded-full border border-outline-variant py-2.5 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {{ postsLoadingMore() ? 'Carregando...' : 'Carregar mais' }}
+                    {{ postsLoadingMore() ? ('common.loading' | trans) : ('feed.loadMore' | trans) }}
                   </button>
                 }
               } @else if (activeTabId() === 'media') {
                 @if (mediaPostsLoading()) {
-                  <p class="px-lg py-16 text-center text-body-sm text-on-surface-variant">Carregando mídias...</p>
+                  <p class="px-lg py-16 text-center text-body-sm text-on-surface-variant">{{ 'common.loading' | trans }}</p>
                 } @else {
                   <app-feed-list
                     [posts]="mediaPosts()"
@@ -95,7 +95,7 @@
                       [disabled]="mediaPostsLoadingMore()"
                       class="mx-lg my-md cursor-pointer rounded-full border border-outline-variant py-2.5 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {{ mediaPostsLoadingMore() ? 'Carregando...' : 'Carregar mais' }}
+                      {{ mediaPostsLoadingMore() ? ('common.loading' | trans) : ('feed.loadMore' | trans) }}
                     </button>
                   }
                 }
@@ -136,24 +136,21 @@
                       [disabled]="repliesLoadingMore()"
                       class="mx-lg my-md cursor-pointer rounded-full border border-outline-variant py-2.5 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {{ repliesLoadingMore() ? 'Carregando...' : 'Carregar mais' }}
+                      {{ repliesLoadingMore() ? ('common.loading' | trans) : ('feed.loadMore' | trans) }}
                     </button>
                   }
                 }
               } @else {
                 <div class="flex w-full flex-col items-center justify-center gap-3 px-lg py-16 text-center text-on-surface-variant">
                   <span class="material-symbols-outlined text-[48px] text-outline-variant">repeat</span>
-                  <p class="w-full text-title-sm font-bold text-on-surface">Aba de Reposts em breve</p>
-                  <p class="w-full text-body-sm text-on-surface-variant leading-relaxed">
-                    A funcionalidade de repostar jogadas e publicações estará disponível em breve.
-                  </p>
+                  <p class="w-full text-title-sm font-bold text-on-surface">{{ 'common.comingSoon' | trans }}</p>
                 </div>
               }
             </div>
 
             <aside class="flex w-full shrink-0 flex-col gap-lg lg:w-80">
-              <app-entity-summary-card title="Comunidades" [items]="communities()" (viewAll)="openModal('communities')" />
-              <app-entity-summary-card title="Times" [items]="teams()" (viewAll)="openModal('teams')" />
+              <app-entity-summary-card [title]="'nav.communities' | trans" [items]="communities()" (viewAll)="openModal('communities')" />
+              <app-entity-summary-card [title]="'nav.teams' | trans" [items]="teams()" (viewAll)="openModal('teams')" />
             </aside>
           </div>
         }
@@ -163,7 +160,7 @@
 </div>
 
 <app-user-list-modal
-  title="Seguidores"
+  [title]="'profile.followers' | trans"
   type="followers"
   [profileUserId]="viewMode() === 'owner' ? null : profile().userId"
   [manageable]="viewMode() === 'owner'"
@@ -171,7 +168,7 @@
   (closed)="closeModal()"
 />
 <app-user-list-modal
-  title="Seguindo"
+  [title]="'profile.following' | trans"
   type="following"
   [profileUserId]="viewMode() === 'owner' ? null : profile().userId"
   [manageable]="viewMode() === 'owner'"
@@ -179,7 +176,7 @@
   (closed)="closeModal()"
 />
 <app-user-list-modal
-  title="Amigos"
+  [title]="'profile.friends' | trans"
   type="friends"
   [profileUserId]="viewMode() === 'owner' ? null : profile().userId"
   [manageable]="viewMode() === 'owner'"
@@ -187,12 +184,12 @@
   (closed)="closeModal()"
 />
 <app-entity-list-modal
-  title="Comunidades"
+  [title]="'nav.communities' | trans"
   [open]="activeModal() === 'communities'"
   [items]="communities()"
   (closed)="closeModal()"
 />
-<app-entity-list-modal title="Times" [open]="activeModal() === 'teams'" [items]="teams()" (closed)="closeModal()" />
+<app-entity-list-modal [title]="'nav.teams' | trans" [open]="activeModal() === 'teams'" [items]="teams()" (closed)="closeModal()" />
 <app-invite-modal
   [open]="activeModal() === 'invite'"
   [targetName]="profile().nickname || profile().username"

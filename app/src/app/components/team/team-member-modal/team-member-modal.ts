@@ -14,9 +14,11 @@ import { TeamMemberEditRequest } from '../../../models/teams/team-member.model';
  * Expulsar é o que o backend suporta hoje. Vote kick e banimento aparecem desabilitados
  * porque não existem endpoints para eles — melhor mostrar o caminho do que esconder.
  */
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-team-member-modal',
-  imports: [RouterLink, ModalComponent],
+  imports: [RouterLink, ModalComponent, TranslatePipe],
   templateUrl: './team-member-modal.html',
   styleUrl: './team-member-modal.css',
 })

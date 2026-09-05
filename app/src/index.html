@@ -4,8 +4,32 @@
   <meta charset="utf-8">
   <title>Kyofuse | Tactical Command Login</title>
   <base href="/">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <link rel="icon" type="image/x-icon" href="assets/kyofuse-icon.ico">
+
+  <script>
+    (function() {
+      try {
+        var theme = localStorage.getItem('kyofuse_theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (theme === 'light') {
+          document.documentElement.classList.remove('dark');
+        } else if (theme === 'system') {
+          if (prefersDark) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } else {
+          document.documentElement.classList.add('dark');
+        }
+        var lang = localStorage.getItem('kyofuse_language');
+        if (lang) {
+          document.documentElement.lang = lang;
+        }
+      } catch(e) {}
+    })();
+  </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Geist:wght@400;500;600&display=swap" rel="stylesheet">

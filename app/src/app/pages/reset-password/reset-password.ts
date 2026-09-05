@@ -4,6 +4,8 @@ import { AuthHeroComponent } from '../../components/auth/auth-hero/auth-hero';
 import { AuthFieldComponent } from '../../components/auth/auth-field/auth-field';
 import { PasswordStrengthMeterComponent } from '../../components/auth/password-strength-meter/password-strength-meter';
 import { AuthService } from '../../core/services/auth/auth.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { I18nService } from '../../core/i18n/i18n.service';
 
 @Component({
   selector: 'app-reset-password',
@@ -12,11 +14,13 @@ import { AuthService } from '../../core/services/auth/auth.service';
     AuthFieldComponent,
     PasswordStrengthMeterComponent,
     RouterLink,
+    TranslatePipe,
   ],
   templateUrl: './reset-password.html',
   styleUrl: './reset-password.css',
 })
 export class ResetPasswordComponent implements OnInit {
+  readonly i18n = inject(I18nService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
@@ -50,14 +54,14 @@ export class ResetPasswordComponent implements OnInit {
   });
 
   passwordError = computed(() => {
-    if (!this.newPassword()) return 'Crie uma nova senha de acesso.';
-    if (this.newPassword().length < 8) return 'A senha deve ter no mínimo 8 caracteres.';
+    if (!this.newPassword()) return this.i18n.t('auth.passwordCreateRequired');
+    if (this.newPassword().length < 8) return this.i18n.t('auth.passwordMin');
     return null;
   });
 
   confirmPasswordError = computed(() => {
-    if (!this.confirmPassword()) return 'Confirme a nova senha.';
-    if (this.confirmPassword() !== this.newPassword()) return 'As senhas não coincidem.';
+    if (!this.confirmPassword()) return this.i18n.t('auth.confirmPasswordRequired');
+    if (this.confirmPassword() !== this.newPassword()) return this.i18n.t('auth.passwordsDoNotMatch');
     return null;
   });
 

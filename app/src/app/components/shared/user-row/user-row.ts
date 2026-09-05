@@ -1,10 +1,11 @@
 import { Component, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FALLBACK_AVATAR_URL } from '../../../shared/utils/format.util';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-user-row',
-  imports: [RouterLink],
+  imports: [RouterLink, TranslatePipe],
   templateUrl: './user-row.html',
   styleUrl: './user-row.css',
 })
@@ -20,4 +21,5 @@ export class UserRowComponent {
   isFollowing = input<boolean | null>(null);
 
   actionClick = output<void>();
+  userClick = output<void>();
 }

@@ -1,5 +1,7 @@
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { ModalComponent } from '../../shared/modal/modal';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { I18nService } from '../../../core/i18n/i18n.service';
 import { TeamService } from '../../../core/services/teams/team.service';
 import { TeamInviteService } from '../../../core/services/teams/team-invite.service';
 import { CurrentUserService } from '../../../core/services/profile/current-user.service';
@@ -19,7 +21,7 @@ type InviteState = 'idle' | 'sending' | 'sent' | 'failed';
  */
 @Component({
   selector: 'app-invite-modal',
-  imports: [ModalComponent],
+  imports: [ModalComponent, TranslatePipe],
   templateUrl: './invite-modal.html',
   styleUrl: './invite-modal.css',
 })
@@ -34,6 +36,11 @@ export class InviteModalComponent {
   private teamInviteService = inject(TeamInviteService);
   private currentUser = inject(CurrentUserService);
   private toastService = inject(ToastService);
+  readonly i18n = inject(I18nService);
+
+  modalTitle = computed(() =>
+    this.i18n.t('modals.inviteToTeamTitle', { name: this.targetName() || this.targetUsername() }),
+  );
 
   private myTeams = signal<TeamResponse[]>([]);
   loading = signal(false);
@@ -63,13 +70,13 @@ export class InviteModalComponent {
   label(teamId: string): string {
     switch (this.stateOf(teamId)) {
       case 'sending':
-        return 'Enviando...';
+        return this.i18n.t('common.loading');
       case 'sent':
-        return 'Convite enviado';
+        return this.i18n.t('modals.invited');
       case 'failed':
-        return 'Tentar de novo';
+        return this.i18n.t('modals.invite');
       default:
-        return 'Convidar';
+        return this.i18n.t('modals.invite');
     }
   }
 

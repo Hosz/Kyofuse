@@ -12,6 +12,7 @@ import { ToastService } from '../../../core/services/ui/toast.service';
 import { CurrentUserService } from '../../../core/services/profile/current-user.service';
 import { formatFullPostDateTime } from '../../../shared/utils/format.util';
 import { PostContentComponent } from '../../../shared/components/post-content/post-content';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-post-card',
@@ -24,6 +25,7 @@ import { PostContentComponent } from '../../../shared/components/post-content/po
     ConfirmDialogComponent,
     ImageModalComponent,
     PostContentComponent,
+    TranslatePipe,
   ],
   templateUrl: './post-card.html',
   styleUrl: './post-card.css',

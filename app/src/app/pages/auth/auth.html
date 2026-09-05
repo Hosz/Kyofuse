@@ -10,15 +10,15 @@
           <div class="flex items-center justify-between border-b border-outline-variant bg-surface-container px-4 py-2.5">
             <div class="flex items-center gap-2 text-label-sm font-semibold text-primary">
               <span class="material-symbols-outlined text-[18px]">person_add</span>
-              <span>Adicionar outra conta</span>
+              <span>{{ 'accounts.addAnotherAccount' | trans }}</span>
             </div>
             <button
               type="button"
               (click)="cancelAddAccount()"
               class="cursor-pointer text-label-sm text-on-surface-variant hover:text-on-surface transition-colors"
-              title="Voltar ao início"
+              [title]="'auth.backToHome' | trans"
             >
-              Cancelar
+              {{ 'common.cancel' | trans }}
             </button>
           </div>
         }
@@ -53,14 +53,14 @@
           <div class="flex flex-col gap-lg px-lg py-lg text-center">
             <div class="flex flex-col items-center gap-3">
               <span class="material-symbols-outlined text-[48px] text-primary-container">mark_email_read</span>
-              <h2 class="text-title-md font-bold text-on-surface">Confirme seu E-mail</h2>
+              <h2 class="text-title-md font-bold text-on-surface">{{ 'auth.confirmEmailTitle' | trans }}</h2>
               <p class="text-body-sm text-on-surface-variant">
-                Enviamos um link de ativação para <strong class="text-on-surface">{{ registeredEmail() }}</strong>. Acesse seu e-mail para ativar sua conta e entrar na unidade.
+                {{ 'auth.confirmEmailDesc' | trans }} <strong class="text-on-surface">{{ registeredEmail() }}</strong>.
               </p>
             </div>
 
             @if (resendSuccess()) {
-              <p class="text-label-sm text-primary-container">Link reenviado com sucesso!</p>
+              <p class="text-label-sm text-primary-container">{{ 'auth.resendSuccess' | trans }}</p>
             }
             @if (resendError()) {
               <p class="text-label-sm text-error">{{ resendError() }}</p>
@@ -74,7 +74,7 @@
                 class="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-outline-variant bg-surface-container px-4 py-2.5 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <span class="material-symbols-outlined text-[18px]">send</span>
-                {{ resendingEmail() ? 'Reenviando...' : 'Reenviar E-mail de Confirmação' }}
+                {{ resendingEmail() ? ('auth.resending' | trans) : ('auth.resendConfirmationEmail' | trans) }}
               </button>
 
               <button
@@ -82,7 +82,7 @@
                 (click)="onBackToLogin()"
                 class="cursor-pointer text-label-sm text-on-surface-variant transition-colors hover:text-on-surface mt-2"
               >
-                Ir para o Login
+                {{ 'auth.goToLogin' | trans }}
               </button>
             </div>
           </div>
@@ -99,16 +99,16 @@
               </div>
 
               <h2 class="text-title-md font-bold text-on-surface">
-                {{ reactivationScheduledDeletion() ? 'Conta com Exclusão Agendada' : 'Reativar Sua Conta' }}
+                {{ reactivationScheduledDeletion() ? ('auth.scheduledDeletionTitle' | trans) : ('auth.reactivateAccountTitle' | trans) }}
               </h2>
 
               @if (reactivationScheduledDeletion()) {
                 <p class="text-body-sm text-on-surface-variant">
-                  Esta conta possui exclusão agendada. Para cancelar o processo de exclusão e restaurar seu acesso, insira o código de segurança enviado para <strong class="text-on-surface">{{ reactivationMaskedEmail() }}</strong>.
+                  {{ 'auth.scheduledDeletionDesc' | trans }} <strong class="text-on-surface">{{ reactivationMaskedEmail() }}</strong>.
                 </p>
               } @else {
                 <p class="text-body-sm text-on-surface-variant">
-                  Sua conta está desativada no momento. Enviamos um código de segurança de 6 dígitos para <strong class="text-on-surface">{{ reactivationMaskedEmail() }}</strong> para você reativá-la com segurança.
+                  {{ 'auth.reactivateAccountDesc' | trans }} <strong class="text-on-surface">{{ reactivationMaskedEmail() }}</strong>.
                 </p>
               }
             </div>
@@ -121,7 +121,7 @@
             }
 
             @if (resendReactivationSuccess()) {
-              <p class="text-label-sm text-primary-container font-semibold">Novo código de verificação enviado!</p>
+              <p class="text-label-sm text-primary-container font-semibold">{{ 'auth.resendCodeSuccess' | trans }}</p>
             }
             @if (resendReactivationError()) {
               <p class="text-label-sm text-error">{{ resendReactivationError() }}</p>
@@ -129,7 +129,7 @@
 
             <form (ngSubmit)="onConfirmReactivation()" class="flex flex-col gap-4">
               <div class="flex flex-col gap-1.5 text-left">
-                <label class="text-label-sm font-semibold text-on-surface-variant">Código de 6 dígitos</label>
+                <label class="text-label-sm font-semibold text-on-surface-variant">{{ 'auth.codeSixDigits' | trans }}</label>
                 <input
                   type="text"
                   [(ngModel)]="reactivationCode"
@@ -148,7 +148,7 @@
                   class="flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary-container px-4 py-2.5 text-label-sm font-bold text-on-primary-container transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <span class="material-symbols-outlined text-[18px]">lock_open</span>
-                  {{ reactivationSubmitting() ? 'Reativando conta...' : (reactivationScheduledDeletion() ? 'Cancelar Exclusão e Entrar' : 'Reativar Conta e Entrar') }}
+                  {{ reactivationSubmitting() ? ('auth.reactivating' | trans) : (reactivationScheduledDeletion() ? ('auth.cancelDeletionAndLogin' | trans) : ('auth.reactivateAndLogin' | trans)) }}
                 </button>
 
                 <div class="flex items-center justify-between pt-2">
@@ -158,7 +158,7 @@
                     [disabled]="resendingReactivation()"
                     class="cursor-pointer text-label-sm text-primary transition-colors hover:underline disabled:opacity-50"
                   >
-                    {{ resendingReactivation() ? 'Reenviando...' : 'Reenviar código' }}
+                    {{ resendingReactivation() ? ('auth.resending' | trans) : ('auth.resendCode' | trans) }}
                   </button>
 
                   <button
@@ -166,7 +166,7 @@
                     (click)="onCancelReactivation()"
                     class="cursor-pointer text-label-sm text-on-surface-variant transition-colors hover:text-on-surface"
                   >
-                    Cancelar
+                    {{ 'common.cancel' | trans }}
                   </button>
                 </div>
               </div>
@@ -223,11 +223,11 @@
               class="cursor-pointer rounded text-label-sm text-on-surface-variant transition-colors hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"
             >
               @if (activeTab() === 'login') {
-                Ainda não faz parte da unidade?
-                <span class="font-bold text-primary-container">Registrar</span>
+                {{ 'auth.dontHaveAccount' | trans }}
+                <span class="font-bold text-primary-container">{{ 'auth.register' | trans }}</span>
               } @else {
-                Já faz parte da unidade?
-                <span class="font-bold text-primary-container">Entrar no Sistema</span>
+                {{ 'auth.alreadyHaveAccount' | trans }}
+                <span class="font-bold text-primary-container">{{ 'auth.login' | trans }}</span>
               }
             </button>
           </div>

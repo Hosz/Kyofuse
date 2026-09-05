@@ -6,12 +6,12 @@
         <span class="material-symbols-outlined text-[24px]">dangerous</span>
       </div>
       <div class="flex flex-col">
-        <h2 class="text-title-lg font-bold text-on-surface">Gerenciamento e Status da Conta</h2>
-        <span class="text-body-sm text-on-surface-variant">Controle o status de atividade, desativação temporária ou exclusão permanente do seu perfil.</span>
+        <h2 class="text-title-lg font-bold text-on-surface">{{ 'settings.accountManagement' | trans }}</h2>
+        <span class="text-body-sm text-on-surface-variant">{{ 'settings.accountManagementDesc' | trans }}</span>
       </div>
     </div>
     <span class="self-start sm:self-auto rounded-full border border-error/40 bg-error/10 px-3 py-1 text-label-sm font-bold text-error">
-      Zona de Perigo
+      {{ 'settings.dangerZone' | trans }}
     </span>
   </div>
 
@@ -26,12 +26,12 @@
         <div class="flex items-center gap-3">
           <span class="material-symbols-outlined text-[22px] text-tertiary">verified_user</span>
           <div class="flex flex-col">
-            <span class="text-body-md font-semibold text-on-surface">Status da Conta: Ativa</span>
-            <span class="text-body-sm text-on-surface-variant leading-relaxed">Conectado como <strong>&#64;{{ acc.username }}</strong> ({{ acc.email }})</span>
+            <span class="text-body-md font-semibold text-on-surface">{{ 'settings.accountStatusActive' | trans }}</span>
+            <span class="text-body-sm text-on-surface-variant leading-relaxed">{{ 'settings.connectedAs' | trans }} <strong>&#64;{{ acc.username }}</strong> ({{ acc.email }})</span>
           </div>
         </div>
         <span class="rounded-md border border-tertiary/40 bg-tertiary/10 px-2.5 py-1 text-label-sm font-semibold text-tertiary">
-          Normal
+          {{ 'settings.accountStatusNormal' | trans }}
         </span>
       </div>
     </div>
@@ -43,20 +43,20 @@
         <div class="flex flex-col gap-3">
           <div class="flex items-center gap-2.5 text-warning">
             <span class="material-symbols-outlined text-[24px]">pause_circle</span>
-            <h3 class="text-title-md font-bold text-on-surface">Desativar Conta</h3>
+            <h3 class="text-title-md font-bold text-on-surface">{{ 'settings.deactivateAccount' | trans }}</h3>
           </div>
           <p class="text-body-sm text-on-surface-variant leading-relaxed">
-            Pausa o acesso à sua conta e desconecta todos os seus dispositivos.
+            {{ 'settings.deactivateDesc' | trans }}
           </p>
           <div class="rounded-xl border border-warning/20 bg-surface-container/60 p-4">
             <h4 class="text-body-sm font-bold text-on-surface mb-2 flex items-center gap-1.5">
               <span class="material-symbols-outlined text-[16px] text-warning">info</span>
-              Como funciona a desativação:
+              {{ 'settings.howDeactivationWorks' | trans }}
             </h4>
             <ul class="flex flex-col gap-2 text-body-sm text-on-surface-variant pl-4 list-disc leading-relaxed">
-              <li>Liderança de times e comunidades é transferida automaticamente para o sucessor ou administrador mais antigo.</li>
-              <li>Você é rebaixado mas <strong>não é removido</strong>, com <strong>prazo de 30 dias</strong> para reativar.</li>
-              <li>Para reativar a qualquer momento, basta tentar fazer login e inserir o <strong>código OTP de 6 dígitos</strong> enviado ao seu e-mail.</li>
+              <li>{{ 'settings.deactivateRule1' | trans }}</li>
+              <li>{{ 'settings.deactivateRule2' | trans }}</li>
+              <li>{{ 'settings.deactivateRule3' | trans }}</li>
             </ul>
           </div>
         </div>
@@ -67,7 +67,7 @@
           class="cursor-pointer flex items-center justify-center gap-2 rounded-full border border-warning/50 bg-warning/10 px-5 py-2.5 text-label-md font-bold text-warning transition-colors hover:bg-warning hover:text-black"
         >
           <span class="material-symbols-outlined text-[18px]">pause</span>
-          Desativar Minha Conta
+          {{ 'settings.deactivateMyAccount' | trans }}
         </button>
       </div>
 
@@ -76,20 +76,20 @@
         <div class="flex flex-col gap-3">
           <div class="flex items-center gap-2.5 text-error">
             <span class="material-symbols-outlined text-[24px]">delete_forever</span>
-            <h3 class="text-title-md font-bold text-on-surface">Excluir Conta</h3>
+            <h3 class="text-title-md font-bold text-on-surface">{{ 'settings.deleteAccount' | trans }}</h3>
           </div>
           <p class="text-body-sm text-on-surface-variant leading-relaxed">
-            Inicia o processo de exclusão definitiva com período de segurança de <strong>7 dias</strong>.
+            {{ 'settings.deleteDesc' | trans }}
           </p>
           <div class="rounded-xl border border-error/20 bg-surface-container/60 p-4">
             <h4 class="text-body-sm font-bold text-on-surface mb-2 flex items-center gap-1.5">
               <span class="material-symbols-outlined text-[16px] text-error">shield</span>
-              Carência de 7 dias e Anonimização:
+              {{ 'settings.deleteGraceTitle' | trans }}
             </h4>
             <ul class="flex flex-col gap-2 text-body-sm text-on-surface-variant pl-4 list-disc leading-relaxed">
-              <li>Sua conta entra em carência por <strong>7 dias</strong> desativada.</li>
-              <li>Se mudar de ideia, faça login dentro dos 7 dias e use o código de e-mail para <strong>cancelar a exclusão</strong>.</li>
-              <li>Após 7 dias sem reativação, é aplicado o <em>soft delete</em> com anonimização permanente de dados pessoais (PII).</li>
+              <li>{{ 'settings.deleteRule1' | trans }}</li>
+              <li>{{ 'settings.deleteRule2' | trans }}</li>
+              <li>{{ 'settings.deleteRule3' | trans }}</li>
             </ul>
           </div>
         </div>
@@ -100,7 +100,7 @@
           class="cursor-pointer flex items-center justify-center gap-2 rounded-full bg-error px-5 py-2.5 text-label-md font-bold text-on-error transition-colors hover:brightness-110"
         >
           <span class="material-symbols-outlined text-[18px]">delete</span>
-          Excluir Conta Definitivamente
+          {{ 'settings.deleteMyAccount' | trans }}
         </button>
       </div>
     </div>
@@ -129,13 +129,13 @@
         </div>
         <div class="flex flex-col gap-1">
           <div class="flex items-center gap-2">
-            <h3 class="text-title-lg sm:text-headline-sm font-bold text-on-surface">Pausar e Desativar Conta</h3>
+            <h3 class="text-title-lg sm:text-headline-sm font-bold text-on-surface">{{ 'settings.modalDeactivateTitle' | trans }}</h3>
             <span class="rounded-full border border-warning/40 bg-warning/10 px-2.5 py-0.5 text-label-sm font-bold text-warning">
-              Temporário
+              {{ 'settings.temporary' | trans }}
             </span>
           </div>
           <span class="text-body-sm text-on-surface-variant leading-relaxed">
-            Sua conta ficará pausada e inacessível até que você decida reativá-la através do código enviado por e-mail.
+            {{ 'settings.modalDeactivateSubtitle' | trans }}
           </span>
         </div>
       </div>
@@ -144,24 +144,24 @@
       <div class="flex flex-col gap-3 rounded-2xl border border-warning/20 bg-surface-container/50 p-5 sm:p-6 text-body-sm text-on-surface-variant leading-relaxed">
         <span class="text-label-md font-bold text-on-surface flex items-center gap-2">
           <span class="material-symbols-outlined text-[20px] text-warning">info</span>
-          O que acontece após a desativação:
+          {{ 'settings.modalDeactivateWhatHappens' | trans }}
         </span>
         <ul class="flex flex-col gap-2.5 pl-2 text-body-sm">
           <li class="flex items-start gap-2.5">
             <span class="material-symbols-outlined text-[18px] text-warning shrink-0 mt-0.5">logout</span>
-            <span>Você será <strong>desconectado imediatamente</strong> de todas as suas sessões ativas.</span>
+            <span>{{ 'settings.modalDeactivatePoint1' | trans }}</span>
           </li>
           <li class="flex items-start gap-2.5">
             <span class="material-symbols-outlined text-[18px] text-warning shrink-0 mt-0.5">groups</span>
-            <span>A liderança de times e comunidades será <strong>transferida automaticamente</strong> para o segundo no comando ou administrador mais antigo.</span>
+            <span>{{ 'settings.modalDeactivatePoint2' | trans }}</span>
           </li>
           <li class="flex items-start gap-2.5">
             <span class="material-symbols-outlined text-[18px] text-warning shrink-0 mt-0.5">schedule</span>
-            <span>Você continuará registrado como membro por um <strong>prazo de carência de 30 dias</strong>.</span>
+            <span>{{ 'settings.modalDeactivatePoint3' | trans }}</span>
           </li>
           <li class="flex items-start gap-2.5">
             <span class="material-symbols-outlined text-[18px] text-warning shrink-0 mt-0.5">mark_email_read</span>
-            <span>Para reativar a qualquer momento, basta tentar fazer login e inserir o <strong>código OTP de 6 dígitos</strong> recebido no seu e-mail.</span>
+            <span>{{ 'settings.modalDeactivatePoint4' | trans }}</span>
           </li>
         </ul>
       </div>
@@ -170,22 +170,22 @@
       <div class="flex flex-col gap-4">
         @if (account()?.hasPassword) {
           <label class="flex flex-col gap-2">
-            <span class="text-label-md font-semibold text-on-surface">Confirme sua senha</span>
+            <span class="text-label-md font-semibold text-on-surface">{{ 'settings.confirmPassword' | trans }}</span>
             <input
               type="password"
               [(ngModel)]="deactivatePassword"
-              placeholder="Digite sua senha atual"
+              [placeholder]="'settings.currentPasswordPlaceholder' | trans"
               class="w-full rounded-2xl border border-outline-variant bg-surface-container px-4 py-3.5 text-body-md text-on-surface outline-none focus:border-warning focus:ring-1 focus:ring-warning"
             />
           </label>
         }
 
         <label class="flex flex-col gap-2">
-          <span class="text-label-md font-semibold text-on-surface">Motivo da desativação (opcional)</span>
+          <span class="text-label-md font-semibold text-on-surface">{{ 'settings.deactivateReason' | trans }}</span>
           <input
             type="text"
             [(ngModel)]="deactivateReason"
-            placeholder="Ex: Férias, pausa nos jogos, foco em estudos..."
+            [placeholder]="'settings.deactivateReasonPlaceholder' | trans"
             class="w-full rounded-2xl border border-outline-variant bg-surface-container px-4 py-3.5 text-body-md text-on-surface outline-none focus:border-warning focus:ring-1 focus:ring-warning"
           />
         </label>
@@ -206,7 +206,7 @@
           [disabled]="deactivating()"
           class="w-full sm:w-auto cursor-pointer rounded-full border border-outline-variant bg-surface-container px-6 py-3 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:opacity-50"
         >
-          Cancelar
+          {{ 'common.cancel' | trans }}
         </button>
         <button
           type="button"
@@ -215,7 +215,7 @@
           class="w-full sm:w-auto cursor-pointer flex items-center justify-center gap-2 rounded-full bg-amber-500 hover:bg-amber-400 text-neutral-950 px-8 py-3 text-label-md font-extrabold transition-all shadow-lg shadow-amber-500/25 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-amber-500 disabled:shadow-none"
         >
           <span class="material-symbols-outlined text-[20px]">pause_circle</span>
-          <span>{{ deactivating() ? 'Desativando...' : 'Confirmar Desativação' }}</span>
+          <span>{{ deactivating() ? ('settings.deactivating' | trans) : ('settings.confirmDeactivate' | trans) }}</span>
         </button>
       </div>
     </div>
@@ -244,13 +244,13 @@
         </div>
         <div class="flex flex-col gap-1">
           <div class="flex items-center gap-2">
-            <h3 class="text-title-lg sm:text-headline-sm font-bold text-error">Solicitar Exclusão da Conta</h3>
+            <h3 class="text-title-lg sm:text-headline-sm font-bold text-error">{{ 'settings.modalDeleteTitle' | trans }}</h3>
             <span class="rounded-full border border-error/40 bg-error/10 px-2.5 py-0.5 text-label-sm font-bold text-error">
-              7 Dias de Carência
+              {{ 'settings.sevenDaysGrace' | trans }}
             </span>
           </div>
           <span class="text-body-sm text-on-surface-variant leading-relaxed">
-            Inicia o processo de exclusão programada com prazo de segurança de 7 dias para cancelamento.
+            {{ 'settings.modalDeleteSubtitle' | trans }}
           </span>
         </div>
       </div>
@@ -259,20 +259,20 @@
       <div class="flex flex-col gap-3 rounded-2xl border border-error/30 bg-error/5 p-5 sm:p-6 text-body-sm text-on-surface-variant leading-relaxed">
         <span class="text-label-md font-bold text-error flex items-center gap-2">
           <span class="material-symbols-outlined text-[20px] text-error">shield</span>
-          Regras de exclusão e anonimização de dados:
+          {{ 'settings.modalDeleteRulesTitle' | trans }}
         </span>
         <ul class="flex flex-col gap-2.5 pl-2 text-body-sm">
           <li class="flex items-start gap-2.5">
             <span class="material-symbols-outlined text-[18px] text-error shrink-0 mt-0.5">timer</span>
-            <span>A conta permanecerá desativada durante um <strong>período de carência de 7 dias</strong>.</span>
+            <span>{{ 'settings.modalDeletePoint1' | trans }}</span>
           </li>
           <li class="flex items-start gap-2.5">
             <span class="material-symbols-outlined text-[18px] text-error shrink-0 mt-0.5">restore</span>
-            <span>Se mudar de ideia, você pode <strong>cancelar a exclusão e restaurar seu acesso</strong> a qualquer momento nesses 7 dias simplesmente fazendo login e confirmando o código do e-mail.</span>
+            <span>{{ 'settings.modalDeletePoint2' | trans }}</span>
           </li>
           <li class="flex items-start gap-2.5">
             <span class="material-symbols-outlined text-[18px] text-error shrink-0 mt-0.5">person_off</span>
-            <span>Ao término dos 7 dias, será realizado o <strong>soft delete</strong> definitivo: seu e-mail, username e dados de perfil (PII) serão permanentemente desvinculados e anonimizados para fins de auditoria.</span>
+            <span>{{ 'settings.modalDeletePoint3' | trans }}</span>
           </li>
         </ul>
       </div>
@@ -281,22 +281,22 @@
       <div class="flex flex-col gap-4">
         @if (account()?.hasPassword) {
           <label class="flex flex-col gap-2">
-            <span class="text-label-md font-semibold text-on-surface">Confirme sua senha</span>
+            <span class="text-label-md font-semibold text-on-surface">{{ 'settings.confirmPassword' | trans }}</span>
             <input
               type="password"
               [(ngModel)]="deletePassword"
-              placeholder="Digite sua senha atual"
+              [placeholder]="'settings.currentPasswordPlaceholder' | trans"
               class="w-full rounded-2xl border border-outline-variant bg-surface-container px-4 py-3.5 text-body-md text-on-surface outline-none focus:border-error focus:ring-1 focus:ring-error"
             />
           </label>
         }
 
         <label class="flex flex-col gap-2">
-          <span class="text-label-md font-semibold text-on-surface">Motivo da solicitação de exclusão (opcional)</span>
+          <span class="text-label-md font-semibold text-on-surface">{{ 'settings.deleteReason' | trans }}</span>
           <input
             type="text"
             [(ngModel)]="deleteReason"
-            placeholder="Ex: Não jogo mais, criei outra conta, outros..."
+            [placeholder]="'settings.deleteReasonPlaceholder' | trans"
             class="w-full rounded-2xl border border-outline-variant bg-surface-container px-4 py-3.5 text-body-md text-on-surface outline-none focus:border-error focus:ring-1 focus:ring-error"
           />
         </label>
@@ -317,7 +317,7 @@
           [disabled]="deleting()"
           class="w-full sm:w-auto cursor-pointer rounded-full border border-outline-variant bg-surface-container px-6 py-3 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:opacity-50"
         >
-          Cancelar
+          {{ 'common.cancel' | trans }}
         </button>
         <button
           type="button"
@@ -326,7 +326,7 @@
           class="w-full sm:w-auto cursor-pointer flex items-center justify-center gap-2 rounded-full bg-red-600 hover:bg-red-500 text-white px-8 py-3 text-label-md font-extrabold transition-all shadow-lg shadow-red-600/25 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-red-600 disabled:shadow-none"
         >
           <span class="material-symbols-outlined text-[20px]">delete_forever</span>
-          <span>{{ deleting() ? 'Agendando...' : 'Iniciar Exclusão (Carência 7 dias)' }}</span>
+          <span>{{ deleting() ? ('settings.schedulingDelete' | trans) : ('settings.startDeleteGrace' | trans) }}</span>
         </button>
       </div>
     </div>

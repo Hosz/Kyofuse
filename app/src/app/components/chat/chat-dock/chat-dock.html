@@ -1,5 +1,5 @@
 @if (!hidden()) {
-  <div class="fixed bottom-6 right-6 z-40">
+  <div class="fixed bottom-6 right-6 z-40 hidden lg:block">
     @if (open()) {
       <section
         class="dock-panel flex h-[32rem] max-h-[calc(100vh-3rem)] w-[22rem] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-2xl border border-outline-variant/50 bg-surface-container-low/70 shadow-2xl backdrop-blur-xl"
@@ -9,7 +9,7 @@
             <button
               type="button"
               (click)="back()"
-              aria-label="Voltar para as conversas"
+              [attr.aria-label]="'chat.backToConversations' | trans"
               class="cursor-pointer rounded-full p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high/60 hover:text-on-surface"
             >
               <span class="material-symbols-outlined text-[20px]">arrow_back</span>
@@ -18,7 +18,7 @@
             <button
               type="button"
               (click)="openInfoPanel()"
-              title="Ver informações da conversa"
+              [title]="'chat.viewConversationInfo' | trans"
               class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg px-1 py-1 text-left transition-colors hover:bg-surface-container-high/60"
             >
               <img
@@ -29,10 +29,12 @@
               <span class="flex min-w-0 flex-1 flex-col leading-tight">
                 <span class="truncate text-body-sm font-bold text-on-surface">{{ conversation.participant.name }}</span>
                 <span class="truncate text-label-sm text-on-surface-variant">
-                  @if (conversation.type === 'DIRECT') {
+                  @if (conversation.isTyping) {
+                    <span class="text-emerald-400 italic font-medium">{{ conversation.typingText || ('chat.isTyping' | trans) }}</span>
+                  } @else if (conversation.type === 'DIRECT') {
                     &#64;{{ conversation.participant.handle }}
                   } @else {
-                    {{ conversation.type === 'GROUP' ? 'Grupo' : 'Comunidade' }}
+                    {{ conversation.type === 'GROUP' ? ('chat.group' | trans) : ('chat.community' | trans) }}
                   }
                 </span>
               </span>
@@ -41,8 +43,8 @@
             <button
               type="button"
               (click)="expand()"
-              aria-label="Abrir em tela cheia"
-              title="Abrir em tela cheia"
+              [attr.aria-label]="'chat.openFullscreen' | trans"
+              [title]="'chat.openFullscreen' | trans"
               class="cursor-pointer rounded-full p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high/60 hover:text-on-surface"
             >
               <span class="material-symbols-outlined text-[18px]">open_in_full</span>
@@ -50,8 +52,8 @@
             <button
               type="button"
               (click)="close()"
-              aria-label="Minimizar"
-              title="Minimizar"
+              [attr.aria-label]="'chat.minimize' | trans"
+              [title]="'chat.minimize' | trans"
               class="cursor-pointer rounded-full p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high/60 hover:text-on-surface"
             >
               <span class="material-symbols-outlined text-[18px]">close_fullscreen</span>
@@ -60,7 +62,7 @@
 
           <div #scroller (scroll)="onScroll()" class="scrollbar-minimal dock-view-forward flex flex-1 flex-col gap-3 overflow-y-auto px-3 py-3">
             @if (messagesLoading()) {
-              <p class="py-8 text-center text-body-sm text-on-surface-variant">Carregando mensagens...</p>
+              <p class="py-8 text-center text-body-sm text-on-surface-variant">{{ 'chat.loadingMessages' | trans }}</p>
             } @else {
               @if (loadingOlderMessages()) {
                 <div class="flex items-center justify-center py-1">
@@ -114,8 +116,8 @@
                             <button
                               type="button"
                               (click)="askDeleteMessage(message.id)"
-                              aria-label="Apagar mensagem"
-                              title="Apagar mensagem"
+                              [attr.aria-label]="'chat.deleteMessage' | trans"
+                              [title]="'chat.deleteMessage' | trans"
                               class="cursor-pointer rounded-full p-0.5 text-on-surface-variant opacity-0 transition-opacity hover:text-error focus-visible:opacity-100 group-hover:opacity-100"
                             >
                               <span class="material-symbols-outlined text-[14px]">delete</span>
@@ -127,7 +129,7 @@
                                 @for (m of message.media; track m.id) {
                                   <img
                                     [src]="m.thumbnailUrl || m.url"
-                                    alt="Mídia"
+                                    [alt]="'chat.mediaImage' | trans"
                                     class="max-h-36 max-w-[12rem] rounded-xl border border-outline-variant/60 object-cover"
                                   />
                                 }
@@ -161,7 +163,22 @@
                   </span>
                 </div>
               } @empty {
-                <p class="py-8 text-center text-body-sm text-on-surface-variant">Nenhuma mensagem ainda.</p>
+                <p class="py-8 text-center text-body-sm text-on-surface-variant">{{ 'chat.noMessagesYet' | trans }}</p>
+              }
+
+              @if (conversation.isTyping) {
+                <div class="flex items-end gap-2">
+                  <img
+                    [src]="conversation.participant.avatarUrl"
+                    [alt]="conversation.participant.name"
+                    class="h-6 w-6 shrink-0 rounded-full object-cover"
+                  />
+                  <div class="flex items-center gap-1 rounded-2xl rounded-bl-sm bg-surface-container-high px-3 py-2">
+                    <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-on-surface-variant"></span>
+                    <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-on-surface-variant [animation-delay:150ms]"></span>
+                    <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-on-surface-variant [animation-delay:300ms]"></span>
+                  </div>
+                </div>
               }
             }
           </div>
@@ -175,13 +192,13 @@
                 type="text"
                 [value]="draft()"
                 (input)="onDraftChange($any($event.target).value)"
-                placeholder="Escreva uma mensagem"
+                [placeholder]="'chat.typeMessage' | trans"
                 class="min-w-0 flex-1 rounded-full border border-outline-variant/60 bg-surface/50 px-3 py-2 text-body-sm text-on-surface outline-none transition-colors placeholder:text-on-surface-variant focus:border-primary"
               />
               <button
                 type="submit"
                 [disabled]="!draft().trim() || sending()"
-                aria-label="Enviar"
+                [attr.aria-label]="'chat.send' | trans"
                 class="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary-container/90 text-on-primary-container transition-all hover:brightness-110 active:scale-[0.95] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <span class="material-symbols-outlined text-[18px]">send</span>
@@ -199,13 +216,13 @@
         } @else {
           <header class="flex shrink-0 flex-col gap-2 border-b border-outline-variant/50 bg-surface-container/40 px-3 py-2.5">
             <div class="flex items-center justify-between">
-              <span class="px-1 text-body-sm font-bold text-on-surface">Conversas</span>
+              <span class="px-1 text-body-sm font-bold text-on-surface">{{ 'chat.conversations' | trans }}</span>
               <div class="flex items-center gap-1">
                 <button
                   type="button"
                   (click)="expand()"
-                  aria-label="Abrir em tela cheia"
-                  title="Abrir em tela cheia"
+                  [attr.aria-label]="'chat.openFullscreen' | trans"
+                  [title]="'chat.openFullscreen' | trans"
                   class="cursor-pointer rounded-full p-1 text-on-surface-variant transition-colors hover:bg-surface-container-high/60 hover:text-on-surface"
                 >
                   <span class="material-symbols-outlined text-[18px]">open_in_full</span>
@@ -213,8 +230,8 @@
                 <button
                   type="button"
                   (click)="close()"
-                  aria-label="Minimizar"
-                  title="Minimizar"
+                  [attr.aria-label]="'chat.minimize' | trans"
+                  [title]="'chat.minimize' | trans"
                   class="cursor-pointer rounded-full p-1 text-on-surface-variant transition-colors hover:bg-surface-container-high/60 hover:text-on-surface"
                 >
                   <span class="material-symbols-outlined text-[18px]">close_fullscreen</span>
@@ -228,14 +245,14 @@
                 type="text"
                 [value]="query()"
                 (input)="onQueryChange($any($event.target).value)"
-                placeholder="Buscar conversas"
+                [placeholder]="'chat.searchConversations' | trans"
                 class="min-w-0 flex-1 bg-transparent text-body-sm text-on-surface outline-none placeholder:text-on-surface-variant"
               />
               @if (query()) {
                 <button
                   type="button"
                   (click)="onQueryChange('')"
-                  aria-label="Limpar busca"
+                  [attr.aria-label]="'chat.clearSearch' | trans"
                   class="cursor-pointer text-on-surface-variant transition-colors hover:text-on-surface"
                 >
                   <span class="material-symbols-outlined text-[16px]">close</span>
@@ -255,7 +272,7 @@
                       : 'border border-outline-variant/60 text-on-surface-variant hover:bg-surface-container-high/60'
                   "
                 >
-                  {{ filter.label }}
+                  {{ filter.labelKey | trans }}
                 </button>
               }
             </div>
@@ -280,9 +297,16 @@
                     <span class="truncate text-body-sm font-semibold text-on-surface">
                       {{ conversation.participant.name }}
                     </span>
-                    <span class="truncate text-label-sm text-on-surface-variant" [class.font-semibold]="conversation.unread" [class.text-on-surface]="conversation.unread">
-                      {{ conversation.lastMessagePreview || (conversation.type === 'DIRECT' ? ('@' + conversation.participant.handle) : (conversation.type === 'GROUP' ? 'Grupo' : 'Comunidade')) }}
-                    </span>
+                    @if (conversation.isTyping) {
+                      <span class="flex items-center gap-1.5 truncate text-label-sm italic font-medium text-emerald-400">
+                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        {{ conversation.typingText || ('chat.isTyping' | trans) }}
+                      </span>
+                    } @else {
+                      <span class="truncate text-label-sm text-on-surface-variant" [class.font-semibold]="conversation.unread" [class.text-on-surface]="conversation.unread">
+                        {{ previewLabel(conversation) }}
+                      </span>
+                    }
                   </span>
                   <div class="flex shrink-0 flex-col items-end gap-1">
                     <span class="text-label-sm text-on-surface-variant">{{ conversation.lastMessageAt }}</span>
@@ -297,7 +321,7 @@
                 </button>
               } @empty {
                 <p class="py-8 text-center text-body-sm text-on-surface-variant">
-                  {{ query() ? 'Nenhuma conversa encontrada.' : 'Nenhuma conversa ainda.' }}
+                  {{ (query() ? 'chat.noConversationsFound' : 'chat.noConversationsYet') | trans }}
                 </p>
               }
             }
@@ -309,7 +333,7 @@
         type="button"
         (click)="toggle()"
         [attr.aria-expanded]="open()"
-        aria-label="Conversas"
+        [attr.aria-label]="'chat.conversations' | trans"
         class="dock-fab relative flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-primary-container/90 text-on-primary-container shadow-2xl backdrop-blur-md transition-all hover:brightness-110 active:scale-[0.95]"
       >
         <span class="material-symbols-outlined text-[24px]">chat_bubble</span>
@@ -326,9 +350,10 @@
 
   <app-confirm-dialog
     [open]="messagePendingDeletion() !== null"
-    title="Apagar mensagem"
-    message="Essa mensagem será removida da conversa. Não dá para desfazer."
-    confirmLabel="Apagar"
+    [title]="'chat.deleteMessageTitle' | trans"
+    [message]="'chat.deleteMessageConfirm' | trans"
+    [confirmLabel]="'common.delete' | trans"
+    [cancelLabel]="'common.cancel' | trans"
     (confirmed)="confirmDeleteMessage()"
     (cancelled)="cancelDeleteMessage()"
   />

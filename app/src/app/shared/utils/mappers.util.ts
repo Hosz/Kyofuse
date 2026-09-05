@@ -107,7 +107,7 @@ export function previewFromChatMessage(message: ChatMessage, isGroupOrCommunity 
  * outro participante, GROUP tem nome e foto próprios e COMMUNITY herda os da comunidade
  * vinculada.
  */
-export function toConversation(conversation: ConversationResponse, myUserId: string): Conversation {
+export function toConversation(conversation: ConversationResponse, myUserId: string, lang: string = 'pt'): Conversation {
   const unreadCount = conversation.unreadCount ?? 0;
   const lastTime = conversation.lastMessageCreatedAt || conversation.updatedAt;
 
@@ -152,7 +152,7 @@ export function toConversation(conversation: ConversationResponse, myUserId: str
         avatarUrl: otherAvatarUrl || FALLBACK_AVATAR_URL,
       },
       relationship,
-      lastMessageAt: toTimeAgo(lastTime),
+      lastMessageAt: toTimeAgo(lastTime, lang),
       lastMessagePreview: preview,
       unread: unreadCount > 0 || relationship === 'request-received',
       unreadCount,
@@ -190,7 +190,7 @@ export function toConversation(conversation: ConversationResponse, myUserId: str
       avatarUrl,
     },
     relationship: 'mutual',
-    lastMessageAt: toTimeAgo(lastTime),
+    lastMessageAt: toTimeAgo(lastTime, lang),
     lastMessagePreview: preview,
     unread: unreadCount > 0,
     unreadCount,
@@ -235,6 +235,8 @@ const MESSAGE_GROUP_WINDOW_MS = 5 * 60 * 1000;
 export function toChatMessageGroups(
   messages: ChatMessage[],
   unreadDividerMessageId?: string | null,
+  lang: string = 'pt',
+  unreadLabel: string = 'Novas mensagens',
 ): ChatMessageGroup[] {
   const groups: ChatMessageGroup[] = [];
   const seenMessageIds = new Set<string>();
@@ -269,7 +271,7 @@ export function toChatMessageGroups(
       continue;
     }
 
-    const dayDivider = isNewDay ? formatMessageDayDivider(message.createdAt) : undefined;
+    const dayDivider = isNewDay ? formatMessageDayDivider(message.createdAt, lang) : undefined;
     if (isNewDay) {
       lastDayKey = messageDayKey;
     }
@@ -277,7 +279,7 @@ export function toChatMessageGroups(
     groups.push({
       key: message.id,
       dayDivider,
-      unreadDivider: isUnreadDivider ? 'Novas mensagens' : undefined,
+      unreadDivider: isUnreadDivider ? unreadLabel : undefined,
       author: message.author,
       senderUsername: message.senderUsername,
       senderNickname: message.senderNickname,

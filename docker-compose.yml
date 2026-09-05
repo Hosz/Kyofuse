@@ -54,13 +54,13 @@ services:
     image: redis:8-alpine
     container_name: kyofuse-redis
     restart: unless-stopped
-    command: redis-server --save 60 1 --loglevel warning --requirepass ${REDIS_PASSWORD:-kyofuse_redis_secret}
+    command: redis-server --save 60 1 --loglevel warning --requirepass ${REDIS_PASSWORD}
     ports:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
       - kyofuse_redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-kyofuse_redis_secret}", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -119,8 +119,8 @@ services:
       # Storage (MinIO)
       STORAGE_ENDPOINT: ${STORAGE_ENDPOINT:-http://minio:9000}
       STORAGE_PUBLIC_URL: ${STORAGE_PUBLIC_URL:-http://localhost:9000}
-      STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY:-kyofuse_storage_user}
-      STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY:-kyofuse_storage_secret}
+      STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY}
+      STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY}
       STORAGE_BUCKET: ${STORAGE_BUCKET:-kyofuse-media}
       STORAGE_REGION: ${STORAGE_REGION:-us-east-1}
 
@@ -137,7 +137,7 @@ services:
       # Redis
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-kyofuse_redis_secret}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
 
       # JVM memory/GC tuning, read automatically by the `java` launcher.
       # Balanced for a small monolith on a dev machine with limited RAM
@@ -200,8 +200,8 @@ services:
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${STORAGE_ACCESS_KEY:-kyofuse_storage_user}
-      MINIO_ROOT_PASSWORD: ${STORAGE_SECRET_KEY:-kyofuse_storage_secret}
+      MINIO_ROOT_USER: ${STORAGE_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${STORAGE_SECRET_KEY}
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -222,7 +222,7 @@ services:
     entrypoint: >
       /bin/sh -c "
       sleep 2;
-      /usr/bin/mc alias set myminio http://minio:9000 ${STORAGE_ACCESS_KEY:-kyofuse_storage_user} ${STORAGE_SECRET_KEY:-kyofuse_storage_secret};
+      /usr/bin/mc alias set myminio http://minio:9000 ${STORAGE_ACCESS_KEY} ${STORAGE_SECRET_KEY};
       /usr/bin/mc mb myminio/${STORAGE_BUCKET:-kyofuse-media} --ignore-existing;
       /usr/bin/mc anonymous set download myminio/${STORAGE_BUCKET:-kyofuse-media};
       exit 0;
@@ -261,7 +261,7 @@ services:
     depends_on:
       - prometheus
     environment:
-      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-kyofuse_admin}
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
       - GF_USERS_ALLOW_SIGN_UP=false
     volumes:

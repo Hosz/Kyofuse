@@ -6,10 +6,11 @@ import { MediaService } from '../../../core/services/media/media.service';
 import { ToastService } from '../../../core/services/ui/toast.service';
 import { PostMediaItemRequest } from '../../../models/posts/post-request.model';
 import { FALLBACK_AVATAR_URL } from '../../../shared/utils/format.util';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-post-composer',
-  imports: [MentionInputComponent],
+  imports: [MentionInputComponent, TranslatePipe],
   templateUrl: './post-composer.html',
   styleUrl: './post-composer.css',
 })

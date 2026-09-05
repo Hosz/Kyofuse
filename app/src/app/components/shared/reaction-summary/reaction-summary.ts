@@ -2,6 +2,7 @@ import { Component, ElementRef, computed, effect, inject, input, output, signal,
 import { PostReactionService } from '../../../core/services/reactions/post-reaction.service';
 import { CommentReactionService } from '../../../core/services/reactions/comment-reaction.service';
 import { PageResponse } from '../../../models/page-response.model';
+import { I18nService } from '../../../core/i18n/i18n.service';
 
 /** Quantos nomes aparecem antes do "e mais N pessoas". */
 const NAMES_SHOWN = 2;
@@ -37,6 +38,7 @@ export class ReactionSummaryComponent {
   private postReactionService = inject(PostReactionService);
   private commentReactionService = inject(CommentReactionService);
   private host = viewChild<ElementRef<HTMLElement>>('host');
+  private i18n = inject(I18nService);
 
   private reactors = signal<Reactor[]>([]);
   private fetched = false;
@@ -48,7 +50,10 @@ export class ReactionSummaryComponent {
 
   othersCount = computed(() => Math.max(this.total() - this.names().length, 0));
 
-  label = computed(() => buildReactionLabel(this.total(), this.names()));
+  label = computed(() => {
+    this.i18n.currentLang();
+    return buildReactionLabel(this.total(), this.names(), this.i18n);
+  });
 
   constructor() {
     effect((onCleanup) => {
@@ -89,25 +94,48 @@ export class ReactionSummaryComponent {
  * "Ana e Bia reagiram", "Ana, Bia e mais 13 pessoas reagiram", ou só a contagem quando
  * os nomes ainda não chegaram.
  */
-export function buildReactionLabel(total: number, names: string[]): string {
-  // O total vem do post e os nomes de outra requisição; se divergirem por um instante,
-  // o verbo segue quantas pessoas a frase realmente cita.
+export function buildReactionLabel(
+  total: number,
+  names: string[],
+  i18n?: { t: (key: string, params?: Record<string, string | number>) => string } | null,
+): string {
   const mentioned = Math.max(total, names.length);
-  const verb = mentioned === 1 ? 'reagiu' : 'reagiram';
   const others = Math.max(total - names.length, 0);
 
+  if (!i18n) {
+    const verb = mentioned === 1 ? 'reagiu' : 'reagiram';
+    if (names.length === 0) {
+      return `${total} ${total === 1 ? 'pessoa' : 'pessoas'} ${verb}`;
+    }
+    if (others === 0) {
+      return `${joinNames(names, 'e')} ${verb}`;
+    }
+    return `${names.join(', ')} e mais ${others} ${others === 1 ? 'pessoa' : 'pessoas'} ${verb}`;
+  }
+
+  const andWord = i18n.t('common.and');
+
   if (names.length === 0) {
-    return `${total} ${total === 1 ? 'pessoa' : 'pessoas'} ${verb}`;
+    if (total === 1) {
+      return i18n.t('reactions.peopleReactedSingle');
+    }
+    return i18n.t('reactions.peopleReactedPlural', { count: total });
   }
 
   if (others === 0) {
-    return `${joinNames(names)} ${verb}`;
+    if (names.length === 1) {
+      return i18n.t('reactions.reactedSingle', { name: names[0] });
+    }
+    return i18n.t('reactions.reactedPlural', { names: joinNames(names, andWord) });
   }
 
-  // Com "e mais N" no fim, os nomes ficam só com vírgula: "Ana e Bia e mais 3" soa errado.
-  return `${names.join(', ')} e mais ${others} ${others === 1 ? 'pessoa' : 'pessoas'} ${verb}`;
+  const joinedNames = names.join(', ');
+  if (others === 1) {
+    return i18n.t('reactions.reactedAndMoreSingle', { names: joinedNames });
+  }
+  return i18n.t('reactions.reactedAndMorePlural', { names: joinedNames, count: others });
 }
 
-function joinNames(names: string[]): string {
-  return names.length === 1 ? names[0] : `${names.slice(0, -1).join(', ')} e ${names.at(-1)}`;
+function joinNames(names: string[], andWord = 'e'): string {
+  return names.length === 1 ? names[0] : `${names.slice(0, -1).join(', ')} ${andWord} ${names.at(-1)}`;
 }

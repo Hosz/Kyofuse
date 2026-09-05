@@ -1,0 +1,155 @@
+<div class="flex flex-col gap-8">
+  <!-- CABEÇALHO -->
+  <div class="flex flex-col gap-1 border-b border-outline-variant pb-4">
+    <h1 class="text-title-lg font-bold text-on-surface">
+      {{ 'settings.preferences' | trans }}
+    </h1>
+    <p class="text-body-sm text-on-surface-variant">
+      Personalize a experiência visual e o idioma do Kyofuse no seu dispositivo.
+    </p>
+  </div>
+
+  <!-- SEÇÃO 1: TEMA VISUAL -->
+  <section class="flex flex-col gap-4 rounded-2xl border border-outline-variant bg-surface-container-low p-6">
+    <div class="flex flex-col gap-1">
+      <div class="flex items-center gap-2 text-title-sm font-bold text-on-surface">
+        <span class="material-symbols-outlined text-primary text-[22px]">palette</span>
+        <h2>{{ 'settings.appearanceTitle' | trans }}</h2>
+      </div>
+      <p class="text-body-sm text-on-surface-variant">
+        {{ 'settings.appearanceDesc' | trans }}
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3 pt-2">
+      <!-- MODO ESCURO -->
+      <button
+        type="button"
+        (click)="setTheme('dark')"
+        class="group relative flex cursor-pointer flex-col items-start rounded-2xl border-2 p-4 text-left transition-all hover:bg-surface-container"
+        [class]="
+          currentTheme() === 'dark'
+            ? 'border-primary bg-primary/5 shadow-md'
+            : 'border-outline-variant bg-surface-container/50 hover:border-outline'
+        "
+      >
+        <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-900 text-amber-400 border border-zinc-700">
+          <span class="material-symbols-outlined text-[24px]">dark_mode</span>
+        </div>
+
+        <div class="flex w-full items-center justify-between">
+          <span class="text-body-md font-bold text-on-surface">{{ 'settings.darkMode' | trans }}</span>
+          @if (currentTheme() === 'dark') {
+            <span class="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white">
+              <span class="material-symbols-outlined text-[14px]">check</span>
+            </span>
+          }
+        </div>
+        <p class="mt-1 text-label-sm text-on-surface-variant">{{ 'settings.darkModeDesc' | trans }}</p>
+      </button>
+
+      <!-- MODO CLARO -->
+      <button
+        type="button"
+        (click)="setTheme('light')"
+        class="group relative flex cursor-pointer flex-col items-start rounded-2xl border-2 p-4 text-left transition-all hover:bg-surface-container"
+        [class]="
+          currentTheme() === 'light'
+            ? 'border-primary bg-primary/5 shadow-md'
+            : 'border-outline-variant bg-surface-container/50 hover:border-outline'
+        "
+      >
+        <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-white text-indigo-500 border border-zinc-200 shadow-sm">
+          <span class="material-symbols-outlined text-[24px]">light_mode</span>
+        </div>
+
+        <div class="flex w-full items-center justify-between">
+          <span class="text-body-md font-bold text-on-surface">{{ 'settings.lightMode' | trans }}</span>
+          @if (currentTheme() === 'light') {
+            <span class="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white">
+              <span class="material-symbols-outlined text-[14px]">check</span>
+            </span>
+          }
+        </div>
+        <p class="mt-1 text-label-sm text-on-surface-variant">{{ 'settings.lightModeDesc' | trans }}</p>
+      </button>
+
+      <!-- SEGUIR SISTEMA -->
+      <button
+        type="button"
+        (click)="setTheme('system')"
+        class="group relative flex cursor-pointer flex-col items-start rounded-2xl border-2 p-4 text-left transition-all hover:bg-surface-container"
+        [class]="
+          currentTheme() === 'system'
+            ? 'border-primary bg-primary/5 shadow-md'
+            : 'border-outline-variant bg-surface-container/50 hover:border-outline'
+        "
+      >
+        <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-surface-container-high text-on-surface border border-outline-variant">
+          <span class="material-symbols-outlined text-[24px]">devices</span>
+        </div>
+
+        <div class="flex w-full items-center justify-between">
+          <span class="text-body-md font-bold text-on-surface">{{ 'settings.systemMode' | trans }}</span>
+          @if (currentTheme() === 'system') {
+            <span class="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white">
+              <span class="material-symbols-outlined text-[14px]">check</span>
+            </span>
+          }
+        </div>
+        <p class="mt-1 text-label-sm text-on-surface-variant">{{ 'settings.systemModeDesc' | trans }}</p>
+      </button>
+    </div>
+  </section>
+
+  <!-- SEÇÃO 2: IDIOMA DA PLATAFORMA -->
+  <section class="flex flex-col gap-4 rounded-2xl border border-outline-variant bg-surface-container-low p-6">
+    <div class="flex flex-col gap-1">
+      <div class="flex items-center gap-2 text-title-sm font-bold text-on-surface">
+        <span class="material-symbols-outlined text-primary text-[22px]">translate</span>
+        <h2>{{ 'settings.languageTitle' | trans }}</h2>
+      </div>
+      <p class="text-body-sm text-on-surface-variant">
+        {{ 'settings.languageDesc' | trans }}
+      </p>
+    </div>
+
+    <!-- AVISO DE AUTO-SELEÇÃO -->
+    <div class="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 p-3 text-body-sm text-on-surface">
+      <span class="material-symbols-outlined text-primary text-[20px] shrink-0">info</span>
+      <p class="text-label-sm leading-relaxed text-on-surface-variant">
+        {{ 'settings.languageAutoNotice' | trans }}
+      </p>
+    </div>
+
+    <!-- GRADE DE IDIOMAS -->
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 pt-2">
+      @for (lang of supportedLanguages; track lang.code) {
+        <button
+          type="button"
+          (click)="setLanguage(lang.code)"
+          class="flex cursor-pointer items-center justify-between rounded-2xl border-2 p-4 text-left transition-all hover:bg-surface-container"
+          [class]="
+            currentLang() === lang.code
+              ? 'border-primary bg-primary/5 shadow-sm'
+              : 'border-outline-variant bg-surface-container/40 hover:border-outline'
+          "
+        >
+          <div class="flex items-center gap-3 min-w-0">
+            <span class="text-2xl leading-none shrink-0">{{ lang.flag }}</span>
+            <div class="flex flex-col min-w-0">
+              <span class="truncate text-body-md font-bold text-on-surface">{{ lang.name }}</span>
+              <span class="truncate text-label-sm text-on-surface-variant">{{ lang.englishName }}</span>
+            </div>
+          </div>
+
+          @if (currentLang() === lang.code) {
+            <span class="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white shrink-0">
+              <span class="material-symbols-outlined text-[14px]">check</span>
+            </span>
+          }
+        </button>
+      }
+    </div>
+  </section>
+</div>

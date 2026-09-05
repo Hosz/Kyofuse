@@ -46,6 +46,13 @@ public class AuthController {
     private final com.hokyozu.kyofuse.auth.repository.UserRepository userRepository;
     private final com.hokyozu.kyofuse.infrastructure.security.totp.MfaTokenService mfaTokenService;
 
+    @org.springframework.beans.factory.annotation.Value("${security.oauth2.google.client-id:}")
+    private String googleClientId;
+
+    public void setGoogleClientId(String googleClientId) {
+        this.googleClientId = googleClientId;
+    }
+
     @RateLimit(key = "register", limit = 5, period = 3600, type = RateLimitType.IP)
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
@@ -133,6 +140,11 @@ public class AuthController {
                 yield ResponseEntity.ok(AuthMapper.toResponse(authenticated.result().user(), authenticated.result().switchToken()));
             }
         };
+    }
+
+    @GetMapping("/google/client-id")
+    public ResponseEntity<Map<String, String>> getGoogleClientId() {
+        return ResponseEntity.ok(Map.of("clientId", googleClientId != null ? googleClientId : ""));
     }
 
     @GetMapping("/steam")
