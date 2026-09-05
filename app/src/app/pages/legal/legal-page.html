@@ -1,0 +1,953 @@
+<div class="tactical-grid min-h-screen w-full bg-surface text-on-surface">
+  <!-- Barra Superior Fixa / Cabeçalho -->
+  <header class="sticky top-0 z-40 border-b border-outline-variant/80 bg-surface/90 backdrop-blur-md">
+    <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6">
+      <div class="flex items-center gap-3">
+        <a routerLink="/" class="flex items-center gap-2.5 transition-opacity hover:opacity-90">
+          <img src="/assets/images/logo.svg" alt="Kyofuse" class="h-8 w-8" />
+          <span class="text-title-md font-bold tracking-tight text-primary">Kyofuse</span>
+        </a>
+        <span class="hidden rounded-full border border-outline-variant bg-surface-container px-2.5 py-0.5 text-[11px] font-semibold text-on-surface-variant sm:inline-block">
+          {{ 'legal.officialDocs' | trans }}
+        </span>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button
+          type="button"
+          (click)="openCookiePreferences()"
+          class="hidden items-center gap-1.5 rounded-lg border border-outline-variant bg-surface-container px-3 py-1.5 text-label-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-high md:flex cursor-pointer"
+        >
+          <span class="material-symbols-outlined text-[18px] text-primary">tune</span>
+          <span>{{ 'legal.cookiePreferencesBtn' | trans }}</span>
+        </button>
+
+        <button
+          type="button"
+          (click)="goBack()"
+          class="flex cursor-pointer items-center gap-1.5 rounded-lg bg-surface-container-high px-3.5 py-1.5 text-label-sm font-semibold text-on-surface transition-colors hover:bg-surface-variant"
+        >
+          <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+          <span>{{ 'common.back' | trans }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Abas de Navegação dos Documentos -->
+    <div class="mx-auto max-w-7xl px-4 sm:px-6">
+      <nav class="flex space-x-1 overflow-x-auto py-1 scrollbar-minimal" aria-label="Abas legais">
+        @for (tab of tabs(); track tab.id) {
+          <button
+            type="button"
+            (click)="selectDoc(tab.id)"
+            class="flex cursor-pointer shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-label-md font-semibold transition-all"
+            [class]="
+              activeDoc() === tab.id
+                ? 'border-primary text-primary font-bold bg-primary/5'
+                : 'border-transparent text-on-surface-variant hover:border-outline hover:text-on-surface'
+            "
+          >
+            <span class="material-symbols-outlined text-[20px]">{{ tab.icon }}</span>
+            <span>{{ tab.title }}</span>
+          </button>
+        }
+      </nav>
+    </div>
+  </header>
+
+  <!-- Conteúdo Principal -->
+  <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-12">
+    <!-- BANNER HERO DO DOCUMENTO -->
+    <div class="mb-10 rounded-2xl border border-outline-variant/60 bg-surface-container-low p-6 sm:p-8">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-start gap-4">
+          <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary-container/20 text-primary-container">
+            <span class="material-symbols-outlined text-[32px]">
+              @switch (activeDoc()) {
+                @case ('termos') { gavel }
+                @case ('privacidade') { shield }
+                @case ('cookies') { cookie }
+                @case ('diretrizes') { military_tech }
+              }
+            </span>
+          </div>
+          <div class="space-y-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <h1 class="text-headline-md font-bold text-on-surface">
+                @switch (activeDoc()) {
+                  @case ('termos') { {{ 'legal.termsTitle' | trans }} }
+                  @case ('privacidade') { {{ 'legal.privacyTitle' | trans }} }
+                  @case ('cookies') { {{ 'legal.cookiesTitle' | trans }} }
+                  @case ('diretrizes') { {{ 'legal.guidelinesTitle' | trans }} }
+                }
+              </h1>
+              <span class="rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-bold text-primary border border-primary/20">
+                {{ 'legal.versionBadge' | trans }}
+              </span>
+            </div>
+            <p class="text-body-sm text-on-surface-variant">
+              {{ 'legal.lastUpdated' | trans }}
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 pt-2 sm:pt-0">
+          <button
+            type="button"
+            (click)="printDocument()"
+            class="flex cursor-pointer items-center gap-1.5 rounded-lg border border-outline-variant bg-surface-container px-3 py-2 text-label-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+            [title]="'legal.print' | trans"
+          >
+            <span class="material-symbols-outlined text-[18px]">print</span>
+            <span class="hidden sm:inline">{{ 'legal.print' | trans }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- 1. TERMOS DE USO                                                  -->
+    <!-- ================================================================= -->
+    @if (activeDoc() === 'termos') {
+      <div class="grid grid-cols-1 gap-8 lg:grid-cols-12">
+        <!-- Sumário Lateral (Desktop) -->
+        <aside class="hidden lg:col-span-4 lg:block">
+          <div class="sticky top-32 space-y-4 rounded-xl border border-outline-variant/60 bg-surface-container-low p-5">
+            <h2 class="text-title-sm font-bold text-on-surface flex items-center gap-2">
+              <span class="material-symbols-outlined text-[18px] text-primary">toc</span>
+              {{ 'legal.tableOfContents' | trans }}
+            </h2>
+            <nav class="flex flex-col space-y-2 text-body-sm text-on-surface-variant">
+              @if (isPortuguese()) {
+                <a href="#termos-1" class="hover:text-primary transition-colors">1. Apresentação e Objeto</a>
+                <a href="#termos-2" class="hover:text-primary transition-colors">2. Mantenedores e Operação</a>
+                <a href="#termos-3" class="hover:text-primary transition-colors">3. Elegibilidade e Cadastro</a>
+                <a href="#termos-4" class="hover:text-primary transition-colors">4. Segurança da Conta</a>
+                <a href="#termos-5" class="hover:text-primary transition-colors">5. Conduta e Uso Proibido</a>
+                <a href="#termos-6" class="hover:text-primary transition-colors">6. Conteúdo do Usuário (UGC)</a>
+                <a href="#termos-7" class="hover:text-primary transition-colors">7. Isenção Valve Corporation</a>
+                <a href="#termos-8" class="hover:text-primary transition-colors">8. Sanções e Moderação</a>
+                <a href="#termos-9" class="hover:text-primary transition-colors">9. Limitação de Responsabilidade</a>
+                <a href="#termos-10" class="hover:text-primary transition-colors">10. Legislação e Foro</a>
+              } @else {
+                <a href="#termos-1" class="hover:text-primary transition-colors">1. Overview & Platform Scope</a>
+                <a href="#termos-2" class="hover:text-primary transition-colors">2. Operating Team & Status</a>
+                <a href="#termos-3" class="hover:text-primary transition-colors">3. Eligibility & Registration</a>
+                <a href="#termos-4" class="hover:text-primary transition-colors">4. Account Security</a>
+                <a href="#termos-5" class="hover:text-primary transition-colors">5. Prohibited Conduct</a>
+                <a href="#termos-6" class="hover:text-primary transition-colors">6. User Generated Content</a>
+                <a href="#termos-7" class="hover:text-primary transition-colors">7. Valve Corp. Disclaimer</a>
+                <a href="#termos-8" class="hover:text-primary transition-colors">8. Sanctions & Moderation</a>
+                <a href="#termos-9" class="hover:text-primary transition-colors">9. Limitation of Liability</a>
+                <a href="#termos-10" class="hover:text-primary transition-colors">10. Governing Law</a>
+              }
+            </nav>
+          </div>
+        </aside>
+
+        <!-- Texto Completo -->
+        <div class="space-y-8 lg:col-span-8">
+          @if (isPortuguese()) {
+            <!-- VERSÃO PORTUGUÊS -->
+            <section id="termos-1" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">01.</span> Apresentação e Objeto da Plataforma
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Bem-vindo ao <strong>Kyofuse</strong>. O Kyofuse é uma plataforma social e competitiva digital desenvolvida especialmente para jogadores de <em>Counter-Strike 2 (CS2)</em>. Nossos serviços englobam perfis competitivos, feed social de publicações, comentários, reações, formação de equipes (squads) e rankings.
+              </p>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Ao acessar, cadastrar-se ou utilizar qualquer funcionalidade do Kyofuse, você declara ter lido, compreendido e concordado integralmente com estes Termos de Uso e com nossa <button type="button" (click)="selectDoc('privacidade')" class="text-primary hover:underline font-semibold">Política de Privacidade</button>.
+              </p>
+            </section>
+
+            <section id="termos-2" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">02.</span> Natureza da Operação e Mantenedores
+              </h2>
+              <div class="rounded-lg border border-primary/30 bg-primary/5 p-4 text-body-sm text-on-surface-variant space-y-2">
+                <div class="flex items-center gap-2 font-bold text-primary">
+                  <span class="material-symbols-outlined text-[20px]">info</span>
+                  <span>Transparência Institucional</span>
+                </div>
+                <p>
+                  O Kyofuse é atualmente concebido, operado e mantido como um projeto tecnológico e comunitário independente por sua equipe fundadora e desenvolvedores mantenedores, atuando na qualidade de <strong>pessoas físicas / equipe mantenedora</strong>.
+                </p>
+                <p>
+                  Nesta fase de desenvolvimento e operação comunitária, o projeto <strong>não possui inscrição no Cadastro Nacional da Pessoa Jurídica (CNPJ)</strong>. Caso o projeto evolua operacionalmente e venha a constituir uma pessoa jurídica no futuro, todos os direitos e operações serão formalmente transferidos e os presentes termos serão devidamente atualizados.
+                </p>
+              </div>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Canal oficial de suporte técnico e contato institucional: <code class="rounded bg-surface-container-high px-1.5 py-0.5 text-primary">contato@kyofuse.com</code>.
+              </p>
+            </section>
+
+            <section id="termos-3" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">03.</span> Elegibilidade e Criação de Contas
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Para registrar uma conta no Kyofuse, o usuário deve possuir <strong>idade mínima de 13 (treze) anos</strong> (em conformidade com os termos da plataforma Steam e com os limites legais para serviços digitais). Usuários menores de 18 anos declaram estar autorizados por seus responsáveis legais.
+              </p>
+            </section>
+
+            <section id="termos-4" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">04.</span> Segurança da Conta e Credenciais
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                O usuário é o único responsável pela guarda, confidencialidade e segurança de suas credenciais de acesso (e-mail, senha e códigos de autenticação em duas etapas - 2FA). Toda atividade executada na conta presume-se realizada pelo próprio titular.
+              </p>
+            </section>
+
+            <section id="termos-5" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">05.</span> Regras de Conduta e Atividades Proibidas
+              </h2>
+              <ul class="list-disc pl-6 space-y-2 text-body-md text-on-surface-variant leading-relaxed">
+                <li><strong>Trapaças e Cheats:</strong> proibição de qualquer software de trapaça (aimbot, wallhack, radar hack, scripts desleais);</li>
+                <li><strong>Toxicidade e Assédio:</strong> repúdio a racismo, homofobia, machismo, difamação, ameaças ou divulgação de dados de terceiros (doxxing);</li>
+                <li><strong>Spam e Bots:</strong> vedado o uso de robôs automatizados, web scraping ou disparos em massa não autorizados;</li>
+                <li><strong>Abusos Técnicos:</strong> exploração deliberada de falhas de segurança ou ataques à infraestrutura.</li>
+              </ul>
+            </section>
+
+            <section id="termos-6" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">06.</span> Conteúdo Gerado pelo Usuário (UGC)
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                O usuário retém os direitos autorais sobre o que publica, mas concede ao Kyofuse licença gratuita e não exclusiva para armazenar e exibir o conteúdo na plataforma. O usuário assume responsabilidade jurídica total sobre o material publicado.
+              </p>
+            </section>
+
+            <section id="termos-7" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">07.</span> Declaração de Isenção de Afiliação (Valve Corporation)
+              </h2>
+              <div class="rounded-lg border border-outline-variant bg-surface-container p-4 text-body-sm text-on-surface-variant leading-relaxed space-y-2">
+                <p>
+                  O Kyofuse <strong>não é patrocinado, endossado, administrado por ou afiliado de qualquer maneira à Valve Corporation</strong>. As marcas <em>Counter-Strike</em>, <em>CS2</em>, <em>Steam</em> e seus respectivos logotipos são marcas registradas da Valve Corporation nos Estados Unidos e/ou em outros países.
+                </p>
+              </div>
+            </section>
+
+            <section id="termos-8" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">08.</span> Moderação, Suspensão e Encerramento
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                A administração do Kyofuse reserva-se o direito de advertir, suspender temporariamente ou cancelar permanentemente qualquer conta que viole estes Termos ou as Diretrizes da Comunidade. O usuário pode encerrar sua conta a qualquer momento pelas configurações.
+              </p>
+            </section>
+
+            <section id="termos-9" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">09.</span> Limitação de Responsabilidade e Garantias
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                A plataforma é disponibilizada no estado em que se encontra (<em>"as is"</em>). Não há garantia de operação ininterrupta ou isenta de falhas técnicas.
+              </p>
+            </section>
+
+            <section id="termos-10" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">10.</span> Legislação Aplicável e Foro
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Estes Termos são regidos pelo Marco Civil da Internet (Lei nº 12.965/2014) e pela LGPD (Lei nº 13.709/2018), elegendo-se o foro competente no Brasil para dirimir litígios.
+              </p>
+            </section>
+          } @else {
+            <!-- VERSÃO EM INGLÊS -->
+            <section id="termos-1" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">01.</span> Overview & Platform Scope
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Welcome to <strong>Kyofuse</strong>. Kyofuse is a social and competitive online hub designed for <em>Counter-Strike 2 (CS2)</em> players. Features include competitive profiles, social posts, comments, reactions, squads/teams, and rankings.
+              </p>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                By accessing or registering on Kyofuse, you agree to these Terms of Use and our <button type="button" (click)="selectDoc('privacidade')" class="text-primary hover:underline font-semibold">Privacy Policy</button>. If you do not agree, please discontinue using the platform.
+              </p>
+            </section>
+
+            <section id="termos-2" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">02.</span> Operating Team & Project Status
+              </h2>
+              <div class="rounded-lg border border-primary/30 bg-primary/5 p-4 text-body-sm text-on-surface-variant space-y-2">
+                <div class="flex items-center gap-2 font-bold text-primary">
+                  <span class="material-symbols-outlined text-[20px]">info</span>
+                  <span>Institutional Transparency</span>
+                </div>
+                <p>
+                  Kyofuse is currently maintained and operated as an independent community project by its founding developers (acting as natural persons / independent maintainers), without registration as a legal entity (corporate CNPJ) at this stage.
+                </p>
+                <p>
+                  If the platform expands and formally incorporates as a legal entity in the future, operations and rights will be transferred smoothly with terms updated accordingly.
+                </p>
+              </div>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Official contact and technical inquiries: <code class="rounded bg-surface-container-high px-1.5 py-0.5 text-primary">contato@kyofuse.com</code>.
+              </p>
+            </section>
+
+            <section id="termos-3" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">03.</span> Eligibility & Account Registration
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Users must be at least <strong>13 years old</strong> to register on Kyofuse, in alignment with Steam platform terms and digital service regulations. Minors confirm parental/guardian consent.
+              </p>
+            </section>
+
+            <section id="termos-4" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">04.</span> Account Security & Credentials
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Users are solely responsible for maintaining the confidentiality of their credentials (email, password, 2FA codes). All activity performed under your account is presumed to be your own.
+              </p>
+            </section>
+
+            <section id="termos-5" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">05.</span> Prohibited Activities & Conduct
+              </h2>
+              <ul class="list-disc pl-6 space-y-2 text-body-md text-on-surface-variant leading-relaxed">
+                <li><strong>Cheating:</strong> strict ban on hacks, aimbots, wallhacks, or unfair automation scripts;</li>
+                <li><strong>Toxicity & Abuse:</strong> no racism, harassment, hate speech, threats, or unauthorized disclosure of personal info (doxxing);</li>
+                <li><strong>Spam & Bots:</strong> unauthorized automated scraping or mass messaging is strictly prohibited;</li>
+                <li><strong>Security Exploitation:</strong> deliberate abuse of system vulnerabilities or attacks against the platform infrastructure.</li>
+              </ul>
+            </section>
+
+            <section id="termos-6" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">06.</span> User Generated Content (UGC)
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                You retain ownership over the content you publish on Kyofuse, granting us a worldwide, royalty-free license to store and display it for platform operation purposes. You remain legally responsible for your published materials.
+              </p>
+            </section>
+
+            <section id="termos-7" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">07.</span> Valve Corporation Disclaimer
+              </h2>
+              <div class="rounded-lg border border-outline-variant bg-surface-container p-4 text-body-sm text-on-surface-variant leading-relaxed space-y-2">
+                <p>
+                  Kyofuse is an independent community project and is <strong>not affiliated, associated, authorized, endorsed by, or in any way officially connected with Valve Corporation</strong>. <em>Counter-Strike</em>, <em>CS2</em>, and <em>Steam</em> are registered trademarks of Valve Corporation.
+                </p>
+              </div>
+            </section>
+
+            <section id="termos-8" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">08.</span> Moderation & Sanctions
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Kyofuse maintainers reserve the right to warn, suspend, or permanently terminate accounts violating these Terms or the Community Guidelines.
+              </p>
+            </section>
+
+            <section id="termos-9" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">09.</span> Limitation of Liability
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                The platform is provided "as is" and "as available", without warranties of uninterrupted uptime or error-free availability.
+              </p>
+            </section>
+
+            <section id="termos-10" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">10.</span> Governing Law
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                These Terms are governed by applicable data privacy regulations and Brazilian federal legislation under Brazilian jurisdiction.
+              </p>
+            </section>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- ================================================================= -->
+    <!-- 2. POLÍTICA DE PRIVACIDADE (LGPD)                                -->
+    <!-- ================================================================= -->
+    @if (activeDoc() === 'privacidade') {
+      <div class="grid grid-cols-1 gap-8 lg:grid-cols-12">
+        <aside class="hidden lg:col-span-4 lg:block">
+          <div class="sticky top-32 space-y-4 rounded-xl border border-outline-variant/60 bg-surface-container-low p-5">
+            <h2 class="text-title-sm font-bold text-on-surface flex items-center gap-2">
+              <span class="material-symbols-outlined text-[18px] text-primary">toc</span>
+              {{ 'legal.tableOfContents' | trans }}
+            </h2>
+            <nav class="flex flex-col space-y-2 text-body-sm text-on-surface-variant">
+              @if (isPortuguese()) {
+                <a href="#priv-1" class="hover:text-primary transition-colors">1. Enquadramento LGPD</a>
+                <a href="#priv-2" class="hover:text-primary transition-colors">2. Controlador e Contato</a>
+                <a href="#priv-3" class="hover:text-primary transition-colors">3. Dados Pessoais Coletados</a>
+                <a href="#priv-4" class="hover:text-primary transition-colors">4. Finalidades e Bases Legais</a>
+                <a href="#priv-5" class="hover:text-primary transition-colors">5. Segurança e Armazenamento</a>
+                <a href="#priv-6" class="hover:text-primary transition-colors">6. Compartilhamento Restrito</a>
+                <a href="#priv-7" class="hover:text-primary transition-colors">7. Retenção e Exclusão</a>
+                <a href="#priv-8" class="hover:text-primary transition-colors">8. Direitos do Titular (Art. 18)</a>
+              } @else {
+                <a href="#priv-1" class="hover:text-primary transition-colors">1. Privacy Framework</a>
+                <a href="#priv-2" class="hover:text-primary transition-colors">2. Data Controller & Contact</a>
+                <a href="#priv-3" class="hover:text-primary transition-colors">3. Personal Data Collected</a>
+                <a href="#priv-4" class="hover:text-primary transition-colors">4. Purposes & Legal Bases</a>
+                <a href="#priv-5" class="hover:text-primary transition-colors">5. Security Practices</a>
+                <a href="#priv-6" class="hover:text-primary transition-colors">6. Strict Sharing Policy</a>
+                <a href="#priv-7" class="hover:text-primary transition-colors">7. Retention & Deletion</a>
+                <a href="#priv-8" class="hover:text-primary transition-colors">8. User Rights</a>
+              }
+            </nav>
+          </div>
+        </aside>
+
+        <div class="space-y-8 lg:col-span-8">
+          @if (isPortuguese()) {
+            <!-- PRIVACIDADE PT -->
+            <section id="priv-1" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">01.</span> Enquadramento Legal e Compromisso
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                A privacidade e a segurança dos dados dos nossos usuários são prioridades no <strong>Kyofuse</strong>. Esta Política descreve como tratamos e protegemos seus dados em conformidade com a <strong>LGPD (Lei nº 13.709/2018)</strong> e o <strong>Marco Civil da Internet (Lei nº 12.965/2014)</strong>.
+              </p>
+            </section>
+
+            <section id="priv-2" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">02.</span> Identificação do Controlador e Contato
+              </h2>
+              <div class="rounded-lg border border-primary/30 bg-primary/5 p-4 text-body-sm text-on-surface-variant space-y-2">
+                <p>
+                  Nos termos do <strong>Artigo 5º, inciso VI da LGPD</strong>, a figura de "Controlador" abrange tanto pessoa jurídica quanto <strong>pessoa natural (física)</strong>. O tratamento no Kyofuse é realizado por seus mantenedores independentes, operando de forma autônoma sem registro de CNPJ neste estágio.
+                </p>
+              </div>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Canal para solicitações de privacidade e direitos do titular: <code class="rounded bg-surface-container-high px-1.5 py-0.5 text-primary">privacidade@kyofuse.com</code>.
+              </p>
+            </section>
+
+            <section id="priv-3" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">03.</span> Dados Pessoais Coletados
+              </h2>
+              <div class="space-y-3 text-body-md text-on-surface-variant">
+                <p><strong>Cadastro:</strong> Nome, apelido, username, e-mail e senha criptografada (hash seguro).</p>
+                <p><strong>Perfil Gamer:</strong> Avatar, biografia, país, preferência de jogo e dados de CS2.</p>
+                <p><strong>Login Social:</strong> Identificador público SteamID64 ou Google ID (sem acesso a senhas externas).</p>
+                <p><strong>Logs de Acesso:</strong> Endereço IP e carimbos de data/hora, guardados sob sigilo por 6 meses conforme o Artigo 15 do Marco Civil da Internet.</p>
+              </div>
+            </section>
+
+            <section id="priv-4" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">04.</span> Finalidades e Bases Legais (Art. 7º LGPD)
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Tratamos dados com base em execução de contrato (manutenção da conta), cumprimento de obrigação legal (guarda de logs), legítimo interesse (segurança e prevenção a abusos) e consentimento (cookies de métricas).
+              </p>
+            </section>
+
+            <section id="priv-5" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">05.</span> Segurança da Informação e Armazenamento
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Utilizamos cookies <code class="rounded bg-surface-container-high px-1 text-primary">HttpOnly</code> seguros para tokens JWT (blindados contra XSS), tráfego integralmente cifrado via HTTPS/TLS e senhas com hash criptográfico com salt.
+              </p>
+            </section>
+
+            <section id="priv-6" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">06.</span> Compartilhamento Restrito de Dados
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                O Kyofuse <strong>NÃO comercializa nem repassa dados para terceiros para publicidade</strong>. Compartilhamento restringe-se a provedores de hospedagem em nuvem e e-mails transacionais necessários ao funcionamento técnico.
+              </p>
+            </section>
+
+            <section id="priv-7" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">07.</span> Retenção e Exclusão de Informações
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Dados são mantidos enquanto a conta estiver ativa. O usuário pode solicitar exclusão nas configurações. Logs de conexão são guardados por 6 meses por exigência legal e expurgados em seguida.
+              </p>
+            </section>
+
+            <section id="priv-8" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">08.</span> Direitos do Titular de Dados (Art. 18 da LGPD)
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Você pode solicitar confirmação, acesso, retificação ou exclusão de dados através de <code class="rounded bg-surface-container-high px-1.5 py-0.5 text-primary">privacidade@kyofuse.com</code> ou no menu de gerenciamento de conta.
+              </p>
+            </section>
+          } @else {
+            <!-- PRIVACIDADE EN -->
+            <section id="priv-1" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">01.</span> Privacy Framework & Commitment
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Your privacy and data security are central to <strong>Kyofuse</strong>. This policy transparently explains our data collection and protection practices under applicable data protection laws.
+              </p>
+            </section>
+
+            <section id="priv-2" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">02.</span> Data Controller & Contact
+              </h2>
+              <div class="rounded-lg border border-primary/30 bg-primary/5 p-4 text-body-sm text-on-surface-variant space-y-2">
+                <p>
+                  Data controller activities are performed by the Kyofuse maintainer team (natural persons / independent developers), operating autonomously without corporate registration at this project stage.
+                </p>
+              </div>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Direct privacy contact: <code class="rounded bg-surface-container-high px-1.5 py-0.5 text-primary">privacidade@kyofuse.com</code>.
+              </p>
+            </section>
+
+            <section id="priv-3" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">03.</span> Personal Data Collected
+              </h2>
+              <div class="space-y-3 text-body-md text-on-surface-variant">
+                <p><strong>Account:</strong> Name, nickname, username, email, and salted cryptographic password hash.</p>
+                <p><strong>Gamer Profile:</strong> Avatar, bio, country, playstyle, and public CS2 stats.</p>
+                <p><strong>Social Auth:</strong> SteamID64 public identifier or Google ID (no password access).</p>
+                <p><strong>Access Logs:</strong> Origin IP and connection timestamps stored for security auditing.</p>
+              </div>
+            </section>
+
+            <section id="priv-4" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">04.</span> Purposes & Legal Bases
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Data is processed for service performance (account delivery), legal compliance (access logging), legitimate security interests (anti-abuse, bot protection), and consent (optional analytics).
+              </p>
+            </section>
+
+            <section id="priv-5" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">05.</span> Security & Storage Practices
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Authentication tokens reside in secure <code class="rounded bg-surface-container-high px-1 text-primary">HttpOnly</code> cookies (protected from script theft), all network traffic uses HTTPS/TLS encryption, and passwords use modern cryptographic hashing.
+              </p>
+            </section>
+
+            <section id="priv-6" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">06.</span> Strict Sharing Policy
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Kyofuse <strong>does NOT sell or trade personal data to third parties for advertising</strong>. Sharing is limited to essential cloud infrastructure and transactional email services.
+              </p>
+            </section>
+
+            <section id="priv-7" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">07.</span> Retention & Deletion
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Profile data is retained while your account remains active. Account deletion is accessible in account settings or upon direct request.
+              </p>
+            </section>
+
+            <section id="priv-8" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">08.</span> User Rights
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                You may request access, rectification, or deletion of your data at any time by contacting <code class="rounded bg-surface-container-high px-1.5 py-0.5 text-primary">privacidade@kyofuse.com</code>.
+              </p>
+            </section>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- ================================================================= -->
+    <!-- 3. POLÍTICA DE COOKIES                                            -->
+    <!-- ================================================================= -->
+    @if (activeDoc() === 'cookies') {
+      <div class="grid grid-cols-1 gap-8 lg:grid-cols-12">
+        <aside class="hidden lg:col-span-4 lg:block">
+          <div class="sticky top-32 space-y-4 rounded-xl border border-outline-variant/60 bg-surface-container-low p-5">
+            <h2 class="text-title-sm font-bold text-on-surface flex items-center gap-2">
+              <span class="material-symbols-outlined text-[18px] text-primary">toc</span>
+              {{ 'legal.tableOfContents' | trans }}
+            </h2>
+            <nav class="flex flex-col space-y-2 text-body-sm text-on-surface-variant">
+              @if (isPortuguese()) {
+                <a href="#cook-1" class="hover:text-primary transition-colors">1. O que são Cookies</a>
+                <a href="#cook-2" class="hover:text-primary transition-colors">2. Cookies no Kyofuse</a>
+                <a href="#cook-3" class="hover:text-primary transition-colors">3. Gerenciar Preferências</a>
+                <a href="#cook-4" class="hover:text-primary transition-colors">4. Desativação no Navegador</a>
+              } @else {
+                <a href="#cook-1" class="hover:text-primary transition-colors">1. What are Cookies</a>
+                <a href="#cook-2" class="hover:text-primary transition-colors">2. Storage Keys on Kyofuse</a>
+                <a href="#cook-3" class="hover:text-primary transition-colors">3. Manage Preferences</a>
+                <a href="#cook-4" class="hover:text-primary transition-colors">4. Browser Controls</a>
+              }
+            </nav>
+
+            <div class="border-t border-outline-variant/60 pt-4">
+              <button
+                type="button"
+                (click)="openCookiePreferences()"
+                class="w-full flex items-center justify-center gap-2 rounded-lg bg-primary-container px-4 py-2.5 text-label-sm font-bold text-on-primary-container hover:brightness-110 transition-all cursor-pointer"
+              >
+                <span class="material-symbols-outlined text-[18px]">tune</span>
+                {{ 'legal.cookiePreferencesBtn' | trans }}
+              </button>
+            </div>
+          </div>
+        </aside>
+
+        <div class="space-y-8 lg:col-span-8">
+          @if (isPortuguese()) {
+            <!-- COOKIES PT -->
+            <section id="cook-1" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">01.</span> O que são Cookies e Armazenamento Local?
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Cookies são pequenos arquivos gravados no seu navegador. O armazenamento local (LocalStorage) cumpre papel semelhante de salvar preferências para que a plataforma funcione de forma contínua e segura.
+              </p>
+            </section>
+
+            <section id="cook-2" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-4">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">02.</span> Armazenamentos e Cookies no Kyofuse
+              </h2>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-body-sm text-on-surface-variant border-collapse">
+                  <thead>
+                    <tr class="border-b border-outline-variant text-on-surface font-semibold">
+                      <th class="py-2.5 pr-3">Chave</th>
+                      <th class="py-2.5 px-3">Tipo</th>
+                      <th class="py-2.5 px-3">Categoria</th>
+                      <th class="py-2.5 pl-3">Finalidade</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-outline-variant/40 font-mono text-[12px]">
+                    <tr>
+                      <td class="py-2.5 pr-3 text-primary font-semibold">kyofuse_access_token</td>
+                      <td class="py-2.5 px-3">Cookie (HttpOnly)</td>
+                      <td class="py-2.5 px-3"><span class="rounded bg-primary/10 px-2 py-0.5 text-primary text-[11px] font-sans font-bold">Essencial</span></td>
+                      <td class="py-2.5 pl-3 font-sans">Token de autenticação da sessão.</td>
+                    </tr>
+                    <tr>
+                      <td class="py-2.5 pr-3 text-primary font-semibold">kyofuse_refresh_token</td>
+                      <td class="py-2.5 px-3">Cookie (HttpOnly)</td>
+                      <td class="py-2.5 px-3"><span class="rounded bg-primary/10 px-2 py-0.5 text-primary text-[11px] font-sans font-bold">Essencial</span></td>
+                      <td class="py-2.5 pl-3 font-sans">Renovação segura da sessão sem exigir senha repetidamente.</td>
+                    </tr>
+                    <tr>
+                      <td class="py-2.5 pr-3 text-on-surface font-semibold">kyofuse_device_id</td>
+                      <td class="py-2.5 px-3">LocalStorage</td>
+                      <td class="py-2.5 px-3"><span class="rounded bg-primary/10 px-2 py-0.5 text-primary text-[11px] font-sans font-bold">Essencial</span></td>
+                      <td class="py-2.5 pl-3 font-sans">Identificador de dispositivo para multi-contas e segurança.</td>
+                    </tr>
+                    <tr>
+                      <td class="py-2.5 pr-3 text-on-surface font-semibold">kyofuse_cookie_consent_v1</td>
+                      <td class="py-2.5 px-3">LocalStorage</td>
+                      <td class="py-2.5 px-3"><span class="rounded bg-primary/10 px-2 py-0.5 text-primary text-[11px] font-sans font-bold">Essencial</span></td>
+                      <td class="py-2.5 pl-3 font-sans">Salva a decisão de consentimento do usuário.</td>
+                    </tr>
+                    <tr>
+                      <td class="py-2.5 pr-3 text-tertiary font-semibold">kyofuse_theme</td>
+                      <td class="py-2.5 px-3">LocalStorage</td>
+                      <td class="py-2.5 px-3"><span class="rounded bg-tertiary/10 px-2 py-0.5 text-tertiary text-[11px] font-sans font-bold">Funcional</span></td>
+                      <td class="py-2.5 pl-3 font-sans">Memoriza o tema (Escuro / Claro).</td>
+                    </tr>
+                    <tr>
+                      <td class="py-2.5 pr-3 text-tertiary font-semibold">kyofuse_language</td>
+                      <td class="py-2.5 px-3">LocalStorage</td>
+                      <td class="py-2.5 px-3"><span class="rounded bg-tertiary/10 px-2 py-0.5 text-tertiary text-[11px] font-sans font-bold">Funcional</span></td>
+                      <td class="py-2.5 pl-3 font-sans">Memoriza o idioma selecionado.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section id="cook-3" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">03.</span> Gerenciamento de Preferências
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Você pode personalizar suas preferências a qualquer momento:
+              </p>
+              <div class="pt-2">
+                <button
+                  type="button"
+                  (click)="openCookiePreferences()"
+                  class="flex cursor-pointer items-center gap-2 rounded-lg bg-primary-container px-5 py-2.5 text-label-md font-bold text-on-primary-container hover:brightness-110 transition-all"
+                >
+                  <span class="material-symbols-outlined text-[20px]">tune</span>
+                  {{ 'legal.cookiePreferencesBtn' | trans }}
+                </button>
+              </div>
+            </section>
+
+            <section id="cook-4" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">04.</span> Desativação no Navegador
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Você também pode bloquear ou limpar cookies nas preferências do seu navegador (Chrome, Firefox, Edge, Safari).
+              </p>
+            </section>
+          } @else {
+            <!-- COOKIES EN -->
+            <section id="cook-1" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">01.</span> What are Cookies & Local Storage?
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Cookies and local storage are small data stores kept in your browser to maintain secure authentication and persist user visual preferences across sessions.
+              </p>
+            </section>
+
+            <section id="cook-2" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-4">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">02.</span> Storage Keys Used on Kyofuse
+              </h2>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-body-sm text-on-surface-variant border-collapse">
+                  <thead>
+                    <tr class="border-b border-outline-variant text-on-surface font-semibold">
+                      <th class="py-2.5 pr-3">Key</th>
+                      <th class="py-2.5 px-3">Type</th>
+                      <th class="py-2.5 px-3">Category</th>
+                      <th class="py-2.5 pl-3">Purpose</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-outline-variant/40 font-mono text-[12px]">
+                    <tr>
+                      <td class="py-2.5 pr-3 text-primary font-semibold">kyofuse_access_token</td>
+                      <td class="py-2.5 px-3">Cookie (HttpOnly)</td>
+                      <td class="py-2.5 px-3"><span class="rounded bg-primary/10 px-2 py-0.5 text-primary text-[11px] font-sans font-bold">Essential</span></td>
+                      <td class="py-2.5 pl-3 font-sans">Secure API session access token.</td>
+                    </tr>
+                    <tr>
+                      <td class="py-2.5 pr-3 text-primary font-semibold">kyofuse_refresh_token</td>
+                      <td class="py-2.5 px-3">Cookie (HttpOnly)</td>
+                      <td class="py-2.5 px-3"><span class="rounded bg-primary/10 px-2 py-0.5 text-primary text-[11px] font-sans font-bold">Essential</span></td>
+                      <td class="py-2.5 pl-3 font-sans">Automatic background session renewal.</td>
+                    </tr>
+                    <tr>
+                      <td class="py-2.5 pr-3 text-on-surface font-semibold">kyofuse_device_id</td>
+                      <td class="py-2.5 px-3">LocalStorage</td>
+                      <td class="py-2.5 px-3"><span class="rounded bg-primary/10 px-2 py-0.5 text-primary text-[11px] font-sans font-bold">Essential</span></td>
+                      <td class="py-2.5 pl-3 font-sans">Device identifier for multi-account management.</td>
+                    </tr>
+                    <tr>
+                      <td class="py-2.5 pr-3 text-on-surface font-semibold">kyofuse_cookie_consent_v1</td>
+                      <td class="py-2.5 px-3">LocalStorage</td>
+                      <td class="py-2.5 px-3"><span class="rounded bg-primary/10 px-2 py-0.5 text-primary text-[11px] font-sans font-bold">Essential</span></td>
+                      <td class="py-2.5 pl-3 font-sans">Saves cookie consent choices.</td>
+                    </tr>
+                    <tr>
+                      <td class="py-2.5 pr-3 text-tertiary font-semibold">kyofuse_theme</td>
+                      <td class="py-2.5 px-3">LocalStorage</td>
+                      <td class="py-2.5 px-3"><span class="rounded bg-tertiary/10 px-2 py-0.5 text-tertiary text-[11px] font-sans font-bold">Functional</span></td>
+                      <td class="py-2.5 pl-3 font-sans">Remembers Dark/Light theme mode.</td>
+                    </tr>
+                    <tr>
+                      <td class="py-2.5 pr-3 text-tertiary font-semibold">kyofuse_language</td>
+                      <td class="py-2.5 px-3">LocalStorage</td>
+                      <td class="py-2.5 px-3"><span class="rounded bg-tertiary/10 px-2 py-0.5 text-tertiary text-[11px] font-sans font-bold">Functional</span></td>
+                      <td class="py-2.5 pl-3 font-sans">Remembers preferred interface language.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section id="cook-3" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">03.</span> Manage Preferences
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                You can review or change your cookie choices at any time:
+              </p>
+              <div class="pt-2">
+                <button
+                  type="button"
+                  (click)="openCookiePreferences()"
+                  class="flex cursor-pointer items-center gap-2 rounded-lg bg-primary-container px-5 py-2.5 text-label-md font-bold text-on-primary-container hover:brightness-110 transition-all"
+                >
+                  <span class="material-symbols-outlined text-[20px]">tune</span>
+                  {{ 'legal.cookiePreferencesBtn' | trans }}
+                </button>
+              </div>
+            </section>
+
+            <section id="cook-4" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="text-primary font-mono">04.</span> Browser Controls
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                You may also manage, clear, or block cookies through your browser settings (Chrome, Firefox, Safari, Edge).
+              </p>
+            </section>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- ================================================================= -->
+    <!-- 4. DIRETRIZES DA COMUNIDADE                                       -->
+    <!-- ================================================================= -->
+    @if (activeDoc() === 'diretrizes') {
+      <div class="grid grid-cols-1 gap-8 lg:grid-cols-12">
+        <aside class="hidden lg:col-span-4 lg:block">
+          <div class="sticky top-32 space-y-4 rounded-xl border border-outline-variant/60 bg-surface-container-low p-5">
+            <h2 class="text-title-sm font-bold text-on-surface flex items-center gap-2">
+              <span class="material-symbols-outlined text-[18px] text-primary">toc</span>
+              {{ 'legal.tableOfContents' | trans }}
+            </h2>
+            <nav class="flex flex-col space-y-2 text-body-sm text-on-surface-variant">
+              @if (isPortuguese()) {
+                <a href="#dir-1" class="hover:text-primary transition-colors">1. Fair Play no CS2</a>
+                <a href="#dir-2" class="hover:text-primary transition-colors">2. Respeito Mútuo</a>
+                <a href="#dir-3" class="hover:text-primary transition-colors">3. Gestão de Equipes</a>
+                <a href="#dir-4" class="hover:text-primary transition-colors">4. Moderação e Punições</a>
+              } @else {
+                <a href="#dir-1" class="hover:text-primary transition-colors">1. Fair Play in CS2</a>
+                <a href="#dir-2" class="hover:text-primary transition-colors">2. Mutual Respect</a>
+                <a href="#dir-3" class="hover:text-primary transition-colors">3. Squad Cooperation</a>
+                <a href="#dir-4" class="hover:text-primary transition-colors">4. Moderation & Bans</a>
+              }
+            </nav>
+          </div>
+        </aside>
+
+        <div class="space-y-8 lg:col-span-8">
+          @if (isPortuguese()) {
+            <!-- REGRAS PT -->
+            <section id="dir-1" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[24px]">sports_esports</span>
+                1. Fair Play e Integridade Competitiva no CS2
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Tolerância zero com qualquer trapaça, scripts ou softwares ilícitos. Contas com banimento VAC ou em plataformas parceiras podem ser desqualificadas de competições e rankings do Kyofuse.
+              </p>
+            </section>
+
+            <section id="dir-2" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[24px]">diversity_3</span>
+                2. Respeito e Tolerância Zero à Discriminação
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Repudiamos racismo, machismo, homofobia, xenofobia, assédio direcionado e vazamento de dados de terceiros (doxxing). Infrações graves resultam em banimento sumário.
+              </p>
+            </section>
+
+            <section id="dir-3" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[24px]">groups</span>
+                3. Convivência em Squads e Times
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Incentivamos comunicação saudável, espírito de equipe e acolhimento a novos jogadores.
+              </p>
+            </section>
+
+            <section id="dir-4" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[24px]">policy</span>
+                4. Sistema de Moderação e Punições
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Sanções graduadas: Advertência formal, silenciamento temporário, suspensão de conta e banimento definitivo.
+              </p>
+            </section>
+          } @else {
+            <!-- REGRAS EN -->
+            <section id="dir-1" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[24px]">sports_esports</span>
+                1. Fair Play & Competitive Integrity in CS2
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Absolute zero tolerance for cheats, hacks, or illicit scripts. VAC bans or anti-cheat bans disqualify players from tournaments and rankings.
+              </p>
+            </section>
+
+            <section id="dir-2" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[24px]">diversity_3</span>
+                2. Respect & Zero Tolerance for Discrimination
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                We strongly condemn racism, sexism, homophobia, xenophobia, targeted harassment, and doxxing. Severe violations lead to permanent bans.
+              </p>
+            </section>
+
+            <section id="dir-3" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[24px]">groups</span>
+                3. Team & Squad Cooperation
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                We foster supportive team communication, constructive feedback, and mutual respect between teammates and rivals alike.
+              </p>
+            </section>
+
+            <section id="dir-4" class="rounded-xl border border-outline-variant/60 bg-surface-container-low p-6 space-y-3">
+              <h2 class="text-title-md font-bold text-on-surface flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[24px]">policy</span>
+                4. Moderation & Sanctions
+              </h2>
+              <p class="text-body-md text-on-surface-variant leading-relaxed">
+                Graduated discipline: Formal warning, temporary mute, account suspension, and permanent ban.
+              </p>
+            </section>
+          }
+        </div>
+      </div>
+    }
+  </main>
+
+  <!-- Rodapé Institucional -->
+  <footer class="mt-16 border-t border-outline-variant/60 bg-surface-container-low py-8">
+    <div class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 text-center sm:flex-row sm:px-6 sm:text-left">
+      <div class="flex flex-col gap-1">
+        <span class="text-label-sm font-semibold text-on-surface">
+          &#169; 2026 Kyofuse · {{ 'legal.independentPlatform' | trans }}
+        </span>
+        <span class="text-[12px] text-on-surface-variant">
+          {{ 'legal.valveDisclaimer' | trans }}
+        </span>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-center gap-4 text-label-sm text-on-surface-variant">
+        <button type="button" (click)="selectDoc('termos')" class="hover:text-primary hover:underline cursor-pointer">{{ 'legal.readTerms' | trans }}</button>
+        <span>·</span>
+        <button type="button" (click)="selectDoc('privacidade')" class="hover:text-primary hover:underline cursor-pointer">{{ 'legal.readPrivacy' | trans }}</button>
+        <span>·</span>
+        <button type="button" (click)="selectDoc('cookies')" class="hover:text-primary hover:underline cursor-pointer">{{ 'legal.readCookies' | trans }}</button>
+        <span>·</span>
+        <button type="button" (click)="openCookiePreferences()" class="hover:text-primary hover:underline cursor-pointer">{{ 'legal.openPreferences' | trans }}</button>
+        <span>·</span>
+        <button type="button" (click)="selectDoc('diretrizes')" class="hover:text-primary hover:underline cursor-pointer">{{ 'legal.readGuidelines' | trans }}</button>
+      </div>
+    </div>
+  </footer>
+</div>

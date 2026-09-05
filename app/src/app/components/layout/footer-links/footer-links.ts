@@ -4,6 +4,8 @@ import { ToastService } from '../../../core/services/ui/toast.service';
 
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
+import { CookieConsentService } from '../../../core/services/ui/cookie-consent.service';
+
 @Component({
   selector: 'app-footer-links',
   imports: [RouterLink, TranslatePipe],
@@ -11,10 +13,10 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
   styleUrl: './footer-links.css',
 })
 export class FooterLinksComponent {
-  private toastService = inject(ToastService);
+  readonly cookieConsentService = inject(CookieConsentService);
 
-  showPolicy(name: string): void {
-    this.toastService.info(`Os ${name} da plataforma serão publicados em breve.`);
+  openCookiePreferences(): void {
+    this.cookieConsentService.openPreferences();
   }
 }
  

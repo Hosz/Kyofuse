@@ -1,9 +1,15 @@
-<footer class="flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-label-sm text-on-surface-variant">
-  <a routerLink="/configuracoes/privacidade" class="rounded transition-colors hover:text-on-surface hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface">{{ 'common.privacy' | trans }}</a>
-  <span>·</span>
-  <button type="button" (click)="showPolicy('Termos de Uso')" class="cursor-pointer rounded transition-colors hover:text-on-surface hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface">{{ 'common.terms' | trans }}</button>
-  <span>·</span>
-  <button type="button" (click)="showPolicy('Políticas de Cookies')" class="cursor-pointer rounded transition-colors hover:text-on-surface hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface">{{ 'common.cookies' | trans }}</button>
-  <span>·</span>
-  <span>&#169; 2026 Kyofuse</span>
+<footer class="flex flex-col gap-1.5 px-1 text-label-sm text-on-surface-variant">
+  <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+    <a routerLink="/privacidade" class="rounded transition-colors hover:text-on-surface hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface">{{ 'common.privacy' | trans }}</a>
+    <span>·</span>
+    <a routerLink="/termos" class="rounded transition-colors hover:text-on-surface hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface">{{ 'common.terms' | trans }}</a>
+    <span>·</span>
+    <button type="button" (click)="openCookiePreferences()" class="cursor-pointer rounded transition-colors hover:text-on-surface hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface">{{ 'common.cookies' | trans }}</button>
+    <span>·</span>
+    <a routerLink="/diretrizes" class="rounded transition-colors hover:text-on-surface hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface">{{ 'common.rulesOfEngagement' | trans }}</a>
+  </div>
+  <div class="flex flex-col gap-0.5 text-[11px] text-on-surface-variant/75">
+    <span>&#169; 2026 Kyofuse</span>
+    <span class="text-[10px] text-on-surface-variant/60">Não afiliado à Valve Corp.</span>
+  </div>
 </footer>

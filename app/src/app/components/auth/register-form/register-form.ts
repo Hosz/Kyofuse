@@ -1,4 +1,5 @@
 import { Component, computed, inject, input, output, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { AuthFieldComponent } from '../auth-field/auth-field';
 import { PasswordStrengthMeterComponent } from '../password-strength-meter/password-strength-meter';
 import { RobotCheckComponent } from '../robot-check/robot-check';
@@ -10,7 +11,7 @@ const MIN_AGE = 18;
 
 @Component({
   selector: 'app-register-form',
-  imports: [AuthFieldComponent, PasswordStrengthMeterComponent, RobotCheckComponent, TranslatePipe],
+  imports: [RouterLink, AuthFieldComponent, PasswordStrengthMeterComponent, RobotCheckComponent, TranslatePipe],
   templateUrl: './register-form.html',
   styleUrl: './register-form.css',
 })

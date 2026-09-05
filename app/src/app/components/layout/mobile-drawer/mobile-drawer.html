@@ -73,6 +73,16 @@
           <span class="material-symbols-outlined text-[20px]">logout</span>
           <span>{{ 'nav.logout' | trans }}</span>
         </button>
+
+        <div class="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px] text-on-surface-variant/70 pt-2 border-t border-outline-variant/40">
+          <a routerLink="/privacidade" (click)="close()" class="hover:underline">Privacidade</a>
+          <span>·</span>
+          <a routerLink="/termos" (click)="close()" class="hover:underline">Termos</a>
+          <span>·</span>
+          <a routerLink="/cookies" (click)="close()" class="hover:underline">Cookies</a>
+          <span>·</span>
+          <a routerLink="/diretrizes" (click)="close()" class="hover:underline">Regras</a>
+        </div>
       </div>
     </aside>
   </div>

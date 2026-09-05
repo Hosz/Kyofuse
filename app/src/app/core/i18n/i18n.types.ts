@@ -814,4 +814,48 @@ export interface TranslationDictionary {
     teamOriented: string;
     soloQueue: string;
   };
+  cookieConsent: {
+    bannerTitle: string;
+    bannerDesc: string;
+    cookiePolicyLink: string;
+    privacyPolicyLink: string;
+    customize: string;
+    acceptEssential: string;
+    acceptAll: string;
+    modalTitle: string;
+    modalSubtitle: string;
+    essentialTitle: string;
+    essentialBadge: string;
+    essentialDesc: string;
+    functionalTitle: string;
+    functionalDesc: string;
+    analyticsTitle: string;
+    analyticsDesc: string;
+    marketingTitle: string;
+    marketingBadge: string;
+    marketingDesc: string;
+    readFullDocs: string;
+    cancel: string;
+    savePreferences: string;
+    preferencesSaved: string;
+  };
+  legal: {
+    officialDocs: string;
+    cookiePreferencesBtn: string;
+    termsTitle: string;
+    privacyTitle: string;
+    cookiesTitle: string;
+    guidelinesTitle: string;
+    versionBadge: string;
+    lastUpdated: string;
+    print: string;
+    tableOfContents: string;
+    independentPlatform: string;
+    valveDisclaimer: string;
+    readTerms: string;
+    readPrivacy: string;
+    readCookies: string;
+    readGuidelines: string;
+    openPreferences: string;
+  };
 }

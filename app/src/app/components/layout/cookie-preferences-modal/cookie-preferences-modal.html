@@ -1,0 +1,194 @@
+@if (cookieService.modalVisible()) {
+  <div
+    class="cookie-modal-backdrop fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md transition-opacity"
+    (click)="close()"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="cookie-modal-title"
+  >
+    <div
+      class="cookie-modal-panel scrollbar-minimal relative flex max-h-[88vh] w-full max-w-[44rem] flex-col overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-low shadow-2xl"
+      (click)="$event.stopPropagation()"
+    >
+      <!-- Cabeçalho -->
+      <div class="cookie-modal-header flex shrink-0 items-center justify-between border-b border-outline-variant bg-surface-container px-6 py-4">
+        <div class="flex items-center gap-3">
+          <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-container/20 text-primary-container">
+            <span class="material-symbols-outlined text-[20px]">tune</span>
+          </span>
+          <h2 id="cookie-modal-title" class="text-title-md font-bold text-on-surface">
+            {{ 'cookieConsent.modalTitle' | trans }}
+          </h2>
+        </div>
+        <button
+          type="button"
+          (click)="close()"
+          class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+          [attr.aria-label]="'common.close' | trans"
+        >
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+
+      <!-- Conteúdo com Scroll -->
+      <div class="cookie-modal-body scrollbar-minimal flex-1 overflow-y-auto p-6 space-y-6">
+        <p class="text-body-sm text-on-surface-variant leading-relaxed">
+          {{ 'cookieConsent.modalSubtitle' | trans }}
+        </p>
+
+        <!-- 1. Cookies Essenciais -->
+        <div class="rounded-xl border border-outline-variant/80 bg-surface-container p-4">
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+              <span class="material-symbols-outlined text-[20px] text-primary">lock</span>
+              <h3 class="text-label-lg font-bold text-on-surface">
+                {{ 'cookieConsent.essentialTitle' | trans }}
+              </h3>
+            </div>
+            <span class="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-primary border border-primary/20">
+              {{ 'cookieConsent.essentialBadge' | trans }}
+            </span>
+          </div>
+          <p class="mt-2 text-body-sm text-on-surface-variant leading-relaxed">
+            {{ 'cookieConsent.essentialDesc' | trans }}
+          </p>
+        </div>
+
+        <!-- 2. Cookies Funcionais -->
+        <div class="rounded-xl border border-outline-variant/80 bg-surface-container p-4">
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+              <span class="material-symbols-outlined text-[20px] text-tertiary">palette</span>
+              <h3 class="text-label-lg font-bold text-on-surface">
+                {{ 'cookieConsent.functionalTitle' | trans }}
+              </h3>
+            </div>
+
+            <!-- Botão Switch Interativo -->
+            <button
+              type="button"
+              role="switch"
+              [attr.aria-checked]="functionalEnabled()"
+              (click)="toggleFunctional()"
+              class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+              [class.bg-primary-container]="functionalEnabled()"
+              [class.bg-surface-container-highest]="!functionalEnabled()"
+            >
+              <span
+                class="pointer-events-none inline-block h-5 w-5 transform rounded-full shadow ring-0 transition duration-200 ease-in-out"
+                [class.translate-x-5]="functionalEnabled()"
+                [class.translate-x-0]="!functionalEnabled()"
+                [class.bg-on-primary-container]="functionalEnabled()"
+                [class.bg-on-surface-variant]="!functionalEnabled()"
+              ></span>
+            </button>
+          </div>
+          <p class="mt-2 text-body-sm text-on-surface-variant leading-relaxed">
+            {{ 'cookieConsent.functionalDesc' | trans }}
+          </p>
+        </div>
+
+        <!-- 3. Cookies Analíticos -->
+        <div class="rounded-xl border border-outline-variant/80 bg-surface-container p-4">
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+              <span class="material-symbols-outlined text-[20px] text-warning">analytics</span>
+              <h3 class="text-label-lg font-bold text-on-surface">
+                {{ 'cookieConsent.analyticsTitle' | trans }}
+              </h3>
+            </div>
+
+            <!-- Botão Switch Interativo -->
+            <button
+              type="button"
+              role="switch"
+              [attr.aria-checked]="analyticsEnabled()"
+              (click)="toggleAnalytics()"
+              class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+              [class.bg-primary-container]="analyticsEnabled()"
+              [class.bg-surface-container-highest]="!analyticsEnabled()"
+            >
+              <span
+                class="pointer-events-none inline-block h-5 w-5 transform rounded-full shadow ring-0 transition duration-200 ease-in-out"
+                [class.translate-x-5]="analyticsEnabled()"
+                [class.translate-x-0]="!analyticsEnabled()"
+                [class.bg-on-primary-container]="analyticsEnabled()"
+                [class.bg-on-surface-variant]="!analyticsEnabled()"
+              ></span>
+            </button>
+          </div>
+          <p class="mt-2 text-body-sm text-on-surface-variant leading-relaxed">
+            {{ 'cookieConsent.analyticsDesc' | trans }}
+          </p>
+        </div>
+
+        <!-- 4. Rastreamento e Marketing -->
+        <div class="rounded-xl border border-outline-variant/40 bg-surface-container/50 p-4 opacity-75">
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+              <span class="material-symbols-outlined text-[20px] text-on-surface-variant">campaign</span>
+              <h3 class="text-label-lg font-bold text-on-surface">
+                {{ 'cookieConsent.marketingTitle' | trans }}
+              </h3>
+            </div>
+            <span class="inline-flex items-center rounded-full bg-surface-container-highest px-2.5 py-0.5 text-[11px] font-semibold text-on-surface-variant">
+              {{ 'cookieConsent.marketingBadge' | trans }}
+            </span>
+          </div>
+          <p class="mt-2 text-body-sm text-on-surface-variant leading-relaxed">
+            {{ 'cookieConsent.marketingDesc' | trans }}
+          </p>
+        </div>
+
+        <!-- Link para políticas -->
+        <div class="flex flex-wrap items-center justify-between gap-2 text-label-sm text-on-surface-variant pt-2 border-t border-outline-variant/40">
+          <span>{{ 'cookieConsent.readFullDocs' | trans }}</span>
+          <div class="flex items-center gap-3">
+            <a
+              routerLink="/cookies"
+              (click)="close()"
+              class="font-semibold text-primary hover:underline"
+            >
+              {{ 'cookieConsent.cookiePolicyLink' | trans }}
+            </a>
+            <span>·</span>
+            <a
+              routerLink="/privacidade"
+              (click)="close()"
+              class="font-semibold text-primary hover:underline"
+            >
+              {{ 'cookieConsent.privacyPolicyLink' | trans }}
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rodapé da Modal -->
+      <div class="cookie-modal-footer flex shrink-0 flex-wrap items-center justify-end gap-3 border-t border-outline-variant bg-surface-container px-6 py-4">
+        <button
+          type="button"
+          (click)="close()"
+          class="cursor-pointer rounded-lg px-4 py-2 text-label-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+        >
+          {{ 'cookieConsent.cancel' | trans }}
+        </button>
+
+        <button
+          type="button"
+          (click)="save()"
+          class="cursor-pointer rounded-lg border border-outline-variant bg-surface-container-high px-4 py-2 text-label-sm font-semibold text-on-surface transition-colors hover:bg-surface-variant"
+        >
+          {{ 'cookieConsent.savePreferences' | trans }}
+        </button>
+
+        <button
+          type="button"
+          (click)="acceptAll()"
+          class="ignite-glow cursor-pointer rounded-lg bg-primary-container px-5 py-2 text-label-sm font-bold uppercase tracking-[0.03em] text-on-primary-container transition-all hover:brightness-110 active:scale-[0.98]"
+        >
+          {{ 'cookieConsent.acceptAll' | trans }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
