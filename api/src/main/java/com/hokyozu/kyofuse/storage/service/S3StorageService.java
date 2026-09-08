@@ -56,7 +56,11 @@ public class S3StorageService {
 
     public String getPublicUrl(String key) {
         String baseUrl = publicBaseUrl.endsWith("/") ? publicBaseUrl.substring(0, publicBaseUrl.length() - 1) : publicBaseUrl;
-        return String.format("%s/%s/%s", baseUrl, bucketName, key);
+        String cleanKey = key.startsWith("/") ? key.substring(1) : key;
+        if (baseUrl.contains("localhost") || baseUrl.contains("127.0.0.1") || baseUrl.contains("minio")) {
+            return String.format("%s/%s/%s", baseUrl, bucketName, cleanKey);
+        }
+        return String.format("%s/%s", baseUrl, cleanKey);
     }
 
     private synchronized void ensureBucketExists() {

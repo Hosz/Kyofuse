@@ -41,6 +41,7 @@ spring:
     port: ${MAIL_PORT:1025}
     username: ${MAIL_USERNAME:}
     password: ${MAIL_PASSWORD:}
+    from: ${MAIL_FROM:Kyofuse <noreply@kyofuse.com>}
     properties:
       mail:
         smtp:
@@ -54,6 +55,8 @@ spring:
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
       timeout: 2000ms
+      ssl:
+        enabled: ${REDIS_SSL_ENABLED:false}
 
   cache:
     type: redis
@@ -82,7 +85,7 @@ management:
       application: ${spring.application.name}
 
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${SERVER_PORT:${PORT:8080}}
   tomcat:
     mbeanregistry:
       enabled: true
