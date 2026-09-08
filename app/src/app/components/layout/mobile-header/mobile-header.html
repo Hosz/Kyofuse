@@ -1,0 +1,43 @@
+@if (isVisible()) {
+  <header class="sticky top-0 z-30 flex h-14 w-full items-center justify-between border-b border-outline-variant bg-surface/90 px-4 backdrop-blur-md lg:hidden">
+    <!-- ESQUERDA: BOTÃO DO MENU/AVATAR -->
+    <button
+      type="button"
+      (click)="openDrawer()"
+      class="relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-outline-variant bg-surface-container transition-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
+      aria-label="Abrir menu"
+    >
+      @if (avatarUrl()) {
+        <img [src]="avatarUrl()" alt="Avatar" class="h-full w-full rounded-full object-cover" />
+      } @else {
+        <span class="material-symbols-outlined text-[22px] text-on-surface">menu</span>
+      }
+
+      @if (hasUnread()) {
+        <span class="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-primary ring-2 ring-surface"></span>
+      }
+    </button>
+
+    <!-- CENTRO: LOGO KYOFUSE -->
+    <a routerLink="/home" class="flex items-center gap-2 transition-opacity hover:opacity-90">
+      <img src="/assets/images/logo.svg" alt="Kyofuse Logo" class="h-8 w-8" />
+      <span class="text-title-md font-bold tracking-tight text-primary">Kyofuse</span>
+    </a>
+
+    <!-- DIREITA: ATALHO DE CHAT -->
+    <div class="flex items-center gap-1.5">
+      <a
+        routerLink="/chats"
+        class="relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-outline-variant bg-surface-container text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+        aria-label="Mensagens"
+      >
+        <span class="material-symbols-outlined text-[20px]">chat_bubble</span>
+        @if (unreadChatsCount() > 0) {
+          <span class="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-on-primary">
+            {{ unreadChatsCount() > 99 ? '99+' : unreadChatsCount() }}
+          </span>
+        }
+      </a>
+    </div>
+  </header>
+}

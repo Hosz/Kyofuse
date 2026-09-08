@@ -46,6 +46,13 @@ public class AuthController {
     private final com.hokyozu.kyofuse.auth.repository.UserRepository userRepository;
     private final com.hokyozu.kyofuse.infrastructure.security.totp.MfaTokenService mfaTokenService;
 
+    @org.springframework.beans.factory.annotation.Value("${security.oauth2.google.client-id:}")
+    private String googleClientId;
+
+    public void setGoogleClientId(String googleClientId) {
+        this.googleClientId = googleClientId;
+    }
+
     @RateLimit(key = "register", limit = 5, period = 3600, type = RateLimitType.IP)
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
@@ -135,6 +142,11 @@ public class AuthController {
         };
     }
 
+    @GetMapping("/google/client-id")
+    public ResponseEntity<Map<String, String>> getGoogleClientId() {
+        return ResponseEntity.ok(Map.of("clientId", googleClientId != null ? googleClientId : ""));
+    }
+
     @GetMapping("/steam")
     public ResponseEntity<Void> redirectToSteam(@RequestParam(required = false) String returnUrl) {
         String loginUrl = steamService.buildLoginUrl(returnUrl);
@@ -220,9 +232,11 @@ public class AuthController {
     @PostMapping("/disconnect-account")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void disconnectAccount(
-            @RequestBody @Valid DisconnectAccountRequest request
+            @RequestBody @Valid DisconnectAccountRequest request,
+            @AuthenticationPrincipal Jwt jwt
     ) {
-        authService.disconnectAccount(request);
+        UUID currentUserId = jwt != null && jwt.getSubject() != null ? UUID.fromString(jwt.getSubject()) : null;
+        authService.disconnectAccount(request, currentUserId);
     }
 
     @PostMapping("/switch-token")

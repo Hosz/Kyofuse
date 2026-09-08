@@ -601,14 +601,14 @@ class AuthServiceTest {
     }
 
     @Test
-    void disconnectAccountDelegatesToAccountSwitchService() {
+    void disconnectAccountDelegatesToAccountSwitchServiceWithValidation() {
         UUID userId = UUID.randomUUID();
         com.hokyozu.kyofuse.auth.dto.request.DisconnectAccountRequest request =
-                new com.hokyozu.kyofuse.auth.dto.request.DisconnectAccountRequest(userId, "device-1");
+                new com.hokyozu.kyofuse.auth.dto.request.DisconnectAccountRequest(userId, "device-1", "token-abc");
 
-        authService.disconnectAccount(request);
+        authService.disconnectAccount(request, userId);
 
-        verify(accountSwitchService).revokeSession(userId, "device-1");
+        verify(accountSwitchService).revokeSessionWithValidation(userId, "device-1", "token-abc", userId);
     }
 
     @Test

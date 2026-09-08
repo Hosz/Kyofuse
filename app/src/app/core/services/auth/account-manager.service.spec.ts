@@ -102,6 +102,7 @@ describe('AccountManagerService', () => {
     expect(req.request.body).toEqual({
       targetUserId: 'user-3',
       deviceId: service.getDeviceId(),
+      switchToken: 'token-3',
     });
 
     req.flush(null);

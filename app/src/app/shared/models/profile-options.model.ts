@@ -18,30 +18,37 @@ export type Cs2Map =
   | 'WARDEN';
 
 /** Espelham os enums do backend (profiles/enums/*.java). */
-export const PLAYER_ROLE_OPTIONS: { value: PlayerRole; label: string }[] = [
-  { value: 'ENTRY_FRAGGER', label: 'Entry Fragger' },
-  { value: 'AWPER', label: 'AWPer' },
-  { value: 'IGL', label: 'IGL' },
-  { value: 'SUPPORT', label: 'Suporte' },
-  { value: 'LURKER', label: 'Lurker' },
-  { value: 'RIFLER', label: 'Rifler' },
-  { value: 'FLEX', label: 'Flex' },
+export const PLAYER_ROLE_OPTIONS: { value: PlayerRole; label: string; key: string }[] = [
+  { value: 'ENTRY_FRAGGER', label: 'Entry Fragger', key: 'roles.entryFragger' },
+  { value: 'AWPER', label: 'AWPer', key: 'roles.awper' },
+  { value: 'IGL', label: 'IGL', key: 'roles.igl' },
+  { value: 'SUPPORT', label: 'Suporte', key: 'roles.support' },
+  { value: 'LURKER', label: 'Lurker', key: 'roles.lurker' },
+  { value: 'RIFLER', label: 'Rifler', key: 'roles.rifler' },
+  { value: 'FLEX', label: 'Flex', key: 'roles.flex' },
 ];
 
-export function getPlayerRoleLabel(role: PlayerRole | string | null | undefined): string | null {
+export function getPlayerRoleLabel(
+  role: PlayerRole | string | null | undefined,
+  i18n?: { t: (key: string, params?: Record<string, string | number>) => string } | null,
+): string | null {
   if (!role) return null;
+  const upper = (role as string).toUpperCase();
   const found = PLAYER_ROLE_OPTIONS.find(
-    (opt) => opt.value === role || opt.label.toLowerCase() === role.toLowerCase(),
+    (opt) => opt.value === upper || opt.label.toLowerCase() === (role as string).toLowerCase(),
   );
+  if (i18n && found?.key) {
+    return i18n.t(found.key);
+  }
   return found ? found.label : role;
 }
 
-export const PLAYSTYLE_OPTIONS: { value: Playstyle; label: string }[] = [
-  { value: 'CASUAL', label: 'Casual' },
-  { value: 'COMPETITIVE', label: 'Competitivo' },
-  { value: 'TRYHARD', label: 'Tryhard' },
-  { value: 'TEAM_ORIENTED', label: 'Focado em time' },
-  { value: 'SOLO_QUEUE', label: 'Solo queue' },
+export const PLAYSTYLE_OPTIONS: { value: Playstyle; label: string; key: string }[] = [
+  { value: 'CASUAL', label: 'Casual', key: 'playstyles.casual' },
+  { value: 'COMPETITIVE', label: 'Competitivo', key: 'playstyles.competitive' },
+  { value: 'TRYHARD', label: 'Tryhard', key: 'playstyles.tryhard' },
+  { value: 'TEAM_ORIENTED', label: 'Focado em time', key: 'playstyles.teamOriented' },
+  { value: 'SOLO_QUEUE', label: 'Solo queue', key: 'playstyles.soloQueue' },
 ];
 
 export interface Cs2MapOption {

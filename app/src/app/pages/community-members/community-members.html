@@ -2,7 +2,7 @@
   <div class="shell-container flex h-screen">
     <app-sidebar />
 
-    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto bg-surface">
+    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto bg-surface pb-24 lg:pb-0">
       <div class="mx-auto flex w-full max-w-3xl flex-col gap-lg px-lg py-lg">
         <div class="flex items-center gap-2 text-body-sm text-on-surface-variant">
           <a routerLink="/comunidade" class="rounded hover:text-on-surface hover:underline">Comunidades</a>
@@ -114,7 +114,7 @@
         [disabled]="removing()"
         class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
       >
-        Cancelar
+        {{ 'common.cancel' | trans }}
       </button>
       <button
         type="button"

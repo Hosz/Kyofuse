@@ -10,20 +10,22 @@ import { ProfileService } from '../../core/services/profile/profile.service';
 import { CommunityResponse } from '../../models/communities/community.model';
 import { TeamResponse } from '../../models/teams/team.model';
 import { TeamMemberEditRequest, TeamMemberResponse } from '../../models/teams/team-member.model';
-import { PLAYER_ROLE_OPTIONS } from '../../shared/models/profile-options.model';
+import { PLAYER_ROLE_OPTIONS, getPlayerRoleLabel } from '../../shared/models/profile-options.model';
 import { TEAM_MEMBER_STATUS_LABEL, TEAM_STATUS_OPTIONS } from '../../shared/models/team-options.model';
 import { ConfirmDialogComponent } from '../../components/shared/confirm-dialog/confirm-dialog';
 import { TeamMemberRowComponent } from '../../components/team/team-member-row/team-member-row';
 import { TeamMemberModalComponent } from '../../components/team/team-member-modal/team-member-modal';
 import { getCountryFlagUrl } from '../../shared/models/location-options.model';
 import { ToastService } from '../../core/services/ui/toast.service';
+import { I18nService } from '../../core/i18n/i18n.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 type ViewMode = 'visitor' | 'member' | 'admin';
 type InfoTab = 'description' | 'requisites' | 'members' | 'history';
 
 @Component({
   selector: 'app-team',
-  imports: [RouterLink, AppSidebarComponent, FeedTabsComponent, ConfirmDialogComponent, TeamMemberRowComponent, TeamMemberModalComponent],
+  imports: [RouterLink, AppSidebarComponent, FeedTabsComponent, ConfirmDialogComponent, TeamMemberRowComponent, TeamMemberModalComponent, TranslatePipe],
   templateUrl: './team.html',
   styleUrl: './team.css',
 })
@@ -36,6 +38,7 @@ export class TeamComponent {
   private communityService = inject(CommunityService);
   private profileService = inject(ProfileService);
   private toastService = inject(ToastService);
+  readonly i18n = inject(I18nService);
 
   onApplyToTeam(): void {
     this.toastService.info('O envio de candidaturas e solicitações de entrada em times estará disponível em breve!');
@@ -68,10 +71,10 @@ export class TeamComponent {
   community = signal<CommunityResponse | null>(null);
 
   infoTabs = computed<FeedTab[]>(() => [
-    { label: 'Descrição', active: this.activeInfoTab() === 'description' },
-    { label: 'Requisitos', active: this.activeInfoTab() === 'requisites' },
-    { label: 'Membros', active: this.activeInfoTab() === 'members' },
-    { label: 'Histórico de Atividade', active: this.activeInfoTab() === 'history' },
+    { id: 'description', label: 'Descrição', active: this.activeInfoTab() === 'description' },
+    { id: 'requisites', label: 'Requisitos', active: this.activeInfoTab() === 'requisites' },
+    { id: 'members', label: 'Membros', active: this.activeInfoTab() === 'members' },
+    { id: 'history', label: 'Histórico de Atividade', active: this.activeInfoTab() === 'history' },
   ]);
 
   ngOnInit(): void {
@@ -86,8 +89,9 @@ export class TeamComponent {
       next: (team) => {
         this.team.set(team);
         this.loading.set(false);
-        this.loadMembers(id);
-        this.loadCommunity(id);
+        this.resolveViewMode();
+        this.loadMembers(team.id);
+        this.loadCommunity(team.id);
       },
       error: (error) => {
         console.error('Failed to fetch team:', error);
@@ -98,9 +102,9 @@ export class TeamComponent {
   }
 
   onInfoTabSelected(tab: FeedTab): void {
-    if (tab.label === 'Descrição') this.activeInfoTab.set('description');
-    else if (tab.label === 'Requisitos') this.activeInfoTab.set('requisites');
-    else if (tab.label === 'Membros') this.activeInfoTab.set('members');
+    if (tab.id === 'description') this.activeInfoTab.set('description');
+    else if (tab.id === 'requisites') this.activeInfoTab.set('requisites');
+    else if (tab.id === 'members') this.activeInfoTab.set('members');
     else this.activeInfoTab.set('history');
   }
 
@@ -109,7 +113,7 @@ export class TeamComponent {
   }
 
   roleLabel(role: string): string {
-    return this.roleOptions.find((option) => option.value === role)?.label ?? role;
+    return getPlayerRoleLabel(role, this.i18n) ?? role;
   }
 
   selectedMember = signal<TeamMemberResponse | null>(null);
@@ -134,7 +138,7 @@ export class TeamComponent {
   /** Depois de salvar, os papéis necessários são recarregados: preencher um papel
    * anunciado tira a vaga do anúncio no backend. */
   editMember(request: TeamMemberEditRequest): void {
-    const id = this.teamId();
+    const id = this.team()?.id ?? this.teamId();
     const member = this.selectedMember();
     if (!id || !member || this.savingMember()) return;
 
@@ -164,7 +168,7 @@ export class TeamComponent {
   }
 
   removeMember(member: TeamMemberResponse): void {
-    const id = this.teamId();
+    const id = this.team()?.id ?? this.teamId();
     if (!id || this.removingMember()) return;
 
     this.removingMember.set(true);
@@ -197,7 +201,7 @@ export class TeamComponent {
   }
 
   leaveTeam(): void {
-    const id = this.teamId();
+    const id = this.team()?.id ?? this.teamId();
     if (!id || this.leaving()) return;
 
     this.leaveConfirmOpen.set(false);
@@ -219,7 +223,7 @@ export class TeamComponent {
   }
 
   loadMoreMembers(): void {
-    const teamId = this.teamId();
+    const teamId = this.team()?.id ?? this.teamId();
     if (!teamId || this.membersLoadingMore() || this.membersLastPage()) return;
     this.membersLoadingMore.set(true);
     this.loadMembers(teamId, this.membersPage() + 1);
@@ -249,6 +253,7 @@ export class TeamComponent {
         console.error('Failed to fetch team members:', error);
         this.membersLoading.set(false);
         this.membersLoadingMore.set(false);
+        this.resolveViewMode();
       },
     });
   }

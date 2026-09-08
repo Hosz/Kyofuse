@@ -2,6 +2,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { ConfirmDialogComponent } from '../confirm-dialog/confirm-dialog';
 import { ModalComponent } from '../modal/modal';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { BlockService } from '../../../core/services/block/block.service';
 import { FollowService } from '../../../core/services/follow/follow.service';
 import { FriendshipService } from '../../../core/services/friendship/friendship.service';
@@ -9,7 +10,7 @@ import { CurrentUserService } from '../../../core/services/profile/current-user.
 
 @Component({
   selector: 'app-user-options-menu',
-  imports: [ModalComponent, ConfirmDialogComponent, NgTemplateOutlet],
+  imports: [ModalComponent, ConfirmDialogComponent, NgTemplateOutlet, TranslatePipe],
   templateUrl: './user-options-menu.html',
   styleUrl: './user-options-menu.css',
 })

@@ -18,6 +18,9 @@ public class MailService {
     @Value("${app.frontend.url:http://localhost:4200}")
     private String frontendUrl;
 
+    @Value("${spring.mail.from:Kyofuse <noreply@kyofuse.com>}")
+    private String fromEmail;
+
     private static final java.time.format.DateTimeFormatter FORMATTER = java.time.format.DateTimeFormatter
             .ofPattern("dd/MM/yyyy HH:mm:ss (z)")
             .withZone(java.time.ZoneId.of("UTC"));
@@ -29,6 +32,7 @@ public class MailService {
 
         try {
             SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
             message.setTo(toEmail);
             message.setSubject("Kyofuse - Recuperação de Senha");
             message.setText("Olá,\n\nRecebemos uma solicitação para redefinir a senha da sua conta.\n"
@@ -49,6 +53,7 @@ public class MailService {
 
         try {
             SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
             message.setTo(toEmail);
             message.setSubject("Kyofuse - Confirmação de E-mail");
             message.setText("Olá,\n\nObrigado por se cadastrar na Kyofuse!\n"
@@ -72,6 +77,7 @@ public class MailService {
 
         try {
             SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
             message.setTo(toEmail);
             message.setSubject("Kyofuse - Novo login detectado na sua conta");
             message.setText(String.format(
@@ -136,6 +142,7 @@ public class MailService {
 
         try {
             SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
             message.setTo(toEmail);
             message.setSubject(subject);
             message.setText(messageBody);

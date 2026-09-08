@@ -60,6 +60,10 @@ public class ConversationMemberService {
                 .filter(m -> m.getStatus() == ConversationMemberStatus.ACTIVE)
                 .orElseThrow(() -> new ForbiddenException("User is not an active member of the conversation"));
 
+        if (actorMembership.getRole() != ConversationMemberRole.ADMIN) {
+            throw new ForbiddenException("User does not have permission to add members to the conversation");
+        }
+
         blockValidator.validate(actor, member);
 
         ConversationMember existing = conversationMemberRepository.findByConversationAndUser(conversation, member)

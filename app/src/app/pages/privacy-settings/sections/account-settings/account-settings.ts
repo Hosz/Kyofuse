@@ -4,15 +4,14 @@ import { UserAccountService } from '../../../../core/services/account/user-accou
 import { AuthService } from '../../../../core/services/auth/auth.service';
 import { UserAccountResponse } from '../../../../models/account/user-account.model';
 import { SkeletonComponent } from '../../../../components/shared/skeleton/skeleton';
-import { GOOGLE_CLIENT_ID } from '../../../../core/config/google-auth.config';
-
 import { RouterLink } from '@angular/router';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 
 declare const google: any;
 
 @Component({
   selector: 'app-account-settings',
-  imports: [FormsModule, SkeletonComponent, RouterLink],
+  imports: [FormsModule, SkeletonComponent, RouterLink, TranslatePipe],
   templateUrl: './account-settings.html',
   styleUrl: './account-settings.css',
 })
@@ -78,31 +77,37 @@ export class AccountSettingsSectionComponent implements OnInit {
       return;
     }
 
-    try {
-      google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: (response: any) => {
-          if (response?.credential) {
-            this.linkGoogle(response.credential);
-          }
-        },
-        ux_mode: 'popup',
-        auto_select: false,
-        cancel_on_tap_outside: true,
-      });
+    this.authService.getGoogleClientId().subscribe({
+      next: (clientId) => {
+        if (!clientId) return;
+        try {
+          google.accounts.id.initialize({
+            client_id: clientId,
+            callback: (response: any) => {
+              if (response?.credential) {
+                this.linkGoogle(response.credential);
+              }
+            },
+            ux_mode: 'popup',
+            auto_select: false,
+            cancel_on_tap_outside: true,
+          });
 
-      if (this.googleConnectBtn?.nativeElement) {
-        google.accounts.id.renderButton(this.googleConnectBtn.nativeElement, {
-          type: 'standard',
-          shape: 'pill',
-          theme: 'outline',
-          text: 'signin_with',
-          size: 'medium',
-        });
-      }
-    } catch (e) {
-      console.warn('Falha ao inicializar botão Google Sign-In:', e);
-    }
+          if (this.googleConnectBtn?.nativeElement) {
+            google.accounts.id.renderButton(this.googleConnectBtn.nativeElement, {
+              type: 'standard',
+              shape: 'pill',
+              theme: 'outline',
+              text: 'signin_with',
+              size: 'medium',
+            });
+          }
+        } catch (e) {
+          console.warn('Falha ao inicializar botão Google Sign-In:', e);
+        }
+      },
+      error: (e) => console.warn('Falha ao carregar Google Client ID:', e),
+    });
   }
 
   toggleEditUsername(): void {

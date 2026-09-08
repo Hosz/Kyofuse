@@ -1,6 +1,7 @@
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { ModalComponent } from '../../shared/modal/modal';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { FriendshipService } from '../../../core/services/friendship/friendship.service';
 import { FollowService } from '../../../core/services/follow/follow.service';
 import { MediaService } from '../../../core/services/media/media.service';
@@ -20,7 +21,7 @@ const CANDIDATE_SAMPLE_SIZE = 100;
 
 @Component({
   selector: 'app-new-conversation-modal',
-  imports: [ModalComponent],
+  imports: [ModalComponent, TranslatePipe],
   templateUrl: './new-conversation-modal.html',
   styleUrl: './new-conversation-modal.css',
 })

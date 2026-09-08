@@ -74,6 +74,9 @@ class GamerProfileServiceTest {
     @Mock
     private ProfileAnalyticsService profileAnalyticsService;
 
+    @Mock
+    private com.hokyozu.kyofuse.relationships.block.repository.UserBlockRepository userBlockRepository;
+
     @InjectMocks
     private GamerProfileService service;
 
@@ -451,6 +454,32 @@ class GamerProfileServiceTest {
 
         assertThat(result.getTotalElements()).isEqualTo(1);
         assertThat(result.getContent().get(0).username()).isEqualTo("player");
+    }
+
+    @Test
+    void listingProfilesFiltersBlockedUsersWhenViewerIdProvided() {
+        UUID viewerId = UUID.randomUUID();
+        User viewer = User.builder().id(viewerId).username("viewer").status(UserStatus.ACTIVE).build();
+        UUID blockedId = UUID.randomUUID();
+        UUID blockerId = UUID.randomUUID();
+        ProfileFilter filter = new ProfileFilter("player", null);
+        Pageable pageable = PageRequest.of(0, 10);
+        UUID otherId = UUID.randomUUID();
+        GamerProfile profile = profile(otherId);
+        Page<GamerProfile> page = new PageImpl<>(List.of(profile), pageable, 1);
+
+        when(userFinder.findProfileByUserId(viewerId)).thenReturn(viewer);
+        when(userBlockRepository.findBlockedIdsByBlocker(viewer)).thenReturn(List.of(blockedId));
+        when(userBlockRepository.findBlockerIdsByBlocked(viewer)).thenReturn(List.of(blockerId));
+        when(gamerProfileRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
+        when(favoriteMapRepository.findByProfile_IdIn(List.of(profile.getId()))).thenReturn(List.of());
+
+        Page<GamerProfileResponse> result = service.listingProfiles(filter, viewerId, pageable);
+
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        verify(userBlockRepository).findBlockedIdsByBlocker(viewer);
+        verify(userBlockRepository).findBlockerIdsByBlocked(viewer);
+        verify(gamerProfileRepository).findAll(any(Specification.class), eq(pageable));
     }
 
     @Test

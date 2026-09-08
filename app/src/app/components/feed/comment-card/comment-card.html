@@ -59,9 +59,10 @@
 
 <app-confirm-dialog
   [open]="confirmDeleteOpen()"
-  title="Apagar comentário"
-  message="O comentário sai do post. Não dá para desfazer."
-  confirmLabel="Apagar"
+  [title]="'feed.deletePostTitle' | trans"
+  [message]="'chat.deleteMessageConfirm' | trans"
+  [confirmLabel]="'common.delete' | trans"
+  [cancelLabel]="'common.cancel' | trans"
   [pending]="deleting()"
   (confirmed)="confirmDelete()"
   (cancelled)="cancelDelete()"

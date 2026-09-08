@@ -5,8 +5,8 @@
     <span class="material-symbols-outlined text-[20px] text-on-surface-variant">search</span>
     <input
       type="text"
-      [placeholder]="placeholder()"
-      [attr.aria-label]="placeholder()"
+      [placeholder]="placeholder() || ('discovery.searchPlaceholder' | trans)"
+      [attr.aria-label]="placeholder() || ('discovery.searchPlaceholder' | trans)"
       [value]="query()"
       (input)="onInput($any($event.target).value)"
       (focus)="onFocus()"
@@ -20,12 +20,12 @@
       class="absolute left-0 right-0 top-full z-30 mt-2 flex flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container-low shadow-2xl"
     >
       <div class="flex flex-col gap-1 p-3">
-        <span class="text-label-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant">Perfis</span>
+        <span class="text-label-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant">{{ 'search.profilesTab' | trans }}</span>
 
         @if (profilesLoading()) {
-          <p class="px-1 py-2 text-label-sm text-on-surface-variant">Buscando...</p>
+          <p class="px-1 py-2 text-label-sm text-on-surface-variant">{{ 'discovery.searching' | trans }}</p>
         } @else if (profiles().length === 0) {
-          <p class="px-1 py-2 text-label-sm text-on-surface-variant">Nenhum perfil encontrado.</p>
+          <p class="px-1 py-2 text-label-sm text-on-surface-variant">{{ 'search.noProfilesFound' | trans }}</p>
         } @else {
           @for (profile of profiles(); track profile.id) {
             <button
@@ -48,12 +48,12 @@
       <div class="h-px w-full bg-outline-variant"></div>
 
       <div class="flex flex-col gap-1 p-3">
-        <span class="text-label-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant">Times</span>
+        <span class="text-label-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant">{{ 'search.teamsTab' | trans }}</span>
 
         @if (teamsLoading()) {
-          <p class="px-1 py-2 text-label-sm text-on-surface-variant">Buscando...</p>
+          <p class="px-1 py-2 text-label-sm text-on-surface-variant">{{ 'discovery.searching' | trans }}</p>
         } @else if (teams().length === 0) {
-          <p class="px-1 py-2 text-label-sm text-on-surface-variant">Nenhum time encontrado.</p>
+          <p class="px-1 py-2 text-label-sm text-on-surface-variant">{{ 'search.noTeamsFound' | trans }}</p>
         } @else {
           @for (team of teams(); track team.id) {
             <button
@@ -78,7 +78,7 @@
         (click)="goToResults()"
         class="flex cursor-pointer items-center justify-center gap-1.5 border-t border-outline-variant py-2.5 text-label-sm font-bold text-primary transition-colors hover:bg-surface-container-high"
       >
-        Ver mais resultados
+        {{ 'discovery.moreResults' | trans }}
         <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
       </button>
     </div>

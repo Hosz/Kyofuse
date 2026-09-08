@@ -150,6 +150,21 @@ public class TeamMemberService {
     @Transactional(readOnly = true)
     public Page<TeamMemberResponse> listMembers(UUID teamId, UUID userId, Pageable pageable) {
         Team team = teamFinder.findTeamById(teamId);
+        return listMembersInternal(team, userId, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<TeamMemberResponse> listMembers(String teamIdentifier, UUID userId, Pageable pageable) {
+        Team team;
+        try {
+            team = teamFinder.findTeamById(UUID.fromString(teamIdentifier));
+        } catch (IllegalArgumentException e) {
+            team = teamFinder.findTeamBySlug(teamIdentifier);
+        }
+        return listMembersInternal(team, userId, pageable);
+    }
+
+    private Page<TeamMemberResponse> listMembersInternal(Team team, UUID userId, Pageable pageable) {
         User user = userFinder.findProfileByUserId(userId);
 
         userChecker.checkActive(user);

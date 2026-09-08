@@ -12,15 +12,19 @@ import { getPlayerRoleLabel } from '../../../shared/models/profile-options.model
 import { formatJoinedDate, FALLBACK_AVATAR_URL } from '../../../shared/utils/format.util';
 import { ToastService } from '../../../core/services/ui/toast.service';
 
+import { I18nService } from '../../../core/i18n/i18n.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-profile-header',
-  imports: [RouterLink, LiveStatsCardComponent, SocialLinksComponent, UserOptionsMenuComponent, RoleIconComponent],
+  imports: [RouterLink, LiveStatsCardComponent, SocialLinksComponent, UserOptionsMenuComponent, RoleIconComponent, TranslatePipe],
   templateUrl: './profile-header.html',
   styleUrl: './profile-header.css',
 })
 export class ProfileHeaderComponent {
   readonly fallbackAvatar = FALLBACK_AVATAR_URL;
   private toastService = inject(ToastService);
+  private i18n = inject(I18nService);
   profile = input.required<gamerProfileResponse>();
 
   bannerUrl = input.required<string>();
@@ -37,9 +41,19 @@ export class ProfileHeaderComponent {
   formattedLocation = computed(() =>
     formatLocation(this.profile().country, this.profile().state, this.profile().city),
   );
-  joinedDate = computed(() => formatJoinedDate(this.profile().createdAt));
-  mainRoleLabel = computed(() => getPlayerRoleLabel(this.profile().mainRole));
-  secondaryRoleLabel = computed(() => getPlayerRoleLabel(this.profile().secondaryRole));
+  joinedDate = computed(() => {
+    const lang = this.i18n.currentLang();
+    const template = this.i18n.t('profile.joined');
+    return formatJoinedDate(this.profile().createdAt, lang, template);
+  });
+  mainRoleLabel = computed(() => {
+    this.i18n.currentLang();
+    return getPlayerRoleLabel(this.profile().mainRole, this.i18n);
+  });
+  secondaryRoleLabel = computed(() => {
+    this.i18n.currentLang();
+    return getPlayerRoleLabel(this.profile().secondaryRole, this.i18n);
+  });
 
   inviteCommunity(): void {
     this.toastService.info('O convite de jogadores para comunidades estará disponível em breve!');

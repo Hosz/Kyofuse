@@ -9,23 +9,33 @@
     />
 
     <div class="flex shrink-0 items-center justify-between gap-3 border-b border-outline-variant px-lg py-4">
-      <button
-        type="button"
-        (click)="openInfoPanel()"
-        class="flex cursor-pointer items-center gap-3 rounded-lg py-1 pr-2 text-left transition-colors hover:bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
-      >
-        <img [src]="conv.participant.avatarUrl" [alt]="conv.participant.name" class="h-11 w-11 rounded-full object-cover" />
-        <div class="flex flex-col">
-          <div class="flex items-center gap-2">
-            <span class="text-body-md font-bold text-on-surface">{{ conv.participant.name }}</span>
-            @if (conv.participant.badge) {
-              @if (conv.participant.badgeTone === 'primary') {
-                <span class="rounded-md border border-primary-container px-2 py-0.5 text-label-sm font-semibold text-primary-container">{{ conv.participant.badge }}</span>
-              } @else {
-                <span class="rounded-md border border-tertiary px-2 py-0.5 text-label-sm font-semibold text-tertiary">{{ conv.participant.badge }}</span>
+      <div class="flex items-center gap-2 min-w-0">
+        <button
+          type="button"
+          (click)="back.emit()"
+          class="flex lg:hidden cursor-pointer items-center justify-center rounded-full p-2 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
+          [attr.aria-label]="'chat.backToConversations' | trans"
+        >
+          <span class="material-symbols-outlined text-[22px]">arrow_back</span>
+        </button>
+
+        <button
+          type="button"
+          (click)="openInfoPanel()"
+          class="flex min-w-0 cursor-pointer items-center gap-3 rounded-lg py-1 pr-2 text-left transition-colors hover:bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
+        >
+          <img [src]="conv.participant.avatarUrl" [alt]="conv.participant.name" class="h-11 w-11 rounded-full object-cover" />
+          <div class="flex flex-col min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="truncate text-body-md font-bold text-on-surface">{{ conv.participant.name }}</span>
+              @if (conv.participant.badge) {
+                @if (conv.participant.badgeTone === 'primary') {
+                  <span class="rounded-md border border-primary-container px-2 py-0.5 text-label-sm font-semibold text-primary-container">{{ conv.participant.badge }}</span>
+                } @else {
+                  <span class="rounded-md border border-tertiary px-2 py-0.5 text-label-sm font-semibold text-tertiary">{{ conv.participant.badge }}</span>
+                }
               }
-            }
-          </div>
+            </div>
           <span class="flex items-center gap-1.5 text-label-sm text-on-surface-variant">
             @if (conv.type === 'DIRECT') {
               <span>&#64;{{ conv.participant.handle }}</span>
@@ -33,10 +43,10 @@
             }
             @if (conv.participant.online) {
               <span class="h-2 w-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-500/50"></span>
-              <span class="font-medium text-emerald-400">Online</span>
+              <span class="font-medium text-emerald-400">{{ 'chat.online' | trans }}</span>
             } @else if (conv.type === 'DIRECT') {
               <span class="h-2 w-2 rounded-full bg-outline-variant"></span>
-              <span>Offline</span>
+              <span>{{ 'chat.offline' | trans }}</span>
             }
             @if (conv.participant.statusLabel) {
               <span>&middot; {{ conv.participant.statusLabel }}</span>
@@ -44,8 +54,9 @@
           </span>
         </div>
       </button>
+    </div>
 
-      <div class="flex items-center gap-1 text-on-surface-variant">
+    <div class="flex items-center gap-1 text-on-surface-variant">
         <button
           type="button"
           (click)="comingSoon('Chamadas de vídeo')"
@@ -414,7 +425,7 @@
             type="button"
             (click)="onSend()"
             [disabled]="(!draft().trim() && pendingMedia().length === 0) || uploadingMedia()"
-            aria-label="Enviar mensagem"
+            [attr.aria-label]="'chat.send' | trans"
             class="cursor-pointer rounded-full bg-primary-container p-2 text-on-primary-container transition-all hover:brightness-110 active:scale-[0.95] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
           >
             <span class="material-symbols-outlined text-[20px]">send</span>
@@ -444,7 +455,7 @@
               (click)="onAllow()"
               class="cursor-pointer whitespace-nowrap rounded-full bg-primary-container px-3.5 py-1 text-label-sm font-bold text-on-primary-container transition-all hover:brightness-110 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
             >
-              Permitir novamente
+              {{ 'chat.allowAgain' | trans }}
             </button>
           }
         </div>
@@ -462,15 +473,16 @@
 } @else {
   <section class="flex h-screen flex-1 flex-col items-center justify-center gap-3 bg-surface text-center">
     <span class="material-symbols-outlined text-[40px] text-on-surface-variant">forum</span>
-    <p class="text-body-sm text-on-surface-variant">Selecione uma conversa para começar.</p>
+    <p class="text-body-sm text-on-surface-variant">{{ 'chat.selectConversation' | trans }}</p>
   </section>
 }
 
 <app-confirm-dialog
   [open]="messagePendingDeletion() !== null"
-  title="Apagar mensagem"
-  message="Essa mensagem será removida da conversa. Não dá para desfazer."
-  confirmLabel="Apagar"
+  [title]="'chat.deleteMessage' | trans"
+  [message]="'chat.deleteMessageConfirm' | trans"
+  [confirmLabel]="'common.delete' | trans"
+  [cancelLabel]="'common.cancel' | trans"
   (confirmed)="confirmDeleteMessage()"
   (cancelled)="cancelDeleteMessage()"
 />

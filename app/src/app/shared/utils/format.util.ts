@@ -17,23 +17,87 @@ export function toSlug(value: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
-export function toTimeAgo(isoDate: string): string {
-  if (!isoDate) return 'agora';
+export function toTimeAgo(isoDate: string, lang: string = 'pt'): string {
+  const getNow = () => {
+    switch (lang) {
+      case 'en': return 'now';
+      case 'es': return 'ahora';
+      case 'fr': return 'maintenant';
+      case 'de': return 'jetzt';
+      case 'ru': return 'сейчас';
+      case 'zh': return '刚刚';
+      case 'ja': return 'たった今';
+      default: return 'agora';
+    }
+  };
+
+  if (!isoDate) return getNow();
   const minutes = Math.floor((Date.now() - new Date(isoDate).getTime()) / 60000);
-  if (minutes < 1) return 'agora';
-  if (minutes < 60) return `${minutes}min`;
+  if (minutes < 1) return getNow();
+  if (minutes < 60) {
+    switch (lang) {
+      case 'en': return `${minutes}m`;
+      case 'es': return `${minutes}min`;
+      case 'fr': return `${minutes}min`;
+      case 'de': return `${minutes}min`;
+      case 'ru': return `${minutes}мин`;
+      case 'zh': return `${minutes}分钟前`;
+      case 'ja': return `${minutes}分前`;
+      default: return `${minutes}min`;
+    }
+  }
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  return `${Math.floor(hours / 24)}d`;
+  if (hours < 24) {
+    switch (lang) {
+      case 'zh': return `${hours}小时前`;
+      case 'ja': return `${hours}時間前`;
+      default: return `${hours}h`;
+    }
+  }
+  const days = Math.floor(hours / 24);
+  switch (lang) {
+    case 'zh': return `${days}天前`;
+    case 'ja': return `${days}日前`;
+    default: return `${days}d`;
+  }
 }
 
-export function formatJoinedDate(dateStr: string | null | undefined): string | null {
+export function formatJoinedDate(
+  dateStr: string | null | undefined,
+  lang: string = 'pt',
+  template?: string,
+): string | null {
   if (!dateStr) return null;
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) return null;
 
-  const monthYear = date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-  return `Entrou em ${monthYear}`;
+  const localeMap: Record<string, string> = {
+    pt: 'pt-BR',
+    en: 'en-US',
+    es: 'es-ES',
+    fr: 'fr-FR',
+    de: 'de-DE',
+    ru: 'ru-RU',
+    zh: 'zh-CN',
+    ja: 'ja-JP',
+  };
+  const locale = localeMap[lang] || 'pt-BR';
+  const monthYear = date.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
+
+  if (template) {
+    return template.replace('{date}', monthYear);
+  }
+
+  switch (lang) {
+    case 'en': return `Joined ${monthYear}`;
+    case 'es': return `Se unió en ${monthYear}`;
+    case 'fr': return `A rejoint en ${monthYear}`;
+    case 'de': return `Beigetreten im ${monthYear}`;
+    case 'ru': return `Присоединился в ${monthYear}`;
+    case 'zh': return `加入于 ${monthYear}`;
+    case 'ja': return `${monthYear}に参加`;
+    default: return `Entrou em ${monthYear}`;
+  }
 }
 
 /**
@@ -97,7 +161,7 @@ export function getMessageDayKey(isoDate: string): string {
  * - "DD/MM" se for depois da semana no mesmo ano (ex: "30/05", "15/02")
  * - "DD/MM/YY" se virar o ano (ex: "30/05/26", "15/02/25")
  */
-export function formatMessageDayDivider(isoDate: string): string {
+export function formatMessageDayDivider(isoDate: string, lang: string = 'pt'): string {
   if (!isoDate) return '';
   const date = new Date(isoDate);
   if (isNaN(date.getTime())) return '';
@@ -108,14 +172,44 @@ export function formatMessageDayDivider(isoDate: string): string {
   const diffTime = today.getTime() - target.getTime();
   const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
+  const localeMap: Record<string, string> = {
+    pt: 'pt-BR',
+    en: 'en-US',
+    es: 'es-ES',
+    fr: 'fr-FR',
+    de: 'de-DE',
+    ru: 'ru-RU',
+    zh: 'zh-CN',
+    ja: 'ja-JP',
+  };
+  const locale = localeMap[lang] || 'pt-BR';
+
   if (diffDays === 0) {
-    return 'Hoje';
+    switch (lang) {
+      case 'en': return 'Today';
+      case 'es': return 'Hoy';
+      case 'fr': return "Aujourd'hui";
+      case 'de': return 'Heute';
+      case 'ru': return 'Сегодня';
+      case 'zh': return '今天';
+      case 'ja': return '今日';
+      default: return 'Hoje';
+    }
   }
   if (diffDays === 1) {
-    return 'Ontem';
+    switch (lang) {
+      case 'en': return 'Yesterday';
+      case 'es': return 'Ayer';
+      case 'fr': return 'Hier';
+      case 'de': return 'Gestern';
+      case 'ru': return 'Вчера';
+      case 'zh': return '昨天';
+      case 'ja': return '昨日';
+      default: return 'Ontem';
+    }
   }
   if (diffDays >= 2 && diffDays < 7) {
-    const weekday = date.toLocaleDateString('pt-BR', { weekday: 'long' });
+    const weekday = date.toLocaleDateString(locale, { weekday: 'long' });
     return weekday.charAt(0).toUpperCase() + weekday.slice(1);
   }
 

@@ -111,7 +111,7 @@
       />
 
       <div class="flex items-center gap-10 pt-1 text-on-surface-variant">
-        <button type="button" class="flex cursor-pointer items-center gap-2 rounded-full transition-colors hover:text-primary active:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface" aria-label="Comentar">
+        <button type="button" class="flex cursor-pointer items-center gap-2 rounded-full transition-colors hover:text-primary active:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface" [attr.aria-label]="'feed.comments' | trans">
           <span class="material-symbols-outlined text-[20px]">chat_bubble</span>
           <span class="text-label-md">{{ post().stats.comments }}</span>
         </button>
@@ -119,8 +119,8 @@
           type="button"
           (click)="onRepost($event)"
           class="flex cursor-pointer items-center gap-2 rounded-full transition-colors hover:text-primary active:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-          aria-label="Repostar"
-          title="Repostar (Em breve)"
+          [attr.aria-label]="'feed.repost' | trans"
+          [attr.title]="('feed.repost' | trans) + ' (' + ('common.comingSoon' | trans) + ')'"
         >
           <span class="material-symbols-outlined text-[20px]">repeat</span>
           <span class="text-label-md">{{ post().stats.reposts }}</span>
@@ -131,7 +131,7 @@
           [likeCount]="post().stats.likes"
           [reactionCount]="post().stats.reactions"
         />
-        <div class="flex items-center gap-1.5 text-on-surface-variant/80" title="Visualizações">
+        <div class="flex items-center gap-1.5 text-on-surface-variant/80" [attr.title]="'feed.views' | trans">
           <span class="material-symbols-outlined text-[18px]">visibility</span>
           <span class="text-label-md">{{ post().stats.views ?? 0 }}</span>
         </div>
@@ -143,9 +143,10 @@
 
 <app-confirm-dialog
   [open]="confirmDeleteOpen()"
-  title="Apagar publicação"
-  message="Essa publicação será removida do feed. Essa ação não pode ser desfeita."
-  confirmLabel="Apagar"
+  [title]="'feed.deletePostTitle' | trans"
+  [message]="'feed.deletePostMessage' | trans"
+  [confirmLabel]="'feed.deleteConfirm' | trans"
+  [cancelLabel]="'common.cancel' | trans"
   [pending]="deleting()"
   (confirmed)="confirmDelete()"
   (cancelled)="cancelDelete()"

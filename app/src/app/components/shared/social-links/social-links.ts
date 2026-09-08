@@ -76,6 +76,18 @@ export class SocialLinksComponent {
   items = computed<SocialLinkItem[]>(() => {
     const links = this.links();
     if (!links) return [];
-    return SOCIAL_LINK_DEFS.filter((def) => !!links[def.key]).map((def) => ({ ...def, url: links[def.key]! }));
+    return SOCIAL_LINK_DEFS.filter((def) => {
+      const url = links[def.key];
+      return !!url && this.isSafeUrl(url);
+    }).map((def) => ({ ...def, url: links[def.key]!.trim() }));
   });
+
+  private isSafeUrl(url: string): boolean {
+    if (!url || typeof url !== 'string') return false;
+    const trimmed = url.trim().toLowerCase();
+    if (trimmed.startsWith('javascript:') || trimmed.startsWith('data:') || trimmed.startsWith('vbscript:')) {
+      return false;
+    }
+    return trimmed.startsWith('https://') || trimmed.startsWith('http://');
+  }
 }

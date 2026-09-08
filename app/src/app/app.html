@@ -1,7 +1,18 @@
+<!-- Barra superior móvel com logo, tema, idioma e menu -->
+<app-mobile-header />
+
 <router-outlet />
 
-<!-- Atalho global do chat: some sozinho dentro de /chats. -->
+<!-- Atalho global do chat: visível no desktop, some sozinho dentro de /chats e em telas pequenas. -->
 <app-chat-dock />
+
+<!-- Navegação inferior e menu lateral deslizante para celulares -->
+<app-mobile-nav />
+<app-mobile-drawer />
+
+<!-- Gerenciador de Privacidade e Cookies (LGPD) -->
+<app-cookie-banner />
+<app-cookie-preferences-modal />
 
 <!-- Avisos de erro/sucesso, acima de tudo. -->
 <app-toast-host />

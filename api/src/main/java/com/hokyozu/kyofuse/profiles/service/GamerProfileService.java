@@ -13,6 +13,7 @@ import com.hokyozu.kyofuse.profiles.mapper.GamerProfileMapper;
 import com.hokyozu.kyofuse.profiles.repository.GamerProfileFavoriteMapRepository;
 import com.hokyozu.kyofuse.profiles.repository.GamerProfileRepository;
 import com.hokyozu.kyofuse.profiles.specification.ProfileSpecification;
+import com.hokyozu.kyofuse.relationships.block.repository.UserBlockRepository;
 import com.hokyozu.kyofuse.relationships.permission.service.profile.ProfilePermissionService;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.shared.exception.UnauthorizedException;
@@ -37,8 +38,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.hokyozu.kyofuse.storage.service.ImageProcessingService;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -57,6 +60,7 @@ public class GamerProfileService {
     private final UserFinder userFinder;
     private final com.hokyozu.kyofuse.leaderboard.service.LeaderboardService leaderboardService;
     private final ProfileAnalyticsService profileAnalyticsService;
+    private final UserBlockRepository userBlockRepository;
 
     @Caching(evict = {
             @CacheEvict(value = "user_profiles", key = "'id:' + #userId"),
@@ -138,8 +142,8 @@ public class GamerProfileService {
         profile.setSetupStatus(newStatus);
 
         GamerProfile savedProfile = gamerProfileRepository.save(profile);
-        if (request.premierRating() != null) {
-            leaderboardService.updateScore(userId, request.premierRating());
+        if (savedProfile.getPremierRating() != null) {
+            leaderboardService.updateScore(userId, savedProfile.getPremierRating());
         }
         List<GamerProfileFavoriteMap> favoriteMaps =
                 gamerProfileFavoriteMapRepository.findByProfile_Id(savedProfile.getId());
@@ -173,13 +177,27 @@ public class GamerProfileService {
 
     @Transactional(readOnly = true)
     public Page<GamerProfileResponse> listingProfiles(@Valid ProfileFilter filter, Pageable pageable) {
+        return listingProfiles(filter, null, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<GamerProfileResponse> listingProfiles(@Valid ProfileFilter filter, UUID viewerId, Pageable pageable) {
         if (filter.status() != null && filter.status() != UserStatus.ACTIVE) {
             throw new BadRequestException("Filtro de status inválido.");
         }
 
+        Set<UUID> excludedUserIds = new HashSet<>();
+        if (viewerId != null) {
+            User viewer = userFinder.findProfileByUserId(viewerId);
+            excludedUserIds.addAll(userBlockRepository.findBlockedIdsByBlocker(viewer));
+            excludedUserIds.addAll(userBlockRepository.findBlockerIdsByBlocked(viewer));
+        }
+
         Specification<GamerProfile> spec = Specification
                 .where(ProfileSpecification.usernameContains(filter.username()))
-                .and(ProfileSpecification.hasUserStatus(filter.status()));
+                .and(ProfileSpecification.hasUserStatus(filter.status()))
+                .and(ProfileSpecification.notInUserIds(excludedUserIds))
+                .and(ProfileSpecification.visibleTo(viewerId));
 
         Page<GamerProfile> profiles = gamerProfileRepository.findAll(spec, pageable);
         List<UUID> profileIds = profiles.stream()

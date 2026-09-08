@@ -424,8 +424,18 @@ public class AuthService {
     }
 
     @Transactional
+    public void disconnectAccount(DisconnectAccountRequest request, UUID currentAuthenticatedUserId) {
+        accountSwitchService.revokeSessionWithValidation(
+                request.targetUserId(),
+                request.deviceId(),
+                request.switchToken(),
+                currentAuthenticatedUserId
+        );
+    }
+
+    @Transactional
     public void disconnectAccount(DisconnectAccountRequest request) {
-        accountSwitchService.revokeSession(request.targetUserId(), request.deviceId());
+        disconnectAccount(request, null);
     }
 
     @Transactional

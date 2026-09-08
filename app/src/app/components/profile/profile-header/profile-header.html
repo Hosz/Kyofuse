@@ -89,7 +89,7 @@
               class="flex cursor-pointer items-baseline gap-1.5 rounded transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
             >
               <span class="text-body-md font-bold text-on-surface">{{ formatCount(followersCount()) }}</span>
-              <span class="text-label-sm text-on-surface-variant">seguidores</span>
+              <span class="text-label-sm text-on-surface-variant">{{ 'profile.followers' | trans }}</span>
             </button>
             <button
               type="button"
@@ -97,7 +97,7 @@
               class="flex cursor-pointer items-baseline gap-1.5 rounded transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
             >
               <span class="text-body-md font-bold text-on-surface">{{ formatCount(followingCount()) }}</span>
-              <span class="text-label-sm text-on-surface-variant">seguindo</span>
+              <span class="text-label-sm text-on-surface-variant">{{ 'profile.following' | trans }}</span>
             </button>
             <button
               type="button"
@@ -105,11 +105,11 @@
               class="flex cursor-pointer items-baseline gap-1.5 rounded transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
             >
               <span class="text-body-md font-bold text-on-surface">{{ formatCount(friendsCount()) }}</span>
-              <span class="text-label-sm text-on-surface-variant">amigos</span>
+              <span class="text-label-sm text-on-surface-variant">{{ 'profile.friends' | trans }}</span>
             </button>
             <div class="flex items-baseline gap-1.5">
               <span class="text-body-md font-bold text-on-surface">{{ formatCount(postsCount()) }}</span>
-              <span class="text-label-sm text-on-surface-variant">posts</span>
+              <span class="text-label-sm text-on-surface-variant">{{ 'profile.posts' | trans }}</span>
             </div>
           </div>
         </div>
@@ -124,7 +124,7 @@
               routerLink="/perfil/editar"
               class="cursor-pointer whitespace-nowrap rounded-full bg-secondary-fixed px-4 py-2 text-label-sm font-bold text-on-secondary transition-all hover:brightness-95 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
             >
-              Editar Perfil
+              {{ 'profile.editProfile' | trans }}
             </a>
           } @else {
             <button
@@ -138,7 +138,7 @@
               "
             >
               <span class="material-symbols-outlined text-[16px]">{{ viewerIsFollowing() ? 'how_to_reg' : 'person_add' }}</span>
-              {{ viewerIsFollowing() ? 'Seguindo' : 'Seguir' }}
+              {{ (viewerIsFollowing() ? 'profile.unfollow' : 'profile.follow') | trans }}
             </button>
 
             @if (viewerIsFriend()) {
@@ -150,7 +150,7 @@
                 title="Clique para desfazer amizade"
               >
                 <span class="material-symbols-outlined text-[16px] text-primary">diversity_1</span>
-                Amigos
+                {{ 'profile.friends' | trans }}
               </button>
             } @else if (friendRequestReceived()) {
               <button
@@ -160,7 +160,7 @@
                 class="ignite-glow flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-primary-container px-4 py-2 text-label-sm font-bold text-on-primary-container transition-all hover:brightness-110 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
               >
                 <span class="material-symbols-outlined text-[16px]">person_check</span>
-                Aceitar amizade
+                {{ 'profile.acceptFriend' | trans }}
               </button>
             } @else if (friendRequestSent()) {
               <button
@@ -171,7 +171,7 @@
                 title="Clique para cancelar solicitação"
               >
                 <span class="material-symbols-outlined text-[16px]">schedule</span>
-                Solicitação enviada
+                {{ 'profile.requestSent' | trans }}
               </button>
             } @else {
               <button
@@ -181,7 +181,7 @@
                 class="flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-surface-container-high px-4 py-2 text-label-sm font-bold text-on-surface transition-all hover:brightness-110 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
               >
                 <span class="material-symbols-outlined text-[16px]">group_add</span>
-                Solicitar amizade
+                {{ 'profile.addFriend' | trans }}
               </button>
             }
 
@@ -206,7 +206,7 @@
           class="flex flex-1 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 text-label-md font-bold text-on-surface transition-all hover:bg-surface-container-high active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
         >
           <span class="material-symbols-outlined text-[18px]">chat_bubble</span>
-          Mandar mensagem
+          {{ 'profile.sendMessage' | trans }}
         </button>
 
         <button
@@ -215,7 +215,7 @@
           class="flex flex-1 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 text-label-md font-bold text-on-surface transition-all hover:bg-surface-container-high active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
         >
           <span class="material-symbols-outlined text-[18px]">groups</span>
-          Convidar para time
+          {{ 'profile.inviteToTeam' | trans }}
         </button>
 
         <button
@@ -224,7 +224,7 @@
           class="flex flex-1 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 text-label-md font-bold text-on-surface transition-all hover:bg-surface-container-high active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
         >
           <span class="material-symbols-outlined text-[18px]">diversity_3</span>
-          Convidar para comunidade
+          {{ 'profile.inviteToCommunity' | trans }}
         </button>
       </div>
     }

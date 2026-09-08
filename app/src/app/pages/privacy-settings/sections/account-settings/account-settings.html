@@ -5,11 +5,11 @@
         <span class="material-symbols-outlined text-[24px]">manage_accounts</span>
       </div>
       <div class="flex flex-col">
-        <h2 class="text-title-lg font-bold text-on-surface">Dados da Conta</h2>
-        <span class="text-body-sm text-on-surface-variant">Gerencie seu nome de usuário, e-mail e vínculos de autenticação externa.</span>
+        <h2 class="text-title-lg font-bold text-on-surface">{{ 'settings.accountData' | trans }}</h2>
+        <span class="text-body-sm text-on-surface-variant">{{ 'settings.accountDataDesc' | trans }}</span>
       </div>
     </div>
-    <span class="rounded-full border border-outline-variant bg-surface-container px-3 py-1 text-label-sm font-semibold text-on-surface-variant">Conta</span>
+    <span class="rounded-full border border-outline-variant bg-surface-container px-3 py-1 text-label-sm font-semibold text-on-surface-variant">{{ 'settings.accountGroup' | trans }}</span>
   </div>
 
   @if (loading()) {
@@ -22,8 +22,8 @@
       <div class="flex flex-col gap-3 py-5 first:pt-0">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div class="flex flex-col flex-1 min-w-0 pr-4">
-            <span class="text-body-md font-semibold text-on-surface">Nome de Usuário</span>
-            <span class="text-body-sm text-on-surface-variant leading-relaxed">Seu identificador exclusivo no Kyofuse (&#64;{{ acc.username }})</span>
+            <span class="text-body-md font-semibold text-on-surface">{{ 'settings.usernameLabel' | trans }}</span>
+            <span class="text-body-sm text-on-surface-variant leading-relaxed">{{ 'settings.usernameDesc' | trans }} (&#64;{{ acc.username }})</span>
           </div>
 
           @if (!editingUsername()) {
@@ -34,7 +34,7 @@
                 (click)="toggleEditUsername()"
                 class="cursor-pointer rounded-full border border-outline-variant px-4 py-1.5 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high"
               >
-                Alterar
+                {{ 'settings.change' | trans }}
               </button>
             </div>
           }
@@ -43,7 +43,7 @@
         @if (editingUsername()) {
           <div class="flex flex-col gap-4 rounded-2xl border border-outline-variant bg-surface-container p-5 max-w-2xl">
             <label class="flex flex-col gap-2">
-              <span class="text-label-sm font-semibold text-on-surface">Novo nome de usuário</span>
+              <span class="text-label-sm font-semibold text-on-surface">{{ 'settings.newUsername' | trans }}</span>
               <div class="relative flex items-center">
                 <span class="absolute left-3.5 text-body-md text-on-surface-variant">&#64;</span>
                 <input
@@ -66,7 +66,7 @@
                 [disabled]="savingUsername()"
                 class="cursor-pointer rounded-full border border-outline-variant px-3.5 py-1.5 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:opacity-50"
               >
-                Cancelar
+                {{ 'common.cancel' | trans }}
               </button>
               <button
                 type="button"
@@ -74,7 +74,7 @@
                 [disabled]="savingUsername() || !newUsername().trim()"
                 class="cursor-pointer rounded-full bg-secondary-fixed px-4 py-1.5 text-label-sm font-bold text-on-secondary transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {{ savingUsername() ? 'Salvando...' : 'Salvar username' }}
+                {{ savingUsername() ? ('common.loading' | trans) : ('common.save' | trans) }}
               </button>
             </div>
           </div>
@@ -83,7 +83,7 @@
         @if (usernameSuccess()) {
           <p class="flex items-center gap-1 text-label-sm font-semibold text-tertiary">
             <span class="material-symbols-outlined text-[16px]">check_circle</span>
-            Nome de usuário atualizado com sucesso!
+            {{ 'settings.usernameUpdated' | trans }}
           </p>
         }
       </div>
@@ -92,13 +92,13 @@
       <div class="flex flex-col gap-3 py-4">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div class="flex flex-col flex-1 min-w-0 pr-4">
-            <span class="text-body-md font-semibold text-on-surface">Endereço de E-mail</span>
+            <span class="text-body-md font-semibold text-on-surface">{{ 'settings.emailAddress' | trans }}</span>
             @if (acc.hasGoogle) {
-              <span class="text-body-sm text-on-surface-variant leading-relaxed">Vinculado à sua conta Google. Para alterar o e-mail, desvincule o Google.</span>
+              <span class="text-body-sm text-on-surface-variant leading-relaxed">{{ 'settings.emailLinkedGoogle' | trans }}</span>
             } @else if (acc.isSyntheticEmail) {
-              <span class="text-body-sm text-primary leading-relaxed">Conta criada via Steam. Adicione um e-mail próprio para login tradicional.</span>
+              <span class="text-body-sm text-primary leading-relaxed">{{ 'settings.emailSyntheticSteam' | trans }}</span>
             } @else {
-              <span class="text-body-sm text-on-surface-variant leading-relaxed">E-mail associado para notificações e login</span>
+              <span class="text-body-sm text-on-surface-variant leading-relaxed">{{ 'settings.emailAssociated' | trans }}</span>
             }
           </div>
 
@@ -106,13 +106,13 @@
             <div class="flex shrink-0 items-center gap-3">
               <div class="flex items-center gap-1.5">
                 @if (acc.isSyntheticEmail) {
-                  <span class="rounded bg-surface-container-high px-2 py-1 text-label-sm text-on-surface-variant">Sem e-mail pessoal</span>
+                  <span class="rounded bg-surface-container-high px-2 py-1 text-label-sm text-on-surface-variant">{{ 'settings.noPersonalEmail' | trans }}</span>
                 } @else {
                   <span class="text-body-sm text-on-surface">{{ acc.email }}</span>
                   @if (acc.emailVerified) {
-                    <span class="material-symbols-outlined text-[16px] text-tertiary" title="E-mail verificado">verified</span>
+                    <span class="material-symbols-outlined text-[16px] text-tertiary" [title]="'settings.emailVerified' | trans">verified</span>
                   } @else {
-                    <span class="rounded border border-error/40 bg-error/10 px-1.5 py-0.5 text-label-sm text-error">Não verificado</span>
+                    <span class="rounded border border-error/40 bg-error/10 px-1.5 py-0.5 text-label-sm text-error">{{ 'settings.emailNotVerified' | trans }}</span>
                   }
                 }
               </div>
@@ -123,7 +123,7 @@
                   (click)="toggleEditEmail()"
                   class="cursor-pointer rounded-full border border-outline-variant px-4 py-1.5 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high"
                 >
-                  {{ acc.isSyntheticEmail ? 'Adicionar e-mail' : 'Alterar' }}
+                  {{ acc.isSyntheticEmail ? ('common.save' | trans) : ('settings.change' | trans) }}
                 </button>
               }
             </div>
@@ -133,7 +133,7 @@
         @if (editingEmail() && !acc.hasGoogle) {
           <div class="flex flex-col gap-4 rounded-2xl border border-outline-variant bg-surface-container p-5 max-w-2xl">
             <label class="flex flex-col gap-2">
-              <span class="text-label-sm font-semibold text-on-surface">Novo endereço de e-mail</span>
+              <span class="text-label-sm font-semibold text-on-surface">{{ 'settings.newEmailAddress' | trans }}</span>
               <input
                 type="email"
                 [(ngModel)]="newEmail"
@@ -144,11 +144,11 @@
 
             @if (acc.hasPassword) {
               <label class="flex flex-col gap-2">
-                <span class="text-label-sm font-semibold text-on-surface">Senha atual (para confirmação)</span>
+                <span class="text-label-sm font-semibold text-on-surface">{{ 'settings.currentPasswordConfirm' | trans }}</span>
                 <input
                   type="password"
                   [(ngModel)]="emailCurrentPassword"
-                  placeholder="Sua senha atual"
+                  [placeholder]="'settings.currentPasswordPlaceholder' | trans"
                   class="w-full rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 text-body-sm text-on-surface outline-none focus:border-primary"
                 />
               </label>
@@ -168,7 +168,7 @@
                 [disabled]="savingEmail()"
                 class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:opacity-50"
               >
-                Cancelar
+                {{ 'common.cancel' | trans }}
               </button>
               <button
                 type="button"
@@ -176,7 +176,7 @@
                 [disabled]="savingEmail() || !newEmail().trim()"
                 class="cursor-pointer rounded-full bg-primary-container px-5 py-2 text-label-sm font-bold text-on-primary-container transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {{ savingEmail() ? 'Salvando...' : (acc.isSyntheticEmail ? 'Cadastrar e-mail' : 'Salvar e-mail') }}
+                {{ savingEmail() ? ('common.loading' | trans) : ('common.save' | trans) }}
               </button>
             </div>
           </div>
@@ -185,7 +185,7 @@
         @if (emailSuccess()) {
           <p class="flex items-center gap-1 text-label-sm font-semibold text-tertiary">
             <span class="material-symbols-outlined text-[16px]">check_circle</span>
-            E-mail atualizado! Enviamos um link de confirmação para sua caixa de entrada.
+            {{ 'settings.emailUpdatedNotice' | trans }}
           </p>
         }
       </div>
@@ -194,15 +194,15 @@
       <div class="flex flex-col gap-3 py-4">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div class="flex flex-col flex-1 min-w-0 pr-4">
-            <span class="text-body-md font-semibold text-on-surface">Conta Google</span>
-            <span class="text-body-sm text-on-surface-variant leading-relaxed">Conexão direta para login rápido via Google OAuth</span>
+            <span class="text-body-md font-semibold text-on-surface">{{ 'settings.googleAccount' | trans }}</span>
+            <span class="text-body-sm text-on-surface-variant leading-relaxed">{{ 'settings.googleAccountDesc' | trans }}</span>
           </div>
 
           <div class="flex shrink-0 items-center gap-3">
             @if (acc.hasGoogle) {
               <span class="flex items-center gap-1 rounded-md border border-tertiary/40 bg-tertiary/10 px-2.5 py-1 text-label-sm font-semibold text-tertiary">
                 <span class="material-symbols-outlined text-[16px]">check_circle</span>
-                Conectada
+                {{ 'settings.connected' | trans }}
               </span>
               <button
                 type="button"
@@ -210,7 +210,7 @@
                 [disabled]="actionLoading()"
                 class="cursor-pointer rounded-full border border-error/40 px-3 py-1.5 text-label-sm font-bold text-error transition-colors hover:bg-error/10 disabled:opacity-50"
               >
-                Desvincular
+                {{ 'settings.unlink' | trans }}
               </button>
             } @else {
               <div #googleConnectBtn></div>
@@ -223,15 +223,15 @@
       <div class="flex flex-col gap-3 py-4">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div class="flex flex-col flex-1 min-w-0 pr-4">
-            <span class="text-body-md font-semibold text-on-surface">Conta Steam</span>
-            <span class="text-body-sm text-on-surface-variant leading-relaxed">Vínculo de inventário e login via Steam OpenID</span>
+            <span class="text-body-md font-semibold text-on-surface">{{ 'settings.steamAccount' | trans }}</span>
+            <span class="text-body-sm text-on-surface-variant leading-relaxed">{{ 'settings.steamAccountDesc' | trans }}</span>
           </div>
 
           <div class="flex shrink-0 items-center gap-3">
             @if (acc.hasSteam) {
               <span class="flex items-center gap-1 rounded-md border border-tertiary/40 bg-tertiary/10 px-2.5 py-1 text-label-sm font-semibold text-tertiary">
                 <span class="material-symbols-outlined text-[16px]">check_circle</span>
-                Conectada
+                {{ 'settings.connected' | trans }}
               </span>
               <button
                 type="button"
@@ -239,7 +239,7 @@
                 [disabled]="actionLoading()"
                 class="cursor-pointer rounded-full border border-error/40 px-3 py-1.5 text-label-sm font-bold text-error transition-colors hover:bg-error/10 disabled:opacity-50"
               >
-                Desvincular
+                {{ 'settings.unlink' | trans }}
               </button>
             } @else {
               <button
@@ -251,7 +251,7 @@
                 <svg class="h-4 w-4 fill-current" viewBox="0 0 24 24">
                   <path d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.911c0 .052.005.105.005.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.727L.436 14.819C1.942 20.06 6.702 24 12 24c6.627 0 12-5.373 12-12S18.627 0 11.979 0z" />
                 </svg>
-                Conectar Steam
+                {{ 'settings.connectSteam' | trans }}
               </button>
             }
           </div>
@@ -278,20 +278,20 @@
       <div class="flex flex-col gap-2 rounded-lg border border-outline-variant bg-surface-container/50 p-4">
         <div class="flex items-center gap-2 text-body-md font-bold text-on-surface">
           <span class="material-symbols-outlined text-[18px] text-primary">info</span>
-          Regras de Segurança para Desvinculação
+          {{ 'settings.unlinkRulesTitle' | trans }}
         </div>
         <p class="text-body-sm text-on-surface-variant leading-relaxed">
-          Para desvincular contas de provedores externos (Google ou Steam), sua conta deve possuir:
+          {{ 'settings.unlinkRulesDesc' | trans }}
         </p>
         <ul class="flex flex-col gap-1.5 pl-4 text-body-sm text-on-surface-variant list-disc">
           <li [class.text-tertiary]="acc.hasPassword" [class.font-semibold]="acc.hasPassword">
-            Senha própria cadastrada na plataforma {{ acc.hasPassword ? '✓' : '(Pendente)' }}
+            {{ 'settings.unlinkRulePassword' | trans }} {{ acc.hasPassword ? '✓' : ('settings.pending' | trans) }}
           </li>
           <li [class.text-tertiary]="!acc.isSyntheticEmail" [class.font-semibold]="!acc.isSyntheticEmail">
-            E-mail pessoal válido cadastrado {{ !acc.isSyntheticEmail ? '✓' : '(Pendente)' }}
+            {{ 'settings.unlinkRuleEmail' | trans }} {{ !acc.isSyntheticEmail ? '✓' : ('settings.pending' | trans) }}
           </li>
           <li [class.text-tertiary]="acc.emailVerified" [class.font-semibold]="acc.emailVerified">
-            E-mail verificado {{ acc.emailVerified ? '✓' : '(Pendente)' }}
+            {{ 'settings.unlinkRuleVerified' | trans }} {{ acc.emailVerified ? '✓' : ('settings.pending' | trans) }}
           </li>
         </ul>
       </div>
@@ -304,8 +304,8 @@
           <span class="material-symbols-outlined text-[22px]">dangerous</span>
         </div>
         <div class="flex flex-col">
-          <span class="text-body-md font-semibold text-on-surface">Gerenciamento e Status da Conta</span>
-          <span class="text-body-sm text-on-surface-variant leading-relaxed">Deseja pausar suas atividades temporariamente ou excluir sua conta? Acesse a área dedicada.</span>
+          <span class="text-body-md font-semibold text-on-surface">{{ 'settings.accountManagementStatusTitle' | trans }}</span>
+          <span class="text-body-sm text-on-surface-variant leading-relaxed">{{ 'settings.accountManagementStatusDesc' | trans }}</span>
         </div>
       </div>
 
@@ -313,7 +313,7 @@
         routerLink="/configuracoes/gerenciamento"
         class="cursor-pointer whitespace-nowrap rounded-full border border-outline-variant bg-surface-container px-4 py-2 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high hover:text-error shrink-0"
       >
-        Acessar Gerenciamento
+        {{ 'settings.accountManagement' | trans }}
       </a>
     </div>
   }

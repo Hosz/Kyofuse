@@ -116,4 +116,18 @@ class GamerProfileMapperTest {
 
         assertThat(profile.getShowCountryFlag()).isFalse();
     }
+
+    @Test
+    void sanitizeHtmlStripsExecutableTagsFromNicknameAndBio() {
+        GamerProfile profile = GamerProfile.builder().build();
+
+        GamerProfileMapper.updateEntity(profile, new GamerProfileRequest(
+                "<script>alert(1)</script>player",
+                "Hello <img src=x onerror=alert(1)>world",
+                null, null, null, null, null, null, null, null, null, null, null, null, null, null, null
+        ));
+
+        assertThat(profile.getNickname()).isEqualTo("player");
+        assertThat(profile.getBio()).isEqualTo("Hello world");
+    }
 }

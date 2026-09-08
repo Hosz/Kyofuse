@@ -28,6 +28,7 @@ class MailServiceTest {
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(mailService, "frontendUrl", "http://localhost:4200");
+        ReflectionTestUtils.setField(mailService, "fromEmail", "Kyofuse <noreply@kyofuse.com>");
     }
 
     @Test
@@ -47,6 +48,7 @@ class MailServiceTest {
         verify(mailSender).send(captor.capture());
 
         SimpleMailMessage message = captor.getValue();
+        assertThat(message.getFrom()).isEqualTo("Kyofuse <noreply@kyofuse.com>");
         assertThat(message.getTo()).containsExactly("gamer@example.com");
         assertThat(message.getSubject()).contains("Novo login detectado");
         assertThat(message.getText()).contains("São Paulo, Brasil");

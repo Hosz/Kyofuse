@@ -7,10 +7,12 @@ import { LeaderboardService } from '../../core/services/leaderboard/leaderboard.
 import { LeaderboardEntryResponse, UserRankResponse } from '../../models/leaderboard/leaderboard.model';
 import { FALLBACK_AVATAR_URL } from '../../shared/utils/format.util';
 
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-leaderboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, AppSidebarComponent, DiscoverySidebarComponent],
+  imports: [CommonModule, RouterLink, AppSidebarComponent, DiscoverySidebarComponent, TranslatePipe],
   templateUrl: './leaderboard.html',
   styleUrl: './leaderboard.css',
 })

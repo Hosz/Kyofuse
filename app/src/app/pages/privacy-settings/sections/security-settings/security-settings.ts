@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { AuthService } from '../../../../core/services/auth/auth.service';
 import { TwoFactorAuthService } from '../../../../core/services/auth/two-factor-auth.service';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 
 type SecurityStep = 'status' | 'setup' | 'recovery-codes';
 
@@ -8,7 +9,7 @@ type SecurityStep = 'status' | 'setup' | 'recovery-codes';
  * (não é uma preferência de privacidade) — fala direto com AuthService/TwoFactorAuthService. */
 @Component({
   selector: 'app-security-settings-section',
-  imports: [],
+  imports: [TranslatePipe],
   templateUrl: './security-settings.html',
   styleUrl: './security-settings.css',
 })

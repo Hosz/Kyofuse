@@ -11,6 +11,7 @@ import {
   CommunityResponse,
 } from '../../models/communities/community.model';
 import { FALLBACK_AVATAR_URL } from '../../shared/utils/format.util';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 interface RoleGroup {
   role: CommunityMemberRole;
@@ -29,7 +30,7 @@ const MEMBERS_PAGE_SIZE = 100;
 
 @Component({
   selector: 'app-community-members',
-  imports: [RouterLink, AppSidebarComponent, ModalComponent],
+  imports: [RouterLink, AppSidebarComponent, ModalComponent, TranslatePipe],
   templateUrl: './community-members.html',
   styleUrl: './community-members.css',
 })
@@ -63,6 +64,14 @@ export class CommunityMembersComponent {
     if (this.community()?.ownerId === myUserId) return true;
     const mine = this.members().find((member) => member.memberId === myUserId);
     return mine?.role === 'ADMIN' || mine?.role === 'MODERATOR';
+  });
+
+  myRole = computed<'OWNER' | 'ADMIN' | 'MODERATOR' | 'MEMBER' | null>(() => {
+    const myUserId = this.myUserId();
+    if (!myUserId) return null;
+    if (this.community()?.ownerId === myUserId) return 'OWNER';
+    const mine = this.members().find((member) => member.memberId === myUserId);
+    return (mine?.role as 'ADMIN' | 'MODERATOR' | 'MEMBER') ?? null;
   });
 
   private visibleMembers = computed(() => {
@@ -132,7 +141,14 @@ export class CommunityMembersComponent {
   }
 
   canRemove(member: CommunityMemberResponse): boolean {
-    return this.iAmStaff() && !this.isOwner(member) && member.memberId !== this.myUserId();
+    if (!this.iAmStaff() || this.isOwner(member) || member.memberId === this.myUserId()) {
+      return false;
+    }
+    const role = this.myRole();
+    if (role === 'OWNER') return true;
+    if (role === 'ADMIN') return member.role !== 'ADMIN';
+    if (role === 'MODERATOR') return member.role === 'MEMBER';
+    return false;
   }
 
   openRemoveConfirm(member: CommunityMemberResponse): void {

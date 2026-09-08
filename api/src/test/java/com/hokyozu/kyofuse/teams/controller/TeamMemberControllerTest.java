@@ -65,7 +65,7 @@ class TeamMemberControllerTest {
 
     @Test
     void listMembersUsesAuthenticatedUserIdAndPageable() {
-        UUID teamId = UUID.randomUUID();
+        String teamId = UUID.randomUUID().toString();
         UUID userId = UUID.randomUUID();
         Pageable pageable = PageRequest.of(0, 20);
         Page<TeamMemberResponse> expected = new PageImpl<>(List.of(response()));

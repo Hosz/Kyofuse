@@ -3,6 +3,7 @@ import { ModalComponent } from '../../shared/modal/modal';
 import { UserRowComponent } from '../../shared/user-row/user-row';
 import { UserOptionsMenuComponent } from '../../shared/user-options-menu/user-options-menu';
 import { UserListEntry } from '../../../shared/models/profile.model';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { FriendshipService } from '../../../core/services/friendship/friendship.service';
 import { FollowService } from '../../../core/services/follow/follow.service';
 import { PageResponse } from '../../../models/page-response.model';
@@ -13,7 +14,7 @@ export type UserListType = 'followers' | 'following' | 'friends';
 
 @Component({
   selector: 'app-user-list-modal',
-  imports: [ModalComponent, UserRowComponent, UserOptionsMenuComponent],
+  imports: [ModalComponent, UserRowComponent, UserOptionsMenuComponent, TranslatePipe],
   templateUrl: './user-list-modal.html',
   styleUrl: './user-list-modal.css',
 })

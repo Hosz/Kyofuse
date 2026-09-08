@@ -1,6 +1,7 @@
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { ModalComponent } from '../../shared/modal/modal';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { CommunityService } from '../../../core/services/communities/community.service';
 import { CommunityResponse } from '../../../models/communities/community.model';
 
@@ -8,7 +9,7 @@ const CANDIDATES_PAGE_SIZE = 50;
 
 @Component({
   selector: 'app-pin-community-modal',
-  imports: [ModalComponent],
+  imports: [ModalComponent, TranslatePipe],
   templateUrl: './pin-community-modal.html',
   styleUrl: './pin-community-modal.css',
 })

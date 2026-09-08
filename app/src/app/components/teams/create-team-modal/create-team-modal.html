@@ -1,7 +1,7 @@
-<app-modal [open]="open()" title="Criar time" (closed)="onClose()">
+<app-modal [open]="open()" [title]="'modals.createTeamTitle' | trans" (closed)="onClose()">
   <div class="flex flex-col gap-md">
     <label class="flex flex-col gap-1.5">
-      <span class="text-label-sm font-semibold text-on-surface-variant">Nome</span>
+      <span class="text-label-sm font-semibold text-on-surface-variant">{{ 'teams.name' | trans }}</span>
       <input
         type="text"
         maxlength="80"
@@ -13,7 +13,7 @@
     </label>
 
     <label class="flex flex-col gap-1.5">
-      <span class="text-label-sm font-semibold text-on-surface-variant">Slug</span>
+      <span class="text-label-sm font-semibold text-on-surface-variant">{{ 'teams.slug' | trans }}</span>
       <input
         type="text"
         maxlength="100"
@@ -22,11 +22,11 @@
         (input)="onSlugChange($any($event.target).value)"
         class="rounded-lg border border-outline-variant bg-surface px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
       />
-      <span class="text-label-sm text-on-surface-variant">Só letras minúsculas, números e hífens.</span>
+      <span class="text-label-sm text-on-surface-variant">{{ 'teams.slugHint' | trans }}</span>
     </label>
 
     <label class="flex flex-col gap-1.5">
-      <span class="text-label-sm font-semibold text-on-surface-variant">Descrição</span>
+      <span class="text-label-sm font-semibold text-on-surface-variant">{{ 'teams.description' | trans }}</span>
       <textarea
         rows="3"
         maxlength="500"
@@ -38,7 +38,7 @@
 
     <label class="flex flex-col gap-1.5">
       <div class="flex items-center gap-1.5">
-        <span class="text-label-sm font-semibold text-on-surface-variant">Região (País)</span>
+        <span class="text-label-sm font-semibold text-on-surface-variant">{{ 'teams.region' | trans }}</span>
         @if (flagUrl()) {
           <img
             [src]="flagUrl()!"
@@ -52,7 +52,7 @@
         (change)="region.set($any($event.target).value)"
         class="w-full rounded-lg border border-outline-variant bg-surface px-3 py-2.5 text-body-sm text-on-surface outline-none transition-colors focus:border-primary"
       >
-        <option value="">Selecione um país</option>
+        <option value="">{{ 'teams.selectCountry' | trans }}</option>
         @for (option of countryOptions; track option.value) {
           <option [value]="option.value" [selected]="option.value === region()">
             {{ option.label }}
@@ -70,7 +70,7 @@
         class="hidden"
       />
       <div class="flex items-center justify-between">
-        <span class="text-label-sm font-semibold text-on-surface-variant">Escudo do time</span>
+        <span class="text-label-sm font-semibold text-on-surface-variant">{{ 'teams.shield' | trans }}</span>
         <button
           type="button"
           (click)="teamModalAvatarInput.click()"
@@ -79,24 +79,24 @@
         >
           @if (uploadingAvatar()) {
             <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
-            <span>Enviando...</span>
+            <span>{{ 'teams.uploading' | trans }}</span>
           } @else {
             <span class="material-symbols-outlined text-[16px]">upload</span>
-            <span>{{ avatarUrl() ? 'Alterar escudo' : 'Enviar escudo' }}</span>
+            <span>{{ (avatarUrl() ? 'teams.changeShield' : 'teams.uploadShield') | trans }}</span>
           }
         </button>
       </div>
       <div class="flex items-center gap-3 rounded-lg border border-outline-variant bg-surface-container-low p-2">
         <img [src]="avatarUrl() || defaultAvatar" alt="Escudo" class="h-12 w-12 rounded-lg object-cover" />
         <span class="flex-1 truncate text-label-sm text-on-surface">
-          {{ avatarUrl() ? 'Escudo selecionado' : 'Escudo padrão (opcional)' }}
+          {{ (avatarUrl() ? 'teams.shieldSelected' : 'teams.shieldDefault') | trans }}
         </span>
         @if (avatarUrl()) {
           <button
             type="button"
             (click)="removeAvatar()"
             class="cursor-pointer text-on-surface-variant hover:text-error"
-            title="Remover escudo"
+            [title]="'teams.removeShield' | trans"
           >
             <span class="material-symbols-outlined text-[18px]">delete</span>
           </button>
@@ -113,7 +113,7 @@
         class="hidden"
       />
       <div class="flex items-center justify-between">
-        <span class="text-label-sm font-semibold text-on-surface-variant">Banner do time</span>
+        <span class="text-label-sm font-semibold text-on-surface-variant">{{ 'teams.banner' | trans }}</span>
         <button
           type="button"
           (click)="teamModalBannerInput.click()"
@@ -122,10 +122,10 @@
         >
           @if (uploadingBanner()) {
             <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
-            <span>Enviando...</span>
+            <span>{{ 'teams.uploading' | trans }}</span>
           } @else {
             <span class="material-symbols-outlined text-[16px]">upload</span>
-            <span>{{ bannerUrl() ? 'Alterar banner' : 'Enviar banner' }}</span>
+            <span>{{ (bannerUrl() ? 'teams.changeBanner' : 'teams.uploadBanner') | trans }}</span>
           }
         </button>
       </div>
@@ -136,7 +136,7 @@
             type="button"
             (click)="removeBanner()"
             class="absolute right-2 top-2 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white hover:bg-error"
-            title="Remover banner"
+            [title]="'teams.removeBanner' | trans"
           >
             <span class="material-symbols-outlined text-[16px]">close</span>
           </button>
@@ -145,7 +145,7 @@
     </div>
 
     <div class="flex flex-col gap-2">
-      <span class="text-label-sm font-semibold text-on-surface-variant">Papéis necessários</span>
+      <span class="text-label-sm font-semibold text-on-surface-variant">{{ 'teams.requiredRoles' | trans }}</span>
       <div class="flex flex-wrap gap-2">
         @for (role of roleOptions; track role.value) {
           <button
@@ -158,18 +158,18 @@
                 : 'border-outline-variant text-on-surface-variant hover:text-on-surface'
             "
           >
-            {{ role.label }}
+            {{ role.key ? (role.key | trans) : role.label }}
           </button>
         }
       </div>
     </div>
 
     <div class="flex flex-col gap-3 rounded-lg border border-outline-variant p-3">
-      <span class="text-label-sm font-semibold text-on-surface-variant">Requisitos competitivos (opcional)</span>
+      <span class="text-label-sm font-semibold text-on-surface-variant">{{ 'teams.competitiveReqs' | trans }}</span>
 
       <div class="grid grid-cols-2 gap-2">
         <label class="flex flex-col gap-1">
-          <span class="text-label-sm text-on-surface-variant">Premier mín.</span>
+          <span class="text-label-sm text-on-surface-variant">{{ 'teams.minPremier' | trans }}</span>
           <input
             type="number"
             min="1000"
@@ -180,7 +180,7 @@
           />
         </label>
         <label class="flex flex-col gap-1">
-          <span class="text-label-sm text-on-surface-variant">Premier máx.</span>
+          <span class="text-label-sm text-on-surface-variant">{{ 'teams.maxPremier' | trans }}</span>
           <input
             type="number"
             min="1000"
@@ -191,7 +191,7 @@
           />
         </label>
         <label class="flex flex-col gap-1">
-          <span class="text-label-sm text-on-surface-variant">FACEIT mín.</span>
+          <span class="text-label-sm text-on-surface-variant">{{ 'teams.minFaceit' | trans }}</span>
           <input
             type="number"
             min="1"
@@ -202,7 +202,7 @@
           />
         </label>
         <label class="flex flex-col gap-1">
-          <span class="text-label-sm text-on-surface-variant">FACEIT máx.</span>
+          <span class="text-label-sm text-on-surface-variant">{{ 'teams.maxFaceit' | trans }}</span>
           <input
             type="number"
             min="1"
@@ -213,7 +213,7 @@
           />
         </label>
         <label class="flex flex-col gap-1">
-          <span class="text-label-sm text-on-surface-variant">GC mín.</span>
+          <span class="text-label-sm text-on-surface-variant">{{ 'teams.minGc' | trans }}</span>
           <input
             type="number"
             min="1"
@@ -224,7 +224,7 @@
           />
         </label>
         <label class="flex flex-col gap-1">
-          <span class="text-label-sm text-on-surface-variant">GC máx.</span>
+          <span class="text-label-sm text-on-surface-variant">{{ 'teams.maxGc' | trans }}</span>
           <input
             type="number"
             min="1"
@@ -248,7 +248,7 @@
         [disabled]="saving()"
         class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
       >
-        Cancelar
+        {{ 'common.cancel' | trans }}
       </button>
       <button
         type="button"
@@ -256,7 +256,7 @@
         [disabled]="saving()"
         class="cursor-pointer rounded-full bg-primary-container px-4 py-2 text-label-md font-bold text-on-primary-container transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {{ saving() ? 'Criando...' : 'Criar time' }}
+        {{ saving() ? ('common.loading' | trans) : ('teams.create' | trans) }}
       </button>
     </div>
   </div>

@@ -1,6 +1,7 @@
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { ModalComponent } from '../modal/modal';
 import { UserRowComponent } from '../user-row/user-row';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { PostReactionService } from '../../../core/services/reactions/post-reaction.service';
 import { CommentReactionService } from '../../../core/services/reactions/comment-reaction.service';
 import { PageResponse } from '../../../models/page-response.model';
@@ -17,7 +18,7 @@ interface ReactionEntry {
 
 @Component({
   selector: 'app-reaction-list-modal',
-  imports: [ModalComponent, UserRowComponent],
+  imports: [ModalComponent, UserRowComponent, TranslatePipe],
   templateUrl: './reaction-list-modal.html',
   styleUrl: './reaction-list-modal.css',
 })

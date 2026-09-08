@@ -1,16 +1,20 @@
-import { Component, computed, input, output, signal } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { SearchBarComponent } from '../../discovery/search-bar/search-bar';
 import { Conversation } from '../../../shared/models/chat.model';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { I18nService } from '../../../core/i18n/i18n.service';
 
 type ConversationFilter = 'all' | 'groups' | 'communities';
 
 @Component({
   selector: 'app-conversation-list',
-  imports: [SearchBarComponent],
+  imports: [SearchBarComponent, TranslatePipe],
   templateUrl: './conversation-list.html',
   styleUrl: './conversation-list.css',
 })
 export class ConversationListComponent {
+  readonly i18n = inject(I18nService);
+
   conversations = input<Conversation[]>([]);
   selectedId = input<string | null>(null);
 
@@ -20,10 +24,10 @@ export class ConversationListComponent {
   showRequestsOnly = signal(false);
   activeFilter = signal<ConversationFilter>('all');
 
-  readonly filters: { value: ConversationFilter; label: string }[] = [
-    { value: 'all', label: 'Geral' },
-    { value: 'groups', label: 'Grupos' },
-    { value: 'communities', label: 'Comunidades' },
+  readonly filters: { value: ConversationFilter; key: string }[] = [
+    { value: 'all', key: 'chat.all' },
+    { value: 'groups', key: 'chat.groups' },
+    { value: 'communities', key: 'nav.communities' },
   ];
 
   requestsCount = computed(
@@ -53,6 +57,22 @@ export class ConversationListComponent {
   }
 
   previewLabel(conversation: Conversation): string {
-    return conversation.lastMessagePreview || 'Toque para conversar';
+    const preview = conversation.lastMessagePreview;
+    if (!preview) {
+      return this.i18n.t('chat.tapToChat');
+    }
+    if (preview === 'Quer trocar mensagens com você') return this.i18n.t('chat.requestReceivedPreview');
+    if (preview === 'Solicitação enviada') return this.i18n.t('chat.requestSentPreview');
+    if (preview === 'Conversa encerrada') return this.i18n.t('chat.declinedPreview');
+    if (preview === 'Toque para conversar') return this.i18n.t('chat.tapToChat');
+    if (preview === 'Canal da comunidade') return this.i18n.t('chat.channelCommunity');
+    if (preview === 'Grupo de conversa') return this.i18n.t('chat.groupChat');
+
+    const youWord = this.i18n.t('chat.you');
+    const youRegex = /^(Você|You|Tú|Toi|Du|Вы|你|あなた):\s*/i;
+    if (youRegex.test(preview)) {
+      return preview.replace(youRegex, `${youWord}: `);
+    }
+    return preview;
   }
 }

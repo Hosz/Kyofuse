@@ -2,11 +2,11 @@
   <div class="shell-container flex h-screen">
     <app-sidebar />
 
-    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto bg-surface">
+    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto bg-surface pb-24 lg:pb-0">
       <div class="mx-auto flex w-full max-w-6xl gap-lg px-lg py-lg">
         <nav class="sticky top-lg hidden w-56 shrink-0 flex-col gap-1 self-start lg:flex">
           <p class="px-3 pb-2 text-label-sm font-semibold uppercase tracking-[0.06em] text-on-surface-variant">
-            Editar perfil
+            {{ 'profileEdit.title' | trans }}
           </p>
           @for (section of sections; track section.id) {
             <button
@@ -20,20 +20,20 @@
               "
             >
               <span class="material-symbols-outlined text-[18px]">{{ section.icon }}</span>
-              {{ section.label }}
+              {{ section.key | trans }}
             </button>
           }
         </nav>
 
         <div class="flex min-w-0 flex-1 flex-col gap-lg pb-32">
           <div class="flex items-center gap-2 text-body-sm text-on-surface-variant">
-            <a routerLink="/perfil" class="rounded hover:text-on-surface hover:underline">Perfil</a>
+            <a routerLink="/perfil" class="rounded hover:text-on-surface hover:underline">{{ 'nav.profile' | trans }}</a>
             <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-            <span class="font-semibold text-on-surface">Editar perfil</span>
+            <span class="font-semibold text-on-surface">{{ 'profileEdit.title' | trans }}</span>
           </div>
 
           @if (loading()) {
-            <p class="py-16 text-center text-body-sm text-on-surface-variant">Carregando perfil...</p>
+            <p class="py-16 text-center text-body-sm text-on-surface-variant">{{ 'common.loading' | trans }}</p>
           } @else {
             <section
               id="identidade"
@@ -42,10 +42,10 @@
               <div class="flex items-center justify-between border-b border-outline-variant pb-3">
                 <div class="flex items-center gap-2">
                   <span class="material-symbols-outlined text-primary">palette</span>
-                  <h2 class="text-title-md font-bold text-on-surface">Identidade Visual</h2>
+                  <h2 class="text-title-md font-bold text-on-surface">{{ 'profileEdit.identityVisual' | trans }}</h2>
                 </div>
                 <span class="rounded-md border border-outline-variant px-2 py-1 text-label-sm text-on-surface-variant">
-                  Módulo 01
+                  {{ 'profileEdit.module' | trans }} 01
                 </span>
               </div>
 
@@ -68,7 +68,7 @@
                     (click)="avatarInput.click()"
                     [disabled]="uploadingAvatar()"
                     class="absolute inset-0 flex cursor-pointer items-center justify-center rounded-xl bg-black/50 opacity-0 transition-opacity group-hover:opacity-100 disabled:cursor-not-allowed"
-                    title="Alterar avatar"
+                    [title]="'profileEdit.changeAvatar' | trans"
                   >
                     @if (uploadingAvatar()) {
                       <span class="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
@@ -81,8 +81,8 @@
                 <div class="flex w-full flex-1 flex-col gap-2">
                   <div class="flex items-center justify-between">
                     <div>
-                      <p class="text-body-sm font-bold text-on-surface">Avatar do perfil</p>
-                      <p class="text-label-sm text-on-surface-variant">JPG, PNG ou WebP de até 10MB. Proporção 1:1 recomendada.</p>
+                      <p class="text-body-sm font-bold text-on-surface">{{ 'profileEdit.avatarTitle' | trans }}</p>
+                      <p class="text-label-sm text-on-surface-variant">{{ 'profileEdit.avatarSpec' | trans }}</p>
                     </div>
                     <div class="flex items-center gap-2">
                       @if (avatarUrl()) {
@@ -90,10 +90,10 @@
                           type="button"
                           (click)="removeAvatar()"
                           class="flex cursor-pointer items-center gap-1 rounded-lg border border-outline-variant px-3 py-2 text-label-md font-semibold text-on-surface-variant transition-colors hover:border-error hover:text-error"
-                          title="Remover foto"
+                          [title]="'profileEdit.removePhoto' | trans"
                         >
                           <span class="material-symbols-outlined text-[18px]">delete</span>
-                          <span>Remover</span>
+                          <span>{{ 'common.delete' | trans }}</span>
                         </button>
                       }
                       <button
@@ -104,10 +104,10 @@
                       >
                         @if (uploadingAvatar()) {
                           <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
-                          <span>Enviando...</span>
+                          <span>{{ 'profileEdit.uploading' | trans }}</span>
                         } @else {
                           <span class="material-symbols-outlined text-[18px]">upload</span>
-                          <span>{{ avatarUrl() ? 'Alterar foto' : 'Enviar foto' }}</span>
+                          <span>{{ avatarUrl() ? ('profileEdit.changeAvatar' | trans) : ('profileEdit.uploadPhoto' | trans) }}</span>
                         }
                       </button>
                     </div>
@@ -134,7 +134,7 @@
                     (click)="bannerInput.click()"
                     [disabled]="uploadingBanner()"
                     class="absolute inset-0 flex cursor-pointer items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100 disabled:cursor-not-allowed"
-                    title="Alterar banner"
+                    [title]="'profileEdit.changeBanner' | trans"
                   >
                     @if (uploadingBanner()) {
                       <span class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
@@ -146,8 +146,8 @@
 
                 <div class="flex items-center justify-between">
                   <div>
-                    <p class="text-body-sm font-bold text-on-surface">Banner do topo</p>
-                    <p class="text-label-sm text-on-surface-variant">Imagem panorâmica exibida no topo do perfil (1200x400).</p>
+                    <p class="text-body-sm font-bold text-on-surface">{{ 'profileEdit.bannerTitle' | trans }}</p>
+                    <p class="text-label-sm text-on-surface-variant">{{ 'profileEdit.bannerSpec' | trans }}</p>
                   </div>
                   <div class="flex items-center gap-2">
                     @if (bannerUrl()) {
@@ -155,10 +155,10 @@
                         type="button"
                         (click)="removeBanner()"
                         class="flex cursor-pointer items-center gap-1 rounded-lg border border-outline-variant px-3 py-2 text-label-md font-semibold text-on-surface-variant transition-colors hover:border-error hover:text-error"
-                        title="Remover banner"
+                        [title]="'profileEdit.removeBanner' | trans"
                       >
                         <span class="material-symbols-outlined text-[18px]">delete</span>
-                        <span>Remover</span>
+                        <span>{{ 'common.delete' | trans }}</span>
                       </button>
                     }
                     <button
@@ -169,10 +169,10 @@
                     >
                       @if (uploadingBanner()) {
                         <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
-                        <span>Enviando...</span>
+                        <span>{{ 'profileEdit.uploading' | trans }}</span>
                       } @else {
                         <span class="material-symbols-outlined text-[18px]">upload</span>
-                        <span>{{ bannerUrl() ? 'Alterar banner' : 'Enviar banner' }}</span>
+                        <span>{{ bannerUrl() ? ('profileEdit.changeBanner' | trans) : ('profileEdit.uploadBanner' | trans) }}</span>
                       }
                     </button>
                   </div>
@@ -187,15 +187,15 @@
               <div class="flex items-center justify-between border-b border-outline-variant pb-3">
                 <div class="flex items-center gap-2">
                   <span class="material-symbols-outlined text-primary">badge</span>
-                  <h2 class="text-title-md font-bold text-on-surface">Informações Pessoais</h2>
+                  <h2 class="text-title-md font-bold text-on-surface">{{ 'profileEdit.about' | trans }}</h2>
                 </div>
                 <span class="rounded-md border border-outline-variant px-2 py-1 text-label-sm text-on-surface-variant">
-                  Módulo 02
+                  {{ 'profileEdit.module' | trans }} 02
                 </span>
               </div>
 
               <label class="flex flex-col gap-1.5">
-                <span class="text-label-sm font-semibold text-on-surface-variant">Nickname</span>
+                <span class="text-label-sm font-semibold text-on-surface-variant">{{ 'profileEdit.nickname' | trans }}</span>
                 <input
                   type="text"
                   maxlength="40"
@@ -206,7 +206,7 @@
               </label>
 
               <label class="flex flex-col gap-1.5">
-                <span class="text-label-sm font-semibold text-on-surface-variant">Bio</span>
+                <span class="text-label-sm font-semibold text-on-surface-variant">{{ 'profileEdit.bio' | trans }}</span>
                 <textarea
                   rows="3"
                   maxlength="500"
@@ -219,7 +219,7 @@
               <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <label class="flex flex-col gap-1.5">
                   <div class="flex items-center gap-1.5">
-                    <span class="text-label-sm font-semibold text-on-surface-variant">País</span>
+                    <span class="text-label-sm font-semibold text-on-surface-variant">{{ 'profileEdit.country' | trans }}</span>
                     @if (flagUrl()) {
                       <img
                         [src]="flagUrl()!"
@@ -233,7 +233,7 @@
                     (change)="onCountryChange($any($event.target).value)"
                     class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none transition-colors focus:border-primary"
                   >
-                    <option value="">Selecione um país</option>
+                    <option value="">{{ 'profileEdit.selectCountry' | trans }}</option>
                     @for (option of countryOptions; track option.value) {
                       <option [value]="option.value" [selected]="option.value === country()">
                         {{ option.label }}
@@ -243,7 +243,7 @@
                 </label>
 
                 <label class="flex flex-col gap-1.5">
-                  <span class="text-label-sm font-semibold text-on-surface-variant">Estado / Região</span>
+                  <span class="text-label-sm font-semibold text-on-surface-variant">{{ 'profileEdit.state' | trans }}</span>
                   <select
                     [value]="state()"
                     [disabled]="!country() || stateOptions().length === 0"
@@ -251,7 +251,7 @@
                     class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none transition-colors focus:border-primary disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <option value="">
-                      {{ !country() ? 'Selecione o país primeiro' : 'Selecione um estado' }}
+                      {{ !country() ? ('profileEdit.selectCountryFirst' | trans) : ('profileEdit.selectState' | trans) }}
                     </option>
                     @for (option of stateOptions(); track option.value) {
                       <option [value]="option.value" [selected]="option.value === state()">
@@ -262,7 +262,7 @@
                 </label>
 
                 <label class="flex flex-col gap-1.5">
-                  <span class="text-label-sm font-semibold text-on-surface-variant">Cidade</span>
+                  <span class="text-label-sm font-semibold text-on-surface-variant">{{ 'profileEdit.city' | trans }}</span>
                   <select
                     [value]="city()"
                     [disabled]="!state() || cityOptions().length === 0"
@@ -270,7 +270,7 @@
                     class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2.5 text-body-sm text-on-surface outline-none transition-colors focus:border-primary disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <option value="">
-                      {{ !state() ? 'Selecione o estado primeiro' : 'Selecione uma cidade' }}
+                      {{ !state() ? ('profileEdit.selectStateFirst' | trans) : ('profileEdit.selectCity' | trans) }}
                     </option>
                     @for (c of cityOptions(); track c) {
                       <option [value]="c" [selected]="c === city()">
@@ -289,8 +289,8 @@
                   class="mt-0.5 h-4 w-4 rounded border-outline-variant text-primary focus:ring-primary focus:ring-offset-0"
                 />
                 <div class="flex flex-col gap-0.5">
-                  <span class="text-body-sm font-semibold text-on-surface">Exibir bandeira do país ao lado do nome</span>
-                  <span class="text-label-sm text-on-surface-variant">Mostra a bandeira correspondente ao seu país no cabeçalho do seu perfil e nos cards.</span>
+                  <span class="text-body-sm font-semibold text-on-surface">{{ 'profileEdit.showCountryFlag' | trans }}</span>
+                  <span class="text-label-sm text-on-surface-variant">{{ 'profileEdit.showCountryFlagDesc' | trans }}</span>
                 </div>
               </label>
             </section>
@@ -302,16 +302,16 @@
               <div class="flex items-center justify-between border-b border-outline-variant pb-3">
                 <div class="flex items-center gap-2">
                   <span class="material-symbols-outlined text-primary">military_tech</span>
-                  <h2 class="text-title-md font-bold text-on-surface">Informações Competitivas</h2>
+                  <h2 class="text-title-md font-bold text-on-surface">{{ 'profileEdit.competitive' | trans }}</h2>
                 </div>
                 <span class="rounded-md border border-outline-variant px-2 py-1 text-label-sm text-on-surface-variant">
-                  Módulo 03
+                  {{ 'profileEdit.module' | trans }} 03
                 </span>
               </div>
 
               <div class="flex flex-col gap-2">
                 <span class="text-label-sm font-semibold uppercase tracking-[0.06em] text-on-surface-variant">
-                  Papel principal
+                  {{ 'profileEdit.mainRole' | trans }}
                 </span>
                 <div class="flex flex-wrap gap-2">
                   @for (option of roleOptions; track option.value) {
@@ -326,7 +326,7 @@
                       "
                     >
                       <app-role-icon [role]="option.value" size="sm" [colored]="true" />
-                      <span>{{ option.label }}</span>
+                      <span>{{ option.key ? (option.key | trans) : option.label }}</span>
                     </button>
                   }
                 </div>
@@ -334,7 +334,7 @@
 
               <div class="flex flex-col gap-2">
                 <span class="text-label-sm font-semibold uppercase tracking-[0.06em] text-on-surface-variant">
-                  Papel secundário
+                  {{ 'profileEdit.secondaryRole' | trans }}
                 </span>
                 <div class="flex flex-wrap gap-2">
                   @for (option of roleOptions; track option.value) {
@@ -351,7 +351,7 @@
                       "
                     >
                       <app-role-icon [role]="option.value" size="sm" [colored]="true" />
-                      <span>{{ option.label }}</span>
+                      <span>{{ option.key ? (option.key | trans) : option.label }}</span>
                     </button>
                   }
                 </div>
@@ -395,7 +395,7 @@
 
               <div class="flex flex-col gap-2">
                 <span class="text-label-sm font-semibold uppercase tracking-[0.06em] text-on-surface-variant">
-                  Estilo de jogo
+                  {{ 'profileEdit.playstyle' | trans }}
                 </span>
                 <div class="flex flex-wrap gap-2">
                   @for (option of playstyleOptions; track option.value) {
@@ -409,7 +409,7 @@
                           : 'border-outline-variant text-on-surface-variant hover:text-on-surface'
                       "
                     >
-                      {{ option.label }}
+                      {{ option.key ? (option.key | trans) : option.label }}
                     </button>
                   }
                 </div>
@@ -423,7 +423,7 @@
                     (change)="lookingForTeam.set($any($event.target).checked)"
                     class="h-4 w-4 accent-primary"
                   />
-                  <span class="text-body-sm text-on-surface">Procurando time</span>
+                  <span class="text-body-sm text-on-surface">{{ 'profileEdit.lookingForTeam' | trans }}</span>
                 </label>
                 <label class="flex cursor-pointer items-center gap-2">
                   <input
@@ -432,17 +432,17 @@
                     (change)="lookingForDuo.set($any($event.target).checked)"
                     class="h-4 w-4 accent-primary"
                   />
-                  <span class="text-body-sm text-on-surface">Procurando duo</span>
+                  <span class="text-body-sm text-on-surface">{{ 'profileEdit.lookingForDuo' | trans }}</span>
                 </label>
               </div>
 
               <div class="flex flex-col gap-2">
                 <div class="flex items-center justify-between">
                   <span class="text-label-sm font-semibold uppercase tracking-[0.06em] text-on-surface-variant">
-                    Mapas favoritos ({{ favoriteMaps().length }}/3)
+                    {{ 'profileEdit.favoriteMaps' | trans }} ({{ favoriteMaps().length }}/3)
                   </span>
                   <span class="text-label-sm text-on-surface-variant">
-                    Escolha até 3 mapas
+                    {{ 'profileEdit.selectUpTo3Maps' | trans }}
                   </span>
                 </div>
                 <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -500,14 +500,14 @@
         <div class="sticky bottom-0 mt-auto border-t border-outline-variant bg-surface-container-low/95 backdrop-blur">
           <div class="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-lg py-3">
             <p class="text-label-sm" [class]="error() ? 'text-error' : 'text-on-surface-variant'">
-              {{ error() || 'As alterações são salvas ao clicar em "Salvar alterações".' }}
+              {{ error() || ('profileEdit.saveNotice' | trans) }}
             </p>
             <div class="flex shrink-0 gap-2">
               <a
                 routerLink="/perfil"
                 class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high"
               >
-                Cancelar
+                {{ 'common.cancel' | trans }}
               </a>
               <button
                 type="button"
@@ -515,7 +515,7 @@
                 [disabled]="saving()"
                 class="cursor-pointer rounded-full bg-secondary-fixed px-4 py-2 text-label-md font-bold text-on-secondary transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {{ saving() ? 'Salvando...' : 'Salvar alterações' }}
+                {{ saving() ? ('common.loading' | trans) : ('settings.saveChanges' | trans) }}
               </button>
             </div>
           </div>

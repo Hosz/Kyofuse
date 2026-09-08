@@ -14,6 +14,9 @@ import { RoleIconComponent } from '../../components/shared/role-icon/role-icon';
 import { getPlayerRoleLabel } from '../../shared/models/profile-options.model';
 import { FALLBACK_AVATAR_URL } from '../../shared/utils/format.util';
 
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { I18nService } from '../../core/i18n/i18n.service';
+
 type ResultsTab = 'teams' | 'profiles';
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -21,13 +24,13 @@ const PAGE_SIZE = 12;
 
 @Component({
   selector: 'app-search-results',
-  imports: [RouterLink, AppSidebarComponent, FeedTabsComponent, RoleIconComponent],
+  imports: [RouterLink, AppSidebarComponent, FeedTabsComponent, RoleIconComponent, TranslatePipe],
   templateUrl: './search-results.html',
   styleUrl: './search-results.css',
 })
 export class SearchResultsComponent implements OnInit, OnDestroy {
   readonly fallbackAvatar = FALLBACK_AVATAR_URL;
-  roleLabel = getPlayerRoleLabel;
+  roleLabel = (role: any) => getPlayerRoleLabel(role, this.i18n);
 
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -35,6 +38,7 @@ export class SearchResultsComponent implements OnInit, OnDestroy {
   private profileService = inject(ProfileService);
   private followService = inject(FollowService);
   private toastService = inject(ToastService);
+  readonly i18n = inject(I18nService);
 
   private searchDebounce?: ReturnType<typeof setTimeout>;
 
@@ -62,8 +66,8 @@ export class SearchResultsComponent implements OnInit, OnDestroy {
   tabs = computed<FeedTab[]>(() => {
     const isExplore = this.isExploreMode();
     return [
-      { label: isExplore ? 'Perfis Sugeridos' : 'Perfis', active: this.activeTab() === 'profiles' },
-      { label: isExplore ? 'Times em Destaque' : 'Times', active: this.activeTab() === 'teams' },
+      { id: 'profiles', label: isExplore ? this.i18n.t('search.suggestedProfiles') : this.i18n.t('search.profilesTab'), active: this.activeTab() === 'profiles' },
+      { id: 'teams', label: isExplore ? this.i18n.t('search.featuredTeams') : this.i18n.t('search.teamsTab'), active: this.activeTab() === 'teams' },
     ];
   });
 
@@ -96,7 +100,7 @@ export class SearchResultsComponent implements OnInit, OnDestroy {
   }
 
   onTabSelected(tab: FeedTab): void {
-    const nextTab: ResultsTab = tab.label.toLowerCase().includes('time') ? 'teams' : 'profiles';
+    const nextTab: ResultsTab = tab.id === 'teams' ? 'teams' : 'profiles';
     this.activeTab.set(nextTab);
     this.router.navigate([], {
       queryParams: { tab: nextTab },

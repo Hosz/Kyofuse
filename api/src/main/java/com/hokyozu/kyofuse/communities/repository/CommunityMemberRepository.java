@@ -23,6 +23,8 @@ public interface CommunityMemberRepository extends JpaRepository<CommunityMember
     // por par (userId, communityId) para sempre. Quem chama decide o que fazer com o status.
     Optional<CommunityMember> findByUserIdAndCommunityId(UUID userId, UUID communityId);
 
+    boolean existsByUserIdAndCommunityIdAndStatus(UUID userId, UUID communityId, CommunityMemberStatus status);
+
     @EntityGraph(attributePaths = {"community", "community.owner"})
     Page<CommunityMember> findByUserAndStatus(User user, CommunityMemberStatus status, Pageable pageable);
 

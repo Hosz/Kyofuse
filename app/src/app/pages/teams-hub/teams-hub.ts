@@ -6,13 +6,15 @@ import { TeamService } from '../../core/services/teams/team.service';
 import { TeamResponse } from '../../models/teams/team.model';
 import { TEAM_STATUS_OPTIONS } from '../../shared/models/team-options.model';
 
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
+
 type HubTab = 'mine' | 'discover';
 
 const SEARCH_DEBOUNCE_MS = 300;
 
 @Component({
   selector: 'app-teams-hub',
-  imports: [RouterLink, AppSidebarComponent, CreateTeamModalComponent],
+  imports: [RouterLink, AppSidebarComponent, CreateTeamModalComponent, TranslatePipe],
   templateUrl: './teams-hub.html',
   styleUrl: './teams-hub.css',
 })
@@ -82,6 +84,17 @@ export class TeamsHubComponent implements OnDestroy {
     this.searchQuery.set(value);
     if (this.searchDebounce) clearTimeout(this.searchDebounce);
     this.searchDebounce = setTimeout(() => this.loadTeams(), SEARCH_DEBOUNCE_MS);
+  }
+
+  statusKey(status: string): string {
+    switch (status?.toUpperCase()) {
+      case 'RECRUITING': return 'teams.statusRecruiting';
+      case 'CLOSED': return 'teams.statusClosed';
+      case 'INACTIVE': return 'teams.statusInactive';
+      case 'ACTIVE':
+      default:
+        return 'teams.statusActive';
+    }
   }
 
   statusLabel(status: string): string {

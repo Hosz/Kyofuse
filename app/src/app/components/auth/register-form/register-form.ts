@@ -1,18 +1,22 @@
-import { Component, computed, input, output, signal } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { AuthFieldComponent } from '../auth-field/auth-field';
 import { PasswordStrengthMeterComponent } from '../password-strength-meter/password-strength-meter';
 import { RobotCheckComponent } from '../robot-check/robot-check';
 import { registerRequest } from '../../../models/auth/register-form.model';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { I18nService } from '../../../core/i18n/i18n.service';
 
 const MIN_AGE = 18;
 
 @Component({
   selector: 'app-register-form',
-  imports: [AuthFieldComponent, PasswordStrengthMeterComponent, RobotCheckComponent],
+  imports: [RouterLink, AuthFieldComponent, PasswordStrengthMeterComponent, RobotCheckComponent, TranslatePipe],
   templateUrl: './register-form.html',
   styleUrl: './register-form.css',
 })
 export class RegisterFormComponent {
+  readonly i18n = inject(I18nService);
   loading = input(false);
   submitRegister = output<registerRequest>();
 
@@ -40,26 +44,26 @@ export class RegisterFormComponent {
   private readonly emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   firstNameError = computed(() => {
-    if (!this.firstName()) return 'Informe seu nome.';
+    if (!this.firstName()) return this.i18n.t('auth.firstNameRequired');
     return null;
   });
 
   lastNameError = computed(() => {
-    if (!this.lastName()) return 'Informe seu sobrenome.';
-    if (this.lastName().length < 2) return 'O sobrenome precisa ter ao menos 2 caracteres.';
+    if (!this.lastName()) return this.i18n.t('auth.lastNameRequired');
+    if (this.lastName().length < 2) return this.i18n.t('auth.lastNameMin');
     return null;
-  })
+  });
 
   usernameError = computed(() => {
-    if (!this.username()) return 'Escolha um username.';
-    if (this.username().length < 3) return 'O username precisa ter ao menos 3 caracteres.';
-    if (!/^[a-zA-Z0-9_]+$/.test(this.username())) return 'Use apenas letras, números e "_".';
+    if (!this.username()) return this.i18n.t('auth.usernameRequired');
+    if (this.username().length < 3) return this.i18n.t('auth.usernameMin');
+    if (!/^[a-zA-Z0-9_]+$/.test(this.username())) return this.i18n.t('auth.usernamePattern');
     return null;
   });
 
   emailError = computed(() => {
-    if (!this.email()) return 'Informe seu e-mail de contato.';
-    if (!this.emailPattern.test(this.email())) return 'Informe um e-mail válido.';
+    if (!this.email()) return this.i18n.t('auth.emailRequired');
+    if (!this.emailPattern.test(this.email())) return this.i18n.t('auth.emailInvalid');
     return null;
   });
 
@@ -75,18 +79,18 @@ export class RegisterFormComponent {
   });
 
   passwordError = computed(() => {
-    if (!this.password()) return 'Crie uma senha de acesso.';
-    if (this.password().length < 8) return 'Mínimo de 8 caracteres.';
+    if (!this.password()) return this.i18n.t('auth.passwordCreateRequired');
+    if (this.password().length < 8) return this.i18n.t('auth.passwordMin');
     return null;
   });
 
   confirmPasswordError = computed(() => {
-    if (!this.confirmPassword()) return 'Repita a senha.';
-    if (this.confirmPassword() !== this.password()) return 'As senhas não coincidem.';
+    if (!this.confirmPassword()) return this.i18n.t('auth.confirmPasswordRequired');
+    if (this.confirmPassword() !== this.password()) return this.i18n.t('auth.passwordsDoNotMatch');
     return null;
   });
 
-  robotError = computed(() => (this.robotVerified() ? null : 'Confirme que você não é um robô.'));
+  robotError = computed(() => (this.robotVerified() ? null : this.i18n.t('auth.robotRequired')));
 
   showFirstNameError = computed(() => (this.firstNameTouched() || this.submitAttempted()) && !!this.firstNameError());
   showLastNameError = computed(() => (this.lastNameTouched() || this.submitAttempted()) && !!this.lastNameError());

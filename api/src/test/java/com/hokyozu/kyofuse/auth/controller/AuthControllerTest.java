@@ -323,13 +323,15 @@ class AuthControllerTest {
     }
 
     @Test
-    void disconnectAccountDelegatesToAuthService() {
+    void disconnectAccountDelegatesToAuthServiceWithAuthenticatedUser() {
+        UUID userId = UUID.randomUUID();
+        Jwt jwt = jwt(userId, Map.of("email", "john@example.com", "username", "john", "role", "USER"));
         com.hokyozu.kyofuse.auth.dto.request.DisconnectAccountRequest request =
-                new com.hokyozu.kyofuse.auth.dto.request.DisconnectAccountRequest(UUID.randomUUID(), "device-1");
+                new com.hokyozu.kyofuse.auth.dto.request.DisconnectAccountRequest(userId, "device-1");
 
-        controller.disconnectAccount(request);
+        controller.disconnectAccount(request, jwt);
 
-        verify(authService).disconnectAccount(request);
+        verify(authService).disconnectAccount(request, userId);
     }
 
     @Test
@@ -352,6 +354,16 @@ class AuthControllerTest {
                 .thenReturn(ResponseCookie.from(AuthCookieService.ACCESS_TOKEN_COOKIE, "access-token").build());
         when(authCookieService.buildRefreshTokenCookie(any()))
                 .thenReturn(ResponseCookie.from(AuthCookieService.REFRESH_TOKEN_COOKIE, "refresh-token").build());
+    }
+
+    @Test
+    void getGoogleClientId_returnsConfiguredClientId() {
+        controller.setGoogleClientId("test-client-id.apps.googleusercontent.com");
+        ResponseEntity<Map<String, String>> response = controller.getGoogleClientId();
+
+        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().get("clientId")).isEqualTo("test-client-id.apps.googleusercontent.com");
     }
 
     private static User user() {

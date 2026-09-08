@@ -14,10 +14,33 @@ import { TeamInviteService } from '../../core/services/teams/team-invite.service
 import { NotificationResponse, NotificationType } from '../../models/notifications/notification.model';
 import { FriendRequestResponse } from '../../models/friendship/friend-request.model';
 import { toTimeAgo } from '../../shared/utils/format.util';
+import { I18nService } from '../../core/i18n/i18n.service';
 
 type FilterId = 'all' | 'unread' | 'read' | 'archived' | 'system';
 type ViewMode = 'notifications' | 'requests';
 type RequestTab = 'all' | 'friends' | 'follow' | 'teams' | 'messages';
+
+const TYPE_TITLE_KEY: Partial<Record<NotificationType, string>> = {
+  FOLLOW_REQUEST_RECEIVED: 'notifications.typeFollowRequestReceived',
+  FOLLOW_REQUEST_ACCEPTED: 'notifications.typeFollowRequestAccepted',
+  FOLLOW_REQUEST_DECLINED: 'notifications.typeFollowRequestDeclined',
+  FOLLOW_STARTED: 'notifications.typeFollowStarted',
+  TEAM_INVITE_RECEIVED: 'notifications.typeTeamInviteReceived',
+  TEAM_INVITE_ACCEPTED: 'notifications.typeTeamInviteAccepted',
+  TEAM_INVITE_DECLINED: 'notifications.typeTeamInviteDeclined',
+  TEAM_INVITE_CANCELED: 'notifications.typeTeamInviteCanceled',
+  TEAM_MEMBER_ADDED: 'notifications.typeTeamMemberAdded',
+  TEAM_MEMBER_REMOVED: 'notifications.typeTeamMemberRemoved',
+  TEAM_MEMBER_LEFT: 'notifications.typeTeamMemberLeft',
+  TEAM_MEMBER_EDITED: 'notifications.typeTeamMemberEdited',
+  NEW_POST: 'notifications.typeNewPost',
+  POST_COMMENT: 'notifications.typePostComment',
+  POST_REACTION: 'notifications.typePostReaction',
+  COMMENT_REACTION: 'notifications.typeCommentReaction',
+  NEW_MESSAGE: 'notifications.typeNewMessage',
+  MESSAGE_REQUEST: 'notifications.typeMessageRequest',
+  SYSTEM: 'notifications.typeSystem',
+};
 
 /** Espelha o enum NotificationType do backend — cada tipo vira um ícone. */
 const TYPE_ICON: Record<NotificationType, string> = {
@@ -72,13 +95,16 @@ const EMPTY_MESSAGE: Record<FilterId, string> = {
   system: 'Nenhuma notificação do sistema.',
 };
 
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-notifications',
-  imports: [AppSidebarComponent, NotificationCardComponent, SkeletonComponent, InfiniteScrollDirective],
+  imports: [AppSidebarComponent, NotificationCardComponent, SkeletonComponent, InfiniteScrollDirective, TranslatePipe],
   templateUrl: './notifications.html',
   styleUrl: './notifications.css',
 })
 export class NotificationsComponent {
+  readonly i18n = inject(I18nService);
   private notificationService = inject(NotificationService);
   private followService = inject(FollowService);
   private friendshipService = inject(FriendshipService);
@@ -97,20 +123,20 @@ export class NotificationsComponent {
   view = signal<ViewMode>('notifications');
   requestTab = signal<RequestTab>('all');
 
-  filters: { id: FilterId; label: string }[] = [
-    { id: 'all', label: 'Todas' },
-    { id: 'unread', label: 'Não lidas' },
-    { id: 'read', label: 'Lidas' },
-    { id: 'archived', label: 'Arquivadas' },
-    { id: 'system', label: 'Sistema' },
+  filters: { id: FilterId; labelKey: string }[] = [
+    { id: 'all', labelKey: 'notifications.filterAll' },
+    { id: 'unread', labelKey: 'notifications.filterUnread' },
+    { id: 'read', labelKey: 'notifications.filterRead' },
+    { id: 'archived', labelKey: 'notifications.filterArchived' },
+    { id: 'system', labelKey: 'notifications.filterSystem' },
   ];
 
-  requestTabs: { id: RequestTab; label: string }[] = [
-    { id: 'all', label: 'Todas' },
-    { id: 'friends', label: 'Amizade' },
-    { id: 'follow', label: 'Seguir' },
-    { id: 'teams', label: 'Times' },
-    { id: 'messages', label: 'Mensagens' },
+  requestTabs: { id: RequestTab; labelKey: string }[] = [
+    { id: 'all', labelKey: 'notifications.tabAll' },
+    { id: 'friends', labelKey: 'notifications.tabFriends' },
+    { id: 'follow', labelKey: 'notifications.tabFollow' },
+    { id: 'teams', labelKey: 'notifications.tabTeams' },
+    { id: 'messages', labelKey: 'notifications.tabMessages' },
   ];
 
   friendRequests = signal<FriendRequestResponse[]>([]);
@@ -145,8 +171,9 @@ export class NotificationsComponent {
 
   /** Pedidos de amizade viram notificações sintéticas pra renderizarem no mesmo card das
    * demais solicitações — visualmente não há motivo pra elas destoarem. */
-  private friendRequestItems = computed<RequestItem[]>(() =>
-    this.friendRequests().map((request) => ({
+  private friendRequestItems = computed<RequestItem[]>(() => {
+    const lang = this.i18n.currentLang();
+    return this.friendRequests().map((request) => ({
       key: `friend:${request.id}`,
       tab: 'friends' as const,
       createdAt: request.createdAt,
@@ -155,19 +182,22 @@ export class NotificationsComponent {
         id: request.id,
         type: 'FOLLOW_REQUEST_RECEIVED',
         source: 'social',
-        title: 'Solicitação de amizade',
-        timeAgo: toTimeAgo(request.createdAt),
+        title: this.i18n.t('notifications.typeFriendRequest'),
+        timeAgo: toTimeAgo(request.createdAt, lang),
         createdAt: request.createdAt,
         status: 'unread',
         icon: 'person_add',
         body: [
           { text: '@' + request.senderUsername, bold: true },
-          { text: ' quer ser seu amigo' },
+          { text: ' ' + this.i18n.t('notifications.wantsToBeFriends') },
         ],
-        action: { acceptLabel: 'Aceitar', declineLabel: 'Recusar' },
+        action: {
+          acceptLabel: this.i18n.t('common.accept'),
+          declineLabel: this.i18n.t('common.decline'),
+        },
       },
-    })),
-  );
+    }));
+  });
 
   /** Tudo junto e em ordem cronológica, como na aba de notificações: separar por tópico
    * atrapalha quando há muita solicitação acumulada. */
@@ -230,6 +260,35 @@ export class NotificationsComponent {
     /** Mantém a bolinha de contagem da sidebar em dia enquanto essa página está aberta,
      * sem precisar de uma chamada extra à API a cada ação de ler/arquivar. */
     effect(() => this.notificationService.unreadCount.set(this.unreadCount()));
+
+    effect(() => {
+      const lang = this.i18n.currentLang();
+      this.refreshNotificationTranslations(lang);
+    });
+  }
+
+  private refreshNotificationTranslations(lang: string): void {
+    this.notifications.update((list) =>
+      list.map((n) => {
+        if (n.rawResponse) {
+          const fresh = this.toAppNotification(n.rawResponse);
+          return {
+            ...fresh,
+            status: n.status,
+          };
+        }
+        const titleKey = TYPE_TITLE_KEY[n.type];
+        const isActionable = (n.type === 'FOLLOW_REQUEST_RECEIVED' || n.type === 'TEAM_INVITE_RECEIVED') && !!n.action;
+        return {
+          ...n,
+          title: titleKey ? this.i18n.t(titleKey) : n.title,
+          timeAgo: toTimeAgo(n.createdAt, lang),
+          action: isActionable
+            ? { acceptLabel: this.i18n.t('common.accept'), declineLabel: this.i18n.t('common.decline') }
+            : undefined,
+        };
+      })
+    );
   }
 
   ngOnInit(): void {
@@ -463,21 +522,81 @@ export class NotificationsComponent {
     // Solicitação de mensagem não tem aceite aqui: o Aceitar/Recusar vive na própria
     // conversa, então guardamos o id dela pra poder navegar até lá.
     const conversationId = n.target?.type === 'CONVERSATION' ? n.target.id : undefined;
+    const titleKey = TYPE_TITLE_KEY[n.type];
+
+    const isLoginAlert = n.type === 'SYSTEM' && (
+      n.title === 'Novo login detectado' ||
+      (n.message && n.message.includes('Sua conta foi acessada em')) ||
+      !!n.metadata?.['location']
+    );
+
+    const title = isLoginAlert
+      ? this.i18n.t('notifications.loginAlertTitle')
+      : (titleKey ? this.i18n.t(titleKey) : n.title);
+
+    const body = isLoginAlert
+      ? this.formatLoginAlertBody(n)
+      : this.getNotificationBody(n);
 
     return {
       id: n.id,
       type: n.type,
       source: n.type === 'SYSTEM' ? 'system' : 'social',
-      title: n.title,
-      timeAgo: toTimeAgo(n.createdAt),
+      title,
+      timeAgo: toTimeAgo(n.createdAt, this.i18n.currentLang()),
       createdAt: n.createdAt,
       status: n.status === 'UNREAD' ? 'unread' : n.status === 'READ' ? 'read' : 'archived',
       icon: TYPE_ICON[n.type],
       avatarUrl: n.actor?.avatarUrl,
-      body: [{ text: n.message }],
-      action: isActionable ? { acceptLabel: 'Aceitar', declineLabel: 'Recusar' } : undefined,
+      body,
+      action: isActionable
+        ? { acceptLabel: this.i18n.t('common.accept'), declineLabel: this.i18n.t('common.decline') }
+        : undefined,
       targetId: isActionable ? n.target?.id : undefined,
       conversationId,
+      rawResponse: n,
     };
+  }
+
+  private formatLoginAlertBody(n: NotificationResponse): { text: string; bold?: boolean }[] {
+    const match = n.message?.match(/Sua conta foi acessada em (.*?) usando (.*?)\.?$/i);
+    const location = (n.metadata?.['location'] as string) || (match ? match[1] : '');
+    const device = (n.metadata?.['device'] as string) || (match ? match[2] : '');
+    const localized = this.i18n.t('notifications.loginAlertMessage')
+      .replace('{location}', location)
+      .replace('{device}', device);
+    return [{ text: localized }];
+  }
+
+  private getNotificationBody(n: NotificationResponse): { text: string; bold?: boolean }[] {
+    if (n.actor?.username) {
+      const username = '@' + n.actor.username;
+      switch (n.type) {
+        case 'FOLLOW_REQUEST_RECEIVED':
+          return [{ text: username, bold: true }, { text: ' ' + this.i18n.t('notifications.requestedToFollowYou') }];
+        case 'FOLLOW_STARTED':
+          return [{ text: username, bold: true }, { text: ' ' + this.i18n.t('notifications.startedFollowingYou') }];
+        case 'FOLLOW_REQUEST_ACCEPTED':
+          return [{ text: username, bold: true }, { text: ' ' + this.i18n.t('notifications.acceptedFollowRequest') }];
+        case 'POST_COMMENT':
+          return [{ text: username, bold: true }, { text: ' ' + this.i18n.t('notifications.commentedOnPost') }];
+        case 'TEAM_INVITE_RECEIVED':
+          return [{ text: username, bold: true }, { text: ' ' + this.i18n.t('notifications.invitedYouToTeam') }];
+        case 'TEAM_INVITE_CANCELED':
+          return [{ text: username, bold: true }, { text: ' ' + this.i18n.t('notifications.inviteToTeamCanceled') }];
+        case 'TEAM_MEMBER_ADDED':
+          return [{ text: username, bold: true }, { text: ' ' + this.i18n.t('notifications.joinedTeam') }];
+        case 'TEAM_MEMBER_LEFT':
+          return [{ text: username, bold: true }, { text: ' ' + this.i18n.t('notifications.leftTeam') }];
+        case 'TEAM_MEMBER_REMOVED':
+          return [{ text: username, bold: true }, { text: ' ' + this.i18n.t('notifications.removedFromTeam') }];
+        case 'TEAM_MEMBER_EDITED':
+          return [{ text: username, bold: true }, { text: ' ' + this.i18n.t('notifications.roleChangedInTeam') }];
+        case 'NEW_MESSAGE':
+        case 'MESSAGE_REQUEST':
+          return [{ text: username, bold: true }, { text: ' ' + this.i18n.t('notifications.sentMessage') }];
+      }
+    }
+    return [{ text: n.message }];
   }
 }

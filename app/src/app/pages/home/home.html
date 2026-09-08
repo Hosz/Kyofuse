@@ -2,7 +2,7 @@
   <div class="shell-container flex h-screen">
     <app-sidebar />
 
-    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto border-r border-outline-variant bg-surface">
+    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto border-r border-outline-variant bg-surface pb-24 lg:pb-0">
       <div class="feed-container mx-auto flex w-full flex-col">
         <div class="sticky top-0 z-10 flex items-stretch border-b border-outline-variant bg-surface/90 backdrop-blur-md supports-[backdrop-filter]:bg-surface/70">
           <div class="relative flex min-w-0 flex-1 items-stretch">
@@ -30,7 +30,7 @@
                 [class.shrink-0]="!stretchTabs()"
                 [class]="activeFeed() === forYou ? 'border-primary text-on-surface' : 'border-transparent text-on-surface-variant hover:text-on-surface'"
               >
-                Para Você
+                {{ 'feed.forYou' | trans }}
               </button>
 
               <button
@@ -41,7 +41,7 @@
                 [class.shrink-0]="!stretchTabs()"
                 [class]="activeFeed() === following ? 'border-primary text-on-surface' : 'border-transparent text-on-surface-variant hover:text-on-surface'"
               >
-                Seguindo
+                {{ 'feed.following' | trans }}
               </button>
 
               @for (community of pinnedCommunities(); track community.communitySlug) {
@@ -84,8 +84,8 @@
           <button
             type="button"
             (click)="openPinModal()"
-            aria-label="Escolher comunidades do feed"
-            title="Escolher comunidades do feed"
+            [attr.aria-label]="'feed.pinCommunitiesTitle' | trans"
+            [title]="'feed.pinCommunitiesTitle' | trans"
             class="flex shrink-0 cursor-pointer items-center border-l border-outline-variant px-3 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
           >
             <span class="material-symbols-outlined text-[20px]">add</span>
@@ -97,13 +97,13 @@
         } @else if (activeCommunity(); as community) {
           <div class="flex items-center justify-between gap-3 border-b border-outline-variant px-lg py-3">
             <span class="text-label-md text-on-surface-variant">
-              Publicações de <span class="font-bold text-on-surface">{{ community.communityName }}</span>
+              {{ 'feed.postsFrom' | trans }} <span class="font-bold text-on-surface">{{ community.communityName }}</span>
             </span>
             <a
               [routerLink]="['/comunidade', community.communitySlug]"
               class="shrink-0 cursor-pointer rounded-full border border-outline-variant px-3 py-1.5 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high"
             >
-              Abrir comunidade
+              {{ 'feed.openCommunity' | trans }}
             </a>
           </div>
         }

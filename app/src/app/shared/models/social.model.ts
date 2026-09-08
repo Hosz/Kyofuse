@@ -3,6 +3,7 @@ import { PostMediaResponse } from '../../models/media/post-media-response.model'
 export interface NavItem {
   icon: string;
   label: string;
+  labelKey?: string;
   route: string;
 }
 
@@ -15,6 +16,7 @@ export interface UserProfile {
 export interface FeedTab {
   label: string;
   active?: boolean;
+  id?: string;
 }
 
 export interface PostAuthor {

@@ -68,7 +68,7 @@ public class TeamController {
 
     @GetMapping("/{teamId}/looking-for-team")
     public Page<GamerProfileResponse> listPlayersLookingForTeam(@AuthenticationPrincipal Jwt jwt,
-                                                                @PathVariable UUID teamId,
+                                                                @PathVariable String teamId,
                                                                 @PageableDefault(size = 20) Pageable pageable) {
         UUID userId = UUID.fromString(jwt.getSubject());
 

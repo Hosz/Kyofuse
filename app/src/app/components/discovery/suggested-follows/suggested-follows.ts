@@ -13,9 +13,11 @@ export interface DisplaySuggestedUser {
   avatarUrl: string;
 }
 
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-suggested-follows',
-  imports: [UserRowComponent],
+  imports: [UserRowComponent, TranslatePipe],
   templateUrl: './suggested-follows.html',
   styleUrl: './suggested-follows.css',
 })

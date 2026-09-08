@@ -16,8 +16,12 @@ public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationTo
     public AbstractAuthenticationToken convert(Jwt jwt) {
         String role = jwt.getClaimAsString("role");
 
+        String normalizedRole = (role != null && !role.isBlank())
+                ? role.trim().toUpperCase()
+                : "USER";
+
         List<SimpleGrantedAuthority> authorities = List.of(
-                new SimpleGrantedAuthority("ROLE_" + role)
+                new SimpleGrantedAuthority("ROLE_" + normalizedRole)
         );
 
         return new JwtAuthenticationToken(jwt, authorities, jwt.getSubject());

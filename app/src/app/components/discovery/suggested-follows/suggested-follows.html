@@ -1,7 +1,7 @@
 <section class="flex flex-col gap-md rounded-xl bg-surface-container p-md">
   <div class="flex items-center justify-between">
     <h2 class="border-l-4 border-primary-container pl-3 text-label-md font-bold uppercase tracking-[0.05em] text-on-surface">
-      Sugestões para seguir
+      {{ 'discovery.whoToFollow' | trans }}
     </h2>
   </div>
 
@@ -31,7 +31,7 @@
           (actionClick)="onToggleFollow(profile)"
         />
       } @empty {
-        <p class="py-2 text-center text-label-sm text-on-surface-variant">Nenhuma sugestão no momento.</p>
+        <p class="py-2 text-center text-label-sm text-on-surface-variant">{{ 'discovery.noSuggestions' | trans }}</p>
       }
     </div>
 
@@ -41,7 +41,7 @@
         (click)="seeMore()"
         class="cursor-pointer text-left rounded text-label-md font-semibold text-primary-container transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
       >
-        Ver mais sugestões
+        {{ 'discovery.seeMore' | trans }}
       </button>
     }
   }

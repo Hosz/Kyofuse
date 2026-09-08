@@ -2,6 +2,7 @@ package com.hokyozu.kyofuse.infrastructure.security.steam;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.shared.exception.UnauthorizedException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +16,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -31,15 +34,17 @@ public class SteamService {
 
     private final String apiKey;
     private final String frontendUrl;
+    private final List<String> allowedOrigins;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
 
     @Autowired
     public SteamService(
             @Value("${security.steam.api-key:}") String apiKey,
-            @Value("${app.frontend.url:http://localhost:4200}") String frontendUrl
+            @Value("${app.frontend.url:http://localhost:4200}") String frontendUrl,
+            @Value("${security.cors.allowed-origins:${app.frontend.url:http://localhost:4200}}") String allowedOriginsConfig
     ) {
-        this(apiKey, frontendUrl, new ObjectMapper(), HttpClient.newBuilder()
+        this(apiKey, frontendUrl, allowedOriginsConfig, new ObjectMapper(), HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
                 .build());
     }
@@ -50,19 +55,35 @@ public class SteamService {
             ObjectMapper objectMapper,
             HttpClient httpClient
     ) {
+        this(apiKey, frontendUrl, frontendUrl, objectMapper, httpClient);
+    }
+
+    public SteamService(
+            String apiKey,
+            String frontendUrl,
+            String allowedOriginsConfig,
+            ObjectMapper objectMapper,
+            HttpClient httpClient
+    ) {
         this.apiKey = apiKey != null ? apiKey.trim() : "";
         this.frontendUrl = frontendUrl != null ? frontendUrl.trim() : "http://localhost:4200";
         this.objectMapper = objectMapper != null ? objectMapper : new ObjectMapper();
         this.httpClient = httpClient != null ? httpClient : HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();
+
+        String rawOrigins = (allowedOriginsConfig != null && !allowedOriginsConfig.isBlank())
+                ? allowedOriginsConfig
+                : this.frontendUrl;
+
+        this.allowedOrigins = Arrays.stream(rawOrigins.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .toList();
     }
 
     public String buildLoginUrl(String returnToUrl) {
-        String targetReturnTo = (returnToUrl != null && !returnToUrl.isBlank())
-                ? returnToUrl
-                : (frontendUrl + "/auth/steam/callback");
-
+        String targetReturnTo = resolveAndValidateReturnToUrl(returnToUrl);
         String realm = extractRealm(targetReturnTo);
 
         return STEAM_OPENID_URL + "?"
@@ -72,6 +93,70 @@ public class SteamService {
                 + "&openid.realm=" + urlEncode(realm)
                 + "&openid.identity=" + urlEncode("http://specs.openid.net/auth/2.0/identifier_select")
                 + "&openid.claimed_id=" + urlEncode("http://specs.openid.net/auth/2.0/identifier_select");
+    }
+
+    private String resolveAndValidateReturnToUrl(String returnToUrl) {
+        if (returnToUrl == null || returnToUrl.isBlank()) {
+            return frontendUrl.endsWith("/")
+                    ? frontendUrl + "auth/steam/callback"
+                    : frontendUrl + "/auth/steam/callback";
+        }
+
+        String target = returnToUrl.trim();
+        URI uri;
+        try {
+            uri = URI.create(target);
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("URL de retorno com formato inválido.");
+        }
+
+        if (!uri.isAbsolute()) {
+            if (!target.startsWith("/")) {
+                throw new BadRequestException("URL de retorno relativa deve iniciar com '/'.");
+            }
+            if (!target.startsWith("/auth/steam/callback")) {
+                throw new BadRequestException("Path de retorno não permitido.");
+            }
+            return (frontendUrl.endsWith("/") ? frontendUrl.substring(0, frontendUrl.length() - 1) : frontendUrl) + target;
+        }
+
+        String scheme = uri.getScheme();
+        if (scheme == null || (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https"))) {
+            throw new BadRequestException("Protocolo da URL de retorno deve ser HTTP ou HTTPS.");
+        }
+
+        String host = uri.getHost();
+        if (host == null || host.isBlank()) {
+            throw new BadRequestException("Host da URL de retorno ausente.");
+        }
+
+        String path = uri.getPath();
+        if (path == null || !path.equals("/auth/steam/callback")) {
+            throw new BadRequestException("Path da URL de retorno deve ser '/auth/steam/callback'.");
+        }
+
+        int port = uri.getPort();
+        String portPart = (port != -1 && port != 80 && port != 443) ? ":" + port : "";
+        String requestedOrigin = scheme.toLowerCase() + "://" + host.toLowerCase() + portPart;
+
+        boolean isAllowed = allowedOrigins.stream().anyMatch(allowed -> {
+            try {
+                URI allowedUri = URI.create(allowed.trim());
+                int aPort = allowedUri.getPort();
+                String aPortPart = (aPort != -1 && aPort != 80 && aPort != 443) ? ":" + aPort : "";
+                String allowedOrigin = allowedUri.getScheme().toLowerCase() + "://" + allowedUri.getHost().toLowerCase() + aPortPart;
+                return allowedOrigin.equalsIgnoreCase(requestedOrigin);
+            } catch (Exception e) {
+                return false;
+            }
+        });
+
+        if (!isAllowed) {
+            log.warn("Tentativa de redirecionamento OpenID não autorizado para origem: {}", requestedOrigin);
+            throw new BadRequestException("Origem da URL de retorno não autorizada.");
+        }
+
+        return target;
     }
 
     public String validateOpenIdAndGetSteamId(Map<String, String> openIdParams) {

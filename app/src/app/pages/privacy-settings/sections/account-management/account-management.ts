@@ -6,10 +6,11 @@ import { AuthService } from '../../../../core/services/auth/auth.service';
 import { AccountManagerService } from '../../../../core/services/auth/account-manager.service';
 import { UserAccountResponse } from '../../../../models/account/user-account.model';
 import { SkeletonComponent } from '../../../../components/shared/skeleton/skeleton';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-account-management',
-  imports: [FormsModule, SkeletonComponent],
+  imports: [FormsModule, SkeletonComponent, TranslatePipe],
   templateUrl: './account-management.html',
   styleUrl: './account-management.css',
 })

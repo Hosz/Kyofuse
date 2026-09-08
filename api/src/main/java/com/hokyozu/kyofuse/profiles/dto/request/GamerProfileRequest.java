@@ -6,6 +6,7 @@ import com.hokyozu.kyofuse.profiles.enums.PlayerRole;
 import com.hokyozu.kyofuse.profiles.enums.Playstyle;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.util.List;
@@ -19,9 +20,11 @@ public record GamerProfileRequest(
         String bio,
 
         @Size(max = 500)
+        @Pattern(regexp = "^(https?://.+)?$", message = "Avatar URL must be a valid HTTP or HTTPS URL")
         String avatarUrl,
 
         @Size(max = 500)
+        @Pattern(regexp = "^(https?://.+)?$", message = "Banner URL must be a valid HTTP or HTTPS URL")
         String bannerUrl,
 
         @Size(max = 80)

@@ -2,26 +2,29 @@ import { Component, inject, signal } from '@angular/core';
 import { AppSidebarComponent } from '../../components/layout/app-sidebar/app-sidebar';
 import { DiscoverySidebarComponent } from '../../components/discovery/discovery-sidebar/discovery-sidebar';
 import { ToastService } from '../../core/services/ui/toast.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { I18nService } from '../../core/i18n/i18n.service';
 
 export interface RoadmapItem {
   id: string;
   icon: string;
-  category: string;
+  categoryKey: string;
   categoryGroup: 'MATCHMAKING_TIMES' | 'SOCIAL_FEED' | 'TATICAS_GUIAS';
-  title: string;
-  description: string;
+  titleKey: string;
+  descKey: string;
   status: 'PLANEJADO';
   estimatedQuarter: string;
 }
 
 @Component({
   selector: 'app-roadmap',
-  imports: [AppSidebarComponent, DiscoverySidebarComponent],
+  imports: [AppSidebarComponent, DiscoverySidebarComponent, TranslatePipe],
   templateUrl: './roadmap.html',
   styleUrl: './roadmap.css',
 })
 export class RoadmapComponent {
   private toastService = inject(ToastService);
+  private i18n = inject(I18nService);
 
   readonly activeFilter = signal<'ALL' | 'MATCHMAKING_TIMES' | 'SOCIAL_FEED' | 'TATICAS_GUIAS'>('ALL');
 
@@ -29,99 +32,90 @@ export class RoadmapComponent {
     {
       id: 'duo-finder',
       icon: 'person_search',
-      category: 'Matchmaking',
+      categoryKey: 'roadmap.catMatchmaking',
       categoryGroup: 'MATCHMAKING_TIMES',
-      title: 'Duo & Trio Finder por Filtros',
-      description:
-        'Encontre companheiros de equipe com base no seu nível de Premier/GC, função primária (Entry, AWP, Suporte, IGL), mapas favoritos e horários de jogo.',
+      titleKey: 'roadmap.duoFinderTitle',
+      descKey: 'roadmap.duoFinderDesc',
       status: 'PLANEJADO',
       estimatedQuarter: 'Q4 2026',
     },
     {
       id: 'scrims-lfg',
       icon: 'sports_esports',
-      category: 'Times & Competitivo',
+      categoryKey: 'roadmap.catTeamsCompetitive',
       categoryGroup: 'MATCHMAKING_TIMES',
-      title: 'Agendamento de Treinos & Scrims de Time',
-      description:
-        'Capitães de times cadastrados podem marcar horários de treinos, desafiar outros times da plataforma e registrar os resultados das partidas.',
+      titleKey: 'roadmap.scrimsLfgTitle',
+      descKey: 'roadmap.scrimsLfgDesc',
       status: 'PLANEJADO',
       estimatedQuarter: 'Q4 2026',
     },
     {
       id: 'team-recruitment',
       icon: 'how_to_reg',
-      category: 'Recrutamento',
+      categoryKey: 'roadmap.catRecruitment',
       categoryGroup: 'MATCHMAKING_TIMES',
-      title: 'Painel de Vagas Abertas & Recrutamento de Times',
-      description:
-        'Times anunciam vagas abertas por função (ex: "Procura-se AWP nível 15+ GC") e jogadores enviam candidaturas diretamente pela plataforma.',
+      titleKey: 'roadmap.teamRecruitmentTitle',
+      descKey: 'roadmap.teamRecruitmentDesc',
       status: 'PLANEJADO',
       estimatedQuarter: 'Q1 2027',
     },
     {
       id: 'tournaments-hub',
       icon: 'emoji_events',
-      category: 'Torneios & Campeonatos',
+      categoryKey: 'roadmap.catTournaments',
       categoryGroup: 'MATCHMAKING_TIMES',
-      title: 'Central de Torneios Oficiais & Comunitários (Estilo HLTV)',
-      description:
-        'Acompanhe campeonatos mundiais e regionais de CS2 com estatísticas de partidas, escalações de times, tabelas de classificação, premiações e crie seus próprios torneios no Kyofuse com chaves automáticas.',
+      titleKey: 'roadmap.tournamentsHubTitle',
+      descKey: 'roadmap.tournamentsHubDesc',
       status: 'PLANEJADO',
       estimatedQuarter: 'Q3 2027',
     },
     {
       id: 'tactics-hub',
       icon: 'menu_book',
-      category: 'Táticas & Guias',
+      categoryKey: 'roadmap.catTacticsGuides',
       categoryGroup: 'TATICAS_GUIAS',
-      title: 'Biblioteca de Lineups & Táticas Comunitárias',
-      description:
-        'Guias práticos com fotos e instruções passo a passo de granadas (smokes, molotovs, flashes) criados pela comunidade, organizados por mapa e lado (TR/CT).',
+      titleKey: 'roadmap.tacticsHubTitle',
+      descKey: 'roadmap.tacticsHubDesc',
       status: 'PLANEJADO',
       estimatedQuarter: 'Q1 2027',
     },
     {
       id: 'reposts',
       icon: 'repeat',
-      category: 'Feed & Social',
+      categoryKey: 'roadmap.catFeedSocial',
       categoryGroup: 'SOCIAL_FEED',
-      title: 'Sistema de Reposts & Citações de Publicações',
-      description:
-        'Compartilhe jogadas e publicações de outros jogadores diretamente no seu perfil e no feed dos seus seguidores com apenas um clique.',
+      titleKey: 'roadmap.repostsTitle',
+      descKey: 'roadmap.repostsDesc',
       status: 'PLANEJADO',
       estimatedQuarter: 'Q1 2027',
     },
     {
       id: 'badges',
       icon: 'military_tech',
-      category: 'Perfil Gamer',
+      categoryKey: 'roadmap.catGamerProfile',
       categoryGroup: 'SOCIAL_FEED',
-      title: 'Insígnias de Perfil & Conquistas de Comunidade',
-      description:
-        'Medalhas cosméticas desbloqueadas por marcos na plataforma (ex: Membro Fundador, Capitão Ativo, Líder de Comunidade, Estrategista).',
+      titleKey: 'roadmap.badgesTitle',
+      descKey: 'roadmap.badgesDesc',
       status: 'PLANEJADO',
       estimatedQuarter: 'Q1 2027',
     },
     {
       id: 'polls',
       icon: 'poll',
-      category: 'Engajamento',
+      categoryKey: 'roadmap.catEngagement',
       categoryGroup: 'SOCIAL_FEED',
-      title: 'Enquetes Interativas no Feed e Comunidades',
-      description:
-        'Crie votações interativas para decidir estratégias de mapa, votar no MVP da semana ou debater atualizações do jogo com seus seguidores.',
+      titleKey: 'roadmap.pollsTitle',
+      descKey: 'roadmap.pollsDesc',
       status: 'PLANEJADO',
       estimatedQuarter: 'Q2 2027',
     },
     {
       id: 'media-uploads',
       icon: 'image',
-      category: 'Mídia',
+      categoryKey: 'roadmap.catMedia',
       categoryGroup: 'SOCIAL_FEED',
-      title: 'Upload de Imagens e Screenshots nos Posts',
-      description:
-        'Compartilhe capturas de placar, táticas desenhadas e screenshots de jogadas marcantes nas suas publicações.',
+      titleKey: 'roadmap.mediaUploadsTitle',
+      descKey: 'roadmap.mediaUploadsDesc',
       status: 'PLANEJADO',
       estimatedQuarter: 'Q2 2027',
     },
@@ -138,8 +132,8 @@ export class RoadmapComponent {
   }
 
   notifyMe(item: RoadmapItem): void {
-    this.toastService.success(
-      `Perfeito! Você será notificado assim que "${item.title}" estiver disponível.`,
-    );
+    const title = this.i18n.t(item.titleKey as any);
+    const msg = this.i18n.t('roadmap.notifySuccess').replace('{title}', title);
+    this.toastService.success(msg);
   }
 }

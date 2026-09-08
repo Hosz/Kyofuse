@@ -13,6 +13,8 @@ import { registerRequest } from '../../models/auth/register-form.model';
 import { loginRequest } from '../../models/auth/login-form.model';
 import { isMfaRequired, isReactivationRequired } from '../../models/auth/auth-response.model';
 import { AuthService } from '../../core/services/auth/auth.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { FooterLinksComponent } from '../../components/layout/footer-links/footer-links';
 
 @Component({
   selector: 'app-auth',
@@ -25,6 +27,8 @@ import { AuthService } from '../../core/services/auth/auth.service';
     MfaVerifyFormComponent,
     RegisterFormComponent,
     SocialAuthButtonsComponent,
+    TranslatePipe,
+    FooterLinksComponent,
   ],
   templateUrl: './auth.html',
   styleUrl: './auth.css',

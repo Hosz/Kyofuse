@@ -4,6 +4,7 @@ import com.hokyozu.kyofuse.teams.enums.TeamStatus;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record UpdateTeamRequest(
@@ -15,9 +16,11 @@ public record UpdateTeamRequest(
         String description,
 
         @Size(max = 500)
+        @Pattern(regexp = "^(https?://.+)?$", message = "Avatar URL must be a valid HTTP or HTTPS URL")
         String avatarUrl,
 
         @Size(max = 500)
+        @Pattern(regexp = "^(https?://.+)?$", message = "Banner URL must be a valid HTTP or HTTPS URL")
         String bannerUrl,
 
         @Size(max = 80)

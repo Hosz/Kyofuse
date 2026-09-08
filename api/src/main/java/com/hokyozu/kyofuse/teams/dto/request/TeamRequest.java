@@ -17,9 +17,11 @@ public record TeamRequest(
         String name,
 
         @Size(max = 500)
+        @Pattern(regexp = "^(https?://.+)?$", message = "Avatar URL must be a valid HTTP or HTTPS URL")
         String avatarUrl,
 
         @Size(max = 500)
+        @Pattern(regexp = "^(https?://.+)?$", message = "Banner URL must be a valid HTTP or HTTPS URL")
         String bannerUrl,
 
         @NotBlank

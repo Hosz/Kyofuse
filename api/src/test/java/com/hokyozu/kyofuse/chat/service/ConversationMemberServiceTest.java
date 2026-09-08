@@ -133,7 +133,7 @@ class ConversationMemberServiceTest {
     }
 
     @Test
-    void addMemberToConversationAllowsNonAdminActiveMember() {
+    void addMemberToConversationRejectsNonAdminActiveMember() {
         User actor = activeUser("actor");
         User newMember = activeUser("newcomer");
         Conversation conversation = groupConversation(activeUser("creator"));
@@ -143,16 +143,12 @@ class ConversationMemberServiceTest {
         when(userFinder.findProfileByUserId(newMember.getId())).thenReturn(newMember);
         when(conversationRepository.findById(conversation.getId())).thenReturn(Optional.of(conversation));
         when(conversationMemberRepository.findByConversationAndUser(conversation, actor)).thenReturn(Optional.of(actorMembership));
-        when(conversationMemberRepository.findByConversationAndUser(conversation, newMember)).thenReturn(Optional.empty());
-        when(conversationMemberRepository.save(any(ConversationMember.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        conversationMemberService.addMemberToConversation(conversation.getId(), newMember.getId(), actor.getId());
+        assertThatThrownBy(() -> conversationMemberService.addMemberToConversation(conversation.getId(), newMember.getId(), actor.getId()))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("User does not have permission to add members to the conversation");
 
-        ArgumentCaptor<ConversationMember> captor = ArgumentCaptor.forClass(ConversationMember.class);
-        verify(conversationMemberRepository).save(captor.capture());
-        assertThat(captor.getValue().getUser()).isEqualTo(newMember);
-        assertThat(captor.getValue().getStatus()).isEqualTo(ConversationMemberStatus.ACTIVE);
-        assertThat(captor.getValue().getRole()).isEqualTo(ConversationMemberRole.MEMBER);
+        verify(conversationMemberRepository, never()).save(any());
     }
 
     @Test

@@ -31,7 +31,7 @@
           </span>
         }
       </span>
-      <span>{{ item.label }}</span>
+      <span>{{ item.labelKey ? (item.labelKey | trans) : item.label }}</span>
     </a>
   }
 </nav>

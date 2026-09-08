@@ -3,12 +3,14 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { API_URL } from '../../../models/api-url.model';
 import { DisconnectAccountRequest, SavedAccount, SwitchAccountRequest, SwitchAccountResponse } from '../../../models/auth/multi-account.model';
+import { I18nService } from '../../i18n/i18n.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AccountManagerService {
   private readonly http = inject(HttpClient);
+  private readonly i18nService = inject(I18nService);
   private readonly url = `${API_URL}/api/auth`;
 
   private readonly STORAGE_KEY = 'kyofuse_saved_accounts';
@@ -38,6 +40,9 @@ export class AccountManagerService {
     role?: string;
     switchToken?: string;
   }): void {
+    if (accountData.country) {
+      this.i18nService.initFromCountry(accountData.country);
+    }
     const list = this.loadAccounts();
     const existingIndex = list.findIndex(
       (a) =>
@@ -107,9 +112,11 @@ export class AccountManagerService {
   }
 
   public disconnectAccount(targetUserId: string): Observable<void> {
+    const saved = this.loadAccounts().find((a) => a.userId === targetUserId);
     const request: DisconnectAccountRequest = {
       targetUserId,
       deviceId: this.getDeviceId(),
+      switchToken: saved?.switchToken,
     };
 
     return this.http.post<void>(`${this.url}/disconnect-account`, request, { withCredentials: true })

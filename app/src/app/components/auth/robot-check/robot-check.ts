@@ -1,8 +1,9 @@
 import { Component, DestroyRef, inject, output, signal } from '@angular/core';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-robot-check',
-  imports: [],
+  imports: [TranslatePipe],
   templateUrl: './robot-check.html',
   styleUrl: './robot-check.css',
 })

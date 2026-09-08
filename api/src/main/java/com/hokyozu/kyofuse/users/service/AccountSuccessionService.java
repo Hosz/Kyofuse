@@ -255,9 +255,15 @@ public class AccountSuccessionService {
 
             TeamMember userMember = teamMemberRepository.findByTeamAndUser(team, user);
             if (userMember != null) {
-                TeamMemberType targetType = record.getPreviousMemberType() != null
-                        ? TeamMemberType.valueOf(record.getPreviousMemberType())
-                        : (record.isWasOwner() ? TeamMemberType.MANAGER : TeamMemberType.PLAYER);
+                boolean isOwner = record.isWasOwner() || (team.getOwner() != null && team.getOwner().getId().equals(user.getId()));
+                TeamMemberType targetType;
+                if (isOwner) {
+                    targetType = TeamMemberType.MANAGER;
+                } else if (record.getPreviousMemberType() != null && !TeamMemberType.UNASSIGNED.name().equals(record.getPreviousMemberType())) {
+                    targetType = TeamMemberType.valueOf(record.getPreviousMemberType());
+                } else {
+                    targetType = TeamMemberType.PLAYER;
+                }
                 userMember.setMemberType(targetType);
                 userMember.setRoleInTeam(record.getPreviousRoleInTeam() != null
                         ? com.hokyozu.kyofuse.profiles.enums.PlayerRole.valueOf(record.getPreviousRoleInTeam())
@@ -313,25 +319,25 @@ public class AccountSuccessionService {
                 team.setStatus(TeamStatus.ACTIVE);
                 team.setUpdatedAt(Instant.now());
                 teamRepository.save(team);
-
-                List<TeamMember> members = teamMemberRepository.findByTeam(team);
-                for (TeamMember member : members) {
-                    if (member.getUser().getId().equals(user.getId())) {
-                        member.setMemberType(TeamMemberType.MANAGER);
-                        member.setStatus(TeamMemberStatus.ACTIVE);
-                        member.setUpdatedAt(Instant.now());
-                        teamMemberRepository.save(member);
-                    }
-                }
-
-                communityRepository.findByTeamId(team.getId()).ifPresent(comm -> {
-                    if (comm.getStatus() == CommunityStatus.ARCHIVED) {
-                        comm.setStatus(CommunityStatus.ACTIVE);
-                        comm.setUpdatedAt(Instant.now());
-                        communityRepository.save(comm);
-                    }
-                });
             }
+
+            List<TeamMember> members = teamMemberRepository.findByTeam(team);
+            for (TeamMember member : members) {
+                if (member.getUser().getId().equals(user.getId())) {
+                    member.setMemberType(TeamMemberType.MANAGER);
+                    member.setStatus(TeamMemberStatus.ACTIVE);
+                    member.setUpdatedAt(Instant.now());
+                    teamMemberRepository.save(member);
+                }
+            }
+
+            communityRepository.findByTeamId(team.getId()).ifPresent(comm -> {
+                if (comm.getStatus() == CommunityStatus.ARCHIVED) {
+                    comm.setStatus(CommunityStatus.ACTIVE);
+                    comm.setUpdatedAt(Instant.now());
+                    communityRepository.save(comm);
+                }
+            });
         }
     }
 

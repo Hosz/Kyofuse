@@ -13,10 +13,12 @@ import { MessageService } from '../../../core/services/chat/message.service';
 import { ToastService } from '../../../core/services/ui/toast.service';
 import { PostMediaItemRequest } from '../../../models/posts/post-request.model';
 import { Subscription } from 'rxjs';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { I18nService } from '../../../core/i18n/i18n.service';
 
 @Component({
   selector: 'app-chat-window',
-  imports: [ConversationInfoPanelComponent, ConfirmDialogComponent, ImageModalComponent, MessageInfoModalComponent],
+  imports: [ConversationInfoPanelComponent, ConfirmDialogComponent, ImageModalComponent, MessageInfoModalComponent, TranslatePipe],
   templateUrl: './chat-window.html',
   styleUrl: './chat-window.css',
 })
@@ -27,6 +29,7 @@ export class ChatWindowComponent implements OnDestroy {
   private toastService = inject(ToastService);
   private mediaService = inject(MediaService);
   private messageService = inject(MessageService);
+  readonly i18n = inject(I18nService);
 
   conversation = input<Conversation | null>(null);
   myUserId = input<string | null>(null);
@@ -48,6 +51,7 @@ export class ChatWindowComponent implements OnDestroy {
   deleteMessage = output<string>();
   groupUpdated = output<ConversationResponse>();
   loadOlderMessages = output<void>();
+  back = output<void>();
 
   draft = signal('');
   pendingMedia = signal<PostMediaItemRequest[]>([]);
@@ -74,7 +78,12 @@ export class ChatWindowComponent implements OnDestroy {
   readonly fallbackAvatar = FALLBACK_AVATAR_URL;
 
   messageGroups = computed(() =>
-    toChatMessageGroups(this.conversation()?.messages ?? [], this.conversation()?.unreadDividerMessageId),
+    toChatMessageGroups(
+      this.conversation()?.messages ?? [],
+      this.conversation()?.unreadDividerMessageId,
+      this.i18n.currentLang(),
+      this.i18n.t('chat.newMessages'),
+    ),
   );
 
   constructor() {

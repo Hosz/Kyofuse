@@ -2,7 +2,7 @@
   <div class="shell-container flex h-screen">
     <app-sidebar />
 
-    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto bg-surface">
+    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto bg-surface pb-24 lg:pb-0">
       <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-center px-lg py-12">
         <section class="flex flex-col items-center justify-center rounded-2xl border border-outline-variant/60 bg-surface-container-low p-8 sm:p-12 text-center shadow-lg">
           <!-- Ícone de destaque -->
@@ -18,15 +18,15 @@
           <!-- Badge e Título -->
           <span class="mb-2 inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-label-sm font-bold text-primary">
             <span class="material-symbols-outlined text-[14px]">flag</span>
-            Funcionalidade Futura &middot; Planejada
+            {{ 'tournaments.plannedBadge' | trans }}
           </span>
 
           <h1 class="text-headline-lg-mobile sm:text-headline-lg font-headline-lg text-on-surface">
-            Central de Torneios & Campeonatos
+            {{ 'tournaments.title' | trans }}
           </h1>
 
           <p class="mt-2 w-full text-body-md text-on-surface-variant leading-relaxed">
-            Um hub completo inspirado em plataformas como a HLTV.org para acompanhar e disputar campeonatos de CS2.
+            {{ 'tournaments.heroDesc' | trans }}
           </p>
 
           <!-- O que estará disponível (breve explicação dos pilares) -->
@@ -34,30 +34,30 @@
             <div class="flex flex-col gap-2 rounded-xl border border-outline-variant/50 bg-surface-container p-4">
               <div class="flex items-center gap-2 text-primary">
                 <span class="material-symbols-outlined text-[20px]">public</span>
-                <span class="text-label-md font-bold">Torneios Oficiais</span>
+                <span class="text-label-md font-bold">{{ 'tournaments.officialTitle' | trans }}</span>
               </div>
               <p class="text-body-sm text-on-surface-variant leading-snug">
-                Acompanhe o circuito mundial (Majors, IEM, BLAST, ESL), premiações em dinheiro, datas, chaveamentos e estatísticas de partidas ao vivo.
+                {{ 'tournaments.officialDesc' | trans }}
               </p>
             </div>
 
             <div class="flex flex-col gap-2 rounded-xl border border-outline-variant/50 bg-surface-container p-4">
               <div class="flex items-center gap-2 text-primary">
                 <span class="material-symbols-outlined text-[20px]">groups</span>
-                <span class="text-label-md font-bold">Torneios Comunitários</span>
+                <span class="text-label-md font-bold">{{ 'tournaments.communityTitle' | trans }}</span>
               </div>
               <p class="text-body-sm text-on-surface-variant leading-snug">
-                Crie ou inscreva seu time em campeonatos organizados pela comunidade Kyofuse com chaves automáticas e premiações.
+                {{ 'tournaments.communityDesc' | trans }}
               </p>
             </div>
 
             <div class="flex flex-col gap-2 rounded-xl border border-outline-variant/50 bg-surface-container p-4">
               <div class="flex items-center gap-2 text-primary">
                 <span class="material-symbols-outlined text-[20px]">leaderboard</span>
-                <span class="text-label-md font-bold">Rankings & Escalações</span>
+                <span class="text-label-md font-bold">{{ 'tournaments.rankingsTitle' | trans }}</span>
               </div>
               <p class="text-body-sm text-on-surface-variant leading-snug">
-                Tabelas de classificação com posições de times, pontuações atualizadas, variações no ranking e escalações dos jogadores.
+                {{ 'tournaments.rankingsDesc' | trans }}
               </p>
             </div>
           </div>
@@ -70,7 +70,7 @@
               class="flex cursor-pointer items-center gap-2 rounded-full bg-primary-container px-6 py-3 text-label-md font-bold text-on-primary-container transition-all hover:brightness-110 active:scale-[0.97]"
             >
               <span class="material-symbols-outlined text-[18px]">notifications</span>
-              Me avisar no lançamento
+              {{ 'tournaments.notifyMe' | trans }}
             </button>
 
             <a
@@ -78,7 +78,7 @@
               class="flex cursor-pointer items-center gap-2 rounded-full border border-outline-variant px-5 py-3 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high active:scale-[0.97]"
             >
               <span class="material-symbols-outlined text-[18px]">route</span>
-              Ver no Roadmap
+              {{ 'tournaments.viewRoadmap' | trans }}
             </a>
           </div>
         </section>

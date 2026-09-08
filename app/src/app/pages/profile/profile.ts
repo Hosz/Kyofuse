@@ -29,6 +29,8 @@ import { FollowService } from '../../core/services/follow/follow.service';
 import { FriendshipService } from '../../core/services/friendship/friendship.service';
 import { FriendRequestService } from '../../core/services/friendship/friend-request.service';
 import { toComment, toPost } from '../../shared/utils/mappers.util';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { I18nService } from '../../core/i18n/i18n.service';
 
 type ProfileTabId = 'posts' | 'reposts' | 'media' | 'replies';
 type ModalKind = 'followers' | 'following' | 'friends' | 'communities' | 'teams' | 'invite' | null;
@@ -76,6 +78,7 @@ const EMPTY_PROFILE: gamerProfileResponse = {
     FeedListComponent,
     PostCardComponent,
     CommentCardComponent,
+    TranslatePipe,
   ],
   templateUrl: './profile.html',
   styleUrl: './profile.css',
@@ -99,6 +102,7 @@ export class ProfileComponent {
   private conversationService = inject(ConversationService);
   private communityService = inject(CommunityService);
   private teamService = inject(TeamService);
+  private i18n = inject(I18nService);
 
   profile = signal<gamerProfileResponse>(EMPTY_PROFILE);
   startingConversation = signal(false);
@@ -246,22 +250,22 @@ export class ProfileComponent {
   }
 
   rankStats = computed<ProfileRankStats>(() => ({
-    premier: this.profile().premierRating ? this.formatCount(this.profile().premierRating) : 'Sem nível',
-    faceit: this.profile().faceitLevel ? `Nível ${this.profile().faceitLevel}` : 'Sem nível',
-    gc: this.profile().gcRank ? `${this.profile().gcRank}` : 'Sem nível',
+    premier: this.profile().premierRating ? this.formatCount(this.profile().premierRating) : this.i18n.t('profile.noLevel'),
+    faceit: this.profile().faceitLevel ? `${this.i18n.t('profile.level')} ${this.profile().faceitLevel}` : this.i18n.t('profile.noLevel'),
+    gc: this.profile().gcRank ? `${this.profile().gcRank}` : this.i18n.t('profile.noLevel'),
   }));
 
   profileTabs = computed<FeedTab[]>(() => [
-    { label: 'Posts', active: this.activeTabId() === 'posts' },
-    { label: 'Reposts', active: this.activeTabId() === 'reposts' },
-    { label: 'Mídia', active: this.activeTabId() === 'media' },
-    { label: 'Respostas', active: this.activeTabId() === 'replies' },
+    { id: 'posts', label: this.i18n.t('profile.posts'), active: this.activeTabId() === 'posts' },
+    { id: 'reposts', label: this.i18n.t('profile.reposts'), active: this.activeTabId() === 'reposts' },
+    { id: 'media', label: this.i18n.t('profile.media'), active: this.activeTabId() === 'media' },
+    { id: 'replies', label: this.i18n.t('profile.replies'), active: this.activeTabId() === 'replies' },
   ]);
 
   onTabSelected(tab: FeedTab): void {
-    if (tab.label === 'Posts') this.activeTabId.set('posts');
-    else if (tab.label === 'Reposts') this.activeTabId.set('reposts');
-    else if (tab.label === 'Mídia') {
+    if (tab.id === 'posts') this.activeTabId.set('posts');
+    else if (tab.id === 'reposts') this.activeTabId.set('reposts');
+    else if (tab.id === 'media') {
       this.activeTabId.set('media');
       this.loadMediaPostsIfNeeded();
     } else {
@@ -399,7 +403,7 @@ export class ProfileComponent {
           response.content.map((community) => ({
             id: community.id,
             name: community.communityName,
-            meta: community.visibility === 'PRIVATE' ? 'Privada' : 'Pública',
+            meta: community.visibility === 'PRIVATE' ? this.i18n.t('common.private') : this.i18n.t('common.public'),
             icon: 'groups_2',
             imageUrl: community.communityAvatarUrl,
             route: `/comunidade/${community.id}`,
@@ -414,7 +418,7 @@ export class ProfileComponent {
           response.content.map((team) => ({
             id: team.id,
             name: team.name,
-            meta: team.region || 'Time',
+            meta: team.region || this.i18n.t('profile.teamBadge'),
             icon: 'groups',
             imageUrl: team.avatarUrl,
             route: `/times/${team.id}`,

@@ -247,7 +247,16 @@ public class CommunityService {
      * no TeamResponse obrigaria um lookup extra em todos os pontos que montam um Team.
      */
     @Transactional(readOnly = true)
-    public CommunityResponse detailCommunityByTeam(UUID teamId) {
+    public CommunityResponse detailCommunityByTeam(String teamIdentifier) {
+        UUID teamId;
+        try {
+            teamId = UUID.fromString(teamIdentifier);
+        } catch (IllegalArgumentException e) {
+            teamId = teamRepository.findBySlug(teamIdentifier)
+                    .map(com.hokyozu.kyofuse.teams.entity.Team::getId)
+                    .orElseThrow(() -> new NotFoundException("Community not found"));
+        }
+
         Community community = communityRepository.findByTeamId(teamId)
                 .orElseThrow(() -> new NotFoundException("Community not found"));
 
@@ -256,6 +265,11 @@ public class CommunityService {
         }
 
         return CommunityMapper.toResponse(community);
+    }
+
+    @Transactional(readOnly = true)
+    public CommunityResponse detailCommunityByTeam(UUID teamId) {
+        return detailCommunityByTeam(teamId.toString());
     }
 
     /**

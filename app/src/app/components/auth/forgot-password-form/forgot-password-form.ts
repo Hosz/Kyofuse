@@ -1,13 +1,16 @@
-import { Component, computed, input, output, signal } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { AuthFieldComponent } from '../auth-field/auth-field';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { I18nService } from '../../../core/i18n/i18n.service';
 
 @Component({
   selector: 'app-forgot-password-form',
-  imports: [AuthFieldComponent],
+  imports: [AuthFieldComponent, TranslatePipe],
   templateUrl: './forgot-password-form.html',
   styleUrl: './forgot-password-form.css',
 })
 export class ForgotPasswordFormComponent {
+  readonly i18n = inject(I18nService);
   submitting = input(false);
   errorMessage = input<string | null>(null);
   success = input(false);
@@ -21,7 +24,7 @@ export class ForgotPasswordFormComponent {
 
   emailOrUsernameError = computed(() => {
     const val = this.emailOrUsername().trim();
-    if (!val) return 'Informe seu e-mail ou nome de usuário.';
+    if (!val) return this.i18n.t('auth.emailOrUsernameRequired');
     return null;
   });
 

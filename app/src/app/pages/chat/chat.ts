@@ -11,6 +11,7 @@ import { MessageService } from '../../core/services/chat/message.service';
 import { PresenceService } from '../../core/services/presence/presence.service';
 import { ProfileService } from '../../core/services/profile/profile.service';
 import { ToastService } from '../../core/services/ui/toast.service';
+import { I18nService } from '../../core/i18n/i18n.service';
 import { ConversationResponse, MessageResponse } from '../../models/chat/chat.model';
 import { PostMediaItemRequest } from '../../models/posts/post-request.model';
 import { previewFromChatMessage, toChatMessage, toConversation } from '../../shared/utils/mappers.util';
@@ -33,6 +34,7 @@ export class ChatComponent implements OnDestroy {
   private readonly presenceService = inject(PresenceService);
   private readonly profileService = inject(ProfileService);
   private readonly toastService = inject(ToastService);
+  private readonly i18n = inject(I18nService);
 
   /** Vinculado automaticamente ao parâmetro de rota :chatId (withComponentInputBinding). */
   chatId = input<string | null>(null);
@@ -555,14 +557,14 @@ export class ChatComponent implements OnDestroy {
       let typingText: string | undefined = undefined;
       if (isTyping) {
         if (conv.type === 'DIRECT') {
-          typingText = 'Está digitando...';
+          typingText = this.i18n.t('chat.isTyping');
         } else {
           if (users.length === 1) {
-            typingText = `${users[0].name} está digitando...`;
+            typingText = this.i18n.t('chat.typingSingular', { name: users[0].name });
           } else if (users.length === 2) {
-            typingText = `${users[0].name} e ${users[1].name} estão digitando...`;
+            typingText = this.i18n.t('chat.typingDual', { name1: users[0].name, name2: users[1].name });
           } else {
-            typingText = `${users.length} pessoas estão digitando...`;
+            typingText = this.i18n.t('chat.typingMultiple', { count: users.length });
           }
         }
       }
@@ -591,6 +593,10 @@ export class ChatComponent implements OnDestroy {
       userMap.clear();
     }
     this.typingTrackers.clear();
+  }
+
+  onBackToConversations(): void {
+    this.router.navigate(['/chats']);
   }
 
   private updateConversation(id: string, updater: (conversation: Conversation) => Conversation): void {

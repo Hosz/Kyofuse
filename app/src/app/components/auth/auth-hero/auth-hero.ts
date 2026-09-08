@@ -1,9 +1,10 @@
 import { Component, input } from '@angular/core';
 import { AuthFeature } from '../../../shared/models/auth.model';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-auth-hero',
-  imports: [],
+  imports: [TranslatePipe],
   templateUrl: './auth-hero.html',
   styleUrl: './auth-hero.css',
 })

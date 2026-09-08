@@ -15,6 +15,8 @@ import { ToastService } from '../../core/services/ui/toast.service';
 import { ProfileService } from '../../core/services/profile/profile.service';
 import { CommunityResponse } from '../../models/communities/community.model';
 import { toPost } from '../../shared/utils/mappers.util';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { I18nService } from '../../core/i18n/i18n.service';
 
 /**
  * Abas fixas do topo. As demais abas são ids de comunidade fixada — como são UUIDs,
@@ -37,6 +39,7 @@ type ActiveFeed = typeof FOR_YOU | typeof FOLLOWING | string;
     InfiniteScrollDirective,
     SkeletonComponent,
     RouterLink,
+    TranslatePipe,
   ],
   templateUrl: './home.html',
   styleUrl: './home.css',
@@ -47,6 +50,7 @@ export class HomeComponent {
   userService = inject(ProfileService);
   private communityService = inject(CommunityService);
   private toastService = inject(ToastService);
+  private i18n = inject(I18nService);
 
   posts = signal<Post[]>([]);
   loading = signal(true);
@@ -79,23 +83,11 @@ export class HomeComponent {
   );
 
   emptyTitle = computed(() => {
-    if (this.activeFeed() === FOR_YOU) {
-      return 'Nenhuma publicação por aqui ainda';
-    }
-    if (this.activeFeed() === FOLLOWING) {
-      return 'Nenhuma publicação no seu feed';
-    }
-    return 'Nenhuma publicação na comunidade ainda';
+    return this.i18n.t('feed.emptyTitle');
   });
 
   emptyMessage = computed(() => {
-    if (this.activeFeed() === FOR_YOU) {
-      return 'Seja o primeiro a postar algo no Kyofuse!';
-    }
-    if (this.activeFeed() === FOLLOWING) {
-      return 'Ou você não segue ninguém ou ninguém que você segue postou algo.';
-    }
-    return 'Seja o primeiro a postar algo na comunidade!';
+    return this.i18n.t('feed.emptyMessage');
   });
 
   emptyIcon = computed(() => {

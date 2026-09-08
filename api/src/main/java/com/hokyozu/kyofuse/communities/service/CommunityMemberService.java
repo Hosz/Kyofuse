@@ -153,6 +153,29 @@ public class CommunityMemberService {
             throw new BadRequestException("Community owner cannot be removed from the community");
         }
 
+        boolean isOwner = community.getOwner().getId().equals(userId);
+        if (!isOwner) {
+            CommunityMember actorMembership = communityMemberRepository.findByUserIdAndCommunityId(userId, communityId)
+                    .filter(member -> member.getStatus() == CommunityMemberStatus.ACTIVE)
+                    .orElseThrow(() -> new ForbiddenException("Actor is not an active member of the community"));
+
+            CommunityMemberRole actorRole = actorMembership.getRole();
+            CommunityMemberRole targetRole = communityMember.getRole();
+
+            if (actorRole == CommunityMemberRole.MODERATOR) {
+                if (targetRole == CommunityMemberRole.ADMIN) {
+                    throw new ForbiddenException("Moderators cannot remove administrators");
+                }
+                if (targetRole == CommunityMemberRole.MODERATOR) {
+                    throw new ForbiddenException("Moderators cannot remove other moderators");
+                }
+            }
+
+            if (actorRole == CommunityMemberRole.ADMIN && targetRole == CommunityMemberRole.ADMIN) {
+                throw new ForbiddenException("Admins cannot remove other administrators. Only the community owner can remove an admin.");
+            }
+        }
+
         communityMember.setStatus(CommunityMemberStatus.REMOVED);
         communityMember.setLeftAt(Instant.now());
         communityMember.setUpdatedAt(Instant.now());

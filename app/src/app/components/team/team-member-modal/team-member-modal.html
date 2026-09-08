@@ -42,7 +42,7 @@
                 >
                   <option value="" [selected]="draftRole() === ''">Sem papel</option>
                   @for (option of roleOptions; track option.value) {
-                    <option [value]="option.value" [selected]="option.value === draftRole()">{{ option.label }}</option>
+                    <option [value]="option.value" [selected]="option.value === draftRole()">{{ option.key ? (option.key | trans) : option.label }}</option>
                   }
                 </select>
               </label>
@@ -73,7 +73,7 @@
                   [disabled]="saving()"
                   class="cursor-pointer rounded-full border border-outline-variant px-4 py-1.5 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Cancelar
+                  {{ 'common.cancel' | trans }}
                 </button>
                 <button
                   type="button"
@@ -81,7 +81,7 @@
                   [disabled]="!canSave() || saving()"
                   class="cursor-pointer rounded-full bg-primary-container px-4 py-1.5 text-label-sm font-bold text-on-primary-container transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {{ saving() ? 'Salvando...' : 'Salvar' }}
+                  {{ saving() ? ('common.loading' | trans) : ('common.save' | trans) }}
                 </button>
               </div>
             </div>

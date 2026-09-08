@@ -192,6 +192,34 @@ export const routes: Routes = [
     title: 'Kyofuse | Conversas',
   },
   {
+    path: 'termos',
+    loadComponent: () =>
+      import('./pages/legal/legal-page').then((m) => m.LegalPageComponent),
+    title: 'Kyofuse | Termos de Uso',
+    data: { document: 'termos' },
+  },
+  {
+    path: 'privacidade',
+    loadComponent: () =>
+      import('./pages/legal/legal-page').then((m) => m.LegalPageComponent),
+    title: 'Kyofuse | Política de Privacidade',
+    data: { document: 'privacidade' },
+  },
+  {
+    path: 'cookies',
+    loadComponent: () =>
+      import('./pages/legal/legal-page').then((m) => m.LegalPageComponent),
+    title: 'Kyofuse | Política de Cookies',
+    data: { document: 'cookies' },
+  },
+  {
+    path: 'diretrizes',
+    loadComponent: () =>
+      import('./pages/legal/legal-page').then((m) => m.LegalPageComponent),
+    title: 'Kyofuse | Regras da Comunidade',
+    data: { document: 'diretrizes' },
+  },
+  {
     path: '**',
     redirectTo: '',
   },

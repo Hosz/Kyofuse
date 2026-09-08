@@ -2,7 +2,7 @@
   <div class="shell-container flex h-screen">
     <app-sidebar />
 
-    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto bg-surface">
+    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto bg-surface pb-24 lg:pb-0">
       <div class="mx-auto flex w-full max-w-5xl flex-col gap-lg px-lg py-lg">
         <div class="flex items-center gap-2 text-body-sm text-on-surface-variant">
           <a routerLink="/times" class="rounded hover:text-on-surface hover:underline">Times</a>
@@ -135,7 +135,7 @@
 
           @if (activeInfoTab() === 'description') {
             <section class="rounded-xl border border-outline-variant bg-surface-container-low p-lg">
-              <p class="text-body-sm text-on-surface">{{ team()!.description || 'Sem descrição.' }}</p>
+              <p class="text-body-sm text-on-surface">{{ team()!.description || ('common.noDescription' | trans) }}</p>
             </section>
           } @else if (activeInfoTab() === 'requisites') {
             <section class="flex flex-col gap-lg rounded-xl border border-outline-variant bg-surface-container-low p-lg">

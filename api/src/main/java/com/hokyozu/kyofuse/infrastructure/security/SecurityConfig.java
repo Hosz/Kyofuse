@@ -20,7 +20,9 @@ import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
+import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -32,7 +34,11 @@ import java.util.Arrays;
 import java.util.List;
 
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
+
+    @Value("${security.cors.allowed-origins:${app.frontend.url:http://localhost:4200}}")
+    private String allowedOriginsConfig = "http://localhost:4200";
 
     @Bean
     public SecurityFilterChain securityFilterChain(
@@ -50,6 +56,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/google").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/auth/google/client-id").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/verify-email").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auth/verify-email/validate").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/resend-verification").permitAll()
@@ -66,6 +73,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/reactivate/confirm").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/reactivate/resend").permitAll()
                         .requestMatchers("/ws", "/ws/**").permitAll()
+                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .requestMatchers("/actuator/prometheus").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 ->
@@ -86,31 +96,37 @@ public class SecurityConfig {
      */
     @Bean
     public BearerTokenResolver bearerTokenResolver() {
+        DefaultBearerTokenResolver defaultResolver = new DefaultBearerTokenResolver();
         return request -> {
             Cookie[] cookies = request.getCookies();
 
-            if (cookies == null) {
-                return null;
+            if (cookies != null) {
+                String tokenFromCookie = Arrays.stream(cookies)
+                        .filter(cookie -> AuthCookieService.ACCESS_TOKEN_COOKIE.equals(cookie.getName()))
+                        .map(Cookie::getValue)
+                        .filter(value -> !value.isBlank())
+                        .findFirst()
+                        .orElse(null);
+
+                if (tokenFromCookie != null) {
+                    return tokenFromCookie;
+                }
             }
 
-            return Arrays.stream(cookies)
-                    .filter(cookie -> AuthCookieService.ACCESS_TOKEN_COOKIE.equals(cookie.getName()))
-                    .map(Cookie::getValue)
-                    .filter(value -> !value.isBlank())
-                    .findFirst()
-                    .orElse(null);
+            return defaultResolver.resolve(request);
         };
     }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOriginPatterns(List.of(
-                "*"
-        ));
+        List<String> origins = Arrays.stream(allowedOriginsConfig.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .toList();
 
+        configuration.setAllowedOrigins(origins);
         configuration.setAllowedMethods(List.of(
                 "GET",
                 "POST",
@@ -119,10 +135,23 @@ public class SecurityConfig {
                 "DELETE",
                 "OPTIONS"
         ));
-
-        configuration.setAllowedHeaders(List.of("*"));
-
+        configuration.setAllowedHeaders(List.of(
+                "Authorization",
+                "Content-Type",
+                "X-Requested-With",
+                "X-Device-Id",
+                "Accept",
+                "Origin",
+                "Access-Control-Request-Method",
+                "Access-Control-Request-Headers"
+        ));
+        configuration.setExposedHeaders(List.of(
+                "Set-Cookie",
+                "Retry-After",
+                "X-Total-Count"
+        ));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();

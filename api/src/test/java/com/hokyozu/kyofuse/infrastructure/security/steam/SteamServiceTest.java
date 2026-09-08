@@ -1,6 +1,7 @@
 package com.hokyozu.kyofuse.infrastructure.security.steam;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.shared.exception.UnauthorizedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,6 +43,50 @@ class SteamServiceTest {
         assertThat(loginUrl).contains("openid.mode=checkid_setup");
         assertThat(loginUrl).contains("openid.return_to=http%3A%2F%2Flocalhost%3A4200%2Fauth%2Fsteam%2Fcallback");
         assertThat(loginUrl).contains("openid.realm=http%3A%2F%2Flocalhost%3A4200%2F");
+    }
+
+    @Test
+    void buildLoginUrlWithNullOrBlankUsesDefaultFrontendUrl() {
+        String loginUrl = steamService.buildLoginUrl(null);
+
+        assertThat(loginUrl).startsWith("https://steamcommunity.com/openid/login?");
+        assertThat(loginUrl).contains("openid.return_to=http%3A%2F%2Flocalhost%3A4200%2Fauth%2Fsteam%2Fcallback");
+        assertThat(loginUrl).contains("openid.realm=http%3A%2F%2Flocalhost%3A4200%2F");
+    }
+
+    @Test
+    void buildLoginUrlWithRelativeAllowedPathSucceeds() {
+        String loginUrl = steamService.buildLoginUrl("/auth/steam/callback?action=login");
+
+        assertThat(loginUrl).startsWith("https://steamcommunity.com/openid/login?");
+        assertThat(loginUrl).contains("openid.return_to=http%3A%2F%2Flocalhost%3A4200%2Fauth%2Fsteam%2Fcallback%3Faction%3Dlogin");
+        assertThat(loginUrl).contains("openid.realm=http%3A%2F%2Flocalhost%3A4200%2F");
+    }
+
+    @Test
+    void buildLoginUrlWithExternalUnauthorizedDomainThrowsBadRequest() {
+        assertThatThrownBy(() -> steamService.buildLoginUrl("https://attacker.com/auth/steam/callback"))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("Origem da URL de retorno não autorizada.");
+    }
+
+    @Test
+    void buildLoginUrlWithInvalidProtocolThrowsBadRequest() {
+        assertThatThrownBy(() -> steamService.buildLoginUrl("javascript:alert(1)"))
+                .isInstanceOf(BadRequestException.class);
+    }
+
+    @Test
+    void buildLoginUrlWithDisallowedPathThrowsBadRequest() {
+        assertThatThrownBy(() -> steamService.buildLoginUrl("http://localhost:4200/some/other/path"))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("Path da URL de retorno deve ser '/auth/steam/callback'.");
+    }
+
+    @Test
+    void buildLoginUrlWithMalformedUrlThrowsBadRequest() {
+        assertThatThrownBy(() -> steamService.buildLoginUrl("http://:invalid-url"))
+                .isInstanceOf(BadRequestException.class);
     }
 
     @Test

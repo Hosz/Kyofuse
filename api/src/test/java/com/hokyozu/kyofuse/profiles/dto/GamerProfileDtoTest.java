@@ -49,6 +49,34 @@ class GamerProfileDtoTest {
     }
 
     @Test
+    void gamerProfileRequestRejectsDangerousProtocolsInUrls() {
+        GamerProfileRequest request = new GamerProfileRequest(
+                "player",
+                "bio",
+                "javascript:alert('xss')",
+                "data:text/html,<script>alert(1)</script>",
+                "Brazil",
+                "Sao Paulo",
+                "SP",
+                true,
+                PlayerRole.AWPER,
+                PlayerRole.RIFLER,
+                15000,
+                8,
+                18,
+                Playstyle.COMPETITIVE,
+                true,
+                false,
+                List.of(Cs2Map.MIRAGE)
+        );
+
+        Set<ConstraintViolation<GamerProfileRequest>> violations = validator.validate(request);
+
+        assertThat(violations).extracting(violation -> violation.getPropertyPath().toString())
+                .containsExactlyInAnyOrder("avatarUrl", "bannerUrl");
+    }
+
+    @Test
     void gamerProfileRequestRejectsOutOfRangeAndOversizedFields() {
         GamerProfileRequest request = new GamerProfileRequest(
                 "",

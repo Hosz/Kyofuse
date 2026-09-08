@@ -1,5 +1,5 @@
-import { AfterViewInit, Component, ElementRef, ViewChild, input, output } from '@angular/core';
-import { GOOGLE_CLIENT_ID } from '../../../core/config/google-auth.config';
+import { AfterViewInit, Component, ElementRef, ViewChild, inject, input, output } from '@angular/core';
+import { AuthService } from '../../../core/services/auth/auth.service';
 
 declare const google: any;
 
@@ -11,6 +11,8 @@ declare const google: any;
 })
 export class SocialAuthButtonsComponent implements AfterViewInit {
   @ViewChild('googleBtnContainer') googleBtnContainer?: ElementRef<HTMLDivElement>;
+
+  private authService = inject(AuthService);
 
   loading = input(false);
   disabled = input(false);
@@ -28,31 +30,37 @@ export class SocialAuthButtonsComponent implements AfterViewInit {
       return;
     }
 
-    try {
-      google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: (response: any) => {
-          if (response?.credential) {
-            this.googleCredential.emit(response.credential);
-          }
-        },
-        ux_mode: 'popup',
-        auto_select: false,
-        cancel_on_tap_outside: true,
-      });
+    this.authService.getGoogleClientId().subscribe({
+      next: (clientId) => {
+        if (!clientId) return;
+        try {
+          google.accounts.id.initialize({
+            client_id: clientId,
+            callback: (response: any) => {
+              if (response?.credential) {
+                this.googleCredential.emit(response.credential);
+              }
+            },
+            ux_mode: 'popup',
+            auto_select: false,
+            cancel_on_tap_outside: true,
+          });
 
-      if (this.googleBtnContainer?.nativeElement) {
-        google.accounts.id.renderButton(this.googleBtnContainer.nativeElement, {
-          type: 'standard',
-          shape: 'rectangular',
-          theme: 'outline',
-          text: 'signin_with',
-          size: 'large',
-          width: 250,
-        });
-      }
-    } catch (e) {
-      console.warn('Falha ao inicializar Google Sign-In:', e);
-    }
+          if (this.googleBtnContainer?.nativeElement) {
+            google.accounts.id.renderButton(this.googleBtnContainer.nativeElement, {
+              type: 'standard',
+              shape: 'rectangular',
+              theme: 'outline',
+              text: 'signin_with',
+              size: 'large',
+              width: 250,
+            });
+          }
+        } catch (e) {
+          console.warn('Falha ao inicializar Google Sign-In:', e);
+        }
+      },
+      error: (e) => console.warn('Falha ao carregar Google Client ID:', e),
+    });
   }
 }

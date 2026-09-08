@@ -40,7 +40,7 @@ public class TeamMemberController {
     }
 
     @GetMapping("/{teamId}/members")
-    public Page<TeamMemberResponse> listMembers(@PathVariable UUID teamId,
+    public Page<TeamMemberResponse> listMembers(@PathVariable String teamId,
                                                 @AuthenticationPrincipal Jwt jwt,
                                                 Pageable pageable) {
 

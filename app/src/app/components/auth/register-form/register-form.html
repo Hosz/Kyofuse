@@ -1,6 +1,6 @@
 <form class="flex flex-col gap-lg" (submit)="$event.preventDefault(); onSubmit()" novalidate>
   <app-auth-field
-    label="Nome"
+    [label]="'auth.firstName' | trans"
     icon="badge"
     [hasError]="showFirstNameError()"
     [errorMessage]="firstNameError()"
@@ -8,7 +8,7 @@
     <input
       type="text"
       autocomplete="name"
-      placeholder="João"
+      [placeholder]="'auth.firstNamePlaceholder' | trans"
       [value]="firstName()"
       (input)="onFirstNameChange($any($event.target).value)"
       (blur)="firstNameTouched.set(true)"
@@ -17,7 +17,7 @@
   </app-auth-field>
 
   <app-auth-field
-    label="Sobrenome"
+    [label]="'auth.lastName' | trans"
     icon="badge"
     [hasError]="showLastNameError()"
     [errorMessage]="lastNameError()"
@@ -25,7 +25,7 @@
     <input
       type="text"
       autocomplete="lastname"
-      placeholder="Silva"
+      [placeholder]="'auth.lastNamePlaceholder' | trans"
       [value]="lastName()"
       (input)="onLastNameChange($any($event.target).value)"
       (blur)="lastNameTouched.set(true)"
@@ -34,7 +34,7 @@
   </app-auth-field>
 
   <app-auth-field
-    label="E-mail de contato"
+    [label]="'auth.contactEmail' | trans"
     icon="mail"
     [hasError]="showEmailError()"
     [errorMessage]="emailError()"
@@ -42,7 +42,7 @@
     <input
       type="email"
       autocomplete="email"
-      placeholder="nome@agencia.com"
+      [placeholder]="'auth.contactEmailPlaceholder' | trans"
       [value]="email()"
       (input)="onEmailChange($any($event.target).value)"
       (blur)="emailTouched.set(true)"
@@ -51,7 +51,7 @@
   </app-auth-field>
 
   <app-auth-field
-    label="Username"
+    [label]="'auth.username' | trans"
     icon="badge"
     [hasError]="showUsernameError()"
     [errorMessage]="usernameError()"
@@ -59,7 +59,7 @@
     <input
       type="text"
       autocomplete="username"
-      placeholder="Rival_01"
+      [placeholder]="'auth.usernamePlaceholder' | trans"
       [value]="username()"
       (input)="onUsernameChange($any($event.target).value)"
       (blur)="usernameTouched.set(true)"
@@ -70,7 +70,7 @@
 
   <div class="flex flex-col gap-2.5">
     <app-auth-field
-      label="Senha de acesso"
+      [label]="'auth.accessPassword' | trans"
       icon="lock"
       [hasError]="showPasswordError()"
       [errorMessage]="passwordError()"
@@ -78,7 +78,7 @@
       <input
         [type]="showPassword() ? 'text' : 'password'"
         autocomplete="new-password"
-        placeholder="Mínimo 8 caracteres"
+        [placeholder]="'auth.passwordMinPlaceholder' | trans"
         [value]="password()"
         (input)="onPasswordChange($any($event.target).value)"
         (blur)="passwordTouched.set(true)"
@@ -87,7 +87,7 @@
       <button
         type="button"
         (click)="toggleShowPassword()"
-        [attr.aria-label]="showPassword() ? 'Ocultar senha' : 'Mostrar senha'"
+        [attr.aria-label]="(showPassword() ? 'auth.hidePassword' : 'auth.showPassword') | trans"
         class="shrink-0 cursor-pointer rounded p-0.5 text-on-surface-variant transition-colors hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
       >
         <span class="material-symbols-outlined text-[18px]">{{ showPassword() ? 'visibility_off' : 'visibility' }}</span>
@@ -100,7 +100,7 @@
   </div>
 
   <app-auth-field
-    label="Confirmar senha"
+    [label]="'auth.confirmPassword' | trans"
     icon="lock_reset"
     [hasError]="showConfirmPasswordError()"
     [errorMessage]="confirmPasswordError()"
@@ -108,7 +108,7 @@
     <input
       [type]="showConfirmPassword() ? 'text' : 'password'"
       autocomplete="new-password"
-      placeholder="Repita sua senha"
+      [placeholder]="'auth.repeatPasswordPlaceholder' | trans"
       [value]="confirmPassword()"
       (input)="onConfirmPasswordChange($any($event.target).value)"
       (blur)="confirmPasswordTouched.set(true)"
@@ -117,7 +117,7 @@
     <button
       type="button"
       (click)="toggleShowConfirmPassword()"
-      [attr.aria-label]="showConfirmPassword() ? 'Ocultar senha' : 'Mostrar senha'"
+      [attr.aria-label]="(showConfirmPassword() ? 'auth.hidePassword' : 'auth.showPassword') | trans"
       class="shrink-0 cursor-pointer rounded p-0.5 text-on-surface-variant transition-colors hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
     >
       <span class="material-symbols-outlined text-[18px]">{{ showConfirmPassword() ? 'visibility_off' : 'visibility' }}</span>
@@ -132,11 +132,11 @@
   </div>
 
   <p class="text-label-sm text-on-surface-variant">
-    Ao se registrar, você aceita as
-    <a href="#" class="font-semibold text-primary-container hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container">Regras de Engajamento</a>
-    e a
-    <a href="#" class="font-semibold text-primary-container hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container">Política de Privacidade</a>
-    do Kyofuse.
+    {{ 'auth.termsNotice' | trans }}
+    <a routerLink="/diretrizes" target="_blank" class="font-semibold text-primary-container hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container">{{ 'common.rulesOfEngagement' | trans }}</a>
+    {{ 'common.and' | trans }} a
+    <a routerLink="/privacidade" target="_blank" class="font-semibold text-primary-container hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container">{{ 'common.privacyPolicy' | trans }}</a>
+    {{ 'auth.termsNoticeSuffix' | trans }}
   </p>
 
   <button
@@ -146,10 +146,10 @@
   >
     @if (loading()) {
       <span class="inline-block h-5 w-5 animate-spin rounded-full border-2 border-on-primary-container border-t-transparent"></span>
-      <span>Criando conta...</span>
+      <span>{{ 'common.loading' | trans }}</span>
     } @else {
       <span class="material-symbols-outlined text-[20px]">shield</span>
-      <span>finalizar registro</span>
+      <span>{{ 'auth.register' | trans }}</span>
     }
   </button>
 </form>

@@ -2,10 +2,11 @@ import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PrivacySettingsStore } from '../../privacy-settings-store';
 import { PROFILE_VISIBILITY_OPTIONS } from '../../../../shared/models/privacy-options.model';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-profile-visibility-section',
-  imports: [RouterLink],
+  imports: [RouterLink, TranslatePipe],
   templateUrl: './profile-visibility.html',
   styleUrl: './profile-visibility.css',
 })

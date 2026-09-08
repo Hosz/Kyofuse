@@ -6,18 +6,20 @@ import { ProfileService } from '../../../core/services/profile/profile.service';
 import { gamerProfileResponse } from '../../../models/profile/gamer-profile.model';
 import { FALLBACK_AVATAR_URL } from '../../../shared/utils/format.util';
 
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+
 const SEARCH_DEBOUNCE_MS = 300;
 const PREVIEW_SIZE = 3;
 
 @Component({
   selector: 'app-search-bar',
-  imports: [],
+  imports: [TranslatePipe],
   templateUrl: './search-bar.html',
   styleUrl: './search-bar.css',
 })
 export class SearchBarComponent {
   readonly fallbackAvatar = FALLBACK_AVATAR_URL;
-  placeholder = input('Buscar perfis ou times...');
+  placeholder = input<string | null>(null);
 
   private router = inject(Router);
   private teamService = inject(TeamService);

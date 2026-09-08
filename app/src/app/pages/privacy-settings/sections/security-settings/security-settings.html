@@ -5,8 +5,8 @@
         <span class="material-symbols-outlined text-[24px]">security</span>
       </div>
       <div class="flex flex-col">
-        <h2 class="text-title-lg font-bold text-on-surface">Autenticação em Duas Etapas (2FA)</h2>
-        <span class="text-body-sm text-on-surface-variant">Adicione uma camada extra de segurança à sua conta exigindo um código TOTP.</span>
+        <h2 class="text-title-lg font-bold text-on-surface">{{ 'settings.twoFactor' | trans }}</h2>
+        <span class="text-body-sm text-on-surface-variant">{{ 'settings.twoFactorDesc' | trans }}</span>
       </div>
     </div>
     @if (!loading()) {
@@ -14,21 +14,20 @@
         class="rounded-full border px-3 py-1 text-label-sm font-semibold"
         [class]="enabled() ? 'border-tertiary/40 bg-tertiary/10 text-tertiary' : 'border-outline-variant bg-surface-container text-on-surface-variant'"
       >
-        {{ enabled() ? 'Ativado' : 'Desativado' }}
+        {{ enabled() ? ('settings.enabled' | trans) : ('settings.disabled' | trans) }}
       </span>
     }
   </div>
 
   @if (loading()) {
-    <p class="py-8 text-center text-body-sm text-on-surface-variant">Carregando status da conta...</p>
+    <p class="py-8 text-center text-body-sm text-on-surface-variant">{{ 'common.loading' | trans }}</p>
   } @else if (loadError()) {
     <p class="py-8 text-center text-body-sm text-error">{{ loadError() }}</p>
   } @else {
     @switch (step()) {
       @case ('status') {
         <p class="text-body-sm text-on-surface-variant leading-relaxed max-w-2xl">
-          Com o 2FA ativo, além da sua senha, o login solicita um código temporário de 6 dígitos gerado pelo seu app autenticador
-          (como Google Authenticator, Microsoft Authenticator, Authy ou 1Password). Isso protege seu perfil mesmo em caso de vazamento de credenciais.
+          {{ 'settings.twoFactorActiveInfo' | trans }}
         </p>
 
         @if (!enabled()) {
@@ -40,11 +39,11 @@
                 class="cursor-pointer flex items-center gap-2 rounded-full bg-primary-container px-6 py-2.5 text-label-md font-bold text-on-primary-container transition-colors hover:brightness-110"
               >
                 <span class="material-symbols-outlined text-[18px]">verified_user</span>
-                Configurar e Ativar 2FA
+                {{ 'settings.setupTwoFactor' | trans }}
               </button>
             </div>
             @if (setupError()) {
-              <div class="rounded-xl border border-error/20 bg-error/10 p-3.5 text-label-sm text-error flex items-start gap-2 max-w-xl">
+              <div class="rounded-xl border border-error/20 bg-error/10 p-3.5 text-label-sm text-error flex items-start gap-2 max-w-2xl">
                 <span class="material-symbols-outlined text-[18px] shrink-0">error</span>
                 <span>{{ setupError() }}</span>
               </div>
@@ -54,7 +53,7 @@
           <div class="flex flex-col gap-5">
             <div class="flex items-center gap-3 rounded-xl border border-tertiary/40 bg-tertiary/10 p-4 text-label-sm font-semibold text-tertiary max-w-2xl">
               <span class="material-symbols-outlined text-[22px]">check_circle</span>
-              <span>Sua conta está devidamente protegida com a autenticação em duas etapas.</span>
+              <span>{{ 'settings.twoFactorProtectedNotice' | trans }}</span>
             </div>
 
             @if (!showDisableForm()) {
@@ -64,19 +63,19 @@
                   (click)="toggleDisableForm()"
                   class="cursor-pointer rounded-full border border-error/40 px-5 py-2.5 text-label-md font-bold text-error transition-colors hover:bg-error/10"
                 >
-                  Desativar 2FA
+                  {{ 'settings.disableTwoFactor' | trans }}
                 </button>
               </div>
             } @else {
               <div class="flex flex-col gap-4 rounded-2xl border border-outline-variant bg-surface-container p-6 max-w-2xl">
                 <label class="flex w-full flex-col gap-2">
-                  <span class="text-body-sm font-semibold text-on-surface">Confirme sua senha atual para desativar</span>
+                  <span class="text-body-sm font-semibold text-on-surface">{{ 'settings.confirmPasswordToDisable' | trans }}</span>
                   <input
                     type="password"
                     autocomplete="current-password"
                     [value]="disablePassword()"
                     (input)="disablePassword.set($any($event.target).value)"
-                    placeholder="Sua senha"
+                    [placeholder]="'settings.passwordPlaceholder' | trans"
                     class="rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 text-body-sm text-on-surface outline-none focus:border-primary"
                   />
                 </label>
@@ -94,7 +93,7 @@
                     (click)="toggleDisableForm()"
                     class="cursor-pointer rounded-full border border-outline-variant px-5 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high"
                   >
-                    Cancelar
+                    {{ 'common.cancel' | trans }}
                   </button>
                   <button
                     type="button"
@@ -102,7 +101,7 @@
                     [disabled]="submittingDisable() || !disablePassword()"
                     class="cursor-pointer rounded-full bg-error px-5 py-2 text-label-md font-bold text-on-error transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {{ submittingDisable() ? 'Desativando...' : 'Confirmar Desativação' }}
+                    {{ submittingDisable() ? ('settings.deactivating' | trans) : ('settings.confirmDeactivate' | trans) }}
                   </button>
                 </div>
               </div>
@@ -115,7 +114,7 @@
         <div class="flex flex-col gap-6 max-w-2xl">
           <div class="flex flex-col gap-3">
             <p class="text-body-sm text-on-surface font-semibold">
-              1. Abra seu app autenticador e adicione uma conta manualmente com a chave abaixo:
+              {{ 'settings.twoFactorStep1' | trans }}
             </p>
 
             <div class="flex items-center justify-between gap-3 rounded-xl border border-outline-variant bg-surface-container px-4 py-3">
@@ -123,18 +122,18 @@
               <button
                 type="button"
                 (click)="copySecret()"
-                aria-label="Copiar chave"
+                [attr.aria-label]="'settings.copyKey' | trans"
                 class="shrink-0 cursor-pointer rounded-lg p-2 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
               >
                 <span class="material-symbols-outlined text-[20px]">{{ secretCopied() ? 'check' : 'content_copy' }}</span>
               </button>
             </div>
 
-            <p class="text-body-sm text-on-surface-variant">Conta: Kyofuse &middot; Emissor: Kyofuse</p>
+            <p class="text-body-sm text-on-surface-variant">{{ 'settings.twoFactorAccountIssuer' | trans }}</p>
           </div>
 
           <div class="flex flex-col gap-3">
-            <p class="text-body-sm text-on-surface font-semibold">2. Digite o código de 6 dígitos gerado pelo aplicativo:</p>
+            <p class="text-body-sm text-on-surface font-semibold">{{ 'settings.twoFactorStep2' | trans }}</p>
             <label class="flex w-full flex-col gap-2">
               <input
                 type="text"
@@ -160,7 +159,7 @@
               (click)="cancelSetup()"
               class="cursor-pointer rounded-full border border-outline-variant px-5 py-2.5 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high"
             >
-              Cancelar
+              {{ 'common.cancel' | trans }}
             </button>
             <button
               type="button"
@@ -168,7 +167,7 @@
               [disabled]="submittingSetup() || !setupCode().trim()"
               class="cursor-pointer rounded-full bg-primary-container px-6 py-2.5 text-label-md font-bold text-on-primary-container transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {{ submittingSetup() ? 'Confirmando...' : 'Confirmar e Ativar 2FA' }}
+              {{ submittingSetup() ? ('settings.confirming' | trans) : ('settings.confirmAndEnable2FA' | trans) }}
             </button>
           </div>
         </div>
@@ -178,13 +177,11 @@
         <div class="flex flex-col gap-5 max-w-2xl">
           <div class="flex items-center gap-3 rounded-xl border border-tertiary/40 bg-tertiary/10 p-4 text-label-sm font-semibold text-tertiary">
             <span class="material-symbols-outlined text-[22px]">check_circle</span>
-            <span>2FA ativado com sucesso no seu perfil!</span>
+            <span>{{ 'settings.twoFactorSuccessTitle' | trans }}</span>
           </div>
 
           <p class="text-body-sm text-on-surface-variant leading-relaxed">
-            Guarde estes códigos de backup em um lugar seguro. Cada um só pode ser usado uma vez, e
-            eles são a única forma de entrar na conta caso você perca acesso ao app autenticador.
-            Eles não serão mostrados novamente.
+            {{ 'settings.twoFactorBackupCodesNotice' | trans }}
           </p>
 
           <div class="grid grid-cols-2 gap-3 rounded-2xl border border-outline-variant bg-surface-container p-6 font-mono text-body-sm font-bold text-on-surface sm:grid-cols-4">
@@ -200,7 +197,7 @@
               class="flex items-center gap-2 rounded-full border border-outline-variant px-5 py-2.5 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high cursor-pointer"
             >
               <span class="material-symbols-outlined text-[18px]">{{ recoveryCodesCopied() ? 'check' : 'content_copy' }}</span>
-              {{ recoveryCodesCopied() ? 'Copiado para Área de Transferência' : 'Copiar Todos os Códigos' }}
+              {{ recoveryCodesCopied() ? ('settings.copiedToClipboard' | trans) : ('settings.copyAllCodes' | trans) }}
             </button>
           </div>
 
@@ -210,7 +207,7 @@
               (click)="finishRecoveryCodes()"
               class="cursor-pointer rounded-full bg-primary-container px-6 py-2.5 text-label-md font-bold text-on-primary-container transition-colors hover:brightness-110"
             >
-              Já salvei meus códigos com segurança
+              {{ 'settings.savedBackupCodesSecurely' | trans }}
             </button>
           </div>
         </div>

@@ -4,9 +4,11 @@ import { AppSidebarComponent } from '../../components/layout/app-sidebar/app-sid
 import { DiscoverySidebarComponent } from '../../components/discovery/discovery-sidebar/discovery-sidebar';
 import { ToastService } from '../../core/services/ui/toast.service';
 
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-tournaments-hub',
-  imports: [RouterLink, AppSidebarComponent, DiscoverySidebarComponent],
+  imports: [RouterLink, AppSidebarComponent, DiscoverySidebarComponent, TranslatePipe],
   templateUrl: './tournaments-hub.html',
   styleUrl: './tournaments-hub.css',
 })

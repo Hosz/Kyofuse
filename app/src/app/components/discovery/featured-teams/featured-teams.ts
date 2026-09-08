@@ -9,13 +9,15 @@ export interface DisplayFeaturedTeam {
   slug?: string;
   name: string;
   avatarUrl?: string | null;
-  statusText: string;
+  status: string;
   region?: string | null;
 }
 
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-featured-teams',
-  imports: [RouterLink],
+  imports: [RouterLink, TranslatePipe],
   templateUrl: './featured-teams.html',
   styleUrl: './featured-teams.css',
 })
@@ -38,8 +40,15 @@ export class FeaturedTeamsComponent implements OnInit {
     this.loadFeaturedTeams();
   }
 
-  statusLabel(status: string): string {
-    return TEAM_STATUS_OPTIONS.find((option) => option.value === status)?.label ?? status;
+  statusKey(status: string): string {
+    switch (status?.toUpperCase()) {
+      case 'RECRUITING': return 'teams.statusRecruiting';
+      case 'CLOSED': return 'teams.statusClosed';
+      case 'INACTIVE': return 'teams.statusInactive';
+      case 'ACTIVE':
+      default:
+        return 'teams.statusActive';
+    }
   }
 
   private mapTeamToDisplay(team: TeamResponse): DisplayFeaturedTeam {
@@ -48,7 +57,7 @@ export class FeaturedTeamsComponent implements OnInit {
       slug: team.slug,
       name: team.name,
       avatarUrl: team.avatarUrl,
-      statusText: this.statusLabel(team.status),
+      status: team.status,
       region: team.region,
     };
   }

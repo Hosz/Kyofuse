@@ -1,4 +1,4 @@
-<app-modal [open]="open()" title="Nova conversa" (closed)="onClose()">
+<app-modal [open]="open()" [title]="'chat.newConversation' | trans" (closed)="onClose()">
   <div class="flex flex-col gap-lg">
     <div class="flex rounded-lg border border-outline-variant p-1">
       <button
@@ -7,7 +7,7 @@
         class="flex-1 cursor-pointer rounded-md px-3 py-2 text-label-md font-bold transition-colors"
         [class]="mode() === 'direct' ? 'bg-primary-container text-on-primary-container' : 'text-on-surface-variant hover:text-on-surface'"
       >
-        Conversa direta
+        {{ 'chat.directConversation' | trans }}
       </button>
       <button
         type="button"
@@ -15,18 +15,18 @@
         class="flex-1 cursor-pointer rounded-md px-3 py-2 text-label-md font-bold transition-colors"
         [class]="mode() === 'group' ? 'bg-primary-container text-on-primary-container' : 'text-on-surface-variant hover:text-on-surface'"
       >
-        Grupo
+        {{ 'chat.group' | trans }}
       </button>
     </div>
 
     @if (mode() === 'group') {
       <div class="flex flex-col gap-1.5">
-        <label class="text-label-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant" for="new-group-name">Nome do grupo</label>
+        <label class="text-label-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant" for="new-group-name">{{ 'chat.groupName' | trans }}</label>
         <input
           id="new-group-name"
           type="text"
           maxlength="80"
-          placeholder="Ex.: Time Kyofuse"
+          [placeholder]="'chat.groupNamePlaceholder' | trans"
           [value]="groupName()"
           (input)="onGroupNameChange($any($event.target).value)"
           class="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-2 focus:ring-primary-container"
@@ -42,13 +42,13 @@
         />
         <img
           [src]="groupAvatarUrl() || fallbackAvatar"
-          alt="Foto do grupo"
+          [alt]="'chat.groupPhoto' | trans"
           class="h-12 w-12 shrink-0 rounded-xl border border-outline-variant object-cover"
         />
         <div class="flex flex-1 items-center justify-between">
           <div>
-            <p class="text-body-sm font-semibold text-on-surface">Foto do grupo</p>
-            <p class="text-label-sm text-on-surface-variant">Opcional (JPG, PNG ou WebP)</p>
+            <p class="text-body-sm font-semibold text-on-surface">{{ 'chat.groupPhoto' | trans }}</p>
+            <p class="text-label-sm text-on-surface-variant">{{ 'chat.groupPhotoOptional' | trans }}</p>
           </div>
           <div class="flex items-center gap-2">
             @if (groupAvatarUrl()) {
@@ -56,7 +56,7 @@
                 type="button"
                 (click)="removeAvatar()"
                 class="cursor-pointer text-on-surface-variant hover:text-error"
-                title="Remover foto"
+                [title]="'chat.removePhoto' | trans"
               >
                 <span class="material-symbols-outlined text-[18px]">delete</span>
               </button>
@@ -69,22 +69,22 @@
             >
               @if (uploadingAvatar()) {
                 <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
-                <span>Enviando...</span>
+                <span>{{ 'common.uploading' | trans }}</span>
               } @else {
                 <span class="material-symbols-outlined text-[16px]">upload</span>
-                <span>{{ groupAvatarUrl() ? 'Alterar' : 'Enviar foto' }}</span>
+                <span>{{ groupAvatarUrl() ? ('chat.change' | trans) : ('chat.uploadPhoto' | trans) }}</span>
               }
             </button>
           </div>
         </div>
       </div>
 
-      <p class="text-label-sm text-on-surface-variant">Só é possível adicionar pessoas com quem você tem uma relação mútua (amigos ou seguem um ao outro).</p>
+      <p class="text-label-sm text-on-surface-variant">{{ 'chat.mutualRelationNotice' | trans }}</p>
     }
 
     <input
       type="text"
-      placeholder="Buscar por username..."
+      [placeholder]="'chat.searchByUsername' | trans"
       [value]="query()"
       (input)="onQueryChange($any($event.target).value)"
       class="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-2 focus:ring-primary-container"
@@ -92,10 +92,10 @@
 
     <div class="flex flex-col gap-1">
       @if (loading()) {
-        <p class="py-6 text-center text-body-sm text-on-surface-variant">Carregando...</p>
+        <p class="py-6 text-center text-body-sm text-on-surface-variant">{{ 'common.loading' | trans }}</p>
       } @else if (filteredCandidates().length === 0) {
         <p class="py-6 text-center text-body-sm text-on-surface-variant">
-          Nenhum contato encontrado. Adicione amigos ou siga alguém que também te siga pra poder conversar por aqui.
+          {{ 'chat.noContactsFound' | trans }}
         </p>
       } @else {
         @for (candidate of filteredCandidates(); track candidate.id) {
@@ -128,7 +128,7 @@
         [disabled]="!canCreateGroup()"
         class="cursor-pointer rounded-lg bg-primary-container px-4 py-2.5 text-label-md font-bold text-on-primary-container transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
       >
-        Criar grupo{{ selectedCount() > 0 ? ' (' + selectedCount() + ')' : '' }}
+        {{ 'chat.createGroup' | trans }}{{ selectedCount() > 0 ? ' (' + selectedCount() + ')' : '' }}
       </button>
     }
   </div>

@@ -30,4 +30,40 @@ class JwtAuthConverterTest {
                 .extracting("authority")
                 .containsExactly("ROLE_USER");
     }
+
+    @Test
+    void convertMapsAdminRoleToRoleAdmin() {
+        Jwt jwt = new Jwt(
+                "token",
+                Instant.now(),
+                Instant.now().plusSeconds(3600),
+                Map.of("alg", "HS256"),
+                Map.of("sub", "admin-id", "role", "ADMIN")
+        );
+
+        AbstractAuthenticationToken authentication = converter.convert(jwt);
+
+        assertThat(authentication.getName()).isEqualTo("admin-id");
+        assertThat(authentication.getAuthorities())
+                .extracting("authority")
+                .containsExactly("ROLE_ADMIN");
+    }
+
+    @Test
+    void convertDefaultsToRoleUserWhenRoleClaimMissing() {
+        Jwt jwt = new Jwt(
+                "token",
+                Instant.now(),
+                Instant.now().plusSeconds(3600),
+                Map.of("alg", "HS256"),
+                Map.of("sub", "user-id")
+        );
+
+        AbstractAuthenticationToken authentication = converter.convert(jwt);
+
+        assertThat(authentication.getName()).isEqualTo("user-id");
+        assertThat(authentication.getAuthorities())
+                .extracting("authority")
+                .containsExactly("ROLE_USER");
+    }
 }

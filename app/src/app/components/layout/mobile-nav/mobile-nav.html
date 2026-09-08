@@ -1,0 +1,74 @@
+@if (isVisible()) {
+  <nav
+    class="fixed bottom-0 left-0 right-0 z-40 flex h-16 w-full items-center justify-around border-t border-outline-variant bg-surface/95 px-1 backdrop-blur-lg pb-[env(safe-area-inset-bottom)] lg:hidden"
+    aria-label="Navegação móvel"
+  >
+    <!-- 1. HOME -->
+    <a
+      routerLink="/home"
+      routerLinkActive
+      #rlaHome="routerLinkActive"
+      [routerLinkActiveOptions]="{ exact: true }"
+      class="flex flex-1 flex-col items-center justify-center gap-1 py-1 text-center transition-colors"
+      [class]="rlaHome.isActive ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-on-surface'"
+    >
+      <span class="material-symbols-outlined text-[24px]">home</span>
+      <span class="text-[11px] leading-none">{{ 'nav.home' | trans }}</span>
+    </a>
+
+    <!-- 2. EXPLORAR -->
+    <a
+      routerLink="/explorar"
+      routerLinkActive
+      #rlaExplore="routerLinkActive"
+      class="flex flex-1 flex-col items-center justify-center gap-1 py-1 text-center transition-colors"
+      [class]="rlaExplore.isActive ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-on-surface'"
+    >
+      <span class="material-symbols-outlined text-[24px]">explore</span>
+      <span class="text-[11px] leading-none">{{ 'nav.explore' | trans }}</span>
+    </a>
+
+    <!-- 3. RANKING -->
+    <a
+      routerLink="/ranking"
+      routerLinkActive
+      #rlaRank="routerLinkActive"
+      class="flex flex-1 flex-col items-center justify-center gap-1 py-1 text-center transition-colors"
+      [class]="rlaRank.isActive ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-on-surface'"
+    >
+      <span class="material-symbols-outlined text-[24px]">military_tech</span>
+      <span class="text-[11px] leading-none">{{ 'nav.leaderboard' | trans }}</span>
+    </a>
+
+    <!-- 4. NOTIFICAÇÕES -->
+    <a
+      routerLink="/notificacoes"
+      routerLinkActive
+      #rlaNotif="routerLinkActive"
+      class="relative flex flex-1 flex-col items-center justify-center gap-1 py-1 text-center transition-colors"
+      [class]="rlaNotif.isActive ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-on-surface'"
+    >
+      <div class="relative flex">
+        <span class="material-symbols-outlined text-[24px]">notifications</span>
+        @if (unreadNotificationsCount() > 0) {
+          <span class="absolute -right-1.5 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-on-primary">
+            {{ unreadNotificationsCount() > 99 ? '99+' : unreadNotificationsCount() }}
+          </span>
+        }
+      </div>
+      <span class="text-[11px] leading-none">{{ 'nav.notifications' | trans }}</span>
+    </a>
+
+    <!-- 5. PERFIL -->
+    <a
+      routerLink="/perfil"
+      routerLinkActive
+      #rlaProfile="routerLinkActive"
+      class="flex flex-1 flex-col items-center justify-center gap-1 py-1 text-center transition-colors"
+      [class]="rlaProfile.isActive ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-on-surface'"
+    >
+      <span class="material-symbols-outlined text-[24px]">person</span>
+      <span class="text-[11px] leading-none">{{ 'nav.profile' | trans }}</span>
+    </a>
+  </nav>
+}

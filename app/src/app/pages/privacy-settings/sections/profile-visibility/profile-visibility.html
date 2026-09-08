@@ -5,19 +5,19 @@
         <span class="material-symbols-outlined text-[24px]">visibility</span>
       </div>
       <div class="flex flex-col">
-        <h2 class="text-title-lg font-bold text-on-surface">Visibilidade do Perfil</h2>
-        <span class="text-body-sm text-on-surface-variant">Controle quem tem acesso para visualizar as informações e conteúdos do seu perfil.</span>
+        <h2 class="text-title-lg font-bold text-on-surface">{{ 'settings.profileVisibility' | trans }}</h2>
+        <span class="text-body-sm text-on-surface-variant">{{ 'settings.profileVisibilityDesc' | trans }}</span>
       </div>
     </div>
-    <span class="rounded-full border border-outline-variant bg-surface-container px-3 py-1 text-label-sm font-semibold text-on-surface-variant">Privacidade</span>
+    <span class="rounded-full border border-outline-variant bg-surface-container px-3 py-1 text-label-sm font-semibold text-on-surface-variant">{{ 'settings.privacyGroup' | trans }}</span>
   </div>
 
   <div class="flex flex-col divide-y divide-outline-variant">
     <div class="flex flex-col gap-4 py-5 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
       <div class="flex flex-col flex-1 min-w-0 pr-4">
-        <span class="text-body-md font-semibold text-on-surface">Visibilidade da sua conta</span>
+        <span class="text-body-md font-semibold text-on-surface">{{ 'settings.accountVisibility' | trans }}</span>
         <span class="text-body-sm text-on-surface-variant leading-relaxed">
-          Define quem pode acessar e visualizar suas publicações, conexões (seguidores, seguindo e amigos) e detalhes do seu perfil na plataforma.
+          {{ 'settings.accountVisibilityDesc' | trans }}
         </span>
       </div>
       <select
@@ -26,7 +26,7 @@
         class="w-full shrink-0 rounded-xl border border-outline-variant bg-surface-container px-4 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary sm:w-64"
       >
         @for (option of options; track option.value) {
-          <option [value]="option.value" [selected]="option.value === store.profileVisibility()">{{ option.label }}</option>
+          <option [value]="option.value" [selected]="option.value === store.profileVisibility()">{{ option.key ? (option.key | trans) : option.label }}</option>
         }
       </select>
     </div>
@@ -44,7 +44,7 @@
       routerLink="/perfil"
       class="cursor-pointer rounded-full border border-outline-variant px-5 py-2.5 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high"
     >
-      Voltar
+      {{ 'common.back' | trans }}
     </a>
     <button
       type="button"
@@ -52,12 +52,12 @@
       [disabled]="store.saving()"
       class="cursor-pointer rounded-full bg-primary-container px-6 py-2.5 text-label-md font-bold text-on-primary-container transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
     >
-      {{ store.saving() ? 'Salvando...' : 'Salvar Alterações' }}
+      {{ store.saving() ? ('common.loading' | trans) : ('settings.saveChanges' | trans) }}
     </button>
     @if (saved()) {
       <span class="flex items-center gap-1 text-label-sm font-semibold text-tertiary">
         <span class="material-symbols-outlined text-[18px]">check_circle</span>
-        Configurações salvas!
+        {{ 'settings.changesSaved' | trans }}
       </span>
     }
   </div>
