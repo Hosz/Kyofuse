@@ -94,13 +94,38 @@ public class SecurityConfig {
      * O access token não fica mais no header Authorization: ele viaja em cookie
      * HttpOnly (invisível ao JS), então o resource server precisa ler o JWT de lá.
      */
+    private static final java.util.Set<String> PUBLIC_AUTH_ENDPOINTS = java.util.Set.of(
+            "/api/auth/login",
+            "/api/auth/register",
+            "/api/auth/google",
+            "/api/auth/google/client-id",
+            "/api/auth/steam",
+            "/api/auth/refresh",
+            "/api/auth/verify-email",
+            "/api/auth/verify-email/validate",
+            "/api/auth/resend-verification",
+            "/api/auth/forgot-password",
+            "/api/auth/reset-password",
+            "/api/auth/reset-password/validate",
+            "/api/auth/reactivate/confirm",
+            "/api/auth/reactivate/resend"
+    );
+
     @Bean
     public BearerTokenResolver bearerTokenResolver() {
         DefaultBearerTokenResolver defaultResolver = new DefaultBearerTokenResolver();
         return request -> {
             String uri = request.getRequestURI();
-            if (uri != null && (uri.equals("/ws") || uri.startsWith("/ws/"))) {
-                return null;
+            if (uri != null) {
+                String normalized = uri.endsWith("/") && uri.length() > 1
+                        ? uri.substring(0, uri.length() - 1)
+                        : uri;
+                if (normalized.equals("/ws") || normalized.startsWith("/ws/")
+                        || normalized.startsWith("/actuator/health")
+                        || normalized.startsWith("/actuator/info")
+                        || PUBLIC_AUTH_ENDPOINTS.contains(normalized)) {
+                    return null;
+                }
             }
 
             Cookie[] cookies = request.getCookies();

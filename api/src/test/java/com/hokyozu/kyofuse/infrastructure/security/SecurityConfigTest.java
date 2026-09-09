@@ -13,6 +13,8 @@ import org.springframework.security.oauth2.server.resource.web.BearerTokenResolv
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
@@ -92,6 +94,18 @@ class SecurityConfigTest {
         wsSubpathRequest.setRequestURI("/ws/info");
         wsSubpathRequest.setCookies(new Cookie(AuthCookieService.ACCESS_TOKEN_COOKIE, "jwt-value"));
         assertThat(resolver.resolve(wsSubpathRequest)).isNull();
+    }
+
+    @Test
+    void bearerTokenResolverReturnsNullForPublicAuthEndpoints() {
+        BearerTokenResolver resolver = securityConfig.bearerTokenResolver();
+
+        for (String path : List.of("/api/auth/steam", "/api/auth/google", "/api/auth/login", "/api/auth/refresh")) {
+            MockHttpServletRequest req = new MockHttpServletRequest();
+            req.setRequestURI(path);
+            req.setCookies(new Cookie(AuthCookieService.ACCESS_TOKEN_COOKIE, "expired-jwt-value"));
+            assertThat(resolver.resolve(req)).as("Path should be exempted: " + path).isNull();
+        }
     }
 
     @Test
