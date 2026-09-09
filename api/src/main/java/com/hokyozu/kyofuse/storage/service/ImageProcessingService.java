@@ -21,7 +21,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ImageProcessingService {
 
-    private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    private static final long MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
     private static final List<String> ALLOWED_MIME_TYPES = List.of(
             "image/jpeg",
             "image/png",
@@ -39,6 +39,7 @@ public class ImageProcessingService {
         if (bufferedImage == null) {
             throw new BadRequestException("Invalid image file format");
         }
+        bufferedImage = ensureRgb(bufferedImage);
 
         int width = bufferedImage.getWidth();
         int height = bufferedImage.getHeight();
@@ -95,6 +96,7 @@ public class ImageProcessingService {
         if (bufferedImage == null) {
             throw new BadRequestException("Invalid image file format");
         }
+        bufferedImage = ensureRgb(bufferedImage);
 
         String fileId = UUID.randomUUID().toString();
         String fileKey = String.format("avatars/%s/%s/%s.jpg", folder, ownerId, fileId);
@@ -119,6 +121,7 @@ public class ImageProcessingService {
         if (bufferedImage == null) {
             throw new BadRequestException("Invalid image file format");
         }
+        bufferedImage = ensureRgb(bufferedImage);
 
         String fileId = UUID.randomUUID().toString();
         String fileKey = String.format("banners/%s/%s/%s.jpg", folder, ownerId, fileId);
@@ -135,13 +138,29 @@ public class ImageProcessingService {
         return storageService.uploadFile(fileKey, bannerBytes, "image/jpeg");
     }
 
+    private BufferedImage ensureRgb(BufferedImage image) {
+        if (image.getType() == BufferedImage.TYPE_INT_RGB) {
+            return image;
+        }
+        BufferedImage rgbImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_RGB);
+        java.awt.Graphics2D g2d = rgbImage.createGraphics();
+        try {
+            g2d.setColor(java.awt.Color.WHITE);
+            g2d.fillRect(0, 0, image.getWidth(), image.getHeight());
+            g2d.drawImage(image, 0, 0, null);
+        } finally {
+            g2d.dispose();
+        }
+        return rgbImage;
+    }
+
     private void validateImage(MultipartFile file) throws IOException {
         if (file == null || file.isEmpty()) {
             throw new BadRequestException("File is empty or missing");
         }
 
         if (file.getSize() > MAX_FILE_SIZE) {
-            throw new BadRequestException("File size exceeds 10MB limit");
+            throw new BadRequestException("File size exceeds 25MB limit");
         }
 
         String detectedMime = tika.detect(file.getInputStream());

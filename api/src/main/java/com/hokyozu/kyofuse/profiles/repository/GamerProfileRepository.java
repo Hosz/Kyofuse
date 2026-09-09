@@ -21,6 +21,7 @@ import java.util.UUID;
 public interface GamerProfileRepository extends JpaRepository<GamerProfile, UUID>, JpaSpecificationExecutor<GamerProfile> {
     Optional<GamerProfile> findByUserId(UUID userId);
 
+    @EntityGraph(attributePaths = {"user"})
     List<GamerProfile> findByUserIdIn(List<UUID> userIds);
 
     /** Jogadores anunciando que procuram time, fora os ids excluídos (quem já está no time). */

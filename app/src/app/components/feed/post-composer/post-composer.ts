@@ -66,10 +66,24 @@ export class PostComposerComponent {
       this.toastService.info(`Limite máximo de 4 imagens. Apenas as primeiras ${availableSlots} foram adicionadas.`);
     }
 
+    const MAX_UPLOAD_SIZE = 25 * 1024 * 1024;
+    const validFiles = filesToUpload.filter((file) => {
+      if (file.size > MAX_UPLOAD_SIZE) {
+        this.toastService.error(`A imagem "${file.name}" ultrapassa o limite de 25MB.`);
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length === 0) {
+      input.value = '';
+      return;
+    }
+
     this.uploading.set(true);
 
     let completed = 0;
-    filesToUpload.forEach((file) => {
+    validFiles.forEach((file) => {
       this.mediaService.uploadImage(file).subscribe({
         next: (res) => {
           const item: PostMediaItemRequest = {
@@ -84,7 +98,7 @@ export class PostComposerComponent {
           };
           this.mediaItems.update((items) => [...items, item]);
           completed++;
-          if (completed === filesToUpload.length) {
+          if (completed === validFiles.length) {
             this.uploading.set(false);
             if (this.fileInput) this.fileInput.nativeElement.value = '';
           }
@@ -93,7 +107,7 @@ export class PostComposerComponent {
           console.error('Failed to upload image:', err);
           this.toastService.error('Erro ao fazer upload da imagem.');
           completed++;
-          if (completed === filesToUpload.length) {
+          if (completed === validFiles.length) {
             this.uploading.set(false);
             if (this.fileInput) this.fileInput.nativeElement.value = '';
           }
