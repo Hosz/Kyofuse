@@ -57,9 +57,9 @@ export class LeaderboardComponent implements OnInit {
   }
 
   getRankBadgeClass(rank: number): string {
-    if (rank === 1) return 'bg-amber-400/20 text-amber-300 border-amber-400/40 shadow-amber-400/10 shadow-lg';
-    if (rank === 2) return 'bg-slate-300/20 text-slate-200 border-slate-300/40';
-    if (rank === 3) return 'bg-amber-700/20 text-amber-600 border-amber-700/40';
-    return 'bg-surface-container text-on-surface-variant border-outline-variant/30';
+    if (rank === 1) return 'bg-amber-400/20 text-amber-600 dark:text-amber-300 border-amber-400/50 shadow-amber-400/10 shadow-lg';
+    if (rank === 2) return 'bg-slate-200/70 dark:bg-slate-300/20 text-slate-700 dark:text-slate-200 border-slate-400/60 dark:border-slate-300/40';
+    if (rank === 3) return 'bg-amber-700/20 text-amber-800 dark:text-amber-600 border-amber-700/40';
+    return 'bg-surface-container text-on-surface-variant border-outline-variant/40';
   }
 }

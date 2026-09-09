@@ -100,6 +100,7 @@ public class LeaderboardService {
             result.add(new LeaderboardEntryResponse(
                     rank++,
                     userId,
+                    profile != null && profile.getUser() != null ? profile.getUser().getUsername() : "Unknown",
                     profile != null ? profile.getNickname() : "Unknown",
                     profile != null ? profile.getAvatarUrl() : null,
                     profile != null ? profile.getCountry() : null,
@@ -171,6 +172,7 @@ public class LeaderboardService {
             result.add(new LeaderboardEntryResponse(
                     currentRank++,
                     id,
+                    profile != null && profile.getUser() != null ? profile.getUser().getUsername() : "Unknown",
                     profile != null ? profile.getNickname() : "Unknown",
                     profile != null ? profile.getAvatarUrl() : null,
                     profile != null ? profile.getCountry() : null,

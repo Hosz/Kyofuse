@@ -470,12 +470,12 @@
                         class="absolute inset-0 transition-opacity"
                         [class]="
                           favoriteMaps().includes(option.value)
-                            ? 'bg-gradient-to-t from-surface-container-lowest/80 via-surface-container-lowest/40 to-surface-container-lowest/20'
-                            : 'bg-gradient-to-t from-surface-container-lowest/85 via-surface-container-lowest/50 to-surface-container-lowest/25 group-hover:via-surface-container-lowest/35'
+                            ? 'bg-gradient-to-t from-black/80 via-black/40 to-black/10'
+                            : 'bg-gradient-to-t from-black/85 via-black/50 to-black/20 group-hover:via-black/30'
                         "
                       ></span>
                       <span
-                        class="relative z-10 px-2 text-center text-label-md font-bold uppercase tracking-[0.08em] text-on-surface drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] transition-colors"
+                        class="relative z-10 px-2 text-center text-label-md font-bold uppercase tracking-[0.08em] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] transition-colors"
                         [class.text-primary]="favoriteMaps().includes(option.value)"
                       >
                         {{ option.label }}
