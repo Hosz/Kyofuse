@@ -8,7 +8,9 @@ import com.hokyozu.kyofuse.infrastructure.geolocation.LocationInfo;
 import com.hokyozu.kyofuse.notifications.entity.Notification;
 import com.hokyozu.kyofuse.notifications.enums.NotificationStatus;
 import com.hokyozu.kyofuse.notifications.enums.NotificationType;
+import com.hokyozu.kyofuse.notifications.mapper.NotificationMapper;
 import com.hokyozu.kyofuse.notifications.repository.NotificationRepository;
+import com.hokyozu.kyofuse.notifications.service.NotificationCounterService;
 import com.hokyozu.kyofuse.users.entity.User;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,6 +18,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -36,6 +39,15 @@ class LoginSecurityAlertServiceTest {
 
     @Mock
     private NotificationRepository notificationRepository;
+
+    @Mock
+    private NotificationCounterService notificationCounterService;
+
+    @Mock
+    private NotificationMapper notificationMapper;
+
+    @Mock
+    private SimpMessagingTemplate messagingTemplate;
 
     @Mock
     private MailService mailService;
@@ -60,6 +72,7 @@ class LoginSecurityAlertServiceTest {
 
         when(geoLocationService.resolveLocation(ip)).thenReturn(locationInfo);
         when(userAgentParser.parse(userAgent)).thenReturn(deviceInfo);
+        when(notificationRepository.save(any(Notification.class))).thenAnswer(inv -> inv.getArgument(0));
 
         UserLoginSuccessEvent event = new UserLoginSuccessEvent(user, ip, userAgent, now);
 
@@ -78,6 +91,9 @@ class LoginSecurityAlertServiceTest {
         assertThat(saved.getMetadataJson()).containsEntry("ip", ip);
         assertThat(saved.getMetadataJson()).containsEntry("location", "Curitiba, Paraná, Brasil");
         assertThat(saved.getMetadataJson()).containsEntry("device", "Chrome no Windows");
+
+        verify(notificationCounterService).increment(user.getId());
+        verify(messagingTemplate).convertAndSendToUser(eq(user.getId().toString()), eq("/queue/notifications"), any());
 
         verify(mailService).sendLoginSecurityAlertEmail(
                 eq("gamer123@example.com"),
@@ -113,6 +129,7 @@ class LoginSecurityAlertServiceTest {
         DeviceInfo deviceInfo = new DeviceInfo("Chrome", "Windows", "Computador", "Chrome no Windows");
 
         when(userAgentParser.parse(userAgent)).thenReturn(deviceInfo);
+        when(notificationRepository.save(any(Notification.class))).thenAnswer(inv -> inv.getArgument(0));
 
         UserLoginSuccessEvent event = new UserLoginSuccessEvent(user, ip, userAgent, now, locationInfo);
 
