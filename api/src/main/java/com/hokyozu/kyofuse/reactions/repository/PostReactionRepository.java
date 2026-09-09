@@ -9,12 +9,14 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface PostReactionRepository extends JpaRepository<PostReaction, UUID> {
     Optional<PostReaction> findByPostIdAndUserId(UUID postId, UUID userId);
+    List<PostReaction> findByPostIdInAndUserId(java.util.Collection<UUID> postIds, UUID userId);
 
     @EntityGraph(attributePaths = {"user"})
     Page<PostReaction> findByPostIdAndReactionType(UUID postId, ReactionType reactionType, Pageable pageable);

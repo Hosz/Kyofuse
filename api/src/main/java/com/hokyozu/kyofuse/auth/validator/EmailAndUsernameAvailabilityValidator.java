@@ -13,11 +13,11 @@ public class EmailAndUsernameAvailabilityValidator {
 
     public void validate(String emailIndex, String username) {
 
-        if (userRepository.existsByEmailIndex(emailIndex)) {
+        if (userRepository.existsByEmailIndexAndEmailVerifiedTrue(emailIndex)) {
             throw new ConflictException("Email já está em uso.");
         }
 
-        if (userRepository.existsByUsernameIgnoreCase(username.trim())) {
+        if (userRepository.existsByUsernameIgnoreCaseAndEmailVerifiedTrue(username.trim())) {
             throw new ConflictException("Username já está em uso.");
         }
     }

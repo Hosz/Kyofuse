@@ -48,6 +48,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final PostMapRepository postMapRepository;
     private final PostMediaRepository postMediaRepository;
+    private final com.hokyozu.kyofuse.reactions.repository.PostReactionRepository postReactionRepository;
 
     private final PostValidator postValidator;
     private final PostMapsValidator postMapsValidator;
@@ -161,7 +162,7 @@ public class PostService {
                 : List.of(PostVisibility.PUBLIC);
 
         return toResponsePage(postRepository
-                .findByCommunityIdAndVisibilityInAndStatus(communityId, visibilities, PostStatus.ACTIVE, pageable));
+                .findByCommunityIdAndVisibilityInAndStatus(communityId, visibilities, PostStatus.ACTIVE, pageable), userId);
     }
 
     /**
@@ -169,6 +170,10 @@ public class PostService {
      * perfis de todos os autores — em vez de N consultas por post.
      */
     private Page<PostResponse> toResponsePage(Page<Post> postsPage) {
+        return toResponsePage(postsPage, null);
+    }
+
+    private Page<PostResponse> toResponsePage(Page<Post> postsPage, UUID userId) {
         List<Post> posts = postsPage.getContent();
 
         List<UUID> postIds = posts.stream().map(Post::getId).toList();
@@ -187,6 +192,11 @@ public class PostService {
         Map<UUID, GamerProfile> profilesByAuthor = gamerProfileFinder.findAllByUserIds(authorIds).stream()
                 .collect(Collectors.toMap(profile -> profile.getUser().getId(), profile -> profile));
 
+        Map<UUID, com.hokyozu.kyofuse.reactions.enums.ReactionType> userReactionsByPost = (postIds.isEmpty() || userId == null)
+                ? Map.of()
+                : postReactionRepository.findByPostIdInAndUserId(postIds, userId).stream()
+                        .collect(Collectors.toMap(r -> r.getPost().getId(), com.hokyozu.kyofuse.reactions.entity.PostReaction::getReactionType, (a, b) -> a));
+
         return postsPage.map(post -> PostMapper.toResponse(
                 post,
                 mapsByPost.getOrDefault(post.getId(), List.of()),
@@ -194,7 +204,8 @@ public class PostService {
                 profilesByAuthor.computeIfAbsent(
                         post.getAuthor().getId(),
                         gamerProfileFinder::findProfileByUserId
-                )
+                ),
+                userReactionsByPost.get(post.getId())
         ));
     }
 
@@ -227,7 +238,12 @@ public class PostService {
         List<PostMedia> postMedias = postMediaRepository.findByPostIdOrderByDisplayOrderAsc(postId);
 
         GamerProfile gamerProfile = gamerProfileFinder.findProfileByUserId(post.getAuthor().getId());
-        return PostMapper.toResponse(post, postMaps, postMedias, gamerProfile);
+        com.hokyozu.kyofuse.reactions.enums.ReactionType userReaction = userId != null
+                ? postReactionRepository.findByPostIdAndUserId(postId, userId)
+                        .map(com.hokyozu.kyofuse.reactions.entity.PostReaction::getReactionType)
+                        .orElse(null)
+                : null;
+        return PostMapper.toResponse(post, postMaps, postMedias, gamerProfile, userReaction);
     }
 
     /**
@@ -263,7 +279,7 @@ public class PostService {
 
         Page<Post> rankedPage = new PageImpl<>(pagedPosts, pageable, rankedPosts.size());
 
-        return toResponsePage(rankedPage);
+        return toResponsePage(rankedPage, userId);
     }
 
     @Transactional(readOnly = true)
@@ -288,7 +304,7 @@ public class PostService {
                 pageable
         );
 
-        return toResponsePage(postsPage);
+        return toResponsePage(postsPage, userId);
     }
 
     @Transactional(readOnly = true)
@@ -313,7 +329,7 @@ public class PostService {
                 pageable
         );
 
-        return toResponsePage(postsPage);
+        return toResponsePage(postsPage, userId);
     }
 
     @Transactional(readOnly = true)
@@ -328,7 +344,7 @@ public class PostService {
                 pageable
         );
 
-        return toResponsePage(postsPage);
+        return toResponsePage(postsPage, authorId);
     }
 
     @Transactional(readOnly = true)
@@ -343,7 +359,7 @@ public class PostService {
                 pageable
         );
 
-        return toResponsePage(postsPage);
+        return toResponsePage(postsPage, authorId);
     }
 
     @Transactional
@@ -394,6 +410,6 @@ public class PostService {
                 pageable
         );
 
-        return toResponsePage(postsPage);
+        return toResponsePage(postsPage, userId);
     }
 }

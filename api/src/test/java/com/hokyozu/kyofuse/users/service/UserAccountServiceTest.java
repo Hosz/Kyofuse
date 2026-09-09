@@ -106,7 +106,7 @@ class UserAccountServiceTest {
     @Test
     void updateUsernameSuccess() {
         when(userFinder.findProfileByUserId(userId)).thenReturn(user);
-        when(userRepository.existsByUsernameIgnoreCase("newname")).thenReturn(false);
+        when(userRepository.existsByUsernameIgnoreCaseAndEmailVerifiedTrue("newname")).thenReturn(false);
 
         UserAccountResponse response = userAccountService.updateUsername(userId, new UpdateUsernameRequest("newname"));
 
@@ -118,7 +118,7 @@ class UserAccountServiceTest {
     @Test
     void updateUsernameThrowsWhenUsernameAlreadyTaken() {
         when(userFinder.findProfileByUserId(userId)).thenReturn(user);
-        when(userRepository.existsByUsernameIgnoreCase("takenname")).thenReturn(true);
+        when(userRepository.existsByUsernameIgnoreCaseAndEmailVerifiedTrue("takenname")).thenReturn(true);
 
         assertThatThrownBy(() -> userAccountService.updateUsername(userId, new UpdateUsernameRequest("takenname")))
                 .isInstanceOf(ConflictException.class)
@@ -132,19 +132,15 @@ class UserAccountServiceTest {
         when(userFinder.findProfileByUserId(userId)).thenReturn(user);
         when(emailCipherService.blindIndex("newemail@example.com")).thenReturn("blind_new");
         when(passwordEncoder.matches("oldPassword123", "hashed_old_pwd")).thenReturn(true);
-        when(userRepository.existsByEmailIndex("blind_new")).thenReturn(false);
+        when(userRepository.existsByEmailIndexAndEmailVerifiedTrue("blind_new")).thenReturn(false);
 
         UserAccountResponse response = userAccountService.updateEmail(
                 userId,
                 new UpdateEmailRequest("newemail@example.com", "oldPassword123")
         );
 
-        assertThat(response.email()).isEqualTo("newemail@example.com");
-        assertThat(user.getEmail()).isEqualTo("newemail@example.com");
-        assertThat(user.getEmailIndex()).isEqualTo("blind_new");
-        assertThat(user.isEmailVerified()).isFalse();
-        verify(emailVerificationService).createVerificationToken(user);
-        verify(userRepository).save(user);
+        assertThat(response.email()).isEqualTo("john@example.com");
+        verify(emailVerificationService).createLinkVerificationToken(user, "newemail@example.com", "blind_new");
     }
 
     @Test

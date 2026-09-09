@@ -87,6 +87,9 @@ class CommentServiceTest {
     @Mock
     private MentionDetectionService mentionDetectionService;
 
+    @Mock
+    private com.hokyozu.kyofuse.reactions.repository.CommentReactionRepository commentReactionRepository;
+
     @InjectMocks
     private CommentService commentService;
 

@@ -13,6 +13,7 @@ export interface CommentResponse {
     commentStatus: string;
     reactionCount: number;
     likeCount: number;
+    currentUserReaction?: string | null;
     createdAt: string;
     updatedAt: string;
 }

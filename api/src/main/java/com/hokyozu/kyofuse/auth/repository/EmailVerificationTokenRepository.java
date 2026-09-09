@@ -10,4 +10,6 @@ import java.util.UUID;
 public interface EmailVerificationTokenRepository extends JpaRepository<EmailVerificationToken, UUID> {
     Optional<EmailVerificationToken> findByTokenHash(String tokenHash);
     void deleteAllByUser(User user);
+    void deleteAllByPendingEmailIndex(String pendingEmailIndex);
+    java.util.List<EmailVerificationToken> findAllByPendingEmailIndex(String pendingEmailIndex);
 }

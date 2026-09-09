@@ -10,11 +10,38 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     boolean existsByEmailIndex(String emailIndex);
 
+    boolean existsByEmailIndexAndEmailVerifiedTrue(String emailIndex);
+
+    boolean existsByEmailIndexAndEmailVerifiedTrueAndIdNot(String emailIndex, UUID id);
+
     boolean existsByUsernameIgnoreCase(String username);
 
-    Optional<User> findByEmailIndex(String emailIndex);
+    boolean existsByUsernameIgnoreCaseAndEmailVerifiedTrue(String username);
 
-    Optional<User> findByUsernameIgnoreCase(String username);
+    boolean existsByUsernameIgnoreCaseAndEmailVerifiedTrueAndIdNot(String username, UUID id);
+
+    Optional<User> findFirstByEmailIndexOrderByEmailVerifiedDescCreatedAtDesc(String emailIndex);
+
+    default Optional<User> findByEmailIndex(String emailIndex) {
+        return findFirstByEmailIndexOrderByEmailVerifiedDescCreatedAtDesc(emailIndex);
+    }
+
+    Optional<User> findFirstByUsernameIgnoreCaseOrderByEmailVerifiedDescCreatedAtDesc(String username);
+
+    default Optional<User> findByUsernameIgnoreCase(String username) {
+        return findFirstByUsernameIgnoreCaseOrderByEmailVerifiedDescCreatedAtDesc(username);
+    }
+
+    Optional<User> findFirstByUsernameOrderByEmailVerifiedDescCreatedAtDesc(String username);
+
+    default Optional<User> findByUsername(String username) {
+        return findFirstByUsernameOrderByEmailVerifiedDescCreatedAtDesc(username);
+    }
+
+    java.util.List<User> findAllByEmailIndexAndEmailVerifiedFalse(String emailIndex);
+
+    java.util.List<User> findAllByUsernameIgnoreCaseAndEmailVerifiedFalse(String username);
+
     @org.springframework.data.jpa.repository.Query("SELECT u FROM User u WHERE u.status = :status AND LOWER(u.username) LIKE LOWER(CONCAT('%', :query, '%'))")
     org.springframework.data.domain.Page<User> searchActiveUsers(@org.springframework.data.repository.query.Param("query") String query, @org.springframework.data.repository.query.Param("status") com.hokyozu.kyofuse.users.enums.UserStatus status, org.springframework.data.domain.Pageable pageable);
 
@@ -25,8 +52,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsBySteamId(String steamId);
 
     boolean existsByGoogleId(String googleId);
-
-    Optional<User> findByUsername(String username);
 
     java.util.List<User> findByStatusAndDeactivatedAtBeforeAndDeletionScheduledAtIsNull(com.hokyozu.kyofuse.users.enums.UserStatus status, java.time.Instant cutoff);
 

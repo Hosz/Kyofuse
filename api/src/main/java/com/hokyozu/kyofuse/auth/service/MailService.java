@@ -71,6 +71,28 @@ public class MailService {
     }
 
     @Async
+    public void sendEmailLinkVerificationEmail(String toEmail, String token) {
+        String verificationLink = frontendUrl + "/verificar-email?token=" + token;
+
+        log.info("[EmailLinkVerification] Link de vinculação de e-mail gerado para {}: {}", toEmail, verificationLink);
+
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject("Kyofuse - Confirmação de Vinculação de E-mail");
+            message.setText("Olá,\n\nRecebemos uma solicitação para vincular este endereço de e-mail à sua conta Kyofuse.\n"
+                    + "Para confirmar e ativar este e-mail na sua conta, acesse o link abaixo:\n\n"
+                    + verificationLink + "\n\nEste link é válido por 24 horas.\nSe você não solicitou esta alteração, ignore este e-mail.");
+
+            mailSender.send(message);
+            log.info("[EmailLinkVerification] E-mail enviado com sucesso para {}", toEmail);
+        } catch (MailException e) {
+            log.error("[EmailLinkVerification] Falha ao enviar e-mail via SMTP para {}. Causa: {}", toEmail, e.getMessage());
+        }
+    }
+
+    @Async
     public void sendLoginSecurityAlertEmail(String toEmail, String username, String location, String device, String ip, java.time.Instant loggedAt) {
         if (toEmail == null || toEmail.isBlank() || toEmail.endsWith("@steam.kyofuse.local")) {
             return;

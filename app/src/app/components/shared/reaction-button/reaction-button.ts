@@ -1,15 +1,9 @@
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { PostReactionService } from '../../../core/services/reactions/post-reaction.service';
 import { CommentReactionService } from '../../../core/services/reactions/comment-reaction.service';
 import { REACTION_OPTIONS, ReactionType } from '../../../shared/models/reaction.model';
 import { ReactionListModalComponent } from '../reaction-list-modal/reaction-list-modal';
 
-/**
- * O backend não informa a reação atual do usuário na listagem de posts/comentários
- * (só os contadores agregados), então a reação "ativa" só existe localmente, a partir
- * das ações feitas durante a sessão atual — ao recarregar a página, volta a aparecer
- * como "sem reação" mesmo que o usuário já tenha reagido antes.
- */
 @Component({
   selector: 'app-reaction-button',
   imports: [ReactionListModalComponent],
@@ -21,6 +15,7 @@ export class ReactionButtonComponent {
   commentId = input<string | null>(null);
   likeCount = input.required<number>();
   reactionCount = input.required<number>();
+  currentUserReaction = input<ReactionType | string | null | undefined>(null);
 
   private postReactionService = inject(PostReactionService);
   private commentReactionService = inject(CommentReactionService);
@@ -31,6 +26,13 @@ export class ReactionButtonComponent {
   pickerOpen = signal(false);
   pending = signal(false);
 
+  constructor() {
+    effect(() => {
+      const initial = (this.currentUserReaction() as ReactionType) ?? null;
+      this.myReaction.set(initial);
+    });
+  }
+
   /** Atraso pra fechar o seletor: sem isso, o mouse "sai" do wrapper ao cruzar
    * o espaço vazio entre o botão e o popup (que fica fora do fluxo normal) antes
    * de conseguir alcançá-lo, fechando o seletor antes do usuário clicar. */
@@ -38,9 +40,21 @@ export class ReactionButtonComponent {
 
   activeOption = computed(() => this.options.find((option) => option.type === this.myReaction()) ?? null);
 
-  displayLikeCount = computed(() => this.likeCount() + (this.myReaction() === 'LIKE' ? 1 : 0));
+  private initialReaction = computed(() => (this.currentUserReaction() as ReactionType) ?? null);
+
+  private baseLikeCount = computed(() => {
+    const init = this.initialReaction();
+    return Math.max(0, this.likeCount() - (init === 'LIKE' ? 1 : 0));
+  });
+
+  private baseReactionCount = computed(() => {
+    const init = this.initialReaction();
+    return Math.max(0, this.reactionCount() - (init && init !== 'LIKE' ? 1 : 0));
+  });
+
+  displayLikeCount = computed(() => this.baseLikeCount() + (this.myReaction() === 'LIKE' ? 1 : 0));
   displayReactionCount = computed(() =>
-    this.reactionCount() + (this.myReaction() && this.myReaction() !== 'LIKE' ? 1 : 0),
+    this.baseReactionCount() + (this.myReaction() && this.myReaction() !== 'LIKE' ? 1 : 0),
   );
   totalCount = computed(() => this.displayLikeCount() + this.displayReactionCount());
 

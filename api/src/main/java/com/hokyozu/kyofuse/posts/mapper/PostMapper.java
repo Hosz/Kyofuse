@@ -36,10 +36,14 @@ public class PostMapper {
     }
 
     public static PostResponse toResponse(Post savedPost, List<PostMap> postMaps, GamerProfile profile) {
-        return toResponse(savedPost, postMaps, List.of(), profile);
+        return toResponse(savedPost, postMaps, List.of(), profile, null);
     }
 
     public static PostResponse toResponse(Post savedPost, List<PostMap> postMaps, List<PostMedia> postMedia, GamerProfile profile) {
+        return toResponse(savedPost, postMaps, postMedia, profile, null);
+    }
+
+    public static PostResponse toResponse(Post savedPost, List<PostMap> postMaps, List<PostMedia> postMedia, GamerProfile profile, com.hokyozu.kyofuse.reactions.enums.ReactionType currentUserReaction) {
         List<String> maps = postMaps == null
                 ? List.of()
                 : postMaps.stream()
@@ -70,6 +74,7 @@ public class PostMapper {
                 savedPost.getViewCount() != null ? savedPost.getViewCount() : 0L,
                 maps,
                 mediaResponses,
+                currentUserReaction,
                 savedPost.getCreatedAt(),
                 savedPost.getUpdatedAt()
         );

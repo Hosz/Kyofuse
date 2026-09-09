@@ -57,7 +57,7 @@ public class UserAccountService {
             return UserAccountMapper.toResponse(user);
         }
 
-        if (userRepository.existsByUsernameIgnoreCase(targetUsername)) {
+        if (userRepository.existsByUsernameIgnoreCaseAndEmailVerifiedTrue(targetUsername)) {
             throw new ConflictException("Este nome de usuário já está em uso.");
         }
 
@@ -92,18 +92,11 @@ public class UserAccountService {
             }
         }
 
-        if (userRepository.existsByEmailIndex(targetEmailIndex)) {
+        if (userRepository.existsByEmailIndexAndEmailVerifiedTrue(targetEmailIndex)) {
             throw new ConflictException("Este e-mail já está associado a outra conta.");
         }
 
-        user.setEmail(targetEmail);
-        user.setEmailIndex(targetEmailIndex);
-        user.setEmailVerified(false);
-        user.setEmailVerifiedAt(null);
-        user.setUpdatedAt(Instant.now());
-        userRepository.save(user);
-
-        emailVerificationService.createVerificationToken(user);
+        emailVerificationService.createLinkVerificationToken(user, targetEmail, targetEmailIndex);
 
         return UserAccountMapper.toResponse(user);
     }

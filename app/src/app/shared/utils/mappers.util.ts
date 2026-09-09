@@ -27,6 +27,7 @@ export function toPost(post: postResponse): Post {
     content: post.content,
     media: firstMedia ? { imageUrl: firstMedia.url } : undefined,
     mediaList: post.media || [],
+    currentUserReaction: post.currentUserReaction ?? null,
     stats: {
       comments: post.commentCount,
       reposts: 0,
@@ -306,6 +307,7 @@ export function toComment(comment: CommentResponse): Comment {
     },
     timeAgo: toTimeAgo(comment.createdAt),
     content: comment.content,
+    currentUserReaction: comment.currentUserReaction ?? null,
     stats: {
       likes: comment.likeCount,
       reactions: comment.reactionCount,

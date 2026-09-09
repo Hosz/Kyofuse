@@ -23,6 +23,10 @@ public class CommentMapper {
     }
 
     public static CommentResponse toResponse(Comment savedComment, String profileImage, String nickname) {
+        return toResponse(savedComment, profileImage, nickname, null);
+    }
+
+    public static CommentResponse toResponse(Comment savedComment, String profileImage, String nickname, com.hokyozu.kyofuse.reactions.enums.ReactionType currentUserReaction) {
         return new CommentResponse(
                 savedComment.getId(),
                 savedComment.getPost().getId(),
@@ -34,6 +38,7 @@ public class CommentMapper {
                 savedComment.getStatus(),
                 savedComment.getReactionCount(),
                 savedComment.getLikeCount(),
+                currentUserReaction,
                 savedComment.getCreatedAt(),
                 savedComment.getUpdatedAt()
         );

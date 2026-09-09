@@ -115,6 +115,9 @@ class PostServiceTest {
     @Mock
     private MentionDetectionService mentionDetectionService;
 
+    @Mock
+    private com.hokyozu.kyofuse.reactions.repository.PostReactionRepository postReactionRepository;
+
     @InjectMocks
     private PostService postService;
 
