@@ -182,6 +182,80 @@ public class CommunityMemberService {
         communityMemberRepository.save(communityMember);
     }
 
+    @Transactional
+    public CommunityMemberResponse joinCommunity(UUID userId, String communityIdentifier) {
+        Community community = findCommunityByIdentifier(communityIdentifier);
+        return joinCommunity(userId, community.getId());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<CommunityMemberResponse> listCommunityMembers(String communityIdentifier, UUID userId, Pageable pageable) {
+        Community community = findCommunityByIdentifier(communityIdentifier);
+        return listCommunityMembers(community.getId(), userId, pageable);
+    }
+
+    @Transactional
+    public void leaveCommunity(UUID userId, String communityIdentifier) {
+        Community community = findCommunityByIdentifier(communityIdentifier);
+        leaveCommunity(userId, community.getId());
+    }
+
+    @Transactional
+    public void removeMember(UUID userId, String communityIdentifier, UUID memberId) {
+        Community community = findCommunityByIdentifier(communityIdentifier);
+        removeMember(userId, community.getId(), memberId);
+    }
+
+    @Transactional
+    public CommunityMemberResponse updateMemberRole(UUID actorId, String communityIdentifier, UUID memberId, CommunityMemberRole newRole) {
+        User actor = userFinder.findProfileByUserId(actorId);
+        userChecker.checkActive(actor);
+
+        Community community = findCommunityByIdentifier(communityIdentifier);
+
+        boolean isOwner = community.getOwner().getId().equals(actorId);
+        if (!isOwner) {
+            CommunityMember actorMember = communityMemberRepository.findByUserIdAndCommunityId(actorId, community.getId())
+                    .filter(m -> m.getStatus() == CommunityMemberStatus.ACTIVE)
+                    .orElseThrow(() -> new ForbiddenException("Você não é membro ativo desta comunidade."));
+            if (actorMember.getRole() != CommunityMemberRole.ADMIN) {
+                throw new ForbiddenException("Apenas o dono ou administradores podem alterar funções de membros.");
+            }
+            if (newRole == CommunityMemberRole.ADMIN) {
+                throw new ForbiddenException("Apenas o dono da comunidade pode promover membros a Administrador.");
+            }
+        }
+
+        if (community.getOwner().getId().equals(memberId)) {
+            throw new BadRequestException("O papel do dono da comunidade não pode ser alterado.");
+        }
+
+        CommunityMember targetMember = communityMemberRepository.findByUserIdAndCommunityId(memberId, community.getId())
+                .filter(m -> m.getStatus() == CommunityMemberStatus.ACTIVE)
+                .orElseThrow(() -> new NotFoundException("Membro ativo não encontrado na comunidade."));
+
+        targetMember.setRole(newRole);
+        targetMember.setUpdatedAt(Instant.now());
+        communityMemberRepository.save(targetMember);
+
+        return CommunityMemberMapper.toResponse(targetMember, gamerProfileFinder.findProfileByUserId(memberId));
+    }
+
+    public Community findCommunityByIdentifier(String identifier) {
+        if (identifier == null || identifier.isBlank()) {
+            throw new NotFoundException("Comunidade não encontrada.");
+        }
+        try {
+            return communityRepository.findById(UUID.fromString(identifier.trim()))
+                    .filter(c -> c.getStatus() != CommunityStatus.ARCHIVED)
+                    .orElseThrow(() -> new NotFoundException("Comunidade não encontrada."));
+        } catch (IllegalArgumentException e) {
+            return communityRepository.findBySlug(identifier.trim())
+                    .filter(c -> c.getStatus() != CommunityStatus.ARCHIVED)
+                    .orElseThrow(() -> new NotFoundException("Comunidade não encontrada: " + identifier));
+        }
+    }
+
     /**
      * Owner, Admin ou Moderador — mesma hierarquia documentada em 10.5 do doc.md,
      * usada tanto aqui (removeMember) quanto por CommunityJoinRequestService

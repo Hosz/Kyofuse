@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -25,6 +26,7 @@ public class MailService {
             .ofPattern("dd/MM/yyyy HH:mm:ss (z)")
             .withZone(java.time.ZoneId.of("UTC"));
 
+    @Async
     public void sendPasswordResetEmail(String toEmail, String token) {
         String resetLink = frontendUrl + "/recuperar-senha?token=" + token;
 
@@ -46,6 +48,7 @@ public class MailService {
         }
     }
 
+    @Async
     public void sendEmailVerificationEmail(String toEmail, String token) {
         String verificationLink = frontendUrl + "/verificar-email?token=" + token;
 
@@ -67,6 +70,7 @@ public class MailService {
         }
     }
 
+    @Async
     public void sendLoginSecurityAlertEmail(String toEmail, String username, String location, String device, String ip, java.time.Instant loggedAt) {
         if (toEmail == null || toEmail.isBlank() || toEmail.endsWith("@steam.kyofuse.local")) {
             return;
@@ -106,6 +110,7 @@ public class MailService {
         }
     }
 
+    @Async
     public void sendAccountReactivationEmail(String toEmail, String code, boolean scheduledDeletion, java.time.Instant scheduledDeletionDate) {
         if (toEmail == null || toEmail.isBlank() || toEmail.endsWith("@steam.kyofuse.local")) {
             return;

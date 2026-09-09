@@ -511,7 +511,7 @@ export class CommunityComponent {
   }
 
   private loadPosts(): void {
-    const id = this.communityId();
+    const id = this.community()?.id ?? this.communityId();
     if (!id) return;
     this.postsLoading.set(true);
 
@@ -528,7 +528,7 @@ export class CommunityComponent {
   }
 
   private loadMembers(): void {
-    const id = this.communityId();
+    const id = this.community()?.id ?? this.communityId();
     if (!id) return;
     this.membersLoading.set(true);
 
@@ -547,7 +547,7 @@ export class CommunityComponent {
   }
 
   private loadJoinRequests(): void {
-    const id = this.communityId();
+    const id = this.community()?.id ?? this.communityId();
     if (!id) return;
     this.joinRequestsLoading.set(true);
 

@@ -29,4 +29,8 @@ export class CommunityMemberService {
   public removeMember(communityId: string, memberId: string) {
     return this.http.delete<void>(`${this.url}/${communityId}/remove/${memberId}`);
   }
+
+  public updateMemberRole(communityId: string, memberId: string, role: string) {
+    return this.http.patch<CommunityMemberResponse>(`${this.url}/${communityId}/role/${memberId}`, { role });
+  }
 }

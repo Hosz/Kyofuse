@@ -85,6 +85,6 @@ export class TeamMemberModalComponent {
     });
   }
 
-  /** O backend recusa remover o dono, então a ação nem aparece na linha dele. */
-  showActions = computed(() => this.canManage() && !this.isOwner());
+  showActions = computed(() => this.canManage());
+  canRemove = computed(() => !this.isOwner());
 }

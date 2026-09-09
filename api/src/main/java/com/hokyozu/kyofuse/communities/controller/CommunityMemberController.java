@@ -1,7 +1,9 @@
 package com.hokyozu.kyofuse.communities.controller;
 
+import com.hokyozu.kyofuse.communities.dto.request.UpdateCommunityMemberRoleRequest;
 import com.hokyozu.kyofuse.communities.dto.response.CommunityMemberResponse;
 import com.hokyozu.kyofuse.communities.service.CommunityMemberService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,29 +22,38 @@ public class CommunityMemberController {
 
     @PostMapping("/{communityId}/join")
     public CommunityMemberResponse joinCommunity(@AuthenticationPrincipal Jwt jwt,
-                                                 @PathVariable UUID communityId) {
+                                                 @PathVariable String communityId) {
         UUID userId = UUID.fromString(jwt.getSubject());
         return communityMemberService.joinCommunity(userId, communityId);
     }
 
     @GetMapping("/{communityId}")
     public Page<CommunityMemberResponse> listCommunityMembers(@AuthenticationPrincipal Jwt jwt,
-                                                              @PathVariable UUID communityId,
+                                                              @PathVariable String communityId,
                                                               Pageable pageable) {
         UUID userId = UUID.fromString(jwt.getSubject());
         return communityMemberService.listCommunityMembers(communityId, userId, pageable);
     }
 
+    @PatchMapping("/{communityId}/role/{memberId}")
+    public CommunityMemberResponse updateMemberRole(@AuthenticationPrincipal Jwt jwt,
+                                                    @PathVariable String communityId,
+                                                    @PathVariable UUID memberId,
+                                                    @Valid @RequestBody UpdateCommunityMemberRoleRequest request) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return communityMemberService.updateMemberRole(userId, communityId, memberId, request.role());
+    }
+
     @DeleteMapping("/{communityId}/leave")
     public void leaveCommunity(@AuthenticationPrincipal Jwt jwt,
-                               @PathVariable UUID communityId) {
+                               @PathVariable String communityId) {
         UUID userId = UUID.fromString(jwt.getSubject());
         communityMemberService.leaveCommunity(userId, communityId);
     }
 
     @DeleteMapping("/{communityId}/remove/{memberId}")
     public void removeMember(@AuthenticationPrincipal Jwt jwt,
-                             @PathVariable UUID communityId,
+                             @PathVariable String communityId,
                              @PathVariable UUID memberId) {
         UUID userId = UUID.fromString(jwt.getSubject());
         communityMemberService.removeMember(userId, communityId, memberId);
