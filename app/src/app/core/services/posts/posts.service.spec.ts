@@ -40,4 +40,23 @@ describe('PostsService', () => {
     expect(req.request.method).toBe('GET');
     req.flush({ content: [], totalElements: 0, last: true });
   });
+
+  it('recordView should send POST request on first view and prevent duplicate requests', () => {
+    let result1: { counted: boolean } | undefined;
+    service.recordView('post-123').subscribe((res) => (result1 = res));
+
+    const req = httpTesting.expectOne((r) => r.url.endsWith('/post/post-123/view'));
+    expect(req.request.method).toBe('POST');
+    req.flush({ counted: true });
+
+    expect(result1).toEqual({ counted: true });
+    expect(service.hasViewed('post-123')).toBe(true);
+
+    // Second attempt should not issue an HTTP request
+    let result2: { counted: boolean } | undefined;
+    service.recordView('post-123').subscribe((res) => (result2 = res));
+
+    httpTesting.expectNone((r) => r.url.endsWith('/post/post-123/view'));
+    expect(result2).toEqual({ counted: false });
+  });
 });

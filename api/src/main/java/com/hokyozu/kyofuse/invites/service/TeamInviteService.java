@@ -177,6 +177,7 @@ public class TeamInviteService {
             invite.setStatus(TeamInviteStatus.ACCEPTED);
             invite.setRespondedAt(Instant.now());
             teamInviteRepository.save(invite);
+            notificationService.markInviteAsAccepted(user.getId(), invite.getId());
             return;
         }
 
@@ -212,6 +213,8 @@ public class TeamInviteService {
                         ))
                         .build()
         );
+
+        notificationService.markInviteAsAccepted(user.getId(), invite.getId());
     }
 
     @Transactional
@@ -256,6 +259,8 @@ public class TeamInviteService {
                         ))
                         .build()
         );
+
+        notificationService.markInviteAsDeclined(user.getId(), invite.getId());
     }
 
     @Transactional
@@ -300,5 +305,7 @@ public class TeamInviteService {
                         ))
                         .build()
         );
+
+        notificationService.markInviteAsCanceled(invite.getReceiver().getId(), invite.getId());
     }
 }

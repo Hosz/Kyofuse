@@ -58,6 +58,7 @@ export class RegisterFormComponent {
     if (!this.username()) return this.i18n.t('auth.usernameRequired');
     if (this.username().length < 3) return this.i18n.t('auth.usernameMin');
     if (!/^[a-zA-Z0-9_]+$/.test(this.username())) return this.i18n.t('auth.usernamePattern');
+    if (!/[a-zA-Z]/.test(this.username())) return this.i18n.t('auth.usernameLetterRequired');
     return null;
   });
 

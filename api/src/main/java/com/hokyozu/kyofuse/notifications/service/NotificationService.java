@@ -16,6 +16,11 @@ import com.hokyozu.kyofuse.shared.exception.NotFoundException;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.finder.UserFinder;
 import com.hokyozu.kyofuse.users.service.UserChecker;
+import com.hokyozu.kyofuse.invites.entity.TeamInvite;
+import com.hokyozu.kyofuse.invites.enums.TeamInviteStatus;
+import com.hokyozu.kyofuse.invites.repository.TeamInviteRepository;
+import com.hokyozu.kyofuse.relationships.follow.enums.FollowStatus;
+import com.hokyozu.kyofuse.relationships.follow.repository.UserFollowRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -43,6 +48,8 @@ public class NotificationService {
     private final GamerProfileFinder gamerProfileFinder;
     private final SimpMessagingTemplate messagingTemplate;
     private final NotificationCounterService notificationCounterService;
+    private final TeamInviteRepository teamInviteRepository;
+    private final UserFollowRepository userFollowRepository;
 
     @Transactional
     public Notification createNotification(CreateNotificationRequest request) {
@@ -73,12 +80,118 @@ public class NotificationService {
                 : gamerProfileFinder.findAllByUserIds(actorIds).stream()
                         .collect(Collectors.toMap(p -> p.getUser().getId(), Function.identity(), (a, b) -> a));
 
+        List<UUID> teamInviteIds = notifications.getContent().stream()
+                .filter(n -> n.getTargetType() == NotificationTargetType.TEAM_INVITE && n.getTargetId() != null)
+                .map(Notification::getTargetId)
+                .distinct()
+                .toList();
+
+        Map<UUID, TeamInviteStatus> inviteStatusMap = teamInviteIds.isEmpty()
+                ? Map.of()
+                : teamInviteRepository.findAllById(teamInviteIds).stream()
+                        .collect(Collectors.toMap(TeamInvite::getId, TeamInvite::getStatus, (a, b) -> a));
+
         return notifications.map(notification -> {
             GamerProfile actorProfile = notification.getActor() != null
                     ? actorProfiles.get(notification.getActor().getId())
                     : null;
-            return notificationMapper.toResponse(notification, actorProfile);
+            NotificationResponse response = notificationMapper.toResponse(notification, actorProfile);
+
+            if (notification.getType() == NotificationType.TEAM_INVITE_RECEIVED && notification.getTargetId() != null) {
+                TeamInviteStatus inviteStatus = inviteStatusMap.get(notification.getTargetId());
+                if (inviteStatus == TeamInviteStatus.ACCEPTED) {
+                    return response.toBuilder().type(NotificationType.TEAM_INVITE_ACCEPTED).title("Convite aceito.").build();
+                } else if (inviteStatus == TeamInviteStatus.DECLINED) {
+                    return response.toBuilder().type(NotificationType.TEAM_INVITE_DECLINED).title("Convite recusado.").build();
+                } else if (inviteStatus == TeamInviteStatus.CANCELED) {
+                    return response.toBuilder().type(NotificationType.TEAM_INVITE_CANCELED).title("Convite cancelado.").build();
+                }
+            } else if (notification.getType() == NotificationType.FOLLOW_REQUEST_RECEIVED && notification.getActor() != null) {
+                boolean pending = userFollowRepository.existsByFollowerAndFollowedAndStatus(
+                        notification.getActor(), notification.getUser(), FollowStatus.PENDING);
+                if (!pending) {
+                    boolean active = userFollowRepository.existsByFollowerAndFollowed(
+                            notification.getActor(), notification.getUser());
+                    if (active) {
+                        return response.toBuilder().type(NotificationType.FOLLOW_REQUEST_ACCEPTED).title("Solicitação aceita.").build();
+                    } else {
+                        return response.toBuilder().type(NotificationType.FOLLOW_REQUEST_DECLINED).title("Solicitação recusada.").build();
+                    }
+                }
+            }
+
+            return response;
         });
+    }
+
+    @Transactional
+    public void markInviteAsAccepted(UUID userId, UUID inviteId) {
+        notificationRepository.findAllByUserIdAndTargetTypeAndTargetId(userId, NotificationTargetType.TEAM_INVITE, inviteId)
+                .forEach(notification -> {
+                    notification.setType(NotificationType.TEAM_INVITE_ACCEPTED);
+                    notification.setTitle("Convite aceito.");
+                    if (notification.getStatus() == NotificationStatus.UNREAD) {
+                        notificationCounterService.decrement(userId);
+                    }
+                    notification.setStatus(NotificationStatus.READ);
+                    notification.setReadAt(Instant.now());
+                    notificationRepository.save(notification);
+                });
+    }
+
+    @Transactional
+    public void markInviteAsDeclined(UUID userId, UUID inviteId) {
+        notificationRepository.findAllByUserIdAndTargetTypeAndTargetId(userId, NotificationTargetType.TEAM_INVITE, inviteId)
+                .forEach(notification -> {
+                    notification.setType(NotificationType.TEAM_INVITE_DECLINED);
+                    notification.setTitle("Convite recusado.");
+                    if (notification.getStatus() == NotificationStatus.UNREAD) {
+                        notificationCounterService.decrement(userId);
+                    }
+                    notification.setStatus(NotificationStatus.READ);
+                    notification.setReadAt(Instant.now());
+                    notificationRepository.save(notification);
+                });
+    }
+
+    @Transactional
+    public void markInviteAsCanceled(UUID receiverId, UUID inviteId) {
+        notificationRepository.findAllByUserIdAndTargetTypeAndTargetId(receiverId, NotificationTargetType.TEAM_INVITE, inviteId)
+                .forEach(notification -> {
+                    notification.setType(NotificationType.TEAM_INVITE_CANCELED);
+                    notification.setTitle("Convite cancelado.");
+                    notificationRepository.save(notification);
+                });
+    }
+
+    @Transactional
+    public void markFollowRequestAsAccepted(UUID userId, UUID senderId) {
+        notificationRepository.findAllByUserIdAndTargetTypeAndTargetId(userId, NotificationTargetType.FOLLOW, senderId)
+                .forEach(notification -> {
+                    notification.setType(NotificationType.FOLLOW_REQUEST_ACCEPTED);
+                    notification.setTitle("Solicitação aceita.");
+                    if (notification.getStatus() == NotificationStatus.UNREAD) {
+                        notificationCounterService.decrement(userId);
+                    }
+                    notification.setStatus(NotificationStatus.READ);
+                    notification.setReadAt(Instant.now());
+                    notificationRepository.save(notification);
+                });
+    }
+
+    @Transactional
+    public void markFollowRequestAsDeclined(UUID userId, UUID senderId) {
+        notificationRepository.findAllByUserIdAndTargetTypeAndTargetId(userId, NotificationTargetType.FOLLOW, senderId)
+                .forEach(notification -> {
+                    notification.setType(NotificationType.FOLLOW_REQUEST_DECLINED);
+                    notification.setTitle("Solicitação recusada.");
+                    if (notification.getStatus() == NotificationStatus.UNREAD) {
+                        notificationCounterService.decrement(userId);
+                    }
+                    notification.setStatus(NotificationStatus.READ);
+                    notification.setReadAt(Instant.now());
+                    notificationRepository.save(notification);
+                });
     }
 
     public long getUnreadCount(UUID userId) {
@@ -121,6 +234,10 @@ public class NotificationService {
 
         if (notification.getStatus() == NotificationStatus.ARCHIVED) {
             throw new BadRequestException("Notification is already archived.");
+        }
+
+        if (notification.getStatus() == NotificationStatus.UNREAD) {
+            notificationCounterService.decrement(userId);
         }
 
         notification.setStatus(NotificationStatus.ARCHIVED);

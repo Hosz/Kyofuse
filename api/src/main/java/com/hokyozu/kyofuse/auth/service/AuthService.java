@@ -333,8 +333,8 @@ public class AuthService {
 
     private String generateUniqueUsername(String baseUsername) {
         String cleaned = baseUsername.replaceAll("[^a-zA-Z0-9_]", "").toLowerCase();
-        if (cleaned.isBlank()) {
-            cleaned = "user";
+        if (cleaned.isBlank() || !cleaned.matches(".*[a-zA-Z].*")) {
+            cleaned = "user" + cleaned;
         }
         if (cleaned.length() > 25) {
             cleaned = cleaned.substring(0, 25);

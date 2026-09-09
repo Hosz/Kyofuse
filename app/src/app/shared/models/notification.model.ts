@@ -34,5 +34,7 @@ export interface AppNotification {
   targetId?: string;
   /** Preenchido quando a notificação aponta pra uma conversa, pra poder abri-la. */
   conversationId?: string;
+  /** Estado de resposta do convite/solicitação quando já aceito ou recusado. */
+  responseStatus?: 'accepted' | 'declined';
   rawResponse?: import('../../models/notifications/notification.model').NotificationResponse;
 }

@@ -161,6 +161,12 @@ export interface TranslationDictionary {
     timeAgoDays: string;
     loginAlertTitle: string;
     loginAlertMessage: string;
+    accepted: string;
+    declined: string;
+    teamInviteAcceptedSuccess: string;
+    teamInviteDeclinedInfo: string;
+    followRequestAcceptedSuccess: string;
+    followRequestDeclinedInfo: string;
   };
   communities: {
     title: string;
@@ -646,6 +652,7 @@ export interface TranslationDictionary {
     usernameRequired: string;
     usernameMin: string;
     usernamePattern: string;
+    usernameLetterRequired: string;
     emailRequired: string;
     emailInvalid: string;
     passwordCreateRequired: string;

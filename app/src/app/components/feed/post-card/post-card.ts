@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, output, signal } from '@angular/core';
+import { Component, computed, effect, ElementRef, inject, input, output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Post } from '../../../shared/models/social.model';
 import { ReactionButtonComponent } from '../../shared/reaction-button/reaction-button';
@@ -39,6 +39,7 @@ export class PostCardComponent {
   /** Emitido com o id do post depois que ele é apagado. */
   deleted = output<string>();
 
+  private host = inject(ElementRef<HTMLElement>);
   private postsService = inject(PostsService);
   private currentUser = inject(CurrentUserService);
   private toastService = inject(ToastService);
@@ -47,9 +48,49 @@ export class PostCardComponent {
   canDelete = computed(() => this.currentUser.isMe(this.post().author.id));
   formattedDateTime = computed(() => formatFullPostDateTime(this.post().createdAt));
 
+  localViews = signal<number | null>(null);
+  displayedViews = computed(() => this.localViews() ?? this.post().stats.views ?? 0);
+
   confirmDeleteOpen = signal(false);
   deleting = signal(false);
   selectedImageUrl = signal<string | null>(null);
+
+  constructor() {
+    effect((onCleanup) => {
+      const postId = this.post().id;
+      if (!postId) return;
+
+      if (typeof IntersectionObserver === 'undefined') {
+        return;
+      }
+
+      const element = this.host.nativeElement;
+      if (!element) return;
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (!entries.some((entry) => entry.isIntersecting)) return;
+          observer.disconnect();
+          this.trackView(postId);
+        },
+        { threshold: 0 }
+      );
+
+      observer.observe(element);
+      onCleanup(() => observer.disconnect());
+    });
+  }
+
+  private trackView(postId: string): void {
+    this.postsService.recordView(postId).subscribe({
+      next: (res) => {
+        if (res?.counted) {
+          const current = this.localViews() ?? this.post().stats.views ?? 0;
+          this.localViews.set(current + 1);
+        }
+      },
+    });
+  }
 
   openImage(url: string, event: Event): void {
     event.stopPropagation();

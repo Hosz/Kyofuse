@@ -28,6 +28,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+import com.hokyozu.kyofuse.invites.repository.TeamInviteRepository;
+import com.hokyozu.kyofuse.relationships.follow.repository.UserFollowRepository;
+
 @ExtendWith(MockitoExtension.class)
 class NotificationServiceTest {
 
@@ -51,6 +54,12 @@ class NotificationServiceTest {
 
     @Mock
     private NotificationCounterService notificationCounterService;
+
+    @Mock
+    private TeamInviteRepository teamInviteRepository;
+
+    @Mock
+    private UserFollowRepository userFollowRepository;
 
     @InjectMocks
     private NotificationService notificationService;
@@ -124,6 +133,29 @@ class NotificationServiceTest {
     }
 
     @Test
+    void archiveNotificationWhenUnreadDecrementsCounter() {
+        UUID userId = UUID.randomUUID();
+        UUID notificationId = UUID.randomUUID();
+        User user = User.builder().id(userId).build();
+
+        Notification notification = Notification.builder()
+                .id(notificationId)
+                .user(user)
+                .status(NotificationStatus.UNREAD)
+                .createdAt(Instant.now())
+                .build();
+
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
+        when(notificationRepository.findById(notificationId)).thenReturn(Optional.of(notification));
+
+        notificationService.archiveNotification(userId, notificationId);
+
+        assertThat(notification.getStatus()).isEqualTo(NotificationStatus.ARCHIVED);
+        verify(notificationRepository).save(notification);
+        verify(notificationCounterService).decrement(userId);
+    }
+
+    @Test
     void readAllExecutesBulkUpdateAndResetsCounter() {
         UUID userId = UUID.randomUUID();
         User user = User.builder().id(userId).build();
@@ -145,5 +177,55 @@ class NotificationServiceTest {
         long count = notificationService.getUnreadCount(userId);
 
         assertThat(count).isEqualTo(4L);
+    }
+
+    @Test
+    void markInviteAsAcceptedUpdatesNotificationAndDecrementsCounter() {
+        UUID userId = UUID.randomUUID();
+        UUID inviteId = UUID.randomUUID();
+        Notification notification = Notification.builder()
+                .id(UUID.randomUUID())
+                .user(User.builder().id(userId).build())
+                .type(NotificationType.TEAM_INVITE_RECEIVED)
+                .status(NotificationStatus.UNREAD)
+                .targetType(NotificationTargetType.TEAM_INVITE)
+                .targetId(inviteId)
+                .build();
+
+        when(notificationRepository.findAllByUserIdAndTargetTypeAndTargetId(userId, NotificationTargetType.TEAM_INVITE, inviteId))
+                .thenReturn(java.util.List.of(notification));
+
+        notificationService.markInviteAsAccepted(userId, inviteId);
+
+        assertThat(notification.getType()).isEqualTo(NotificationType.TEAM_INVITE_ACCEPTED);
+        assertThat(notification.getStatus()).isEqualTo(NotificationStatus.READ);
+        assertThat(notification.getTitle()).isEqualTo("Convite aceito.");
+        assertThat(notification.getReadAt()).isNotNull();
+        verify(notificationCounterService).decrement(userId);
+        verify(notificationRepository).save(notification);
+    }
+
+    @Test
+    void markFollowRequestAsAcceptedUpdatesNotification() {
+        UUID userId = UUID.randomUUID();
+        UUID senderId = UUID.randomUUID();
+        Notification notification = Notification.builder()
+                .id(UUID.randomUUID())
+                .user(User.builder().id(userId).build())
+                .type(NotificationType.FOLLOW_REQUEST_RECEIVED)
+                .status(NotificationStatus.READ)
+                .targetType(NotificationTargetType.FOLLOW)
+                .targetId(senderId)
+                .build();
+
+        when(notificationRepository.findAllByUserIdAndTargetTypeAndTargetId(userId, NotificationTargetType.FOLLOW, senderId))
+                .thenReturn(java.util.List.of(notification));
+
+        notificationService.markFollowRequestAsAccepted(userId, senderId);
+
+        assertThat(notification.getType()).isEqualTo(NotificationType.FOLLOW_REQUEST_ACCEPTED);
+        assertThat(notification.getTitle()).isEqualTo("Solicitação aceita.");
+        verify(notificationRepository).save(notification);
+        verify(notificationCounterService, never()).decrement(any());
     }
 }

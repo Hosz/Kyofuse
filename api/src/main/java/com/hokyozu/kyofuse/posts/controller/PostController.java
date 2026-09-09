@@ -2,6 +2,7 @@ package com.hokyozu.kyofuse.posts.controller;
 
 import com.hokyozu.kyofuse.posts.dto.request.CreatePostRequest;
 import com.hokyozu.kyofuse.posts.dto.response.PostResponse;
+import com.hokyozu.kyofuse.posts.dto.response.RecordViewResponse;
 import com.hokyozu.kyofuse.posts.service.PostService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -40,9 +41,11 @@ public class PostController {
     }
 
     @PostMapping("/post/{postId}/view")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void recordView(@PathVariable UUID postId) {
-        postViewsBufferService.recordView(postId);
+    public RecordViewResponse recordView(@AuthenticationPrincipal Jwt jwt,
+                                         @PathVariable UUID postId) {
+        UUID userId = jwt != null ? UUID.fromString(jwt.getSubject()) : null;
+        boolean counted = postViewsBufferService.recordView(postId, userId);
+        return new RecordViewResponse(counted);
     }
 
     @GetMapping("/post/{postId}")

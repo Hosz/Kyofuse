@@ -133,6 +133,10 @@ export class AccountSettingsSectionComponent implements OnInit {
       this.usernameError.set('Use apenas letras, números e sublinhado (_).');
       return;
     }
+    if (!/[a-zA-Z]/.test(username)) {
+      this.usernameError.set('O username deve conter no mínimo uma letra.');
+      return;
+    }
 
     this.savingUsername.set(true);
     this.usernameError.set(null);
