@@ -334,3 +334,14 @@ body {
 .scrollbar-minimal::-webkit-scrollbar-thumb:hover {
   background-color: var(--color-outline);
 }
+
+@media (max-width: 1023px) {
+  .scrollbar-minimal {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .scrollbar-minimal::-webkit-scrollbar {
+    display: none;
+  }
+}
