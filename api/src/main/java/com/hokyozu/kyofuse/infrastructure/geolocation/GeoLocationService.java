@@ -7,17 +7,24 @@ import com.maxmind.geoip2.exception.AddressNotFoundException;
 import com.maxmind.geoip2.model.CityResponse;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 
 @Slf4j
 @Service
@@ -35,7 +42,7 @@ public class GeoLocationService {
     @PostConstruct
     public void init() {
         if (databasePath == null || databasePath.isBlank()) {
-            log.info("[GeoIP] Base de dados GeoLite2 não configurada (app.geoip.database-path vazia). Resolução funcionará em modo fallback.");
+            log.info("[GeoIP] Base de dados GeoLite2 não configurada (app.geoip.database-path vazia). Geolocalização operará primariamente via cabeçalhos Cloudflare.");
             return;
         }
 
@@ -73,12 +80,92 @@ public class GeoLocationService {
             return LocationInfo.unknown("desconhecido");
         }
 
-        String cleanedIp = clientIpResolver.cleanIp(rawIp);
+        HttpServletRequest currentRequest = getCurrentHttpRequest();
+        if (currentRequest != null) {
+            return resolveLocation(currentRequest, rawIp);
+        }
+
+        return resolveFromIp(rawIp);
+    }
+
+    public LocationInfo resolveLocationFromRequest(HttpServletRequest request) {
+        if (request == null) {
+            return LocationInfo.unknown("desconhecido");
+        }
+        String clientIp = clientIpResolver.resolve(request);
+        return resolveLocation(request, clientIp);
+    }
+
+    public LocationInfo resolveLocation(HttpServletRequest request, String rawIp) {
+        String cleanedIp = clientIpResolver.cleanIp(
+                rawIp != null && !rawIp.isBlank() ? rawIp : (request != null ? clientIpResolver.resolve(request) : "desconhecido")
+        );
 
         if (clientIpResolver.isLocalOrLoopback(cleanedIp)) {
             return LocationInfo.local(cleanedIp);
         }
 
+        if (request != null) {
+            LocationInfo cfLocation = resolveFromCloudflareHeaders(request, cleanedIp);
+            if (cfLocation != null) {
+                return cfLocation;
+            }
+        }
+
+        return resolveFromIp(cleanedIp);
+    }
+
+    public LocationInfo resolveFromIp(String rawIp) {
+        if (rawIp == null || rawIp.isBlank()) {
+            return LocationInfo.unknown("desconhecido");
+        }
+
+        String cleanedIp = clientIpResolver.cleanIp(rawIp);
+        if (clientIpResolver.isLocalOrLoopback(cleanedIp)) {
+            return LocationInfo.local(cleanedIp);
+        }
+
+        return resolveFromDatabase(cleanedIp);
+    }
+
+    public LocationInfo resolveFromCloudflareHeaders(HttpServletRequest request, String cleanedIp) {
+        if (request == null) {
+            return null;
+        }
+
+        String rawCountry = decodeHeaderValue(request.getHeader("CF-IPCountry"));
+        String city = decodeHeaderValue(request.getHeader("CF-IPCity"));
+        String state = decodeHeaderValue(request.getHeader("CF-Region"));
+        if (state == null) {
+            state = decodeHeaderValue(request.getHeader("CF-Region-Code"));
+        }
+
+        if (rawCountry == null && city == null && state == null) {
+            return null;
+        }
+
+        String countryCode = null;
+        String country = null;
+
+        if (rawCountry != null) {
+            String normalizedCountry = rawCountry.toUpperCase(Locale.ROOT);
+            if ("T1".equals(normalizedCountry)) {
+                countryCode = "T1";
+                country = "Rede Tor";
+            } else if (!"XX".equals(normalizedCountry) && normalizedCountry.length() == 2) {
+                countryCode = normalizedCountry;
+                country = getCountryName(normalizedCountry);
+            }
+        }
+
+        if (countryCode == null && city == null && state == null) {
+            return null;
+        }
+
+        return LocationInfo.of(cleanedIp, city, state, country, countryCode);
+    }
+
+    public LocationInfo resolveFromDatabase(String cleanedIp) {
         if (databaseReader == null) {
             return LocationInfo.unknown(cleanedIp);
         }
@@ -109,6 +196,57 @@ public class GeoLocationService {
             log.warn("[GeoIP] Erro ao consultar localização para o IP {}: {}", cleanedIp, e.getMessage());
             return LocationInfo.unknown(cleanedIp);
         }
+    }
+
+    private HttpServletRequest getCurrentHttpRequest() {
+        try {
+            RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
+            if (attributes instanceof ServletRequestAttributes servletRequestAttributes) {
+                return servletRequestAttributes.getRequest();
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
+    }
+
+    private String getCountryName(String countryCode) {
+        if (countryCode == null || countryCode.isBlank()) {
+            return null;
+        }
+        try {
+            Locale ptBr = Locale.forLanguageTag("pt-BR");
+            Locale locale = new Locale.Builder().setRegion(countryCode).build();
+            String displayCountry = locale.getDisplayCountry(ptBr);
+            if (displayCountry != null && !displayCountry.isBlank() && !displayCountry.equalsIgnoreCase(countryCode)) {
+                return displayCountry;
+            }
+        } catch (Exception e) {
+            log.debug("[GeoIP] Erro ao obter nome do país para o código {}: {}", countryCode, e.getMessage());
+        }
+        return countryCode;
+    }
+
+    private String decodeHeaderValue(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String trimmed = raw.trim();
+        if (trimmed.isBlank() || "unknown".equalsIgnoreCase(trimmed)) {
+            return null;
+        }
+        if (trimmed.startsWith("\"") && trimmed.endsWith("\"") && trimmed.length() >= 2) {
+            trimmed = trimmed.substring(1, trimmed.length() - 1).trim();
+        }
+        if (trimmed.isBlank() || "unknown".equalsIgnoreCase(trimmed)) {
+            return null;
+        }
+        if (trimmed.contains("%")) {
+            try {
+                return URLDecoder.decode(trimmed, StandardCharsets.UTF_8);
+            } catch (Exception ignored) {
+            }
+        }
+        return trimmed;
     }
 
     @PreDestroy

@@ -11,6 +11,8 @@ import com.hokyozu.kyofuse.auth.repository.UserRepository;
 import com.hokyozu.kyofuse.auth.validator.EmailAndUsernameAvailabilityValidator;
 import com.hokyozu.kyofuse.auth.validator.LoginFinderValidator;
 import com.hokyozu.kyofuse.auth.validator.LoginValidator;
+import com.hokyozu.kyofuse.infrastructure.geolocation.GeoLocationService;
+import com.hokyozu.kyofuse.infrastructure.geolocation.LocationInfo;
 import com.hokyozu.kyofuse.infrastructure.security.crypto.EmailCipherService;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.AccountSwitchService;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.JwtService;
@@ -32,6 +34,7 @@ import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.enums.UserRole;
 import com.hokyozu.kyofuse.users.enums.UserStatus;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -45,11 +48,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final GeoLocationService geoLocationService;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
@@ -489,8 +494,20 @@ public class AuthService {
     }
 
     public void publishLoginSuccess(User user, String clientIp, String userAgent) {
+        publishLoginSuccess(user, clientIp, userAgent, null);
+    }
+
+    public void publishLoginSuccess(User user, String clientIp, String userAgent, LocationInfo explicitLocation) {
         if (eventPublisher != null) {
-            eventPublisher.publishEvent(new UserLoginSuccessEvent(user, clientIp, userAgent, Instant.now()));
+            LocationInfo location = explicitLocation;
+            if (location == null && geoLocationService != null) {
+                try {
+                    location = geoLocationService.resolveLocation(clientIp);
+                } catch (Exception e) {
+                    log.warn("[Auth] Não foi possível resolver localização no login: {}", e.getMessage());
+                }
+            }
+            eventPublisher.publishEvent(new UserLoginSuccessEvent(user, clientIp, userAgent, Instant.now(), location));
         }
     }
 }

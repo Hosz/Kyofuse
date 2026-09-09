@@ -96,4 +96,36 @@ class LoginSecurityAlertServiceTest {
 
         verifyNoInteractions(notificationRepository, mailService);
     }
+
+    @Test
+    void onUserLoginSuccessUsesPreResolvedLocationFromEventWithoutCallingGeoLocationService() {
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .username("gamer123")
+                .email("gamer123@example.com")
+                .build();
+
+        String ip = "189.40.10.20";
+        String userAgent = "Mozilla/5.0 Chrome/128 Windows";
+        Instant now = Instant.now();
+
+        LocationInfo locationInfo = LocationInfo.of(ip, "São Paulo", "São Paulo", "Brasil", "BR");
+        DeviceInfo deviceInfo = new DeviceInfo("Chrome", "Windows", "Computador", "Chrome no Windows");
+
+        when(userAgentParser.parse(userAgent)).thenReturn(deviceInfo);
+
+        UserLoginSuccessEvent event = new UserLoginSuccessEvent(user, ip, userAgent, now, locationInfo);
+
+        alertService.onUserLoginSuccess(event);
+
+        verify(geoLocationService, never()).resolveLocation(anyString());
+        verify(mailService).sendLoginSecurityAlertEmail(
+                eq("gamer123@example.com"),
+                eq("gamer123"),
+                eq("São Paulo, Brasil"),
+                eq("Chrome no Windows"),
+                eq(ip),
+                eq(now)
+        );
+    }
 }

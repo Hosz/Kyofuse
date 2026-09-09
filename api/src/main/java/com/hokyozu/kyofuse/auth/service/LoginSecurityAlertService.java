@@ -47,7 +47,9 @@ public class LoginSecurityAlertService {
             String userAgent = event.userAgent();
             Instant loggedAt = event.loggedAt() != null ? event.loggedAt() : Instant.now();
 
-            LocationInfo location = geoLocationService.resolveLocation(clientIp);
+            LocationInfo location = (event.location() != null)
+                    ? event.location()
+                    : geoLocationService.resolveLocation(clientIp);
             DeviceInfo device = userAgentParser.parse(userAgent);
 
             String formattedLocation = location.formattedLocation();

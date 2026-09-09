@@ -57,4 +57,80 @@ class GeoLocationServiceTest {
         LocationInfo blankInfo = geoLocationService.resolveLocation("   ");
         assertThat(blankInfo.formattedLocation()).isEqualTo("Localização não identificada");
     }
+
+    @Test
+    void resolveLocationResolvesFromCloudflareHeaders() {
+        jakarta.servlet.http.HttpServletRequest request = org.mockito.Mockito.mock(jakarta.servlet.http.HttpServletRequest.class);
+        when(request.getHeader("CF-IPCountry")).thenReturn("BR");
+        when(request.getHeader("CF-IPCity")).thenReturn("Curitiba");
+        when(request.getHeader("CF-Region")).thenReturn("Paraná");
+        when(clientIpResolver.cleanIp("200.189.1.5")).thenReturn("200.189.1.5");
+        when(clientIpResolver.isLocalOrLoopback("200.189.1.5")).thenReturn(false);
+
+        LocationInfo info = geoLocationService.resolveLocation(request, "200.189.1.5");
+
+        assertThat(info.isLocal()).isFalse();
+        assertThat(info.country()).isEqualTo("Brasil");
+        assertThat(info.countryCode()).isEqualTo("BR");
+        assertThat(info.city()).isEqualTo("Curitiba");
+        assertThat(info.state()).isEqualTo("Paraná");
+        assertThat(info.formattedLocation()).isEqualTo("Curitiba, Paraná, Brasil");
+    }
+
+    @Test
+    void resolveLocationDecodesUrlEncodedCloudflareHeaders() {
+        jakarta.servlet.http.HttpServletRequest request = org.mockito.Mockito.mock(jakarta.servlet.http.HttpServletRequest.class);
+        when(request.getHeader("CF-IPCountry")).thenReturn("BR");
+        when(request.getHeader("CF-IPCity")).thenReturn("S%C3%A3o%20Paulo");
+        when(request.getHeader("CF-Region")).thenReturn("S%C3%A3o%20Paulo");
+        when(clientIpResolver.cleanIp("200.189.1.5")).thenReturn("200.189.1.5");
+        when(clientIpResolver.isLocalOrLoopback("200.189.1.5")).thenReturn(false);
+
+        LocationInfo info = geoLocationService.resolveLocation(request, "200.189.1.5");
+
+        assertThat(info.country()).isEqualTo("Brasil");
+        assertThat(info.city()).isEqualTo("São Paulo");
+        assertThat(info.state()).isEqualTo("São Paulo");
+        assertThat(info.formattedLocation()).isEqualTo("São Paulo, Brasil");
+    }
+
+    @Test
+    void resolveLocationRecognizesCloudflareTorNetwork() {
+        jakarta.servlet.http.HttpServletRequest request = org.mockito.Mockito.mock(jakarta.servlet.http.HttpServletRequest.class);
+        when(request.getHeader("CF-IPCountry")).thenReturn("T1");
+        when(request.getHeader("CF-IPCity")).thenReturn(null);
+        when(request.getHeader("CF-Region")).thenReturn(null);
+        when(clientIpResolver.cleanIp("200.189.1.5")).thenReturn("200.189.1.5");
+        when(clientIpResolver.isLocalOrLoopback("200.189.1.5")).thenReturn(false);
+
+        LocationInfo info = geoLocationService.resolveLocation(request, "200.189.1.5");
+
+        assertThat(info.country()).isEqualTo("Rede Tor");
+        assertThat(info.countryCode()).isEqualTo("T1");
+        assertThat(info.formattedLocation()).isEqualTo("Rede Tor");
+    }
+
+    @Test
+    void resolveLocationExtractsFromRequestContextHolderWhenAvailable() {
+        jakarta.servlet.http.HttpServletRequest request = org.mockito.Mockito.mock(jakarta.servlet.http.HttpServletRequest.class);
+        when(request.getHeader("CF-IPCountry")).thenReturn("US");
+        when(request.getHeader("CF-IPCity")).thenReturn("Miami");
+        when(request.getHeader("CF-Region")).thenReturn("Florida");
+        when(clientIpResolver.cleanIp("104.16.0.1")).thenReturn("104.16.0.1");
+        when(clientIpResolver.isLocalOrLoopback("104.16.0.1")).thenReturn(false);
+
+        org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(
+                new org.springframework.web.context.request.ServletRequestAttributes(request)
+        );
+
+        try {
+            LocationInfo info = geoLocationService.resolveLocation("104.16.0.1");
+            assertThat(info.country()).isEqualTo("Estados Unidos");
+            assertThat(info.city()).isEqualTo("Miami");
+            assertThat(info.state()).isEqualTo("Florida");
+            assertThat(info.formattedLocation()).isEqualTo("Miami, Florida, Estados Unidos");
+        } finally {
+            org.springframework.web.context.request.RequestContextHolder.resetRequestAttributes();
+        }
+    }
 }
