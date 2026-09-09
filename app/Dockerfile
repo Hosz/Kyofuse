@@ -47,7 +47,9 @@ COPY --from=build /app/dist/kyofuse-app/browser /usr/share/nginx/html
 
 # Custom Nginx configuration (SPA routing + /api and /ws reverse proxy)
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]
+ENTRYPOINT ["/docker-entrypoint.sh"]
