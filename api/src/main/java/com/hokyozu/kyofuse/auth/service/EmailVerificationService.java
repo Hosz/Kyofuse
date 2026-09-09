@@ -71,6 +71,7 @@ public class EmailVerificationService {
         mailService.sendEmailLinkVerificationEmail(targetEmail, rawToken);
     }
 
+    @Transactional(readOnly = true)
     public EmailVerificationToken validateToken(String rawToken) {
         if (rawToken == null || rawToken.isBlank()) {
             throw new BadRequestException("Token de verificação inválido ou expirado.");

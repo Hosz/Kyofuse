@@ -76,6 +76,7 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                         .requestMatchers("/actuator/prometheus").hasRole("ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 ->
@@ -83,7 +84,7 @@ public class SecurityConfig {
                                 .bearerTokenResolver(bearerTokenResolver)
                                 .jwt(jwt ->
                                         jwt.jwtAuthenticationConverter(jwtAuthConverter)
-                                )
+                                    )
                 )
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
@@ -108,7 +109,8 @@ public class SecurityConfig {
             "/api/auth/reset-password",
             "/api/auth/reset-password/validate",
             "/api/auth/reactivate/confirm",
-            "/api/auth/reactivate/resend"
+            "/api/auth/reactivate/resend",
+            "/error"
     );
 
     @Bean
