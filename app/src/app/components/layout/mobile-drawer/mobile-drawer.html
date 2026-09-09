@@ -9,12 +9,12 @@
 
     <!-- PAINEL DESLIZANTE -->
     <aside
-      class="relative z-10 flex h-full w-[85vw] max-w-sm flex-col justify-between overflow-y-auto border-r border-outline-variant bg-surface p-4 shadow-2xl transition-transform"
+      class="scrollbar-none relative z-10 flex h-full w-[90vw] sm:w-[420px] max-w-md flex-col justify-between overflow-y-auto border-r border-outline-variant bg-surface p-5 shadow-2xl transition-transform"
     >
       <!-- PARTE SUPERIOR -->
       <div class="flex flex-col gap-4">
         <!-- CABEÇALHO DO DRAWER COM LOGO E FECHAR -->
-        <div class="flex items-center justify-between border-b border-outline-variant pb-3">
+        <div class="flex items-center justify-between border-b border-outline-variant pb-3.5">
           <a routerLink="/home" (click)="close()" class="flex items-center gap-2.5">
             <img src="/assets/images/logo.svg" alt="Kyofuse" class="h-9 w-9" />
             <span class="text-title-lg font-bold text-primary">Kyofuse</span>
@@ -38,10 +38,10 @@
               (click)="close()"
               routerLinkActive="bg-primary-container text-on-primary-container font-bold"
               [routerLinkActiveOptions]="{ exact: item.route === '/' }"
-              class="flex cursor-pointer items-center justify-between rounded-xl px-3.5 py-2.5 text-body-md font-medium text-on-surface transition-colors hover:bg-surface-container active:scale-[0.98]"
+              class="flex cursor-pointer items-center justify-between rounded-xl px-4 py-3 text-body-md font-medium text-on-surface transition-colors hover:bg-surface-container active:scale-[0.98]"
             >
-              <div class="flex items-center gap-3">
-                <span class="material-symbols-outlined text-[22px]">{{ item.icon }}</span>
+              <div class="flex items-center gap-3.5">
+                <span class="material-symbols-outlined text-[24px]">{{ item.icon }}</span>
                 <span>{{ item.labelKey | trans }}</span>
               </div>
 
