@@ -7,6 +7,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.mock.web.MockHttpServletRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -59,11 +60,33 @@ class GeoLocationServiceTest {
     }
 
     @Test
+    void resolveLocationPrioritizesPreservedXClientHeadersOverOverwrittenCloudflareHeaders() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("X-Client-Country", "BR");
+        request.addHeader("X-Client-City", "Florianópolis");
+        request.addHeader("X-Client-Region", "Santa Catarina");
+        request.addHeader("CF-IPCountry", "US");
+        request.addHeader("CF-IPCity", "Boardman");
+        request.addHeader("CF-Region", "Oregon");
+        when(clientIpResolver.cleanIp("177.18.29.40")).thenReturn("177.18.29.40");
+        when(clientIpResolver.isLocalOrLoopback("177.18.29.40")).thenReturn(false);
+
+        LocationInfo info = geoLocationService.resolveLocation(request, "177.18.29.40");
+
+        assertThat(info.isLocal()).isFalse();
+        assertThat(info.country()).isEqualTo("Brasil");
+        assertThat(info.countryCode()).isEqualTo("BR");
+        assertThat(info.city()).isEqualTo("Florianópolis");
+        assertThat(info.state()).isEqualTo("Santa Catarina");
+        assertThat(info.formattedLocation()).isEqualTo("Florianópolis, Santa Catarina, Brasil");
+    }
+
+    @Test
     void resolveLocationResolvesFromCloudflareHeaders() {
-        jakarta.servlet.http.HttpServletRequest request = org.mockito.Mockito.mock(jakarta.servlet.http.HttpServletRequest.class);
-        when(request.getHeader("CF-IPCountry")).thenReturn("BR");
-        when(request.getHeader("CF-IPCity")).thenReturn("Curitiba");
-        when(request.getHeader("CF-Region")).thenReturn("Paraná");
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("CF-IPCountry", "BR");
+        request.addHeader("CF-IPCity", "Curitiba");
+        request.addHeader("CF-Region", "Paraná");
         when(clientIpResolver.cleanIp("200.189.1.5")).thenReturn("200.189.1.5");
         when(clientIpResolver.isLocalOrLoopback("200.189.1.5")).thenReturn(false);
 
@@ -79,10 +102,10 @@ class GeoLocationServiceTest {
 
     @Test
     void resolveLocationDecodesUrlEncodedCloudflareHeaders() {
-        jakarta.servlet.http.HttpServletRequest request = org.mockito.Mockito.mock(jakarta.servlet.http.HttpServletRequest.class);
-        when(request.getHeader("CF-IPCountry")).thenReturn("BR");
-        when(request.getHeader("CF-IPCity")).thenReturn("S%C3%A3o%20Paulo");
-        when(request.getHeader("CF-Region")).thenReturn("S%C3%A3o%20Paulo");
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("CF-IPCountry", "BR");
+        request.addHeader("CF-IPCity", "S%C3%A3o%20Paulo");
+        request.addHeader("CF-Region", "S%C3%A3o%20Paulo");
         when(clientIpResolver.cleanIp("200.189.1.5")).thenReturn("200.189.1.5");
         when(clientIpResolver.isLocalOrLoopback("200.189.1.5")).thenReturn(false);
 
@@ -96,10 +119,8 @@ class GeoLocationServiceTest {
 
     @Test
     void resolveLocationRecognizesCloudflareTorNetwork() {
-        jakarta.servlet.http.HttpServletRequest request = org.mockito.Mockito.mock(jakarta.servlet.http.HttpServletRequest.class);
-        when(request.getHeader("CF-IPCountry")).thenReturn("T1");
-        when(request.getHeader("CF-IPCity")).thenReturn(null);
-        when(request.getHeader("CF-Region")).thenReturn(null);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("CF-IPCountry", "T1");
         when(clientIpResolver.cleanIp("200.189.1.5")).thenReturn("200.189.1.5");
         when(clientIpResolver.isLocalOrLoopback("200.189.1.5")).thenReturn(false);
 
@@ -112,10 +133,10 @@ class GeoLocationServiceTest {
 
     @Test
     void resolveLocationExtractsFromRequestContextHolderWhenAvailable() {
-        jakarta.servlet.http.HttpServletRequest request = org.mockito.Mockito.mock(jakarta.servlet.http.HttpServletRequest.class);
-        when(request.getHeader("CF-IPCountry")).thenReturn("US");
-        when(request.getHeader("CF-IPCity")).thenReturn("Miami");
-        when(request.getHeader("CF-Region")).thenReturn("Florida");
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("CF-IPCountry", "US");
+        request.addHeader("CF-IPCity", "Miami");
+        request.addHeader("CF-Region", "Florida");
         when(clientIpResolver.cleanIp("104.16.0.1")).thenReturn("104.16.0.1");
         when(clientIpResolver.isLocalOrLoopback("104.16.0.1")).thenReturn(false);
 

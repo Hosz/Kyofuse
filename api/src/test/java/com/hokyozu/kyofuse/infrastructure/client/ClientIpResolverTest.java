@@ -26,6 +26,19 @@ class ClientIpResolverTest {
     }
 
     @Test
+    void resolveExtractsXClientIpFirst() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("X-Client-IP", "177.18.29.40");
+        request.addHeader("CF-Connecting-IP", "203.0.113.50");
+        request.addHeader("X-Forwarded-For", "198.51.100.20");
+        request.setRemoteAddr("10.0.0.1");
+
+        String ip = resolver.resolve(request);
+
+        assertThat(ip).isEqualTo("177.18.29.40");
+    }
+
+    @Test
     void resolveExtractsCfConnectingIpFirst() {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader("CF-Connecting-IP", "203.0.113.50");

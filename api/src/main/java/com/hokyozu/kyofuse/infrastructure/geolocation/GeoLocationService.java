@@ -97,8 +97,15 @@ public class GeoLocationService {
     }
 
     public LocationInfo resolveLocation(HttpServletRequest request, String rawIp) {
+        String effectiveIp = rawIp;
+        if (request != null && (effectiveIp == null || effectiveIp.isBlank() || clientIpResolver.isLocalOrLoopback(effectiveIp))) {
+            String resolved = clientIpResolver.resolve(request);
+            if (resolved != null && !resolved.isBlank() && !clientIpResolver.isLocalOrLoopback(resolved)) {
+                effectiveIp = resolved;
+            }
+        }
         String cleanedIp = clientIpResolver.cleanIp(
-                rawIp != null && !rawIp.isBlank() ? rawIp : (request != null ? clientIpResolver.resolve(request) : "desconhecido")
+                effectiveIp != null && !effectiveIp.isBlank() ? effectiveIp : (request != null ? clientIpResolver.resolve(request) : "desconhecido")
         );
 
         if (clientIpResolver.isLocalOrLoopback(cleanedIp)) {
@@ -133,11 +140,11 @@ public class GeoLocationService {
             return null;
         }
 
-        String rawCountry = decodeHeaderValue(request.getHeader("CF-IPCountry"));
-        String city = decodeHeaderValue(request.getHeader("CF-IPCity"));
-        String state = decodeHeaderValue(request.getHeader("CF-Region"));
+        String rawCountry = decodeHeaderValue(firstHeader(request, "X-Client-Country", "CF-IPCountry"));
+        String city = decodeHeaderValue(firstHeader(request, "X-Client-City", "CF-IPCity"));
+        String state = decodeHeaderValue(firstHeader(request, "X-Client-Region", "CF-Region"));
         if (state == null) {
-            state = decodeHeaderValue(request.getHeader("CF-Region-Code"));
+            state = decodeHeaderValue(firstHeader(request, "X-Client-Region-Code", "CF-Region-Code"));
         }
 
         if (rawCountry == null && city == null && state == null) {
@@ -163,6 +170,14 @@ public class GeoLocationService {
         }
 
         return LocationInfo.of(cleanedIp, city, state, country, countryCode);
+    }
+
+    private String firstHeader(HttpServletRequest request, String primaryHeader, String fallbackHeader) {
+        String val = request.getHeader(primaryHeader);
+        if (val != null && !val.isBlank()) {
+            return val;
+        }
+        return request.getHeader(fallbackHeader);
     }
 
     public LocationInfo resolveFromDatabase(String cleanedIp) {
