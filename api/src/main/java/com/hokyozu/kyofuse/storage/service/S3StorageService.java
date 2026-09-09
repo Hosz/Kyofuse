@@ -40,6 +40,7 @@ public class S3StorageService {
                 .bucket(bucketName)
                 .key(key)
                 .contentType(contentType)
+                .contentLength((long) bytes.length)
                 .build();
 
         s3Client.putObject(request, RequestBody.fromBytes(bytes));

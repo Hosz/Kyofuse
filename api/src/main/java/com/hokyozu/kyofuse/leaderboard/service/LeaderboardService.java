@@ -12,6 +12,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.function.Function;
@@ -69,6 +70,7 @@ public class LeaderboardService {
         }
     }
 
+    @Transactional(readOnly = true)
     public List<LeaderboardEntryResponse> getTopPlayers(int limit) {
         int max = Math.min(Math.max(limit, 1), 100);
         Set<ZSetOperations.TypedTuple<String>> tuples = redisTemplate.opsForZSet()
@@ -110,6 +112,7 @@ public class LeaderboardService {
         return result;
     }
 
+    @Transactional(readOnly = true)
     public UserRankResponse getUserRank(UUID userId) {
         Long rankZeroBased = redisTemplate.opsForZSet().reverseRank(LEADERBOARD_KEY, userId.toString());
         Double score = redisTemplate.opsForZSet().score(LEADERBOARD_KEY, userId.toString());
@@ -131,6 +134,7 @@ public class LeaderboardService {
         return new UserRankResponse(userId, rankZeroBased + 1, (long) (double) score, totalPlayers != null ? totalPlayers : 0L);
     }
 
+    @Transactional(readOnly = true)
     public List<LeaderboardEntryResponse> getAroundUser(UUID userId, int range) {
         Long rankZeroBased = redisTemplate.opsForZSet().reverseRank(LEADERBOARD_KEY, userId.toString());
         if (rankZeroBased == null) {
