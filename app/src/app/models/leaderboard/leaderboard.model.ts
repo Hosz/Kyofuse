@@ -2,6 +2,7 @@ export interface LeaderboardEntryResponse {
   rank: number;
   userId: string;
   nickname: string;
+  username?: string;
   avatarUrl: string | null;
   country: string | null;
   score: number;

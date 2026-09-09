@@ -356,14 +356,14 @@
               </div>
               <p class="text-label-sm text-on-surface-variant">Selecione os papéis que o time está buscando.</p>
 
-              <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div class="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-5">
                 @for (option of roleOptions; track option.value) {
                   <button
                     type="button"
                     (click)="toggleRequiredRole(option.value)"
                     [style.background-color]="roleAccent(option.value)"
-                    class="tactical-grid relative flex aspect-square cursor-pointer flex-col items-center justify-center gap-1.5 overflow-hidden rounded-lg border-2 p-2 transition-colors"
-                    [class]="requiredRoles().includes(option.value) ? 'border-primary' : 'border-outline-variant hover:border-outline'"
+                    class="tactical-grid relative flex cursor-pointer flex-col items-center justify-center gap-1.5 overflow-hidden rounded-lg border-2 px-2 py-3.5 transition-all hover:scale-[1.02]"
+                    [class]="requiredRoles().includes(option.value) ? 'border-primary bg-primary/10 shadow-sm' : 'border-outline-variant hover:border-outline'"
                   >
                     <span class="absolute inset-0 bg-surface-dim/20"></span>
                     <app-role-icon [role]="option.value" size="md" [colored]="true" class="relative" />
@@ -371,7 +371,7 @@
                       {{ option.key | trans }}
                     </span>
                     @if (requiredRoles().includes(option.value)) {
-                      <span class="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-on-primary">
+                      <span class="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-on-primary shadow-xs">
                         <span class="material-symbols-outlined text-[14px]">check</span>
                       </span>
                     }

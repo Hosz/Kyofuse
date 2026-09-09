@@ -293,9 +293,50 @@ export class ProfileEditComponent implements OnDestroy {
 
   submit(): void {
     if (this.saving()) return;
-    if (!this.nickname().trim()) {
+
+    const nickname = this.nickname().trim();
+    if (!nickname) {
       this.error.set('Informe um nickname.');
+      this.toastService.error('Informe um nickname.');
       this.scrollToSection('pessoal');
+      return;
+    }
+    if (nickname.length > 40) {
+      this.error.set('O nickname deve ter no máximo 40 caracteres.');
+      this.toastService.error('O nickname deve ter no máximo 40 caracteres.');
+      this.scrollToSection('pessoal');
+      return;
+    }
+
+    const bio = this.bio().trim();
+    if (bio.length > 500) {
+      this.error.set('A bio deve ter no máximo 500 caracteres.');
+      this.toastService.error('A bio deve ter no máximo 500 caracteres.');
+      this.scrollToSection('pessoal');
+      return;
+    }
+
+    const premier = this.premierRating();
+    if (premier !== null && premier !== undefined && (premier < 1000 || premier > 40000)) {
+      this.error.set('O Premier Rating deve estar entre 1.000 e 40.000.');
+      this.toastService.error('O Premier Rating deve estar entre 1.000 e 40.000.');
+      this.scrollToSection('competitivo');
+      return;
+    }
+
+    const faceit = this.faceitLevel();
+    if (faceit !== null && faceit !== undefined && (faceit < 0 || faceit > 10)) {
+      this.error.set('O nível Faceit deve estar entre 0 e 10.');
+      this.toastService.error('O nível Faceit deve estar entre 0 e 10.');
+      this.scrollToSection('competitivo');
+      return;
+    }
+
+    const gc = this.gcRank();
+    if (gc !== null && gc !== undefined && (gc < 0 || gc > 21)) {
+      this.error.set('A patente GamersClub deve estar entre 0 e 21.');
+      this.toastService.error('A patente GamersClub deve estar entre 0 e 21.');
+      this.scrollToSection('competitivo');
       return;
     }
 
@@ -306,12 +347,19 @@ export class ProfileEditComponent implements OnDestroy {
       return;
     }
 
+    if (this.favoriteMaps().length > 3) {
+      this.error.set('Você pode selecionar no máximo 3 mapas favoritos.');
+      this.toastService.error('Você pode selecionar no máximo 3 mapas favoritos.');
+      this.scrollToSection('competitivo');
+      return;
+    }
+
     this.saving.set(true);
     this.error.set(null);
 
     const request: GamerProfileEditRequest = {
-      nickname: this.nickname().trim(),
-      bio: this.bio().trim(),
+      nickname,
+      bio,
       avatarUrl: this.avatarUrl().trim(),
       bannerUrl: this.bannerUrl().trim(),
       country: this.country().trim(),
@@ -320,9 +368,9 @@ export class ProfileEditComponent implements OnDestroy {
       showCountryFlag: this.showCountryFlag(),
       mainRole: this.mainRole() ? (this.mainRole() as PlayerRole) : null,
       secondaryRole: this.secondaryRole() ? (this.secondaryRole() as PlayerRole) : null,
-      premierRating: this.premierRating() ?? undefined,
-      faceitLevel: this.faceitLevel() ?? undefined,
-      gcRank: this.gcRank() ?? undefined,
+      premierRating: premier ?? undefined,
+      faceitLevel: faceit ?? undefined,
+      gcRank: gc ?? undefined,
       playstyle: this.playstyle() ? (this.playstyle() as Playstyle) : null,
       lookingForTeam: this.lookingForTeam(),
       lookingForDuo: this.lookingForDuo(),
@@ -332,12 +380,16 @@ export class ProfileEditComponent implements OnDestroy {
     this.profileService.editProfile(request).subscribe({
       next: () => {
         this.saving.set(false);
+        this.toastService.success('Perfil atualizado com sucesso!');
         this.router.navigateByUrl('/perfil');
       },
       error: (error) => {
         console.error('Failed to edit profile:', error);
         this.saving.set(false);
-        this.error.set('Não foi possível salvar as alterações. Tente novamente.');
+        const serverMessage = error?.error?.message || (Array.isArray(error?.error?.errors) ? error.error.errors.join(', ') : null);
+        const message = serverMessage || 'Não foi possível salvar as alterações. Verifique os dados e tente novamente.';
+        this.error.set(message);
+        this.toastService.error(message);
       },
     });
   }
