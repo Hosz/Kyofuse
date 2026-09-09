@@ -3,6 +3,10 @@ package com.hokyozu.kyofuse.relationships.friendship.service;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.profiles.finder.GamerProfileFinder;
 import com.hokyozu.kyofuse.relationships.block.repository.UserBlockRepository;
+import com.hokyozu.kyofuse.relationships.follow.entity.UserFollow;
+import com.hokyozu.kyofuse.relationships.follow.enums.FollowStatus;
+import com.hokyozu.kyofuse.relationships.follow.mapper.UserFollowMapper;
+import com.hokyozu.kyofuse.relationships.follow.repository.UserFollowRepository;
 import com.hokyozu.kyofuse.relationships.friendship.dto.response.UserFriendshipResponse;
 import com.hokyozu.kyofuse.relationships.friendship.entity.UserFriendRequest;
 import com.hokyozu.kyofuse.relationships.friendship.entity.UserFriendship;
@@ -44,6 +48,7 @@ public class UserFriendshipService {
     private final UserFriendshipRepository userFriendshipRepository;
     private final FriendshipPermissionService friendshipPermissionService;
     private final GamerProfileFinder gamerProfileFinder;
+    private final UserFollowRepository userFollowRepository;
 
     @Transactional
     public UserFriendshipResponse acceptRequest(UUID userId, UUID requestId) {
@@ -64,6 +69,14 @@ public class UserFriendshipService {
         friendshipPermissionService.validateAcceptFriendRequest(userOne, userTwo);
 
         UserFriendship friendship = UserFriendshipMapper.toEntity(userOne, userTwo);
+        if (userFollowRepository.existsByFollowerAndFollowed(userOne, userTwo)) {
+            UserFollow existingFollow = userFollowRepository.findByFollowerAndFollowed(userOne, userTwo);
+            existingFollow.setStatus(FollowStatus.ACTIVE);
+            userFollowRepository.save(existingFollow);
+        } else {
+            UserFollow follow = UserFollowMapper.toFollow(userOne, userTwo);
+            userFollowRepository.save(follow);
+        }
         userFriendshipRepository.save(friendship);
         userFriendRequestRepository.delete(friendRequest);
         User friend = UserFriendshipMapper.resolveFriend(friendship, userId);
