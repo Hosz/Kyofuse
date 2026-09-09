@@ -1,6 +1,6 @@
 import { effect, inject, Injectable, OnDestroy } from '@angular/core';
 import { RxStomp, RxStompState } from '@stomp/rx-stomp';
-import { Observable, map } from 'rxjs';
+import { Observable, firstValueFrom, map } from 'rxjs';
 import { API_URL } from '../../../models/api-url.model';
 import { AuthService } from '../auth/auth.service';
 
@@ -25,6 +25,9 @@ export class WebSocketService implements OnDestroy {
   }
 
   public connect(): void {
+    if (!this.authService.isAuthenticated()) {
+      return;
+    }
     if (!this.isConfigured) {
       this.configure();
       this.isConfigured = true;
@@ -59,6 +62,22 @@ export class WebSocketService implements OnDestroy {
       heartbeatIncoming: 0,
       heartbeatOutgoing: 20000,
       reconnectDelay: 5000,
+      beforeConnect: async () => {
+        if (!this.authService.isAuthenticated()) {
+          this.disconnect();
+          throw new Error('Usuário não autenticado para conexão WebSocket');
+        }
+        try {
+          const isValid = await firstValueFrom(this.authService.checkSession());
+          if (!isValid) {
+            this.disconnect();
+            throw new Error('Sessão inválida para conexão WebSocket');
+          }
+        } catch {
+          this.disconnect();
+          throw new Error('Erro ao validar sessão antes do WebSocket');
+        }
+      },
       debug: (msg: string) => {
         if (!msg.includes('PING') && !msg.includes('PONG')) {
           console.debug('[WebSocket]', msg);

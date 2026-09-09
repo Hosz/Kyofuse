@@ -80,6 +80,21 @@ class SecurityConfigTest {
     }
 
     @Test
+    void bearerTokenResolverReturnsNullForWebSocketEndpoints() {
+        BearerTokenResolver resolver = securityConfig.bearerTokenResolver();
+
+        MockHttpServletRequest wsRequest = new MockHttpServletRequest();
+        wsRequest.setRequestURI("/ws");
+        wsRequest.setCookies(new Cookie(AuthCookieService.ACCESS_TOKEN_COOKIE, "jwt-value"));
+        assertThat(resolver.resolve(wsRequest)).isNull();
+
+        MockHttpServletRequest wsSubpathRequest = new MockHttpServletRequest();
+        wsSubpathRequest.setRequestURI("/ws/info");
+        wsSubpathRequest.setCookies(new Cookie(AuthCookieService.ACCESS_TOKEN_COOKIE, "jwt-value"));
+        assertThat(resolver.resolve(wsSubpathRequest)).isNull();
+    }
+
+    @Test
     void corsConfigurationSourceRestrictsOriginsAndRejectsWildcards() {
         CorsConfigurationSource source = securityConfig.corsConfigurationSource();
         MockHttpServletRequest request = new MockHttpServletRequest();

@@ -98,6 +98,11 @@ public class SecurityConfig {
     public BearerTokenResolver bearerTokenResolver() {
         DefaultBearerTokenResolver defaultResolver = new DefaultBearerTokenResolver();
         return request -> {
+            String uri = request.getRequestURI();
+            if (uri != null && (uri.equals("/ws") || uri.startsWith("/ws/"))) {
+                return null;
+            }
+
             Cookie[] cookies = request.getCookies();
 
             if (cookies != null) {
