@@ -401,6 +401,7 @@
             [value]="draft()"
             (input)="onDraftChange($any($event.target).value)"
             (keydown.enter)="onSend()"
+            maxlength="2000"
             class="w-full border-0 bg-transparent text-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-0"
           />
           <button

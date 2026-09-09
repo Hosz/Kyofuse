@@ -49,17 +49,6 @@ export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
                 return throwError(() => error);
             }
 
-            /**
-             * ⚠️ NOVO: Tratar 400 Bad Request (refresh token ausente)
-             * Indica erro técnico: cookies foram deletados, sessão realmente expirou.
-             * Nunca tenta retry, pois não há ponto de recuperação.
-             */
-            if (error.status === 400) {
-                // Token ausente = erro técnico (não tenta retry)
-                authService.clearSession();
-                // Apenas throwError, NÃO faz navigate (evita ciclo de requisições)
-                return throwError(() => error);
-            }
 
             /**
              * ✅ Tratar 401 Unauthorized (access token expirado)

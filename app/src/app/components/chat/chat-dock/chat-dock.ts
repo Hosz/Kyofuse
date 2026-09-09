@@ -336,6 +336,11 @@ export class ChatDockComponent implements OnDestroy {
     const myId = this.myUserId();
     if (!conversation || !content || !myId || !this.canType() || this.sending()) return;
 
+    if (content.length > 2000) {
+      this.toastService.error('A mensagem não pode exceder 2.000 caracteres.');
+      return;
+    }
+
     // Respondeu à conversa: limpa a marcação de novas mensagens imediatamente
     this.updateConversation(conversation.id, (c) => ({
       ...c,

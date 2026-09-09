@@ -321,6 +321,11 @@ export class ChatWindowComponent implements OnDestroy {
     const media = this.pendingMedia();
     if ((!content && media.length === 0) || !this.canType() || this.uploadingMedia()) return;
 
+    if (content && content.length > 2000) {
+      this.toastService.error('A mensagem não pode exceder 2.000 caracteres.');
+      return;
+    }
+
     const conv = this.conversation();
     if (conv?.id && this.isCurrentlyTyping) {
       this.isCurrentlyTyping = false;
