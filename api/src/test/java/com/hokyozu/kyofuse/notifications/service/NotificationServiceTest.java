@@ -228,4 +228,31 @@ class NotificationServiceTest {
         verify(notificationRepository).save(notification);
         verify(notificationCounterService, never()).decrement(any());
     }
+
+    @Test
+    void archiveAllArchivesAllNotificationsAndResetsCounter() {
+        UUID userId = UUID.randomUUID();
+        User user = User.builder().id(userId).build();
+
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
+
+        notificationService.archiveAll(userId);
+
+        verify(notificationRepository).markAllAsArchived(userId);
+        verify(notificationCounterService).reset(userId);
+    }
+
+    @Test
+    void syncUnreadCountQueriesDatabaseAndSyncsRedis() {
+        UUID userId = UUID.randomUUID();
+        User user = User.builder().id(userId).build();
+
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
+        when(notificationCounterService.syncUnreadCount(userId)).thenReturn(5L);
+
+        long count = notificationService.syncUnreadCount(userId);
+
+        assertThat(count).isEqualTo(5L);
+        verify(notificationCounterService).syncUnreadCount(userId);
+    }
 }

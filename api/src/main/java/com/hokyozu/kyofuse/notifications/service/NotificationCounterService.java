@@ -36,6 +36,13 @@ public class NotificationCounterService {
         return count;
     }
 
+    public long syncUnreadCount(UUID userId) {
+        String key = UNREAD_KEY_PREFIX + userId;
+        long count = notificationRepository.countByUserIdAndStatus(userId, NotificationStatus.UNREAD);
+        redisTemplate.opsForValue().set(key, String.valueOf(count), COUNTER_TTL);
+        return count;
+    }
+
     public void increment(UUID userId) {
         String key = UNREAD_KEY_PREFIX + userId;
         if (Boolean.TRUE.equals(redisTemplate.hasKey(key))) {

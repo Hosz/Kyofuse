@@ -10,9 +10,14 @@ public record UserLoginSuccessEvent(
         String clientIp,
         String userAgent,
         Instant loggedAt,
-        LocationInfo location
+        LocationInfo location,
+        String deviceId
 ) {
     public UserLoginSuccessEvent(User user, String clientIp, String userAgent, Instant loggedAt) {
-        this(user, clientIp, userAgent, loggedAt, null);
+        this(user, clientIp, userAgent, loggedAt, null, null);
+    }
+
+    public UserLoginSuccessEvent(User user, String clientIp, String userAgent, Instant loggedAt, LocationInfo location) {
+        this(user, clientIp, userAgent, loggedAt, location, null);
     }
 }

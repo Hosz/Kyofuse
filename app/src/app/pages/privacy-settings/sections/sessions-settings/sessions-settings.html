@@ -1,0 +1,315 @@
+<section class="flex flex-col gap-6 rounded-2xl border border-outline-variant bg-surface-container-low p-6 sm:p-8 shadow-sm">
+  <!-- Cabeçalho da Seção -->
+  <div class="flex items-center justify-between border-b border-outline-variant pb-4">
+    <div class="flex items-center gap-3">
+      <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <span class="material-symbols-outlined text-[24px]">devices</span>
+      </div>
+      <div class="flex flex-col">
+        <h2 class="text-title-lg font-bold text-on-surface">{{ 'settings.sessionsAndDevices' | trans }}</h2>
+        <span class="text-body-sm text-on-surface-variant">{{ 'settings.sessionsDesc' | trans }}</span>
+      </div>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <p class="py-8 text-center text-body-sm text-on-surface-variant">{{ 'common.loading' | trans }}</p>
+  } @else {
+    <!-- SESSÃO ATUAL -->
+    <div class="flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <h3 class="text-title-sm font-bold text-on-surface uppercase tracking-wider text-xs text-on-surface-variant">
+          {{ 'settings.currentSession' | trans }}
+        </h3>
+      </div>
+
+      @if (currentSession(); as curr) {
+        <div
+          (click)="openSessionDetails(curr)"
+          role="button"
+          tabindex="0"
+          (keydown.enter)="openSessionDetails(curr)"
+          class="cursor-pointer group flex items-center justify-between rounded-xl border border-outline-variant bg-surface-container p-4 transition-all hover:border-primary/50 hover:bg-surface-container-high"
+        >
+          <div class="flex items-center gap-4 min-w-0">
+            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <span class="material-symbols-outlined text-[26px]">{{ getDeviceIcon(curr.deviceType) }}</span>
+            </div>
+            <div class="flex flex-col min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-bold text-body-md text-on-surface truncate">{{ curr.deviceName }}</span>
+                <span class="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-bold text-primary border border-primary/20">
+                  <span class="h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></span>
+                  {{ 'settings.thisDevice' | trans }}
+                </span>
+                @if (curr.trusted) {
+                  <span class="inline-flex items-center gap-1 rounded-full bg-tertiary/10 px-2 py-0.5 text-[11px] font-semibold text-tertiary border border-tertiary/30">
+                    <span class="material-symbols-outlined text-[13px]">verified</span>
+                    {{ 'settings.trustedDevice' | trans }}
+                  </span>
+                }
+              </div>
+              <div class="flex items-center gap-2 text-body-xs text-on-surface-variant truncate mt-0.5">
+                <span class="truncate">{{ curr.location }}</span>
+                <span>•</span>
+                <span class="text-tertiary font-medium">{{ 'settings.activeNow' | trans }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0 text-on-surface-variant group-hover:text-primary transition-colors">
+            <span class="text-body-xs font-semibold hidden sm:inline">{{ 'settings.sessionDetails' | trans }}</span>
+            <span class="material-symbols-outlined text-[20px]">chevron_right</span>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- OUTRAS SESSÕES ATIVAS -->
+    <div class="flex flex-col gap-3 pt-2">
+      <div class="flex items-center justify-between">
+        <h3 class="text-title-sm font-bold text-on-surface uppercase tracking-wider text-xs text-on-surface-variant">
+          {{ 'settings.otherSessions' | trans }} ({{ otherSessions().length }})
+        </h3>
+        @if (otherSessions().length > 0) {
+          <button
+            type="button"
+            (click)="showRevokeAllConfirm.set(true)"
+            class="cursor-pointer text-body-xs font-bold text-error transition-colors hover:underline hover:brightness-110"
+          >
+            {{ 'settings.revokeAllOthers' | trans }}
+          </button>
+        }
+      </div>
+
+      @if (otherSessions().length === 0) {
+        <div class="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-outline-variant p-8 text-center bg-surface-container/40">
+          <span class="material-symbols-outlined text-[36px] text-on-surface-variant/60">devices_off</span>
+          <p class="text-body-sm text-on-surface-variant">{{ 'settings.noOtherSessions' | trans }}</p>
+        </div>
+      } @else {
+        <div class="flex flex-col gap-2.5">
+          @for (session of otherSessions(); track session.id) {
+            <div
+              (click)="openSessionDetails(session)"
+              role="button"
+              tabindex="0"
+              (keydown.enter)="openSessionDetails(session)"
+              class="cursor-pointer group flex items-center justify-between rounded-xl border border-outline-variant bg-surface-container p-4 transition-all hover:border-primary/40 hover:bg-surface-container-high"
+            >
+              <div class="flex items-center gap-4 min-w-0">
+                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface-container-high text-on-surface-variant group-hover:text-primary transition-colors">
+                  <span class="material-symbols-outlined text-[24px]">{{ getDeviceIcon(session.deviceType) }}</span>
+                </div>
+                <div class="flex flex-col min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-bold text-body-md text-on-surface truncate">{{ session.deviceName }}</span>
+                    @if (session.trusted) {
+                      <span class="inline-flex items-center gap-1 rounded-full bg-tertiary/10 px-2 py-0.5 text-[11px] font-semibold text-tertiary border border-tertiary/30">
+                        <span class="material-symbols-outlined text-[13px]">verified</span>
+                        {{ 'settings.trustedDevice' | trans }}
+                      </span>
+                    }
+                  </div>
+                  <div class="flex items-center gap-2 text-body-xs text-on-surface-variant truncate mt-0.5">
+                    <span class="truncate">{{ session.location }}</span>
+                    <span>•</span>
+                    <span>{{ formatRelativeTime(session.lastActiveAt) }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2 shrink-0 text-on-surface-variant group-hover:text-primary transition-colors">
+                <span class="material-symbols-outlined text-[20px]">chevron_right</span>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</section>
+
+<!-- MODAL DE DETALHES DA SESSÃO (TWITTER / X STYLE) -->
+@if (selectedSession(); as session) {
+  <div
+    class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md transition-opacity"
+    (click)="closeSessionDetails()"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="session-details-title"
+  >
+    <div
+      class="relative flex w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-low shadow-2xl"
+      (click)="$event.stopPropagation()"
+    >
+      <!-- Top Header -->
+      <div class="flex items-center justify-between border-b border-outline-variant bg-surface-container px-6 py-4">
+        <div class="flex items-center gap-3">
+          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <span class="material-symbols-outlined text-[22px]">{{ getDeviceIcon(session.deviceType) }}</span>
+          </div>
+          <div>
+            <h3 id="session-details-title" class="text-title-md font-bold text-on-surface">{{ session.deviceName }}</h3>
+            <span class="text-body-xs text-on-surface-variant">
+              {{ session.current ? ('settings.thisDevice' | trans) : ('settings.sessionDetails' | trans) }}
+            </span>
+          </div>
+        </div>
+        <button
+          type="button"
+          (click)="closeSessionDetails()"
+          class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+          [attr.aria-label]="'common.close' | trans"
+        >
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+
+      <!-- Info List -->
+      <div class="flex flex-col gap-4 p-6 text-body-sm">
+        <div class="flex items-start justify-between border-b border-outline-variant/60 pb-3">
+          <span class="text-on-surface-variant font-medium">{{ 'settings.deviceAndOs' | trans }}</span>
+          <span class="font-semibold text-on-surface text-right">{{ session.os }} • {{ session.browser }}</span>
+        </div>
+
+        <div class="flex items-start justify-between border-b border-outline-variant/60 pb-3">
+          <span class="text-on-surface-variant font-medium">{{ 'settings.approximateLocation' | trans }}</span>
+          <span class="font-semibold text-on-surface text-right">{{ session.location }}</span>
+        </div>
+
+        <div class="flex items-start justify-between border-b border-outline-variant/60 pb-3">
+          <span class="text-on-surface-variant font-medium">{{ 'settings.ipAddress' | trans }}</span>
+          <code class="font-mono text-body-xs font-bold text-primary">{{ session.ipAddress }}</code>
+        </div>
+
+        <div class="flex items-start justify-between border-b border-outline-variant/60 pb-3">
+          <span class="text-on-surface-variant font-medium">{{ 'settings.firstLogin' | trans }}</span>
+          <span class="font-semibold text-on-surface text-right">{{ formatExactDateTime(session.createdAt) }}</span>
+        </div>
+
+        <div class="flex items-start justify-between border-b border-outline-variant/60 pb-3">
+          <span class="text-on-surface-variant font-medium">{{ 'settings.lastActive' | trans }}</span>
+          <span class="font-semibold text-on-surface text-right">
+            {{ session.current ? ('settings.activeNow' | trans) : formatExactDateTime(session.lastActiveAt) }}
+          </span>
+        </div>
+
+        <div class="flex items-center justify-between pt-1">
+          <div class="flex flex-col">
+            <span class="text-on-surface-variant font-medium">{{ 'settings.trustStatus' | trans }}</span>
+            <span class="text-body-xs text-on-surface-variant">
+              {{ session.trusted ? ('settings.trustedDevice' | trans) : ('settings.untrustedDevice' | trans) }}
+            </span>
+          </div>
+
+          @if (session.trusted) {
+            <button
+              type="button"
+              (click)="toggleTrust(session)"
+              [disabled]="togglingTrust()"
+              class="cursor-pointer rounded-full border border-outline-variant px-4 py-1.5 text-label-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-high disabled:opacity-50"
+            >
+              {{ 'settings.untrustThisDevice' | trans }}
+            </button>
+          } @else if (session.current) {
+            <button
+              type="button"
+              (click)="toggleTrust(session)"
+              [disabled]="togglingTrust()"
+              class="cursor-pointer rounded-full bg-primary/10 border border-primary/30 px-4 py-1.5 text-label-sm font-semibold text-primary transition-colors hover:bg-primary/20 disabled:opacity-50"
+            >
+              {{ 'settings.trustThisDevice' | trans }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Footer Actions -->
+      <div class="flex items-center justify-between border-t border-outline-variant bg-surface-container px-6 py-4">
+        @if (!session.current) {
+          <button
+            type="button"
+            (click)="revokeSession(session.id)"
+            [disabled]="revokingSessionId() === session.id"
+            class="cursor-pointer flex items-center gap-1.5 rounded-full border border-error/50 px-4 py-2 text-label-sm font-bold text-error transition-colors hover:bg-error/10 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            @if (revokingSessionId() === session.id) {
+              <span class="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>
+              <span>{{ 'settings.revoking' | trans }}</span>
+            } @else {
+              <span class="material-symbols-outlined text-[16px]">logout</span>
+              <span>{{ 'settings.revokeSession' | trans }}</span>
+            }
+          </button>
+        } @else {
+          <span class="text-body-xs text-on-surface-variant italic">
+            Para desconectar este aparelho, utilize a opção Sair da conta.
+          </span>
+        }
+
+        <button
+          type="button"
+          (click)="closeSessionDetails()"
+          class="cursor-pointer ml-auto rounded-full border border-outline-variant px-5 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high"
+        >
+          {{ 'common.close' | trans }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- MODAL DE CONFIRMAÇÃO PARA ENCERRAR TODAS AS OUTRAS SESSÕES -->
+@if (showRevokeAllConfirm()) {
+  <div
+    class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md transition-opacity"
+    (click)="showRevokeAllConfirm.set(false)"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="revoke-all-title"
+  >
+    <div
+      class="relative flex w-full max-w-md flex-col overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-low p-6 sm:p-7 shadow-2xl"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="flex items-start gap-4">
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-error/10 text-error">
+          <span class="material-symbols-outlined text-[28px]">logout</span>
+        </div>
+        <div class="flex flex-col gap-1">
+          <h2 id="revoke-all-title" class="text-title-md font-bold text-on-surface">
+            {{ 'settings.revokeOtherConfirmTitle' | trans }}
+          </h2>
+          <p class="text-body-sm text-on-surface-variant leading-relaxed">
+            {{ 'settings.revokeOtherConfirmDesc' | trans }}
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-6 flex items-center justify-end gap-3 pt-3 border-t border-outline-variant/60">
+        <button
+          type="button"
+          (click)="showRevokeAllConfirm.set(false)"
+          [disabled]="revokingAll()"
+          class="cursor-pointer rounded-full border border-outline-variant px-5 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {{ 'common.cancel' | trans }}
+        </button>
+        <button
+          type="button"
+          (click)="confirmRevokeAll()"
+          [disabled]="revokingAll()"
+          class="cursor-pointer flex items-center gap-2 rounded-full bg-error px-6 py-2 text-label-md font-bold text-on-error transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          @if (revokingAll()) {
+            <span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+            <span>{{ 'settings.revoking' | trans }}</span>
+          } @else {
+            <span>{{ 'settings.revokeAllOthers' | trans }}</span>
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}

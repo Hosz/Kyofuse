@@ -84,6 +84,7 @@ public class AuthService {
     private final AccountReactivationService accountReactivationService;
 
     private final TokenBlacklistService tokenBlacklistService;
+    private final UserSessionService userSessionService;
 
     private static final String LOGIN_IP_KEY_PREFIX = "login:ip:";
     private static final String LOGIN_USER_KEY_PREFIX = "login:user:";
@@ -155,7 +156,7 @@ public class AuthService {
             return new LoginOutcome.MfaRequired(mfaTokenService.generate(user));
         }
 
-        publishLoginSuccess(user, clientIp, userAgent);
+        publishLoginSuccess(user, clientIp, userAgent, deviceId);
         return new LoginOutcome.Authenticated(issueTokens(user, deviceId));
     }
 
@@ -225,7 +226,7 @@ public class AuthService {
             return new LoginOutcome.MfaRequired(mfaTokenService.generate(user));
         }
 
-        publishLoginSuccess(user, clientIp, userAgent);
+        publishLoginSuccess(user, clientIp, userAgent, deviceId);
         return new LoginOutcome.Authenticated(issueTokens(user, deviceId));
     }
 
@@ -273,7 +274,7 @@ public class AuthService {
             return new LoginOutcome.MfaRequired(mfaTokenService.generate(user));
         }
 
-        publishLoginSuccess(user, clientIp, userAgent);
+        publishLoginSuccess(user, clientIp, userAgent, deviceId);
         return new LoginOutcome.Authenticated(issueTokens(user, deviceId));
     }
 
@@ -494,10 +495,18 @@ public class AuthService {
     }
 
     public void publishLoginSuccess(User user, String clientIp, String userAgent) {
-        publishLoginSuccess(user, clientIp, userAgent, null);
+        publishLoginSuccess(user, clientIp, userAgent, null, null);
+    }
+
+    public void publishLoginSuccess(User user, String clientIp, String userAgent, String deviceId) {
+        publishLoginSuccess(user, clientIp, userAgent, null, deviceId);
     }
 
     public void publishLoginSuccess(User user, String clientIp, String userAgent, LocationInfo explicitLocation) {
+        publishLoginSuccess(user, clientIp, userAgent, explicitLocation, null);
+    }
+
+    public void publishLoginSuccess(User user, String clientIp, String userAgent, LocationInfo explicitLocation, String deviceId) {
         if (eventPublisher != null) {
             LocationInfo location = explicitLocation;
             if (location == null && geoLocationService != null) {
@@ -507,7 +516,19 @@ public class AuthService {
                     log.warn("[Auth] Não foi possível resolver localização no login: {}", e.getMessage());
                 }
             }
-            eventPublisher.publishEvent(new UserLoginSuccessEvent(user, clientIp, userAgent, Instant.now(), location));
+            if (userSessionService != null && user != null) {
+                try {
+                    userSessionService.recordOrUpdateSession(user, deviceId, clientIp, userAgent, location);
+                } catch (Exception e) {
+                    log.error("[Auth] Erro ao registrar sessão de usuário: {}", e.getMessage(), e);
+                }
+            }
+            eventPublisher.publishEvent(new UserLoginSuccessEvent(user, clientIp, userAgent, Instant.now(), location, deviceId));
         }
+    }
+
+    public boolean isDeviceTrusted(UUID userId, String deviceId) {
+        if (userSessionService == null) return false;
+        return userSessionService.isDeviceTrusted(userId, deviceId);
     }
 }

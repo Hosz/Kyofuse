@@ -36,5 +36,6 @@ export interface AppNotification {
   conversationId?: string;
   /** Estado de resposta do convite/solicitação quando já aceito ou recusado. */
   responseStatus?: 'accepted' | 'declined';
+  isLoginAlert?: boolean;
   rawResponse?: import('../../models/notifications/notification.model').NotificationResponse;
 }

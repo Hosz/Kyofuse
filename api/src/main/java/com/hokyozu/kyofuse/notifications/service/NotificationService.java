@@ -200,6 +200,12 @@ public class NotificationService {
         return notificationCounterService.getUnreadCount(userId);
     }
 
+    public long syncUnreadCount(UUID userId) {
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
+        return notificationCounterService.syncUnreadCount(userId);
+    }
+
     @Transactional
     public void readNotification(UUID userId, UUID notificationId) {
         User user = userFinder.findProfileByUserId(userId);
@@ -250,6 +256,15 @@ public class NotificationService {
         userChecker.checkActive(user);
 
         notificationRepository.markAllAsRead(userId, Instant.now());
+        notificationCounterService.reset(userId);
+    }
+
+    @Transactional
+    public void archiveAll(UUID userId) {
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
+
+        notificationRepository.markAllAsArchived(userId);
         notificationCounterService.reset(userId);
     }
 

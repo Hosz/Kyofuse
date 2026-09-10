@@ -7,9 +7,14 @@ public record AuthResponse(
         String email,
         String username,
         String role,
-        String switchToken
+        String switchToken,
+        boolean deviceTrusted
 ) {
     public AuthResponse(UUID userId, String email, String username, String role) {
-        this(userId, email, username, role, null);
+        this(userId, email, username, role, null, false);
+    }
+
+    public AuthResponse(UUID userId, String email, String username, String role, String switchToken) {
+        this(userId, email, username, role, switchToken, false);
     }
 }

@@ -1,0 +1,5 @@
+/* Scoped styles for SessionsSettingsSection */
+:host {
+  display: block;
+  width: 100%;
+}

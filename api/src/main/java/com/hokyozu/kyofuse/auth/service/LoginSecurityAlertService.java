@@ -38,6 +38,7 @@ public class LoginSecurityAlertService {
     private final NotificationMapper notificationMapper;
     private final SimpMessagingTemplate messagingTemplate;
     private final MailService mailService;
+    private final UserSessionService userSessionService;
 
     @Async
     @EventListener
@@ -49,6 +50,14 @@ public class LoginSecurityAlertService {
 
         try {
             User user = event.user();
+            String deviceId = event.deviceId();
+
+            if (deviceId != null && !deviceId.isBlank() && userSessionService != null && user.getId() != null) {
+                if (userSessionService.isDeviceTrusted(user.getId(), deviceId)) {
+                    log.info("[LoginSecurity] Dispositivo {} confiável para usuário {}. Notificação e e-mail suprimidos.", deviceId, user.getUsername());
+                    return;
+                }
+            }
             String clientIp = event.clientIp();
             String userAgent = event.userAgent();
             Instant loggedAt = event.loggedAt() != null ? event.loggedAt() : Instant.now();

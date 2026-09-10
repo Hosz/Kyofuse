@@ -44,8 +44,9 @@ export class NotificationService {
   }
 
   /** Busca a contagem atômica de notificações não lidas diretamente do Redis via backend */
-  public refreshUnreadCount(): void {
-    this.http.get<{ unreadCount: number }>(`${this.url}/unread-count`).subscribe({
+  public refreshUnreadCount(sync: boolean = false): void {
+    const params = sync ? new HttpParams().set('sync', 'true') : undefined;
+    this.http.get<{ unreadCount: number }>(`${this.url}/unread-count`, { params }).subscribe({
       next: (response) => {
         this.unreadCount.set(response.unreadCount ?? 0);
       },
@@ -63,5 +64,9 @@ export class NotificationService {
 
   public readAllNotifications() {
     return this.http.patch<void>(`${this.url}/readall`, null);
+  }
+
+  public archiveAllNotifications() {
+    return this.http.patch<void>(`${this.url}/archiveall`, null);
   }
 }

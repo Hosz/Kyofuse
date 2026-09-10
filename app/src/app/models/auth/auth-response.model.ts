@@ -14,6 +14,7 @@ export interface authResponse {
   username: string;
   role: string;
   switchToken?: string;
+  deviceTrusted?: boolean;
 }
 
 export interface authMeResponse {
