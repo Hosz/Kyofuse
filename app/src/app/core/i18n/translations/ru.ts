@@ -802,7 +802,15 @@ export const ru: TranslationDictionary = {
     "disconnectAccount": "Отключить аккаунт",
     "addAnotherAccount": "Добавить другой аккаунт",
     "switchAccountTooltip": "Переключить аккаунт",
-    "accountSettingsTooltip": "Настройки аккаунта"
+    "accountSettingsTooltip": "Настройки аккаунта",
+    "savedAccountsTitle": "Сохраненные аккаунты на этом устройстве",
+    "savedAccountsDesc": "У вас есть другие подключенные аккаунты. Выберите аккаунт для входа или управляйте доступами.",
+    "connect": "Войти",
+    "connecting": "Подключение...",
+    "disconnectAll": "Отключить все аккаунты",
+    "ignoreAndContinue": "Пропустить и перейти ко входу",
+    "viewSavedAccounts": "Показать сохраненные аккаунты",
+    "allAccountsDisconnected": "Все аккаунты отключены на этом устройстве."
   },
   "postOptions": {
     "moreOptions": "Дополнительные параметры",

@@ -802,7 +802,15 @@ export const pt: TranslationDictionary = {
     "disconnectAccount": "Desconectar conta",
     "addAnotherAccount": "Adicionar outra conta",
     "switchAccountTooltip": "Alternar conta",
-    "accountSettingsTooltip": "Configurações da conta"
+    "accountSettingsTooltip": "Configurações da conta",
+    "savedAccountsTitle": "Contas salvas neste dispositivo",
+    "savedAccountsDesc": "Você possui outras contas conectadas. Selecione uma para entrar diretamente ou gerencie os acessos.",
+    "connect": "Conectar",
+    "connecting": "Conectando...",
+    "disconnectAll": "Desconectar de todas as contas",
+    "ignoreAndContinue": "Ignorar e continuar para login",
+    "viewSavedAccounts": "Ver contas salvas",
+    "allAccountsDisconnected": "Todas as contas foram desconectadas deste dispositivo."
   },
   "postOptions": {
     "moreOptions": "Mais opções",

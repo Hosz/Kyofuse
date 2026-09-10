@@ -39,6 +39,7 @@ export class AuthService {
 
   private handleLoginSuccess(result: authResponse): void {
     this.authenticated.set(true);
+    this.accountManager.setActiveUserId(result.userId);
     this.accountManager.registerOrUpdateAccount({
       userId: result.userId,
       username: result.username,
@@ -165,9 +166,24 @@ export class AuthService {
 
   public logout(): Observable<void> {
     this.logoutInProgress = true;
+    const currentActiveId = this.accountManager.getActiveUserId();
     return this.http.post<void>(`${this.url}/logout`, {}, { withCredentials: true })
       .pipe(
-        tap(() => this.authenticated.set(false)),
+        tap(() => {
+          this.authenticated.set(false);
+          if (currentActiveId) {
+            this.accountManager.removeLocalAccount(currentActiveId);
+          }
+          this.accountManager.clearActiveUserId();
+        }),
+        catchError(() => {
+          this.authenticated.set(false);
+          if (currentActiveId) {
+            this.accountManager.removeLocalAccount(currentActiveId);
+          }
+          this.accountManager.clearActiveUserId();
+          return of(void 0);
+        }),
         finalize(() => this.logoutInProgress = false)
       );
   }
@@ -246,8 +262,9 @@ export class AuthService {
 
   public switchAccount(targetUserId: string): Observable<authResponse> {
     return this.accountManager.switchAccount(targetUserId).pipe(
-      tap(() => {
+      tap((res) => {
         this.authenticated.set(true);
+        this.accountManager.setActiveUserId(res.userId);
       })
     );
   }
@@ -258,5 +275,10 @@ export class AuthService {
 
   public clearSession(): void {
     this.authenticated.set(false);
+    const currentActiveId = this.accountManager.getActiveUserId();
+    if (currentActiveId) {
+      this.accountManager.removeLocalAccount(currentActiveId);
+    }
+    this.accountManager.clearActiveUserId();
   }
 }

@@ -3,6 +3,22 @@
     <app-auth-hero class="flex-1" />
 
     <div class="w-full max-w-[24rem] shrink-0">
+      @if (savedAccounts().length > 0 && !mfaToken() && !reactivationToken() && !isForgotPassword() && !registrationSuccess() && !isAddAccount()) {
+        <button
+          type="button"
+          (click)="openSavedAccountsModal()"
+          class="mb-4 flex w-full cursor-pointer items-center justify-between rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-label-md font-semibold text-primary transition-all hover:border-primary/50 hover:bg-primary/20"
+        >
+          <div class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-[20px]">manage_accounts</span>
+            <span>{{ 'accounts.viewSavedAccounts' | trans }}</span>
+          </div>
+          <span class="rounded-full bg-primary/20 px-2.5 py-0.5 text-label-sm font-bold text-primary">
+            {{ savedAccounts().length }}
+          </span>
+        </button>
+      }
+
       <div class="overflow-hidden rounded-xl border border-b-2 border-outline-variant border-b-primary-container bg-surface-container-low">
         
         <!-- MODO: ADICIONAR CONTA -->
@@ -239,4 +255,114 @@
       </div>
     </div>
   </div>
+
+  <!-- MODAL DE CONTAS SALVAS NO DISPOSITIVO -->
+  <app-modal
+    [open]="savedAccountsModalOpen()"
+    [title]="'accounts.savedAccountsTitle' | trans"
+    (closed)="closeSavedAccountsModal()"
+  >
+    <div class="flex flex-col gap-4">
+      <p class="text-body-sm text-on-surface-variant">
+        {{ 'accounts.savedAccountsDesc' | trans }}
+      </p>
+
+      <!-- Lista de contas salvas -->
+      <div class="max-h-72 space-y-2 overflow-y-auto pr-1">
+        @for (account of savedAccounts(); track account.userId) {
+          <div
+            class="flex items-center justify-between gap-3 rounded-xl border border-outline-variant bg-surface-container p-3 transition-colors hover:bg-surface-container-high"
+          >
+            <!-- Perfil do usuário -->
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+              <div class="relative shrink-0">
+                <img
+                  [src]="account.avatarUrl || fallbackAvatar"
+                  [alt]="account.nickname"
+                  class="h-10 w-10 rounded-full object-cover ring-1 ring-outline-variant"
+                />
+                @if (account.showCountryFlag !== false && account.country && getCountryFlagUrl(account.country)) {
+                  <img
+                    [src]="getCountryFlagUrl(account.country)!"
+                    [alt]="account.country"
+                    class="absolute -bottom-1 -right-1 h-3.5 w-5 rounded-xs object-cover shadow-xs"
+                  />
+                }
+              </div>
+
+              <div class="flex flex-col min-w-0">
+                <span class="truncate text-label-md font-bold text-on-surface">
+                  {{ account.nickname || account.username }}
+                </span>
+                <span class="truncate text-label-sm text-on-surface-variant">
+                  @{{ account.username }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Ações da conta -->
+            <div class="flex items-center gap-2 shrink-0">
+              <!-- Botão Conectar -->
+              <button
+                type="button"
+                (click)="connectAccount(account.userId)"
+                [disabled]="switchingUserId() !== null || disconnectingUserId() !== null || disconnectingAll()"
+                class="flex cursor-pointer items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-label-sm font-bold text-on-primary transition-all hover:bg-primary-container hover:text-on-primary-container disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                @if (switchingUserId() === account.userId) {
+                  <span class="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>
+                  <span>{{ 'accounts.connecting' | trans }}</span>
+                } @else {
+                  <span class="material-symbols-outlined text-[16px]">login</span>
+                  <span>{{ 'accounts.connect' | trans }}</span>
+                }
+              </button>
+
+              <!-- Botão Desconectar individual -->
+              <button
+                type="button"
+                (click)="disconnectSingleAccount(account.userId, $event)"
+                [disabled]="switchingUserId() !== null || disconnectingUserId() !== null || disconnectingAll()"
+                [title]="'accounts.disconnectAccount' | trans"
+                class="flex cursor-pointer items-center justify-center rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-error/10 hover:text-error disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                @if (disconnectingUserId() === account.userId) {
+                  <span class="material-symbols-outlined animate-spin text-[18px] text-error">progress_activity</span>
+                } @else {
+                  <span class="material-symbols-outlined text-[18px]">delete</span>
+                }
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Rodapé / Ações em lote -->
+      <div class="flex flex-col gap-2 pt-3 border-t border-outline-variant">
+        @if (savedAccounts().length > 0) {
+          <button
+            type="button"
+            (click)="disconnectAllAccounts()"
+            [disabled]="switchingUserId() !== null || disconnectingUserId() !== null || disconnectingAll()"
+            class="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-error/30 bg-error/10 px-4 py-2 text-label-sm font-semibold text-error transition-colors hover:bg-error/20 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            @if (disconnectingAll()) {
+              <span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+            } @else {
+              <span class="material-symbols-outlined text-[18px]">logout</span>
+            }
+            <span>{{ 'accounts.disconnectAll' | trans }}</span>
+          </button>
+        }
+
+        <button
+          type="button"
+          (click)="closeSavedAccountsModal()"
+          class="cursor-pointer text-center text-label-sm text-on-surface-variant transition-colors hover:text-on-surface py-1"
+        >
+          {{ 'accounts.ignoreAndContinue' | trans }}
+        </button>
+      </div>
+    </div>
+  </app-modal>
 </div>

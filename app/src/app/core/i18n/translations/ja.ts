@@ -802,7 +802,15 @@ export const ja: TranslationDictionary = {
     "disconnectAccount": "アカウントのログアウト",
     "addAnotherAccount": "別のアカウントを追加",
     "switchAccountTooltip": "アカウントを切り替える",
-    "accountSettingsTooltip": "アカウント設定"
+    "accountSettingsTooltip": "アカウント設定",
+    "savedAccountsTitle": "この端末に保存されたアカウント",
+    "savedAccountsDesc": "他の接続済みアカウントがあります。直接ログインするアカウントを選択するか、アクセスを管理してください。",
+    "connect": "ログイン",
+    "connecting": "接続中...",
+    "disconnectAll": "すべてのアカウントからログアウト",
+    "ignoreAndContinue": "無視してログインに進む",
+    "viewSavedAccounts": "保存されたアカウントを表示",
+    "allAccountsDisconnected": "この端末からすべてのアカウントがログアウトされました。"
   },
   "postOptions": {
     "moreOptions": "その他のオプション",

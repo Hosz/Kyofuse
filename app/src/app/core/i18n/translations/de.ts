@@ -802,7 +802,15 @@ export const de: TranslationDictionary = {
     "disconnectAccount": "Konto trennen",
     "addAnotherAccount": "Anderes Konto hinzufügen",
     "switchAccountTooltip": "Konto wechseln",
-    "accountSettingsTooltip": "Kontoeinstellungen"
+    "accountSettingsTooltip": "Kontoeinstellungen",
+    "savedAccountsTitle": "Gespeicherte Konten auf diesem Gerät",
+    "savedAccountsDesc": "Du hast andere Konten verbunden. Wähle eines aus, um dich direkt anzumelden, oder verwalte die Zugriffe.",
+    "connect": "Verbinden",
+    "connecting": "Verbindet...",
+    "disconnectAll": "Von allen Konten abmelden",
+    "ignoreAndContinue": "Ignorieren und zum Login fortfahren",
+    "viewSavedAccounts": "Gespeicherte Konten anzeigen",
+    "allAccountsDisconnected": "Alle Konten wurden von diesem Gerät abgemeldet."
   },
   "postOptions": {
     "moreOptions": "Weitere Optionen",

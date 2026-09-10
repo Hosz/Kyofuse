@@ -802,7 +802,15 @@ export const zh: TranslationDictionary = {
     "disconnectAccount": "退出此账号",
     "addAnotherAccount": "添加其他账号",
     "switchAccountTooltip": "切换账号",
-    "accountSettingsTooltip": "账号设置"
+    "accountSettingsTooltip": "账号设置",
+    "savedAccountsTitle": "此设备上保存的账号",
+    "savedAccountsDesc": "您还有其他已连接的账号。选择一个直接登录，或管理账号访问权限。",
+    "connect": "连接",
+    "connecting": "连接中...",
+    "disconnectAll": "退出所有账号",
+    "ignoreAndContinue": "忽略并继续登录",
+    "viewSavedAccounts": "查看已保存账号",
+    "allAccountsDisconnected": "所有账号已从此设备退出。"
   },
   "postOptions": {
     "moreOptions": "更多选项",

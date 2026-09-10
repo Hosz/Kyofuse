@@ -821,6 +821,14 @@ export interface TranslationDictionary {
     addAnotherAccount: string;
     switchAccountTooltip: string;
     accountSettingsTooltip: string;
+    savedAccountsTitle: string;
+    savedAccountsDesc: string;
+    connect: string;
+    connecting: string;
+    disconnectAll: string;
+    ignoreAndContinue: string;
+    viewSavedAccounts: string;
+    allAccountsDisconnected: string;
   };
   postOptions: {
     moreOptions: string;

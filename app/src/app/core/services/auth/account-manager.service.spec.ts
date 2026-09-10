@@ -129,4 +129,45 @@ describe('AccountManagerService', () => {
     expect(service.savedAccounts()[0].nickname).toBe('Player Updated');
     expect(service.savedAccounts()[0].switchToken).toBe('token-1');
   });
+
+  it('should track activeUserId and clear it properly', () => {
+    service.registerOrUpdateAccount({
+      userId: 'user-active',
+      username: 'active_gamer',
+    });
+
+    expect(service.getActiveUserId()).toBe('user-active');
+    expect(service.activeUserId()).toBe('user-active');
+
+    service.removeLocalAccount('user-active');
+    expect(service.getActiveUserId()).toBeNull();
+    expect(service.activeUserId()).toBeNull();
+  });
+
+  it('should clear all accounts', () => {
+    service.registerOrUpdateAccount({ userId: 'u1', username: 'user1' });
+    service.registerOrUpdateAccount({ userId: 'u2', username: 'user2' });
+    expect(service.savedAccounts().length).toBe(2);
+
+    service.clearAllAccounts();
+    expect(service.savedAccounts().length).toBe(0);
+    expect(service.getActiveUserId()).toBeNull();
+  });
+
+  it('should disconnect all accounts and clear storage', () => {
+    service.registerOrUpdateAccount({ userId: 'u1', username: 'user1', switchToken: 't1' });
+    service.registerOrUpdateAccount({ userId: 'u2', username: 'user2', switchToken: 't2' });
+
+    service.disconnectAllAccounts().subscribe();
+
+    const requests = httpMock.match(`${API_URL}/api/auth/disconnect-account`);
+    expect(requests.length).toBe(2);
+    expect(requests[0].request.method).toBe('POST');
+    expect(requests[1].request.method).toBe('POST');
+    requests[0].flush(null);
+    requests[1].flush(null);
+
+    expect(service.savedAccounts().length).toBe(0);
+    expect(service.getActiveUserId()).toBeNull();
+  });
 });

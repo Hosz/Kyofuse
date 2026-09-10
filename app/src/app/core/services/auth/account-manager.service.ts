@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { Observable, catchError, forkJoin, of, tap } from 'rxjs';
 import { API_URL } from '../../../models/api-url.model';
 import { DisconnectAccountRequest, SavedAccount, SwitchAccountRequest, SwitchAccountResponse } from '../../../models/auth/multi-account.model';
 import { I18nService } from '../../i18n/i18n.service';
@@ -15,8 +15,39 @@ export class AccountManagerService {
 
   private readonly STORAGE_KEY = 'kyofuse_saved_accounts';
   private readonly DEVICE_ID_KEY = 'kyofuse_device_id';
+  private readonly ACTIVE_USER_KEY = 'kyofuse_active_user_id';
 
   public readonly savedAccounts = signal<SavedAccount[]>(this.loadAccounts());
+  public readonly activeUserId = signal<string | null>(this.loadActiveUserId());
+
+  public getActiveUserId(): string | null {
+    return this.activeUserId() ?? this.loadActiveUserId();
+  }
+
+  public setActiveUserId(userId: string | null): void {
+    this.activeUserId.set(userId);
+    try {
+      if (userId) {
+        localStorage.setItem(this.ACTIVE_USER_KEY, userId);
+      } else {
+        localStorage.removeItem(this.ACTIVE_USER_KEY);
+      }
+    } catch (e) {
+      console.error('Failed to update active user id in localStorage:', e);
+    }
+  }
+
+  public clearActiveUserId(): void {
+    this.setActiveUserId(null);
+  }
+
+  private loadActiveUserId(): string | null {
+    try {
+      return localStorage.getItem(this.ACTIVE_USER_KEY);
+    } catch {
+      return null;
+    }
+  }
 
   public getDeviceId(): string {
     let deviceId = localStorage.getItem(this.DEVICE_ID_KEY);
@@ -40,6 +71,7 @@ export class AccountManagerService {
     role?: string;
     switchToken?: string;
   }): void {
+    this.setActiveUserId(accountData.userId);
     if (accountData.country) {
       this.i18nService.initFromCountry(accountData.country);
     }
@@ -129,7 +161,39 @@ export class AccountManagerService {
 
   public removeLocalAccount(targetUserId: string): void {
     const list = this.loadAccounts().filter((a) => a.userId !== targetUserId);
+    if (this.activeUserId() === targetUserId) {
+      this.clearActiveUserId();
+    }
     this.saveAccounts(list);
+  }
+
+  public clearAllAccounts(): void {
+    this.savedAccounts.set([]);
+    this.clearActiveUserId();
+    try {
+      localStorage.removeItem(this.STORAGE_KEY);
+      localStorage.removeItem(this.ACTIVE_USER_KEY);
+    } catch (e) {
+      console.error('Failed to clear accounts from localStorage:', e);
+    }
+  }
+
+  public disconnectAllAccounts(): Observable<unknown> {
+    const accounts = [...this.savedAccounts()];
+    if (accounts.length === 0) {
+      this.clearAllAccounts();
+      return of(void 0);
+    }
+    const calls = accounts.map((acc) =>
+      this.disconnectAccount(acc.userId).pipe(
+        catchError(() => of(null))
+      )
+    );
+    return forkJoin(calls).pipe(
+      tap(() => {
+        this.clearAllAccounts();
+      })
+    );
   }
 
   public requestCurrentSwitchToken(): Observable<{ switchToken: string }> {

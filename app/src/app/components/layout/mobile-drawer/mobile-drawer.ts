@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { MobileDrawerService } from '../../../core/services/ui/mobile-drawer.service';
 import { AuthService } from '../../../core/services/auth/auth.service';
+import { AccountManagerService } from '../../../core/services/auth/account-manager.service';
 import { NotificationService } from '../../../core/services/notifications/notification.service';
 import { ConversationService } from '../../../core/services/chat/conversation.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
@@ -24,6 +25,7 @@ export class MobileDrawerComponent {
   private readonly router = inject(Router);
   private readonly drawerService = inject(MobileDrawerService);
   private readonly authService = inject(AuthService);
+  private readonly accountManager = inject(AccountManagerService);
   private readonly notificationService = inject(NotificationService);
   private readonly conversationService = inject(ConversationService);
 
@@ -52,11 +54,20 @@ export class MobileDrawerComponent {
   logout(): void {
     this.close();
     this.authService.logout().subscribe({
-      next: () => this.router.navigateByUrl(''),
+      next: () => this.handleLogoutRedirect(),
       error: () => {
         this.authService.clearSession();
-        this.router.navigateByUrl('');
+        this.handleLogoutRedirect();
       },
     });
+  }
+
+  private handleLogoutRedirect(): void {
+    const hasOtherAccounts = this.accountManager.savedAccounts().length > 0;
+    if (hasOtherAccounts) {
+      this.router.navigate(['/auth'], { queryParams: { accountsPrompt: 'true' } });
+    } else {
+      this.router.navigateByUrl('');
+    }
   }
 }

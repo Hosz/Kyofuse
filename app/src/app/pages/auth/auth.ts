@@ -8,11 +8,16 @@ import { LoginFormComponent } from '../../components/auth/login-form/login-form'
 import { MfaVerifyFormComponent } from '../../components/auth/mfa-verify-form/mfa-verify-form';
 import { RegisterFormComponent } from '../../components/auth/register-form/register-form';
 import { SocialAuthButtonsComponent } from '../../components/auth/social-auth-buttons/social-auth-buttons';
+import { ModalComponent } from '../../components/shared/modal/modal';
 import { AuthTabId } from '../../shared/models/auth.model';
 import { registerRequest } from '../../models/auth/register-form.model';
 import { loginRequest } from '../../models/auth/login-form.model';
 import { isMfaRequired, isReactivationRequired } from '../../models/auth/auth-response.model';
 import { AuthService } from '../../core/services/auth/auth.service';
+import { AccountManagerService } from '../../core/services/auth/account-manager.service';
+import { ToastService } from '../../core/services/ui/toast.service';
+import { FALLBACK_AVATAR_URL } from '../../shared/utils/format.util';
+import { getCountryFlagUrl } from '../../shared/models/location-options.model';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { FooterLinksComponent } from '../../components/layout/footer-links/footer-links';
 
@@ -27,6 +32,7 @@ import { FooterLinksComponent } from '../../components/layout/footer-links/foote
     MfaVerifyFormComponent,
     RegisterFormComponent,
     SocialAuthButtonsComponent,
+    ModalComponent,
     TranslatePipe,
     FooterLinksComponent,
   ],
@@ -37,6 +43,18 @@ export class AuthComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
+  readonly accountManager = inject(AccountManagerService);
+  private readonly toastService = inject(ToastService);
+
+  readonly fallbackAvatar = FALLBACK_AVATAR_URL;
+  readonly getCountryFlagUrl = getCountryFlagUrl;
+
+  savedAccountsModalOpen = signal(false);
+  switchingUserId = signal<string | null>(null);
+  disconnectingUserId = signal<string | null>(null);
+  disconnectingAll = signal(false);
+
+  readonly savedAccounts = this.accountManager.savedAccounts;
 
   isAddAccount = signal(false);
   activeTab = signal<AuthTabId>('login');
@@ -81,6 +99,15 @@ export class AuthComponent implements OnInit {
   ngOnInit(): void {
     this.route.queryParams.subscribe((params) => {
       this.isAddAccount.set(params['addAccount'] === 'true');
+      if (params['accountsPrompt'] === 'true' && this.savedAccounts().length > 0) {
+        this.savedAccountsModalOpen.set(true);
+        this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: { accountsPrompt: null },
+          queryParamsHandling: 'merge',
+          replaceUrl: true,
+        });
+      }
     });
   }
 
@@ -426,5 +453,95 @@ export class AuthComponent implements OnInit {
     this.reactivationCode.set('');
     this.reactivationError.set(null);
     this.reactivationSubmitting.set(false);
+  }
+
+  openSavedAccountsModal(): void {
+    this.savedAccountsModalOpen.set(true);
+  }
+
+  closeSavedAccountsModal(): void {
+    this.savedAccountsModalOpen.set(false);
+  }
+
+  connectAccount(userId: string): void {
+    if (this.switchingUserId()) return;
+    this.switchingUserId.set(userId);
+
+    this.authService.switchAccount(userId).subscribe({
+      next: () => {
+        this.toastService.success('Conta conectada com sucesso!');
+        this.savedAccountsModalOpen.set(false);
+        this.switchingUserId.set(null);
+        window.location.href = '/home';
+      },
+      error: (error) => {
+        console.error('Failed to switch account:', error);
+        this.switchingUserId.set(null);
+        if (error?.status === 401) {
+          this.toastService.error(
+            'Sessão expirada para esta conta. Faça login novamente com suas credenciais.'
+          );
+          this.accountManager.removeLocalAccount(userId);
+          if (this.savedAccounts().length === 0) {
+            this.savedAccountsModalOpen.set(false);
+          }
+        } else if (error?.status === 429) {
+          this.toastService.error(
+            'Muitas tentativas em sequência. Por favor, aguarde alguns instantes.'
+          );
+        } else {
+          this.toastService.error(
+            error?.error?.message ?? 'Falha ao conectar conta. Tente novamente.'
+          );
+        }
+      },
+    });
+  }
+
+  disconnectSingleAccount(userId: string, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    if (this.disconnectingUserId()) return;
+    this.disconnectingUserId.set(userId);
+
+    this.accountManager.disconnectAccount(userId).subscribe({
+      next: () => {
+        this.disconnectingUserId.set(null);
+        this.toastService.success('Conta desconectada com sucesso.');
+        if (this.savedAccounts().length === 0) {
+          this.savedAccountsModalOpen.set(false);
+        }
+      },
+      error: (err) => {
+        console.error('Failed to disconnect account:', err);
+        this.disconnectingUserId.set(null);
+        this.accountManager.removeLocalAccount(userId);
+        this.toastService.success('Conta removida deste dispositivo.');
+        if (this.savedAccounts().length === 0) {
+          this.savedAccountsModalOpen.set(false);
+        }
+      },
+    });
+  }
+
+  disconnectAllAccounts(): void {
+    if (this.disconnectingAll()) return;
+    this.disconnectingAll.set(true);
+
+    this.accountManager.disconnectAllAccounts().subscribe({
+      next: () => {
+        this.disconnectingAll.set(false);
+        this.toastService.success('Todas as contas foram desconectadas deste dispositivo.');
+        this.savedAccountsModalOpen.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to disconnect all accounts:', err);
+        this.disconnectingAll.set(false);
+        this.accountManager.clearAllAccounts();
+        this.toastService.success('Todas as contas foram desconectadas deste dispositivo.');
+        this.savedAccountsModalOpen.set(false);
+      },
+    });
   }
 }

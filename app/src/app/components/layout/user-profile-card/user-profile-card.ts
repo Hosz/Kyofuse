@@ -125,7 +125,7 @@ export class UserProfileCardComponent {
         this.toastService.success('Conta alternada com sucesso!');
         this.isDropdownOpen.set(false);
         this.switchingUserId.set(null);
-        window.location.reload();
+        window.location.href = '/home';
       },
       error: (error) => {
         console.error('Failed to switch account:', error);
