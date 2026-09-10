@@ -378,4 +378,18 @@ body {
   .scrollbar-minimal::-webkit-scrollbar {
     display: none;
   }
+
+  /* Altura do shell na visão mobile levando em consideração header (3.5rem / 56px) e footer (4rem / 64px) */
+  .tactical-grid.flex.h-screen {
+    height: calc(100dvh - 3.5rem - 4rem) !important;
+    margin-top: 3.5rem !important;
+  }
+
+  .shell-container.flex.h-screen {
+    height: 100% !important;
+  }
+
+  main.flex.h-screen {
+    height: 100% !important;
+  }
 }

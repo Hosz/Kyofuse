@@ -12,6 +12,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
   standalone: true,
   imports: [CommonModule, RouterLink, RouterLinkActive, TranslatePipe],
   templateUrl: './mobile-nav.html',
+  styles: [':host { display: block; }'],
 })
 export class MobileNavComponent {
   private readonly router = inject(Router);

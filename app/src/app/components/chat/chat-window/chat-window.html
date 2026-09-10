@@ -1,5 +1,5 @@
 @if (conversation(); as conv) {
-  <section class="flex h-screen flex-1 flex-col bg-surface">
+  <section class="flex h-full flex-1 flex-col bg-surface min-h-0">
     <input
       #fileInput
       type="file"
@@ -8,12 +8,12 @@
       class="hidden"
     />
 
-    <div class="flex shrink-0 items-center justify-between gap-3 border-b border-outline-variant px-lg py-4">
-      <div class="flex items-center gap-2 min-w-0">
+    <div class="flex shrink-0 items-center justify-between gap-2 sm:gap-3 border-b border-outline-variant px-3 py-2.5 sm:px-lg sm:py-4 min-w-0">
+      <div class="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
         <button
           type="button"
           (click)="back.emit()"
-          class="flex lg:hidden cursor-pointer items-center justify-center rounded-full p-2 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
+          class="flex lg:hidden cursor-pointer items-center justify-center rounded-full p-1.5 sm:p-2 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface shrink-0"
           [attr.aria-label]="'chat.backToConversations' | trans"
         >
           <span class="material-symbols-outlined text-[22px]">arrow_back</span>
@@ -22,47 +22,47 @@
         <button
           type="button"
           (click)="openInfoPanel()"
-          class="flex min-w-0 cursor-pointer items-center gap-3 rounded-lg py-1 pr-2 text-left transition-colors hover:bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
+          class="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 sm:gap-3 rounded-lg py-1 pr-2 text-left transition-colors hover:bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
         >
-          <img [src]="conv.participant.avatarUrl" [alt]="conv.participant.name" class="h-11 w-11 rounded-full object-cover" />
-          <div class="flex flex-col min-w-0">
-            <div class="flex items-center gap-2">
-              <span class="truncate text-body-md font-bold text-on-surface">{{ conv.participant.name }}</span>
+          <img [src]="conv.participant.avatarUrl" [alt]="conv.participant.name" class="h-9 w-9 sm:h-11 sm:w-11 shrink-0 rounded-full object-cover" />
+          <div class="flex flex-col min-w-0 flex-1">
+            <div class="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <span class="truncate text-body-sm sm:text-body-md font-bold text-on-surface">{{ conv.participant.name }}</span>
               @if (conv.participant.badge) {
                 @if (conv.participant.badgeTone === 'primary') {
-                  <span class="rounded-md border border-primary-container px-2 py-0.5 text-label-sm font-semibold text-primary-container">{{ conv.participant.badge }}</span>
+                  <span class="rounded-md border border-primary-container px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-label-sm font-semibold text-primary-container shrink-0">{{ conv.participant.badge }}</span>
                 } @else {
-                  <span class="rounded-md border border-tertiary px-2 py-0.5 text-label-sm font-semibold text-tertiary">{{ conv.participant.badge }}</span>
+                  <span class="rounded-md border border-tertiary px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-label-sm font-semibold text-tertiary shrink-0">{{ conv.participant.badge }}</span>
                 }
               }
             </div>
-          <span class="flex items-center gap-1.5 text-label-sm text-on-surface-variant">
-            @if (conv.type === 'DIRECT') {
-              <span>&#64;{{ conv.participant.handle }}</span>
-              <span>&middot;</span>
-            }
-            @if (conv.participant.online) {
-              <span class="h-2 w-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-500/50"></span>
-              <span class="font-medium text-emerald-400">{{ 'chat.online' | trans }}</span>
-            } @else if (conv.type === 'DIRECT') {
-              <span class="h-2 w-2 rounded-full bg-outline-variant"></span>
-              <span>{{ 'chat.offline' | trans }}</span>
-            }
-            @if (conv.participant.statusLabel) {
-              <span>&middot; {{ conv.participant.statusLabel }}</span>
-            }
-          </span>
-        </div>
-      </button>
-    </div>
+            <span class="flex items-center gap-1 sm:gap-1.5 text-label-xs sm:text-label-sm text-on-surface-variant min-w-0 truncate">
+              @if (conv.type === 'DIRECT') {
+                <span class="truncate">&#64;{{ conv.participant.handle }}</span>
+                <span>&middot;</span>
+              }
+              @if (conv.participant.online) {
+                <span class="h-2 w-2 shrink-0 rounded-full bg-emerald-400 shadow-sm shadow-emerald-500/50"></span>
+                <span class="font-medium text-emerald-400 shrink-0">{{ 'chat.online' | trans }}</span>
+              } @else if (conv.type === 'DIRECT') {
+                <span class="h-2 w-2 shrink-0 rounded-full bg-outline-variant"></span>
+                <span class="shrink-0">{{ 'chat.offline' | trans }}</span>
+              }
+              @if (conv.participant.statusLabel) {
+                <span class="truncate">&middot; {{ conv.participant.statusLabel }}</span>
+              }
+            </span>
+          </div>
+        </button>
+      </div>
 
-    <div class="flex items-center gap-1 text-on-surface-variant">
+      <div class="flex items-center gap-0.5 sm:gap-1 text-on-surface-variant shrink-0">
         <button
           type="button"
           (click)="comingSoon('Chamadas de vídeo')"
           aria-label="Chamada de vídeo"
           title="Chamada de vídeo (Em breve)"
-          class="cursor-pointer rounded-full p-2 transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+          class="hidden sm:flex cursor-pointer rounded-full p-2 transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
         >
           <span class="material-symbols-outlined text-[22px]">videocam</span>
         </button>
@@ -71,7 +71,7 @@
           (click)="comingSoon('Chamadas de voz')"
           aria-label="Ligar"
           title="Chamada de voz (Em breve)"
-          class="cursor-pointer rounded-full p-2 transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+          class="hidden sm:flex cursor-pointer rounded-full p-2 transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
         >
           <span class="material-symbols-outlined text-[22px]">call</span>
         </button>
@@ -80,7 +80,7 @@
             type="button"
             (click)="toggleMenu()"
             aria-label="Mais opções"
-            class="cursor-pointer rounded-full p-2 transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+            class="cursor-pointer rounded-full p-1.5 sm:p-2 transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
           >
             <span class="material-symbols-outlined text-[22px]">more_vert</span>
           </button>
@@ -150,7 +150,7 @@
       <div
         #scroller
         (scroll)="onScroll()"
-        class="scrollbar-minimal flex flex-1 flex-col gap-6 overflow-y-auto px-lg py-6"
+        class="scrollbar-minimal flex flex-1 flex-col gap-4 sm:gap-6 overflow-y-auto overflow-x-hidden px-3 sm:px-lg py-4 sm:py-6 min-w-0"
       >
         @if (conv.messages.length === 0) {
           <div class="flex flex-1 flex-col items-center justify-center gap-3 text-center">
@@ -214,21 +214,21 @@
           }
 
           @if (group.author === 'them') {
-            <div class="flex max-w-[24rem] flex-col gap-1">
+            <div class="flex max-w-[85%] sm:max-w-[24rem] flex-col gap-1 min-w-0">
               @if (conv.type !== 'DIRECT' && (group.senderNickname || group.senderUsername)) {
-                <span class="pl-10 text-label-sm font-semibold text-on-surface-variant">
+                <span class="pl-9 sm:pl-10 text-label-sm font-semibold text-on-surface-variant truncate">
                   {{ group.senderNickname || group.senderUsername }}
                 </span>
               }
-              <div class="flex items-end gap-2">
+              <div class="flex items-end gap-1.5 sm:gap-2 min-w-0">
                 <img
                   [src]="group.senderAvatarUrl || conv.participant.avatarUrl"
                   [alt]="group.senderNickname || group.senderUsername || conv.participant.name"
-                  class="h-8 w-8 shrink-0 rounded-full object-cover"
+                  class="h-7 w-7 sm:h-8 sm:w-8 shrink-0 rounded-full object-cover"
                 />
-                <div class="flex flex-1 flex-col gap-1">
+                <div class="flex flex-1 min-w-0 flex-col gap-1">
                   @for (message of group.messages; track message.id) {
-                    <div class="flex flex-col gap-1" [title]="message.tooltipTime">
+                    <div class="flex flex-col gap-1 min-w-0" [title]="message.tooltipTime">
                       @if (message.media && message.media.length > 0) {
                         <div class="flex flex-wrap gap-1">
                           @for (m of message.media; track m.id) {
@@ -236,13 +236,13 @@
                               [src]="m.thumbnailUrl || m.url"
                               alt="Mídia da mensagem"
                               (click)="openImage(m.url)"
-                              class="max-h-60 max-w-[20rem] cursor-zoom-in rounded-xl border border-outline-variant object-cover transition-transform hover:scale-[1.02]"
+                              class="max-h-60 max-w-full sm:max-w-[20rem] cursor-zoom-in rounded-xl border border-outline-variant object-cover transition-transform hover:scale-[1.02]"
                             />
                           }
                         </div>
                       }
                       @if (message.content) {
-                        <div class="whitespace-pre-wrap break-words [overflow-wrap:anywhere] rounded-2xl rounded-bl-sm bg-surface-container-high px-4 py-2.5 text-body-sm text-on-surface transition-colors hover:bg-surface-container-highest">
+                        <div class="whitespace-pre-wrap break-words [overflow-wrap:anywhere] rounded-2xl rounded-bl-sm bg-surface-container-high px-3.5 py-2 sm:px-4 sm:py-2.5 text-body-sm text-on-surface transition-colors hover:bg-surface-container-highest max-w-full">
                           @if (isLong(message.content)) {
                             <span>{{ truncate(message.content) }}... </span>
                             <button
@@ -261,20 +261,20 @@
                   }
                 </div>
               </div>
-              <span class="pl-10 text-label-sm text-on-surface-variant" [title]="group.messages.at(-1)?.tooltipTime || ''">
+              <span class="pl-9 sm:pl-10 text-label-sm text-on-surface-variant" [title]="group.messages.at(-1)?.tooltipTime || ''">
                 {{ group.timeFormatted }}
               </span>
             </div>
           } @else {
-            <div class="flex flex-col items-end gap-0.5">
+            <div class="flex flex-col items-end gap-0.5 max-w-[88%] sm:max-w-none ml-auto min-w-0">
               @for (message of group.messages; track message.id) {
-                <div class="group flex items-center gap-1.5" [title]="message.tooltipTime">
+                <div class="group flex items-center gap-1 sm:gap-1.5 max-w-full min-w-0" [title]="message.tooltipTime">
                   <button
                     type="button"
                     (click)="openMessageInfo(message.id)"
                     aria-label="Dados da mensagem"
                     title="Dados da mensagem"
-                    class="cursor-pointer rounded-full p-1 text-on-surface-variant opacity-0 transition-opacity hover:text-primary focus-visible:opacity-100 group-hover:opacity-100"
+                    class="cursor-pointer rounded-full p-1 text-on-surface-variant opacity-0 transition-opacity hover:text-primary focus-visible:opacity-100 group-hover:opacity-100 shrink-0"
                   >
                     <span class="material-symbols-outlined text-[16px]">info</span>
                   </button>
@@ -283,11 +283,11 @@
                     (click)="askDeleteMessage(message)"
                     aria-label="Apagar mensagem"
                     title="Apagar mensagem"
-                    class="cursor-pointer rounded-full p-1 text-on-surface-variant opacity-0 transition-opacity hover:text-error focus-visible:opacity-100 group-hover:opacity-100"
+                    class="cursor-pointer rounded-full p-1 text-on-surface-variant opacity-0 transition-opacity hover:text-error focus-visible:opacity-100 group-hover:opacity-100 shrink-0"
                   >
                     <span class="material-symbols-outlined text-[16px]">delete</span>
                   </button>
-                  <div class="flex flex-col items-end gap-1">
+                  <div class="flex flex-col items-end gap-1 min-w-0 flex-1">
                     @if (message.media && message.media.length > 0) {
                       <div class="flex flex-wrap justify-end gap-1">
                         @for (m of message.media; track m.id) {
@@ -295,13 +295,13 @@
                             [src]="m.thumbnailUrl || m.url"
                             alt="Mídia da mensagem"
                             (click)="openImage(m.url)"
-                            class="max-h-60 max-w-[20rem] cursor-zoom-in rounded-xl border border-outline-variant object-cover transition-transform hover:scale-[1.02]"
+                            class="max-h-60 max-w-full sm:max-w-[20rem] cursor-zoom-in rounded-xl border border-outline-variant object-cover transition-transform hover:scale-[1.02]"
                           />
                         }
                       </div>
                     }
                     @if (message.content) {
-                      <div class="max-w-[22rem] whitespace-pre-wrap break-words [overflow-wrap:anywhere] rounded-2xl rounded-br-sm border border-outline-variant bg-surface-container px-4 py-2.5 text-body-sm text-on-surface transition-colors hover:bg-surface-container-high">
+                      <div class="max-w-[78vw] sm:max-w-[22rem] whitespace-pre-wrap break-words [overflow-wrap:anywhere] rounded-2xl rounded-br-sm border border-outline-variant bg-surface-container px-3.5 py-2 sm:px-4 sm:py-2.5 text-body-sm text-on-surface transition-colors hover:bg-surface-container-high">
                         @if (isLong(message.content)) {
                           <span>{{ truncate(message.content) }}... </span>
                           <button
@@ -366,13 +366,13 @@
       }
     </div>
 
-    <div class="flex shrink-0 flex-col gap-1.5 border-t border-outline-variant px-lg py-md">
+    <div class="flex shrink-0 flex-col gap-1.5 border-t border-outline-variant px-3 py-2 sm:px-lg sm:py-md">
       @if (canType()) {
         <!-- Pré-visualização de imagem anexada antes de enviar -->
         @if (pendingMedia().length > 0) {
           <div class="flex flex-wrap items-center gap-2 px-2 pb-1">
             @for (item of pendingMedia(); track item.fileKey; let i = $index) {
-              <div class="group relative h-16 w-16 overflow-hidden rounded-lg border border-outline-variant bg-surface-container">
+              <div class="group relative h-14 w-14 sm:h-16 sm:w-16 overflow-hidden rounded-lg border border-outline-variant bg-surface-container">
                 <img [src]="item.thumbnailUrl || item.url" alt="Prévia" class="h-full w-full object-cover" />
                 <button
                   type="button"
@@ -401,18 +401,18 @@
               <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-bounce [animation-delay:0.2s]"></span>
               <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-bounce [animation-delay:0.4s]"></span>
             </span>
-            <span class="italic font-medium">{{ typingText() }}</span>
+            <span class="italic font-medium truncate">{{ typingText() }}</span>
           </div>
         }
 
-        <div class="flex items-center gap-2 rounded-full border border-outline-variant bg-surface-container px-3 py-2">
+        <div class="flex items-center gap-1 sm:gap-2 rounded-full border border-outline-variant bg-surface-container px-2.5 sm:px-3 py-1.5 sm:py-2">
           <button
             type="button"
             (click)="triggerFileInput()"
             [disabled]="uploadingMedia()"
             aria-label="Anexar imagem"
             title="Anexar imagem"
-            class="cursor-pointer rounded-full p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
+            class="cursor-pointer rounded-full p-1 sm:p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-40 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
           >
             <span class="material-symbols-outlined text-[20px]">add_photo_alternate</span>
           </button>
@@ -423,14 +423,14 @@
             [value]="draft()"
             (input)="onDraftChange($any($event.target).value)"
             (keydown.enter)="onSend()"
-            class="w-full border-0 bg-transparent text-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-0"
+            class="min-w-0 flex-1 border-0 bg-transparent text-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-0"
           />
           <button
             type="button"
             (click)="comingSoon('O seletor de emojis')"
             aria-label="Emoji"
             title="Emojis (Em breve)"
-            class="cursor-pointer rounded-full p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
+            class="hidden sm:flex cursor-pointer rounded-full p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
           >
             <span class="material-symbols-outlined text-[20px]">mood</span>
           </button>
@@ -439,7 +439,7 @@
             (click)="comingSoon('O envio de GIFs')"
             aria-label="GIF"
             title="GIFs (Em breve)"
-            class="cursor-pointer rounded-full p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
+            class="hidden sm:flex cursor-pointer rounded-full p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
           >
             <span class="material-symbols-outlined text-[20px]">gif_box</span>
           </button>
@@ -448,18 +448,19 @@
             [max]="12000"
             [warningThreshold]="100"
             [showOnlyNearLimit]="true"
+            class="shrink-0"
           />
           <button
             type="button"
             (click)="onSend()"
             [disabled]="(!draft().trim() && pendingMedia().length === 0) || uploadingMedia() || draft().length > 12000"
             [attr.aria-label]="'chat.send' | trans"
-            class="cursor-pointer rounded-full bg-primary-container p-2 text-on-primary-container transition-all hover:brightness-110 active:scale-[0.95] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+            class="cursor-pointer rounded-full bg-primary-container p-1.5 sm:p-2 text-on-primary-container transition-all hover:brightness-110 active:scale-[0.95] disabled:cursor-not-allowed disabled:opacity-40 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
           >
-            <span class="material-symbols-outlined text-[20px]">send</span>
+            <span class="material-symbols-outlined text-[18px] sm:text-[20px]">send</span>
           </button>
         </div>
-        <div class="flex items-center justify-between px-1 text-label-sm text-on-surface-variant">
+        <div class="hidden sm:flex items-center justify-between px-1 text-label-sm text-on-surface-variant">
           <span>&#8984; + Enter para enviar</span>
           <span>Kyofuse Tactical Messenger v2.4</span>
         </div>

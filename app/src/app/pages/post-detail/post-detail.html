@@ -2,9 +2,9 @@
   <div class="shell-container flex h-screen">
     <app-sidebar />
 
-    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto border-r-0 xl:border-r border-outline-variant bg-surface pb-24 lg:pb-0">
-      <div class="feed-container mx-auto flex w-full flex-col">
-        <div class="flex items-center gap-3 border-b border-outline-variant px-lg py-md">
+    <main class="scrollbar-minimal flex h-full lg:h-screen flex-1 min-w-0 flex-col overflow-y-auto overflow-x-hidden border-r-0 xl:border-r border-outline-variant bg-surface pb-6 lg:pb-0">
+      <div class="feed-container mx-auto flex w-full min-w-0 flex-col">
+        <div class="flex items-center gap-3 border-b border-outline-variant px-3.5 py-3 sm:px-lg sm:py-md">
           <a
             routerLink="/home"
             class="flex h-9 w-9 items-center justify-center rounded-full text-on-surface transition-colors hover:bg-surface-container"
@@ -20,7 +20,7 @@
         } @else if (post(); as p) {
           <app-post-card [post]="p" [isDetail]="true" (authorBlocked)="onAuthorBlocked()" (deleted)="onPostDeleted()" />
 
-          <form class="flex items-start gap-3 border-b border-outline-variant px-lg py-md" (ngSubmit)="submitComment()">
+          <form class="flex flex-col sm:flex-row items-stretch sm:items-start gap-2.5 sm:gap-3 border-b border-outline-variant px-3.5 py-3 sm:px-lg sm:py-md" (ngSubmit)="submitComment()">
             <div class="flex flex-1 flex-col gap-2 min-w-0">
               <app-mention-input
                 [content]="commentDraft()"
@@ -32,7 +32,7 @@
                 inputClass="px-3 py-2 text-body-sm"
               ></app-mention-input>
             </div>
-            <div class="flex items-center gap-2 shrink-0 pt-1">
+            <div class="flex items-center justify-between sm:justify-start gap-2 shrink-0 pt-1">
               <app-char-limit-indicator [current]="commentDraft().length" [max]="500" />
               <button
                 type="submit"

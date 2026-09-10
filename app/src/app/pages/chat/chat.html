@@ -3,7 +3,7 @@
     <app-sidebar />
 
     <div
-      class="h-screen w-full shrink-0 pb-20 lg:w-96 lg:pb-0"
+      class="h-full w-full shrink-0 min-h-0 lg:w-96"
       [class.hidden]="selectedId() !== null"
       [class.lg:block]="true"
     >
@@ -16,7 +16,7 @@
     </div>
 
     <div
-      class="h-screen flex-1 min-w-0 pb-20 lg:pb-0"
+      class="h-full flex-1 min-w-0 min-h-0"
       [class.hidden]="selectedId() === null"
       [class.lg:block]="true"
     >

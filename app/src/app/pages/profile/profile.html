@@ -2,8 +2,8 @@
   <div class="shell-container flex h-screen">
     <app-sidebar />
 
-    <main class="scrollbar-minimal flex h-screen flex-1 flex-col overflow-y-auto bg-surface pb-24 lg:pb-0">
-      <div class="mx-auto flex w-full max-w-6xl flex-col gap-lg px-lg py-lg">
+    <main class="scrollbar-minimal flex h-full lg:h-screen flex-1 min-w-0 flex-col overflow-y-auto overflow-x-hidden bg-surface pb-6 lg:pb-0">
+      <div class="mx-auto flex w-full max-w-6xl flex-col gap-lg px-3.5 py-4 sm:px-lg sm:py-lg min-w-0">
         @if (viewMode() === 'restricted') {
           <app-profile-locked />
         } @else {
@@ -42,6 +42,35 @@
           }
 
           <app-profile-highlights />
+
+          <!-- Acesso rápido mobile a Comunidades e Times (evita ter que rolar dezenas de posts) -->
+          <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none lg:hidden">
+            <button
+              type="button"
+              (click)="selectTab('communities')"
+              class="flex shrink-0 cursor-pointer items-center gap-2 rounded-full border px-3.5 py-1.5 text-label-sm font-semibold transition-all active:scale-95"
+              [class]="activeTabId() === 'communities' ? 'border-primary bg-primary-container text-on-primary-container' : 'border-outline-variant bg-surface-container text-on-surface hover:bg-surface-container-high'"
+            >
+              <span class="material-symbols-outlined text-[18px]">diversity_3</span>
+              <span>{{ 'nav.communities' | trans }}</span>
+              <span class="rounded-full px-1.5 py-0.2 text-[11px] font-bold" [class]="activeTabId() === 'communities' ? 'bg-white/20 text-white' : 'bg-surface-container-highest text-on-surface-variant'">
+                {{ communities().length }}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              (click)="selectTab('teams')"
+              class="flex shrink-0 cursor-pointer items-center gap-2 rounded-full border px-3.5 py-1.5 text-label-sm font-semibold transition-all active:scale-95"
+              [class]="activeTabId() === 'teams' ? 'border-primary bg-primary-container text-on-primary-container' : 'border-outline-variant bg-surface-container text-on-surface hover:bg-surface-container-high'"
+            >
+              <span class="material-symbols-outlined text-[18px]">groups</span>
+              <span>{{ 'nav.teams' | trans }}</span>
+              <span class="rounded-full px-1.5 py-0.2 text-[11px] font-bold" [class]="activeTabId() === 'teams' ? 'bg-white/20 text-white' : 'bg-surface-container-highest text-on-surface-variant'">
+                {{ teams().length }}
+              </span>
+            </button>
+          </div>
 
           <div class="flex flex-col gap-lg lg:flex-row lg:items-start">
             <div class="flex min-w-0 flex-1 flex-col">
@@ -141,6 +170,14 @@
                     </button>
                   }
                 }
+              } @else if (activeTabId() === 'communities') {
+                <div class="flex flex-col gap-4 py-2">
+                  <app-entity-summary-card [title]="'nav.communities' | trans" [items]="communities()" (viewAll)="openModal('communities')" />
+                </div>
+              } @else if (activeTabId() === 'teams') {
+                <div class="flex flex-col gap-4 py-2">
+                  <app-entity-summary-card [title]="'nav.teams' | trans" [items]="teams()" (viewAll)="openModal('teams')" />
+                </div>
               } @else {
                 <div class="flex w-full flex-col items-center justify-center gap-3 px-lg py-16 text-center text-on-surface-variant">
                   <span class="material-symbols-outlined text-[48px] text-outline-variant">repeat</span>
@@ -149,7 +186,7 @@
               }
             </div>
 
-            <aside class="flex w-full shrink-0 flex-col gap-lg lg:w-80">
+            <aside class="hidden lg:flex w-80 shrink-0 flex-col gap-lg">
               <app-entity-summary-card [title]="'nav.communities' | trans" [items]="communities()" (viewAll)="openModal('communities')" />
               <app-entity-summary-card [title]="'nav.teams' | trans" [items]="teams()" (viewAll)="openModal('teams')" />
             </aside>
