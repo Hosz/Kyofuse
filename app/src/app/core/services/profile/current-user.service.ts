@@ -2,7 +2,6 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { ProfileService } from './profile.service';
 import { AuthService } from '../auth/auth.service';
 import { gamerProfileResponse } from '../../../models/profile/gamer-profile.model';
-import { I18nService } from '../../i18n/i18n.service';
 
 /**
  * Id e username do usuário logado, buscado uma vez e compartilhado. Vários componentes precisam
@@ -13,7 +12,6 @@ import { I18nService } from '../../i18n/i18n.service';
 export class CurrentUserService {
   private profileService = inject(ProfileService);
   private authService = inject(AuthService);
-  private i18nService = inject(I18nService);
 
   private id = signal<string | null>(null);
   private username = signal<string | null>(null);
@@ -43,9 +41,6 @@ export class CurrentUserService {
   setProfile(profile: gamerProfileResponse | { userId?: string; username?: string; country?: string }): void {
     if (profile.userId) this.id.set(profile.userId);
     if (profile.username) this.username.set(profile.username);
-    if ('country' in profile && profile.country) {
-      this.i18nService.initFromCountry(profile.country);
-    }
   }
 
   private ensureLoaded(): void {
@@ -56,9 +51,6 @@ export class CurrentUserService {
       next: (profile) => {
         this.id.set(profile.userId);
         this.username.set(profile.username);
-        if (profile.country) {
-          this.i18nService.initFromCountry(profile.country);
-        }
       },
       error: () => {
         // Fallback pra authService.me se myProfile falhar

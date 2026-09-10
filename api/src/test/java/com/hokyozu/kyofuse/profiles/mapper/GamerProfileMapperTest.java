@@ -4,9 +4,12 @@ import com.hokyozu.kyofuse.profiles.dto.request.GamerProfileRequest;
 import com.hokyozu.kyofuse.profiles.entity.GamerProfile;
 import com.hokyozu.kyofuse.profiles.enums.PlayerRole;
 import com.hokyozu.kyofuse.profiles.enums.Playstyle;
+import com.hokyozu.kyofuse.users.entity.User;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -129,5 +132,31 @@ class GamerProfileMapperTest {
 
         assertThat(profile.getNickname()).isEqualTo("player");
         assertThat(profile.getBio()).isEqualTo("Hello world");
+    }
+
+    @Test
+    void toResponseMapsRegistrationInfoFromUser() {
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .username("testuser")
+                .registrationCountry("Brasil")
+                .registrationCountryCode("BR")
+                .registrationDevice("Chrome no Windows")
+                .build();
+
+        GamerProfile profile = GamerProfile.builder()
+                .id(UUID.randomUUID())
+                .user(user)
+                .nickname("Tester")
+                .country("Japão")
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+
+        var response = GamerProfileMapper.toResponse(profile, List.of());
+
+        assertThat(response.registrationCountry()).isEqualTo("Brasil");
+        assertThat(response.registrationCountryCode()).isEqualTo("BR");
+        assertThat(response.registrationDevice()).isEqualTo("Chrome no Windows");
     }
 }

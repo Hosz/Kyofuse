@@ -32,6 +32,38 @@ public record GamerProfileResponse(
         GamerProfileSetupStatus setupStatus,
         List<Cs2Map> favoriteMaps,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        String registrationCountry,
+        String registrationCountryCode,
+        String registrationDevice
 ) {
+    public GamerProfileResponse(
+            UUID id,
+            UUID userId,
+            String username,
+            String nickname,
+            String bio,
+            String avatarUrl,
+            String bannerUrl,
+            String country,
+            String city,
+            String state,
+            Boolean showCountryFlag,
+            PlayerRole mainRole,
+            PlayerRole secondaryRole,
+            Integer premierRating,
+            Integer faceitLevel,
+            Integer gcRank,
+            Playstyle playstyle,
+            Boolean lookingForTeam,
+            Boolean lookingForDuo,
+            GamerProfileSetupStatus setupStatus,
+            List<Cs2Map> favoriteMaps,
+            Instant createdAt,
+            Instant updatedAt
+    ) {
+        this(id, userId, username, nickname, bio, avatarUrl, bannerUrl, country, city, state, showCountryFlag,
+                mainRole, secondaryRole, premierRating, faceitLevel, gcRank, playstyle, lookingForTeam,
+                lookingForDuo, setupStatus, favoriteMaps, createdAt, updatedAt, null, null, null);
+    }
 }

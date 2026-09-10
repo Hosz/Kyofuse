@@ -1,8 +1,10 @@
 import { Injectable, signal, computed, inject, PLATFORM_ID, effect } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
+import { API_URL } from '../../models/api-url.model';
 import { AppLanguage, SUPPORTED_LANGUAGES, TranslationDictionary } from './i18n.types';
 import { TRANSLATIONS } from './translations';
-import { detectLanguageFromBrowser, detectLanguageFromCountry } from './country-language-detector';
+import { detectLanguageFromBrowser, detectLanguageFromCountry, detectLanguageFromDevice } from './country-language-detector';
 
 @Injectable({
   providedIn: 'root',
@@ -10,6 +12,7 @@ import { detectLanguageFromBrowser, detectLanguageFromCountry } from './country-
 export class I18nService {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
+  private readonly http = inject(HttpClient, { optional: true });
   private readonly STORAGE_KEY = 'kyofuse_language';
   private readonly MANUAL_KEY = 'kyofuse_language_manual';
 
@@ -30,12 +33,15 @@ export class I18nService {
       const lang = this.currentLang();
       this.updateHtmlLang(lang);
     });
+
+    this.initFromDeviceLocation();
   }
 
   public setLanguage(lang: AppLanguage, manual = true): void {
     if (!TRANSLATIONS[lang]) return;
 
     this.currentLang.set(lang);
+    this.updateHtmlLang(lang);
 
     if (this.isBrowser) {
       try {
@@ -112,19 +118,54 @@ export class I18nService {
     return typeof value === 'string' ? value : key;
   }
 
+  /**
+   * Inicializa o idioma a partir da localização do dispositivo onde o acesso/login está ocorrendo.
+   * Se o usuário ainda não escolheu um idioma manualmente nas configurações,
+   * detecta o idioma físico do dispositivo (fuso horário + idioma do navegador)
+   * e refina opcionalmente com o país do IP retornado pelo backend.
+   */
+  public initFromDeviceLocation(): void {
+    if (!this.isBrowser) return;
+
+    const isManual = localStorage.getItem(this.MANUAL_KEY) === 'true';
+    if (isManual) return;
+
+    const deviceLang = detectLanguageFromDevice();
+    if (deviceLang && deviceLang !== this.currentLang()) {
+      this.setLanguage(deviceLang, false);
+    }
+
+    if (this.http) {
+      this.http.get<{ countryCode?: string }>(`${API_URL}/api/auth/location`).subscribe({
+        next: (res) => {
+          if (res?.countryCode && localStorage.getItem(this.MANUAL_KEY) !== 'true') {
+            const detected = detectLanguageFromCountry(res.countryCode);
+            if (detected && detected !== this.currentLang()) {
+              this.setLanguage(detected, false);
+            }
+          }
+        },
+        error: () => {
+          // Ignora falhas de rede/offline
+        },
+      });
+    }
+  }
+
   private getInitialLanguage(): AppLanguage {
     if (!this.isBrowser) return 'pt';
 
     try {
+      const isManual = localStorage.getItem(this.MANUAL_KEY) === 'true';
       const saved = localStorage.getItem(this.STORAGE_KEY) as AppLanguage | null;
-      if (saved && TRANSLATIONS[saved]) {
+      if (isManual && saved && TRANSLATIONS[saved]) {
         return saved;
       }
     } catch {
       // Ignore
     }
 
-    return detectLanguageFromBrowser();
+    return detectLanguageFromDevice();
   }
 
   private updateHtmlLang(lang: AppLanguage): void {

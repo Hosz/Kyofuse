@@ -9,6 +9,8 @@ import com.hokyozu.kyofuse.auth.service.EmailVerificationService;
 import com.hokyozu.kyofuse.auth.service.PasswordResetService;
 import com.hokyozu.kyofuse.auth.service.TwoFactorAuthService;
 import com.hokyozu.kyofuse.infrastructure.client.ClientIpResolver;
+import com.hokyozu.kyofuse.infrastructure.geolocation.GeoLocationService;
+import com.hokyozu.kyofuse.infrastructure.geolocation.LocationInfo;
 import com.hokyozu.kyofuse.infrastructure.ratelimit.RateLimit;
 import com.hokyozu.kyofuse.infrastructure.ratelimit.RateLimitType;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.AuthCookieService;
@@ -26,6 +28,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -42,6 +45,7 @@ public class AuthController {
     private final SteamService steamService;
     private final GamerProfileRepository gamerProfileRepository;
     private final ClientIpResolver clientIpResolver;
+    private final GeoLocationService geoLocationService;
     private final AccountReactivationService accountReactivationService;
     private final com.hokyozu.kyofuse.auth.repository.UserRepository userRepository;
     private final com.hokyozu.kyofuse.infrastructure.security.totp.MfaTokenService mfaTokenService;
@@ -60,7 +64,7 @@ public class AuthController {
             @RequestBody @Valid RegisterRequest request,
             HttpServletRequest httpRequest
     ) {
-        User user = authService.register(request, clientIp(httpRequest));
+        User user = authService.register(request, clientIp(httpRequest), userAgent(httpRequest), httpRequest);
         return AuthMapper.toRegisterResponse(user);
     }
 
@@ -256,6 +260,20 @@ public class AuthController {
         UUID userId = UUID.fromString(jwt.getSubject());
         String switchToken = authService.generateSwitchToken(userId, deviceId);
         return ResponseEntity.ok(Map.of("switchToken", switchToken));
+    }
+
+    @GetMapping("/location")
+    public ResponseEntity<Map<String, String>> getLocation(HttpServletRequest request) {
+        String clientIp = clientIp(request);
+        LocationInfo location = geoLocationService.resolveLocation(request, clientIp);
+        Map<String, String> result = new HashMap<>();
+        if (location != null) {
+            if (location.countryCode() != null) result.put("countryCode", location.countryCode());
+            if (location.country() != null) result.put("country", location.country());
+            if (location.city() != null) result.put("city", location.city());
+            if (location.state() != null) result.put("state", location.state());
+        }
+        return ResponseEntity.ok(result);
     }
 
     @PostMapping("/2fa/setup")

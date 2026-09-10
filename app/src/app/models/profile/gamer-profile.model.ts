@@ -22,6 +22,9 @@ export interface gamerProfileResponse {
     favoriteMaps: string[];
     createdAt?: string;
     updatedAt?: string;
+    registrationCountry?: string;
+    registrationCountryCode?: string;
+    registrationDevice?: string;
 }
 
 export interface gamerProfileCard {

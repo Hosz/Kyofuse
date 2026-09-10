@@ -70,6 +70,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/steam").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/switch-account").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/disconnect-account").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/auth/location").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/reactivate/confirm").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/reactivate/resend").permitAll()
                         .requestMatchers("/ws", "/ws/**").permitAll()

@@ -60,6 +60,7 @@ public class UserSessionService {
         Optional<UserSession> existingOpt = userSessionRepository
                 .findFirstByUserIdAndDeviceIdOrderByCreatedAtDesc(user.getId(), effectiveDeviceId);
 
+        UserSession savedSession;
         if (existingOpt.isPresent()) {
             UserSession session = existingOpt.get();
             session.setLastActiveAt(Instant.now());
@@ -73,25 +74,39 @@ public class UserSessionService {
                 session.setRevoked(false);
                 session.setRevokedAt(null);
             }
-            return userSessionRepository.save(session);
+            savedSession = userSessionRepository.save(session);
+        } else {
+            UserSession newSession = UserSession.builder()
+                    .user(user)
+                    .deviceId(effectiveDeviceId)
+                    .deviceType(deviceType)
+                    .deviceName(device.summary())
+                    .browser(device.browser())
+                    .os(device.operatingSystem())
+                    .ipAddress(clientIp)
+                    .location(locationStr)
+                    .trusted(false)
+                    .lastActiveAt(Instant.now())
+                    .createdAt(Instant.now())
+                    .revoked(false)
+                    .build();
+            savedSession = userSessionRepository.save(newSession);
         }
 
-        UserSession newSession = UserSession.builder()
-                .user(user)
-                .deviceId(effectiveDeviceId)
-                .deviceType(deviceType)
-                .deviceName(device.summary())
-                .browser(device.browser())
-                .os(device.operatingSystem())
-                .ipAddress(clientIp)
-                .location(locationStr)
-                .trusted(false)
-                .lastActiveAt(Instant.now())
-                .createdAt(Instant.now())
-                .revoked(false)
-                .build();
+        if (user.getRegistrationCountry() == null && location != null) {
+            String c = location.isLocal() ? "Rede Local" : location.country();
+            String cc = location.isLocal() ? "LOC" : location.countryCode();
+            if (c != null && !c.isBlank()) {
+                user.setRegistrationCountry(c);
+                user.setRegistrationCountryCode(cc);
+                if (user.getRegistrationDevice() == null && device != null && device.summary() != null) {
+                    user.setRegistrationDevice(device.summary());
+                }
+                userRepository.save(user);
+            }
+        }
 
-        return userSessionRepository.save(newSession);
+        return savedSession;
     }
 
     @Transactional(readOnly = true)

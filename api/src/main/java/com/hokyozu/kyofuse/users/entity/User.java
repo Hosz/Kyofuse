@@ -99,4 +99,13 @@ public class User {
     @Column(name = "has_custom_password", nullable = false)
     @Builder.Default
     private boolean hasCustomPassword = true;
+
+    @Column(name = "registration_country", length = 100)
+    private String registrationCountry;
+
+    @Column(name = "registration_country_code", length = 10)
+    private String registrationCountryCode;
+
+    @Column(name = "registration_device", length = 150)
+    private String registrationDevice;
 }

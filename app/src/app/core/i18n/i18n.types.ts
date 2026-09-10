@@ -378,6 +378,14 @@ export interface TranslationDictionary {
     communityBadge: string;
     level: string;
     noLevel: string;
+    aboutAccount: string;
+    dateJoined: string;
+    accountBasedIn: string;
+    firstConnectedDevice: string;
+    locationVpnDisclaimer: string;
+    unknownLocation: string;
+    unknownDevice: string;
+    understood: string;
   };
   chat: {
     conversations: string;

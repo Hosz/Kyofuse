@@ -1,0 +1,94 @@
+<app-modal [open]="open()" [title]="'profile.aboutAccount' | trans" (closed)="closed.emit()">
+  <div class="flex flex-col gap-5">
+    <!-- User summary header -->
+    <div class="flex items-center gap-3.5 pb-3 border-b border-outline-variant/40">
+      <div class="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border border-outline-variant/60 bg-surface-container-high">
+        <img
+          [src]="profile().avatarUrl || fallbackAvatar"
+          [alt]="profile().nickname || profile().username"
+          class="h-full w-full object-cover"
+        />
+      </div>
+      <div class="flex flex-col min-w-0">
+        <span class="truncate text-body-md font-bold text-on-surface">
+          {{ profile().nickname || profile().username }}
+        </span>
+        <span class="truncate text-body-sm text-on-surface-variant">
+          @{{ profile().username }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Info Items List -->
+    <div class="flex flex-col gap-2.5">
+      <!-- Data de inscrição / Entrou em -->
+      <div class="flex items-start gap-3.5 rounded-xl border border-outline-variant/40 bg-surface-container-low/60 p-3.5 transition-colors hover:bg-surface-container-low">
+        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <span class="material-symbols-outlined text-[20px]">calendar_month</span>
+        </div>
+        <div class="flex flex-col min-w-0">
+          <span class="text-label-sm font-semibold text-on-surface-variant">
+            {{ 'profile.dateJoined' | trans }}
+          </span>
+          <span class="text-body-md font-medium text-on-surface">
+            {{ formattedDate() }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Localização da conta (Onde a conta foi criada) -->
+      <div class="flex items-start gap-3.5 rounded-xl border border-outline-variant/40 bg-surface-container-low/60 p-3.5 transition-colors hover:bg-surface-container-low">
+        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <span class="material-symbols-outlined text-[20px]">public</span>
+        </div>
+        <div class="flex flex-col min-w-0">
+          <span class="text-label-sm font-semibold text-on-surface-variant">
+            {{ 'profile.accountBasedIn' | trans }}
+          </span>
+          <div class="flex items-center gap-2 mt-0.5">
+            @if (flagUrl()) {
+              <img [src]="flagUrl()" [alt]="countryDisplay()" class="h-3.5 w-5 rounded-xs object-cover shadow-xs shrink-0" />
+            }
+            <span class="text-body-md font-medium text-on-surface truncate">
+              {{ countryDisplay() }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Primeiro dispositivo conectado -->
+      <div class="flex items-start gap-3.5 rounded-xl border border-outline-variant/40 bg-surface-container-low/60 p-3.5 transition-colors hover:bg-surface-container-low">
+        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <span class="material-symbols-outlined text-[20px]">devices</span>
+        </div>
+        <div class="flex flex-col min-w-0">
+          <span class="text-label-sm font-semibold text-on-surface-variant">
+            {{ 'profile.firstConnectedDevice' | trans }}
+          </span>
+          <span class="text-body-md font-medium text-on-surface truncate">
+            {{ deviceDisplay() }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- VPN / Proxy Disclaimer Warning Box (just like on X) -->
+    <div class="flex items-start gap-3 rounded-xl border border-outline-variant/60 bg-surface-container/60 p-3.5 text-on-surface-variant">
+      <span class="material-symbols-outlined text-[20px] text-primary shrink-0 mt-0.5">info</span>
+      <p class="text-body-xs leading-relaxed">
+        {{ 'profile.locationVpnDisclaimer' | trans }}
+      </p>
+    </div>
+
+    <!-- Actions -->
+    <div class="pt-1">
+      <button
+        type="button"
+        (click)="closed.emit()"
+        class="w-full cursor-pointer rounded-full bg-primary py-2.5 px-4 text-center text-label-md font-bold text-on-primary transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+      >
+        {{ 'profile.understood' | trans }}
+      </button>
+    </div>
+  </div>
+</app-modal>
