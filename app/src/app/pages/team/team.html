@@ -24,8 +24,8 @@
             </a>
           </section>
         } @else {
-          <section class="flex flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container-low">
-            <div class="tactical-grid relative h-32 w-full shrink-0 overflow-hidden bg-gradient-to-br from-primary-container/30 via-surface-container to-surface-container-low sm:h-40">
+          <section class="relative z-20 flex flex-col rounded-xl border border-outline-variant bg-surface-container-low">
+            <div class="tactical-grid relative h-32 w-full shrink-0 overflow-hidden rounded-t-xl bg-gradient-to-br from-primary-container/30 via-surface-container to-surface-container-low sm:h-40">
               @if (team()!.bannerUrl) {
                 <img [src]="team()!.bannerUrl" alt="" class="h-full w-full object-cover" />
               }
@@ -93,7 +93,7 @@
                     <span>&#64;{{ teamCommunity.communitySlug }}</span>
                   </a>
                 } @else if (isHead()) {
-                  <div class="relative" id="team-community-menu-container">
+                  <div class="relative z-30" id="team-community-menu-container">
                     <button
                       type="button"
                       (click)="toggleCommunityMenu()"
@@ -106,7 +106,7 @@
 
                     @if (communityMenuOpen()) {
                       <div
-                        class="absolute left-0 sm:left-auto sm:right-0 top-full z-30 mt-1.5 w-64 overflow-hidden rounded-xl border border-outline-variant bg-surface-container-low py-1 shadow-2xl"
+                        class="absolute left-0 sm:left-auto sm:right-0 top-full z-50 mt-1.5 w-64 overflow-hidden rounded-xl border border-outline-variant bg-surface-container-low py-1 shadow-2xl"
                       >
                         <button
                           type="button"
@@ -138,7 +138,7 @@
                 }
 
                 @if (isOwner() || isManager() || viewMode() === 'member') {
-                  <div class="relative" id="team-more-menu-container">
+                  <div class="relative z-30" id="team-more-menu-container">
                     <button
                       type="button"
                       (click)="toggleMoreMenu()"
@@ -150,7 +150,7 @@
 
                     @if (moreMenuOpen()) {
                       <div
-                        class="absolute right-0 top-full z-30 mt-1.5 w-56 overflow-hidden rounded-xl border border-outline-variant bg-surface-container-low py-1 shadow-2xl"
+                        class="absolute right-0 top-full z-50 mt-1.5 w-56 overflow-hidden rounded-xl border border-outline-variant bg-surface-container-low py-1 shadow-2xl"
                       >
                         @if (isOwner()) {
                           <a
