@@ -268,6 +268,13 @@ public class CommunityService {
         communityRepository.delete(community);
     }
 
+    @CacheEvict(value = {"communities_public", "teams_public"}, allEntries = true)
+    @Transactional
+    public void deleteCommunity(UUID userId, String identifier, boolean deleteTeam) {
+        Community community = findCommunityByIdentifier(identifier);
+        deleteCommunity(userId, community.getId(), deleteTeam);
+    }
+
     @CacheEvict(value = "communities_public", allEntries = true)
     @Transactional
     public void archiveCommunity(UUID userId, UUID communityId) {
@@ -281,6 +288,13 @@ public class CommunityService {
 
         community.setStatus(CommunityStatus.ARCHIVED);
         communityRepository.save(community);
+    }
+
+    @CacheEvict(value = "communities_public", allEntries = true)
+    @Transactional
+    public void archiveCommunity(UUID userId, String identifier) {
+        Community community = findCommunityByIdentifier(identifier);
+        archiveCommunity(userId, community.getId());
     }
 
     @Transactional(readOnly = true)

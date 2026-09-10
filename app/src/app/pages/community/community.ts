@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, HostListener, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AppSidebarComponent } from '../../components/layout/app-sidebar/app-sidebar';
 import { ModalComponent } from '../../components/shared/modal/modal';
@@ -144,6 +144,43 @@ export class CommunityComponent {
   });
 
   isHead = computed(() => this.isOwner() || this.isCommunityAdmin() || this.isStaff());
+
+  teamMenuOpen = signal(false);
+  moreMenuOpen = signal(false);
+
+  toggleTeamMenu(): void {
+    this.teamMenuOpen.update((v) => !v);
+    if (this.teamMenuOpen()) {
+      this.moreMenuOpen.set(false);
+    }
+  }
+
+  closeTeamMenu(): void {
+    this.teamMenuOpen.set(false);
+  }
+
+  toggleMoreMenu(): void {
+    this.moreMenuOpen.update((v) => !v);
+    if (this.moreMenuOpen()) {
+      this.teamMenuOpen.set(false);
+    }
+  }
+
+  closeMoreMenu(): void {
+    this.moreMenuOpen.set(false);
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement | null;
+    if (!target) return;
+    if (this.teamMenuOpen() && !target.closest('#community-team-menu-container')) {
+      this.closeTeamMenu();
+    }
+    if (this.moreMenuOpen() && !target.closest('#community-more-menu-container')) {
+      this.closeMoreMenu();
+    }
+  }
 
   attachTeamModalOpen = signal(false);
   availableTeams = signal<TeamResponse[]>([]);
@@ -415,7 +452,7 @@ export class CommunityComponent {
    * quais ele é membro ACTIVE, o mesmo requisito pra entrar no chat).
    */
   openCommunityChat(): void {
-    const communityId = this.communityId();
+    const communityId = this.community()?.id ?? this.communityId();
     if (!communityId || this.openingChat()) return;
 
     this.openingChat.set(true);
@@ -424,7 +461,11 @@ export class CommunityComponent {
     this.conversationService.listCommunityConversations(0, 100).subscribe({
       next: (response) => {
         this.openingChat.set(false);
-        const conversation = response.content.find((c) => c.communityId === communityId);
+        const realId = this.community()?.id;
+        const slug = this.community()?.communitySlug ?? this.communityId();
+        const conversation = response.content.find(
+          (c) => c.communityId === realId || c.communityId === slug,
+        );
         if (!conversation) {
           this.chatError.set('Entre na comunidade para acessar o chat dela.');
           return;
@@ -440,7 +481,7 @@ export class CommunityComponent {
   }
 
   publishPost(): void {
-    const communityId = this.communityId();
+    const communityId = this.community()?.id ?? this.communityId();
     const content = this.postContent().trim();
     const media = this.postMediaItems();
     if (!communityId || (!content && media.length === 0) || this.publishing() || this.uploadingPostMedia()) return;
@@ -486,7 +527,7 @@ export class CommunityComponent {
   }
 
   join(): void {
-    const id = this.communityId();
+    const id = this.community()?.id ?? this.communityId();
     if (!id || this.joining()) return;
     this.joining.set(true);
     this.joinError.set(null);
@@ -505,7 +546,7 @@ export class CommunityComponent {
   }
 
   requestJoin(): void {
-    const id = this.communityId();
+    const id = this.community()?.id ?? this.communityId();
     if (!id || this.requestingJoin()) return;
     this.requestingJoin.set(true);
     this.joinRequestError.set(null);
@@ -567,7 +608,7 @@ export class CommunityComponent {
   }
 
   leave(): void {
-    const id = this.communityId();
+    const id = this.community()?.id ?? this.communityId();
     if (!id || this.leaving()) return;
 
     const dissolving = this.isSoleMember();
@@ -632,7 +673,7 @@ export class CommunityComponent {
   }
 
   saveEdit(): void {
-    const id = this.communityId();
+    const id = this.community()?.id ?? this.communityId();
     if (!id || this.saving()) return;
     if (!this.editName().trim() || !this.editSlug().trim()) {
       this.editError.set('Nome e slug são obrigatórios.');
@@ -675,7 +716,7 @@ export class CommunityComponent {
   }
 
   confirmActionSubmit(deleteTeam: boolean = false): void {
-    const id = this.communityId();
+    const id = this.community()?.id ?? this.communityId();
     const action = this.confirmAction();
     if (!id || !action || this.actionLoading()) return;
 

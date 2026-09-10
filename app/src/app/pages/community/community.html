@@ -65,131 +65,152 @@
                   </div>
                 </div>
 
-                <div class="flex shrink-0 flex-col items-stretch gap-3 sm:items-end">
+                <div class="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
                   @if (community()!.teamName) {
-                    <div class="flex items-center gap-2">
-                      <a
-                        [routerLink]="['/times', community()!.teamSlug]"
-                        class="flex items-center gap-3 rounded-xl border border-outline-variant bg-surface-container px-3 py-2.5 transition-colors hover:border-primary"
+                    <a
+                      [routerLink]="['/times', community()!.teamSlug]"
+                      class="flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-outline-variant bg-surface-container px-4 py-2 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high active:scale-[0.97]"
+                    >
+                      <span class="material-symbols-outlined text-[16px]">shield</span>
+                      <span>{{ community()!.teamName }}</span>
+                    </a>
+                  } @else if (isHead()) {
+                    <div class="relative" id="community-team-menu-container">
+                      <button
+                        type="button"
+                        (click)="toggleTeamMenu()"
+                        class="flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-outline-variant bg-surface-container px-4 py-2 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high active:scale-[0.97]"
                       >
-                        @if (community()!.teamAvatarUrl) {
-                          <img
-                            [src]="community()!.teamAvatarUrl"
-                            [alt]="community()!.teamName"
-                            class="h-10 w-10 shrink-0 rounded-lg object-cover"
-                          />
-                        } @else {
-                          <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-container-high">
-                            <span class="material-symbols-outlined text-[20px] text-on-surface-variant">shield</span>
-                          </span>
-                        }
+                        <span class="material-symbols-outlined text-[18px]">shield</span>
+                        <span>{{ 'profile.teamBadge' | trans }}</span>
+                        <span class="material-symbols-outlined text-[18px] text-on-surface-variant">expand_more</span>
+                      </button>
 
-                        <span class="flex min-w-0 flex-col">
-                          <span class="text-label-sm uppercase tracking-[0.05em] text-on-surface-variant">{{ 'communities.teamCommunity' | trans }}</span>
-                          <span class="truncate text-body-sm font-bold text-on-surface">{{ community()!.teamName }}</span>
-                        </span>
-
-                        <span class="material-symbols-outlined shrink-0 text-[18px] text-on-surface-variant">chevron_right</span>
-                      </a>
-
-                      @if (isHead()) {
-                        <button
-                          type="button"
-                          (click)="openDetachTeamModal()"
-                          [title]="'communities.detachTeam' | trans"
-                          class="flex h-10 w-10 items-center justify-center rounded-xl border border-outline-variant bg-surface-container text-on-surface-variant transition-colors hover:border-error hover:text-error"
+                      @if (teamMenuOpen()) {
+                        <div
+                          class="absolute left-0 sm:left-auto sm:right-0 top-full z-30 mt-1.5 w-64 overflow-hidden rounded-xl border border-outline-variant bg-surface-container-low py-1 shadow-2xl"
                         >
-                          <span class="material-symbols-outlined text-[20px]">link_off</span>
-                        </button>
+                          <button
+                            type="button"
+                            (click)="closeTeamMenu(); openAttachTeamModal()"
+                            class="flex w-full cursor-pointer items-center gap-2.5 px-4 py-2.5 text-left text-body-sm text-on-surface transition-colors hover:bg-surface-container-high"
+                          >
+                            <span class="material-symbols-outlined text-[20px] text-primary">link</span>
+                            <div class="flex flex-col min-w-0">
+                              <span class="font-semibold">{{ 'communities.attachTeam' | trans }}</span>
+                              <span class="text-label-xs text-on-surface-variant">Conectar a um time existente</span>
+                            </div>
+                          </button>
+                        </div>
                       }
                     </div>
-                  } @else if (isHead()) {
+                  }
+
+                  @if (isMember() || isOwner()) {
                     <button
                       type="button"
-                      (click)="openAttachTeamModal()"
-                      class="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-outline-variant bg-surface-container-low px-3 py-2 text-label-sm font-semibold text-on-surface-variant transition-colors hover:border-primary hover:text-primary active:scale-[0.97]"
+                      (click)="openCommunityChat()"
+                      [disabled]="openingChat()"
+                      class="flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full bg-primary-container px-4 py-2 text-label-sm font-bold text-on-primary-container transition-all hover:brightness-110 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      <span class="material-symbols-outlined text-[18px]">link</span>
-                      {{ 'communities.attachTeam' | trans }}
+                      <span class="material-symbols-outlined text-[16px]">forum</span>
+                      {{ (openingChat() ? 'communities.openingChat' : 'communities.openChat') | trans }}
+                    </button>
+                  } @else if (community()!.visibility === 'PUBLIC') {
+                    <button
+                      type="button"
+                      (click)="join()"
+                      [disabled]="joining()"
+                      class="cursor-pointer whitespace-nowrap rounded-full bg-primary-container px-4 py-2 text-label-sm font-bold text-on-primary-container transition-all hover:brightness-110 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {{ (joining() ? 'communities.joining' : 'communities.join') | trans }}
+                    </button>
+                  } @else if (joinRequestSent()) {
+                    <span class="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-outline-variant px-4 py-2 text-label-sm text-on-surface-variant">
+                      <span class="material-symbols-outlined text-[16px]">schedule</span>
+                      {{ 'communities.requestSent' | trans }}
+                    </span>
+                  } @else {
+                    <button
+                      type="button"
+                      (click)="requestJoin()"
+                      [disabled]="requestingJoin()"
+                      class="cursor-pointer whitespace-nowrap rounded-full bg-primary-container px-4 py-2 text-label-sm font-bold text-on-primary-container transition-all hover:brightness-110 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {{ (requestingJoin() ? 'communities.requestingJoin' : 'communities.requestJoin') | trans }}
                     </button>
                   }
 
-                  <div class="flex flex-wrap items-center gap-2 sm:justify-end">
-                    @if (isMember() || isOwner()) {
+                  @if (isOwner() || isMember()) {
+                    <div class="relative" id="community-more-menu-container">
                       <button
                         type="button"
-                        (click)="openCommunityChat()"
-                        [disabled]="openingChat()"
-                        class="flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full bg-primary-container px-4 py-2 text-label-sm font-bold text-on-primary-container transition-all hover:brightness-110 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
+                        (click)="toggleMoreMenu()"
+                        aria-label="Mais opções"
+                        class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-outline-variant bg-surface-container text-on-surface transition-colors hover:bg-surface-container-high active:scale-[0.97]"
                       >
-                        <span class="material-symbols-outlined text-[16px]">forum</span>
-                        {{ (openingChat() ? 'communities.openingChat' : 'communities.openChat') | trans }}
+                        <span class="material-symbols-outlined text-[20px]">more_vert</span>
                       </button>
-                    }
-                    @if (isOwner()) {
-                      <button
-                        type="button"
-                        (click)="openEdit()"
-                        class="cursor-pointer whitespace-nowrap rounded-full bg-secondary-fixed px-4 py-2 text-label-sm font-bold text-on-secondary transition-all hover:brightness-95 active:scale-[0.97]"
-                      >
-                        {{ 'communities.edit' | trans }}
-                      </button>
-                      <button
-                        type="button"
-                        (click)="openConfirmAction('archive')"
-                        class="cursor-pointer whitespace-nowrap rounded-full border border-outline-variant px-4 py-2 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high"
-                      >
-                        {{ 'communities.archive' | trans }}
-                      </button>
-                      <button
-                        type="button"
-                        (click)="openConfirmAction('delete')"
-                        class="cursor-pointer whitespace-nowrap rounded-full border border-error px-4 py-2 text-label-sm font-bold text-error transition-colors hover:bg-error/10"
-                      >
-                        {{ 'common.delete' | trans }}
-                      </button>
-                      <button
-                        type="button"
-                        (click)="askLeave()"
-                        [disabled]="leaving()"
-                        class="cursor-pointer whitespace-nowrap rounded-full border border-outline-variant px-4 py-2 text-label-sm font-bold text-on-surface transition-colors hover:border-error hover:text-error disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {{ (leaving() ? 'communities.leaving' : 'communities.leaveCommunity') | trans }}
-                      </button>
-                    } @else if (isMember()) {
-                      <button
-                        type="button"
-                        (click)="askLeave()"
-                        [disabled]="leaving()"
-                        class="cursor-pointer whitespace-nowrap rounded-full border border-outline-variant px-4 py-2 text-label-sm font-bold text-on-surface transition-colors hover:border-error hover:text-error disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {{ (leaving() ? 'communities.leaving' : 'communities.leaveCommunity') | trans }}
-                      </button>
-                    } @else if (community()!.visibility === 'PUBLIC') {
-                      <button
-                        type="button"
-                        (click)="join()"
-                        [disabled]="joining()"
-                        class="cursor-pointer whitespace-nowrap rounded-full bg-primary-container px-4 py-2 text-label-sm font-bold text-on-primary-container transition-all hover:brightness-110 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {{ (joining() ? 'communities.joining' : 'communities.join') | trans }}
-                      </button>
-                    } @else if (joinRequestSent()) {
-                      <span class="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-outline-variant px-4 py-2 text-label-sm text-on-surface-variant">
-                        <span class="material-symbols-outlined text-[16px]">schedule</span>
-                        {{ 'communities.requestSent' | trans }}
-                      </span>
-                    } @else {
-                      <button
-                        type="button"
-                        (click)="requestJoin()"
-                        [disabled]="requestingJoin()"
-                        class="cursor-pointer whitespace-nowrap rounded-full bg-primary-container px-4 py-2 text-label-sm font-bold text-on-primary-container transition-all hover:brightness-110 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {{ (requestingJoin() ? 'communities.requestingJoin' : 'communities.requestJoin') | trans }}
-                      </button>
-                    }
-                  </div>
+
+                      @if (moreMenuOpen()) {
+                        <div
+                          class="absolute right-0 top-full z-30 mt-1.5 w-56 overflow-hidden rounded-xl border border-outline-variant bg-surface-container-low py-1 shadow-2xl"
+                        >
+                          @if (isOwner()) {
+                            <button
+                              type="button"
+                              (click)="closeMoreMenu(); openEdit()"
+                              class="flex w-full cursor-pointer items-center gap-2.5 px-4 py-2.5 text-left text-body-sm text-on-surface transition-colors hover:bg-surface-container-high"
+                            >
+                              <span class="material-symbols-outlined text-[18px] text-on-surface-variant">tune</span>
+                              <span>{{ 'communities.edit' | trans }}</span>
+                            </button>
+                            <button
+                              type="button"
+                              (click)="closeMoreMenu(); openConfirmAction('archive')"
+                              class="flex w-full cursor-pointer items-center gap-2.5 px-4 py-2.5 text-left text-body-sm text-on-surface transition-colors hover:bg-surface-container-high"
+                            >
+                              <span class="material-symbols-outlined text-[18px] text-on-surface-variant">archive</span>
+                              <span>{{ 'communities.archive' | trans }}</span>
+                            </button>
+                          }
+
+                          @if (community()!.teamName && isHead()) {
+                            <button
+                              type="button"
+                              (click)="closeMoreMenu(); openDetachTeamModal()"
+                              class="flex w-full cursor-pointer items-center gap-2.5 px-4 py-2.5 text-left text-body-sm text-on-surface transition-colors hover:bg-surface-container-high"
+                            >
+                              <span class="material-symbols-outlined text-[18px] text-on-surface-variant">link_off</span>
+                              <span>{{ 'communities.detachTeam' | trans }}</span>
+                            </button>
+                          }
+
+                          <button
+                            type="button"
+                            (click)="closeMoreMenu(); askLeave()"
+                            [disabled]="leaving()"
+                            class="flex w-full cursor-pointer items-center gap-2.5 px-4 py-2.5 text-left text-body-sm text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            <span class="material-symbols-outlined text-[18px] text-on-surface-variant">logout</span>
+                            <span>{{ (leaving() ? 'communities.leaving' : 'communities.leaveCommunity') | trans }}</span>
+                          </button>
+
+                          @if (isOwner()) {
+                            <div class="my-1 h-px bg-outline-variant/60"></div>
+                            <button
+                              type="button"
+                              (click)="closeMoreMenu(); openConfirmAction('delete')"
+                              class="flex w-full cursor-pointer items-center gap-2.5 px-4 py-2.5 text-left text-body-sm text-error transition-colors hover:bg-error-container/30"
+                            >
+                              <span class="material-symbols-outlined text-[18px] text-error">delete</span>
+                              <span>{{ 'common.delete' | trans }}</span>
+                            </button>
+                          }
+                        </div>
+                      }
+                    </div>
+                  }
                 </div>
               </div>
 

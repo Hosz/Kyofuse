@@ -76,7 +76,7 @@ class CommunityControllerTest {
     @Test
     void deleteCommunityUsesAuthenticatedUserIdAndPathCommunityId() {
         UUID userId = UUID.randomUUID();
-        UUID communityId = UUID.randomUUID();
+        String communityId = "comm-alpha";
 
         controller.deleteCommunity(jwt(userId), communityId, false);
 
@@ -86,7 +86,7 @@ class CommunityControllerTest {
     @Test
     void archiveCommunityUsesAuthenticatedUserIdAndPathCommunityId() {
         UUID userId = UUID.randomUUID();
-        UUID communityId = UUID.randomUUID();
+        String communityId = "comm-alpha";
 
         controller.archiveCommunity(jwt(userId), communityId);
 

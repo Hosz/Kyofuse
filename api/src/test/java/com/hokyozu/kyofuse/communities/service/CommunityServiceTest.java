@@ -397,6 +397,39 @@ class CommunityServiceTest {
     }
 
     @Test
+    void deleteCommunityByIdentifierResolvesAndDeletes() {
+        UUID userId = UUID.randomUUID();
+        UUID communityId = UUID.randomUUID();
+        User owner = activeUser(userId, "owner");
+        Community community = activeCommunity(communityId, owner);
+
+        when(communityRepository.findBySlug("comm-slug")).thenReturn(Optional.of(community));
+        when(userFinder.findProfileByUserId(userId)).thenReturn(owner);
+        when(communityRepository.findById(communityId)).thenReturn(Optional.of(community));
+
+        communityService.deleteCommunity(userId, "comm-slug", false);
+
+        verify(communityRepository).delete(community);
+    }
+
+    @Test
+    void archiveCommunityByIdentifierResolvesAndArchives() {
+        UUID userId = UUID.randomUUID();
+        UUID communityId = UUID.randomUUID();
+        User owner = activeUser(userId, "owner");
+        Community community = activeCommunity(communityId, owner);
+
+        when(communityRepository.findBySlug("comm-slug")).thenReturn(Optional.of(community));
+        when(userFinder.findProfileByUserId(userId)).thenReturn(owner);
+        when(communityRepository.findById(communityId)).thenReturn(Optional.of(community));
+
+        communityService.archiveCommunity(userId, "comm-slug");
+
+        assertThat(community.getStatus()).isEqualTo(CommunityStatus.ARCHIVED);
+        verify(communityRepository).save(community);
+    }
+
+    @Test
     void detachTeamCommunityByCommunityDetachesSuccessfully() {
         UUID userId = UUID.randomUUID();
         UUID communityId = UUID.randomUUID();

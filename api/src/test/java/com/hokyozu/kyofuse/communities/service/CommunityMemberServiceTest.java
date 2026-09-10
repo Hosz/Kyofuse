@@ -262,7 +262,7 @@ class CommunityMemberServiceTest {
                 .hasMessage("O dono não pode sair da comunidade enquanto houver outros membros. Transfira a posse ou apague a comunidade.");
 
         verify(communityMemberRepository, never()).save(any());
-        verify(communityService, never()).deleteCommunity(any(), any(), any(boolean.class));
+        verify(communityService, never()).deleteCommunity(any(UUID.class), any(UUID.class), any(boolean.class));
     }
 
     @Test

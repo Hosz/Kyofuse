@@ -990,7 +990,7 @@ class TeamServiceTest {
         assertThat(community.getTeam()).isNull();
         verify(communityRepository).save(community);
         verify(teamRepository).delete(team);
-        verify(communityService, never()).deleteCommunity(any(), any(), any(boolean.class));
+        verify(communityService, never()).deleteCommunity(any(UUID.class), any(UUID.class), any(boolean.class));
     }
 
     @Test
@@ -1029,6 +1029,6 @@ class TeamServiceTest {
                 .hasMessage("Apenas o dono da comunidade pode solicitar a exclusão da mesma.");
 
         verify(teamRepository, never()).delete(any(Team.class));
-        verify(communityService, never()).deleteCommunity(any(), any(), any(boolean.class));
+        verify(communityService, never()).deleteCommunity(any(UUID.class), any(UUID.class), any(boolean.class));
     }
 }

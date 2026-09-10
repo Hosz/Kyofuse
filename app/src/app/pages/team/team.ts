@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, computed, HostListener, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AppSidebarComponent } from '../../components/layout/app-sidebar/app-sidebar';
 import { FeedTabsComponent } from '../../components/feed/feed-tabs/feed-tabs';
@@ -68,6 +68,36 @@ export class TeamComponent {
 
   leaving = signal(false);
   leaveError = signal<string | null>(null);
+
+  communityMenuOpen = signal(false);
+  moreMenuOpen = signal(false);
+
+  toggleCommunityMenu(): void {
+    this.communityMenuOpen.update((v) => !v);
+  }
+
+  closeCommunityMenu(): void {
+    this.communityMenuOpen.set(false);
+  }
+
+  toggleMoreMenu(): void {
+    this.moreMenuOpen.update((v) => !v);
+  }
+
+  closeMoreMenu(): void {
+    this.moreMenuOpen.set(false);
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const el = event.target as HTMLElement | null;
+    if (!el?.closest('#team-community-menu-container')) {
+      this.communityMenuOpen.set(false);
+    }
+    if (!el?.closest('#team-more-menu-container')) {
+      this.moreMenuOpen.set(false);
+    }
+  }
 
   /** Todo Team nasce com uma Community vinculada, mas um time antigo pode não ter —
    * por isso o 404 aqui é um resultado esperado, não um erro. */

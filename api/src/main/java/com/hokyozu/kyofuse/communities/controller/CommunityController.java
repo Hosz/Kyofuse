@@ -69,18 +69,20 @@ public class CommunityController {
     }
 
     @DeleteMapping("/{communityId}")
-    public void deleteCommunity(@AuthenticationPrincipal Jwt jwt,
-                                @PathVariable UUID communityId,
-                                @RequestParam(name = "deleteTeam", defaultValue = "false") boolean deleteTeam) {
+    public ResponseEntity<Void> deleteCommunity(@AuthenticationPrincipal Jwt jwt,
+                                                @PathVariable String communityId,
+                                                @RequestParam(name = "deleteTeam", defaultValue = "false") boolean deleteTeam) {
         UUID userId = UUID.fromString(jwt.getSubject());
         communityService.deleteCommunity(userId, communityId, deleteTeam);
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{communityId}/archive")
-    public void archiveCommunity(@AuthenticationPrincipal Jwt jwt,
-                                 @PathVariable UUID communityId) {
+    public ResponseEntity<Void> archiveCommunity(@AuthenticationPrincipal Jwt jwt,
+                                                 @PathVariable String communityId) {
         UUID userId = UUID.fromString(jwt.getSubject());
         communityService.archiveCommunity(userId, communityId);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/list-communities")
