@@ -119,6 +119,30 @@ class CommunityControllerTest {
         verify(communityService).listMyCommunities(userId, pageable);
     }
 
+    @Test
+    void attachTeamToCommunityUsesAuthenticatedUserId() {
+        UUID userId = UUID.randomUUID();
+        String communityId = "comm-alpha";
+        String teamId = "team-alpha";
+        when(communityService.attachTeamAndCommunity(userId, teamId, communityId)).thenReturn(null);
+
+        controller.attachTeamToCommunity(jwt(userId), communityId, teamId);
+
+        verify(communityService).attachTeamAndCommunity(userId, teamId, communityId);
+    }
+
+    @Test
+    void listAvailableTeamsForCommunityUsesAuthenticatedUserId() {
+        UUID userId = UUID.randomUUID();
+        String communityId = "comm-alpha";
+        when(communityService.listAvailableTeamsForCommunity(userId, communityId)).thenReturn(List.of());
+
+        var result = controller.listAvailableTeamsForCommunity(jwt(userId), communityId);
+
+        assertThat(result).isEmpty();
+        verify(communityService).listAvailableTeamsForCommunity(userId, communityId);
+    }
+
     private CommunityRequest request() {
         return new CommunityRequest(
                 "Kyofuse CS2",

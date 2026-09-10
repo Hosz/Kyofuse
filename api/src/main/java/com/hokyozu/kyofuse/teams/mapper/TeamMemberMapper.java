@@ -33,6 +33,21 @@ public class TeamMemberMapper {
                 .build();
     }
 
+    public static TeamMember toManagerEntity(User user, Team team) {
+        return TeamMember.builder()
+                .team(team)
+                .user(user)
+                .roleInTeam(null)
+                .memberType(TeamMemberType.MANAGER)
+                .status(TeamMemberStatus.ACTIVE)
+                .joinedAt(Instant.now())
+                .leftAt(null)
+                .assignmentDueAt(null)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+    }
+
     public static TeamMember toEntity(User userInvited, Team team) {
         return TeamMember.builder()
                 .team(team)

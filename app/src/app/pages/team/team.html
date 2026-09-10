@@ -90,10 +90,28 @@
                     class="flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-outline-variant px-4 py-2 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high active:scale-[0.97]"
                   >
                     <span class="material-symbols-outlined text-[16px]">groups_2</span>
-                    Comunidade
+                    {{ 'teams.community' | trans }}
                   </a>
+                } @else if (isHead()) {
+                  <button
+                    type="button"
+                    (click)="openCreateCommunityConfirm()"
+                    [disabled]="creatingCommunity()"
+                    class="flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-outline-variant px-4 py-2 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <span class="material-symbols-outlined text-[16px]">add_circle</span>
+                    {{ (creatingCommunity() ? 'teams.creatingCommunity' : 'teams.createCommunityBtn') | trans }}
+                  </button>
+                  <button
+                    type="button"
+                    (click)="openAttachCommunityModal()"
+                    class="flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-outline-variant px-4 py-2 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high active:scale-[0.97]"
+                  >
+                    <span class="material-symbols-outlined text-[16px]">link</span>
+                    {{ 'teams.attachCommunity' | trans }}
+                  </button>
                 }
-                @if (viewMode() === 'admin') {
+                @if (isOwner()) {
                   <a
                     [routerLink]="['/times', teamId(), 'admin']"
                     class="flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-secondary-fixed border border-outline-variant px-4 py-2 text-label-sm font-bold text-on-secondary-fixed transition-all hover:brightness-95 active:scale-[0.97]"
@@ -101,7 +119,7 @@
                     <span class="material-symbols-outlined text-[16px]">tune</span>
                     Editar Time
                   </a>
-                } @else if (viewMode() === 'member') {
+                } @else if (viewMode() === 'member' || isManager()) {
                   <button
                     type="button"
                     (click)="askLeaveTeam()"
@@ -257,3 +275,95 @@
   (removeRequested)="removeMember($event)"
   (editRequested)="editMember($event)"
 />
+
+<app-confirm-dialog
+  [open]="createCommunityConfirmOpen()"
+  [title]="'teams.createCommunityConfirmTitle' | trans"
+  [message]="'teams.createCommunityConfirmMessage' | trans"
+  [confirmLabel]="'teams.createCommunityBtn' | trans"
+  [pending]="creatingCommunity()"
+  [error]="createCommunityError()"
+  (confirmed)="confirmCreateCommunity()"
+  (cancelled)="cancelCreateCommunity()"
+/>
+
+<app-modal
+  [open]="attachCommunityModalOpen()"
+  [title]="'teams.attachCommunityTitle' | trans"
+  (closed)="closeAttachCommunityModal()"
+>
+  <div class="flex flex-col gap-4">
+    @if (loadingAvailableCommunities()) {
+      <div class="flex items-center justify-center py-8">
+        <span class="text-label-md text-on-surface-variant">Carregando...</span>
+      </div>
+    } @else if (availableCommunities().length === 0) {
+      <div class="rounded-xl border border-outline-variant bg-surface-container-low p-4 text-center">
+        <p class="text-body-sm text-on-surface-variant">
+          {{ 'teams.noAvailableCommunities' | trans }}
+        </p>
+      </div>
+    } @else {
+      <p class="text-body-sm text-on-surface">
+        {{ 'teams.selectCommunityToAttach' | trans }}
+      </p>
+
+      <div class="flex max-h-60 flex-col gap-2 overflow-y-auto">
+        @for (c of availableCommunities(); track c.id) {
+          <button
+            type="button"
+            (click)="selectedCommunityId.set(c.id)"
+            class="flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-left transition-colors"
+            [class.border-primary]="selectedCommunityId() === c.id"
+            [class.bg-primary/10]="selectedCommunityId() === c.id"
+            [class.border-outline-variant]="selectedCommunityId() !== c.id"
+            [class.hover:bg-surface-container-high]="selectedCommunityId() !== c.id"
+          >
+            @if (c.communityAvatarUrl) {
+              <img [src]="c.communityAvatarUrl" [alt]="c.communityName" class="h-10 w-10 shrink-0 rounded-full object-cover" />
+            } @else {
+              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-container-highest text-primary">
+                <span class="material-symbols-outlined text-[20px]">groups</span>
+              </div>
+            }
+            <div class="flex min-w-0 flex-1 flex-col">
+              <span class="truncate font-semibold text-on-surface">{{ c.communityName }}</span>
+              <span class="truncate text-label-sm text-on-surface-variant">&#64;{{ c.communitySlug }}</span>
+            </div>
+            @if (selectedCommunityId() === c.id) {
+              <span class="material-symbols-outlined text-[20px] text-primary">check_circle</span>
+            }
+          </button>
+        }
+      </div>
+    }
+
+    @if (attachCommunityError()) {
+      <p class="text-label-sm text-error">{{ attachCommunityError() }}</p>
+    }
+
+    <div class="flex justify-end gap-2 pt-2">
+      <button
+        type="button"
+        (click)="closeAttachCommunityModal()"
+        [disabled]="attachingCommunity()"
+        class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        (click)="confirmAttachCommunity()"
+        [disabled]="!selectedCommunityId() || attachingCommunity()"
+        class="flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-primary px-4 py-2 text-label-sm font-bold text-on-primary transition-all hover:brightness-110 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        @if (attachingCommunity()) {
+          <span class="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>
+          {{ 'teams.attachingCommunity' | trans }}
+        } @else {
+          {{ 'teams.attachCommunity' | trans }}
+        }
+      </button>
+    </div>
+  </div>
+</app-modal>

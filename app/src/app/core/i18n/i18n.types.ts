@@ -211,6 +211,12 @@ export interface TranslationDictionary {
     visibility: string;
     visibilityPublicDesc: string;
     visibilityPrivateDesc: string;
+    attachTeam: string;
+    attachTeamTitle: string;
+    attachingTeam: string;
+    noAvailableTeams: string;
+    selectTeamToAttach: string;
+    teamAttachedSuccess: string;
   };
   teams: {
     title: string;
@@ -265,6 +271,18 @@ export interface TranslationDictionary {
     gcMax: string;
     createCommunity: string;
     createCommunityHint: string;
+    community: string;
+    createCommunityBtn: string;
+    creatingCommunity: string;
+    createCommunityConfirmTitle: string;
+    createCommunityConfirmMessage: string;
+    attachCommunity: string;
+    attachCommunityTitle: string;
+    attachingCommunity: string;
+    noAvailableCommunities: string;
+    selectCommunityToAttach: string;
+    communityCreatedSuccess: string;
+    communityAttachedSuccess: string;
   };
   tournaments: {
     title: string;

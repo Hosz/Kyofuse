@@ -19,6 +19,8 @@ import {
 } from '../../models/communities/community.model';
 import { FALLBACK_AVATAR_URL } from '../../shared/utils/format.util';
 import { ConfirmDialogComponent } from '../../components/shared/confirm-dialog/confirm-dialog';
+import { I18nService } from '../../core/i18n/i18n.service';
+import { TeamResponse } from '../../models/teams/team.model';
 
 import { SkeletonComponent } from '../../components/shared/skeleton/skeleton';
 
@@ -69,6 +71,7 @@ export class CommunityComponent {
   private profileService = inject(ProfileService);
   private mediaService = inject(MediaService);
   private toastService = inject(ToastService);
+  readonly i18n = inject(I18nService);
 
   readonly fallbackAvatar = FALLBACK_AVATAR_URL;
 
@@ -131,6 +134,69 @@ export class CommunityComponent {
     const myUserId = this.myUserId();
     return !!community && !!myUserId && community.ownerId === myUserId;
   });
+
+  isCommunityAdmin = computed(() => {
+    const uid = this.myUserId();
+    if (!uid) return false;
+    return this.members().some((m) => m.memberId === uid && m.role === 'ADMIN');
+  });
+
+  isHead = computed(() => this.isOwner() || this.isCommunityAdmin() || this.isStaff());
+
+  attachTeamModalOpen = signal(false);
+  availableTeams = signal<TeamResponse[]>([]);
+  loadingAvailableTeams = signal(false);
+  selectedTeamId = signal<string | null>(null);
+  attachingTeam = signal(false);
+  attachTeamError = signal<string | null>(null);
+
+  openAttachTeamModal(): void {
+    const id = this.community()?.id ?? this.communityId();
+    if (!id) return;
+
+    this.attachTeamModalOpen.set(true);
+    this.attachTeamError.set(null);
+    this.selectedTeamId.set(null);
+    this.loadingAvailableTeams.set(true);
+
+    this.communityService.listAvailableTeams(id).subscribe({
+      next: (list) => {
+        this.availableTeams.set(list);
+        this.loadingAvailableTeams.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to list available teams:', err);
+        this.loadingAvailableTeams.set(false);
+      },
+    });
+  }
+
+  closeAttachTeamModal(): void {
+    if (this.attachingTeam()) return;
+    this.attachTeamModalOpen.set(false);
+  }
+
+  confirmAttachTeam(): void {
+    const commId = this.community()?.id ?? this.communityId();
+    const teamId = this.selectedTeamId();
+    if (!commId || !teamId || this.attachingTeam()) return;
+
+    this.attachingTeam.set(true);
+    this.attachTeamError.set(null);
+
+    this.communityService.attachTeam(commId, teamId).subscribe({
+      next: (updatedComm) => {
+        this.community.set(updatedComm);
+        this.attachingTeam.set(false);
+        this.attachTeamModalOpen.set(false);
+        this.toastService.success(this.i18n.t('communities.teamAttachedSuccess'));
+      },
+      error: (err) => {
+        this.attachingTeam.set(false);
+        this.attachTeamError.set(err?.error?.message ?? 'Erro ao vincular time.');
+      },
+    });
+  }
 
   /**
    * Não existe endpoint "sou membro?" nem "qual meu papel?" — a única forma confiável

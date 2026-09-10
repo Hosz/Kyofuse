@@ -15,9 +15,19 @@ import com.hokyozu.kyofuse.communities.repository.CommunityRepository;
 import com.hokyozu.kyofuse.communities.validator.CommunityCreationValidator;
 import com.hokyozu.kyofuse.communities.validator.CommunityEditValidator;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
+import com.hokyozu.kyofuse.shared.exception.ConflictException;
+import com.hokyozu.kyofuse.shared.exception.ForbiddenException;
 import com.hokyozu.kyofuse.shared.exception.NotFoundException;
 import com.hokyozu.kyofuse.teams.entity.Team;
+import com.hokyozu.kyofuse.teams.entity.TeamMember;
+import com.hokyozu.kyofuse.teams.enums.TeamMemberStatus;
+import com.hokyozu.kyofuse.teams.enums.TeamMemberType;
 import com.hokyozu.kyofuse.teams.enums.TeamStatus;
+import com.hokyozu.kyofuse.teams.finder.TeamFinder;
+import com.hokyozu.kyofuse.teams.repository.TeamMemberRepository;
+import com.hokyozu.kyofuse.teams.repository.TeamRepository;
+import com.hokyozu.kyofuse.teams.repository.TeamRequiredRoleRepository;
+import com.hokyozu.kyofuse.teams.service.TeamChecker;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.enums.UserStatus;
 import com.hokyozu.kyofuse.users.finder.UserFinder;
@@ -68,6 +78,21 @@ class CommunityServiceTest {
 
     @Mock
     private com.hokyozu.kyofuse.storage.service.ImageProcessingService imageProcessingService;
+
+    @Mock
+    private TeamRepository teamRepository;
+
+    @Mock
+    private TeamChecker teamChecker;
+
+    @Mock
+    private TeamFinder teamFinder;
+
+    @Mock
+    private TeamMemberRepository teamMemberRepository;
+
+    @Mock
+    private TeamRequiredRoleRepository teamRequiredRoleRepository;
 
     @Spy
     private UserChecker userChecker = new UserChecker();
@@ -521,6 +546,188 @@ class CommunityServiceTest {
 
         assertThat(response.getContent()).hasSize(1);
         assertThat(response.getContent().getFirst().id()).isEqualTo(community.getId());
+    }
+
+    @Test
+    void createCommunityFromTeam_createsCommunityAndSyncsMembers() {
+        UUID ownerId = UUID.randomUUID();
+        User owner = activeUser(ownerId, "teamowner");
+        Team team = team(owner, "Furia Academy", "furia-academy");
+
+        UUID managerId = UUID.randomUUID();
+        User manager = activeUser(managerId, "teammanager");
+        TeamMember tmManager = TeamMember.builder()
+                .team(team)
+                .user(manager)
+                .memberType(TeamMemberType.MANAGER)
+                .status(TeamMemberStatus.ACTIVE)
+                .build();
+
+        UUID playerId = UUID.randomUUID();
+        User player = activeUser(playerId, "teamplayer");
+        TeamMember tmPlayer = TeamMember.builder()
+                .team(team)
+                .user(player)
+                .memberType(TeamMemberType.PLAYER)
+                .status(TeamMemberStatus.ACTIVE)
+                .build();
+
+        when(userFinder.findProfileByUserId(ownerId)).thenReturn(owner);
+        when(teamFinder.findTeamByIdentifier("furia-academy")).thenReturn(team);
+        when(communityRepository.findByTeamId(team.getId())).thenReturn(Optional.empty());
+        when(communityRepository.existsBySlug("furia-academy")).thenReturn(false);
+        when(communityRepository.save(any(Community.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(teamMemberRepository.findByTeamAndStatus(team, TeamMemberStatus.ACTIVE))
+                .thenReturn(List.of(tmManager, tmPlayer));
+
+        CommunityResponse response = communityService.createCommunityFromTeam(ownerId, "furia-academy");
+
+        assertThat(response.communityName()).isEqualTo("Furia Academy");
+        assertThat(response.communitySlug()).isEqualTo("furia-academy");
+        assertThat(response.teamId()).isEqualTo(team.getId());
+
+        verify(conversationService).createCommunityConversation(any(Community.class), any(User.class));
+
+        ArgumentCaptor<CommunityMember> memberCaptor = ArgumentCaptor.forClass(CommunityMember.class);
+        verify(communityMemberRepository, org.mockito.Mockito.atLeast(3)).save(memberCaptor.capture());
+
+        List<CommunityMember> savedMembers = memberCaptor.getAllValues();
+        assertThat(savedMembers).anyMatch(m -> m.getUser().getId().equals(ownerId) && m.getRole() == CommunityMemberRole.ADMIN);
+        assertThat(savedMembers).anyMatch(m -> m.getUser().getId().equals(managerId) && m.getRole() == CommunityMemberRole.ADMIN);
+        assertThat(savedMembers).anyMatch(m -> m.getUser().getId().equals(playerId) && m.getRole() == CommunityMemberRole.MEMBER);
+    }
+
+    @Test
+    void createCommunityFromTeam_failsWhenTeamAlreadyHasCommunity() {
+        UUID ownerId = UUID.randomUUID();
+        User owner = activeUser(ownerId, "teamowner");
+        Team team = team(owner, "Furia Academy", "furia-academy");
+
+        when(userFinder.findProfileByUserId(ownerId)).thenReturn(owner);
+        when(teamFinder.findTeamByIdentifier("furia-academy")).thenReturn(team);
+        when(communityRepository.findByTeamId(team.getId())).thenReturn(Optional.of(activeCommunity(UUID.randomUUID(), owner)));
+
+        assertThatThrownBy(() -> communityService.createCommunityFromTeam(ownerId, "furia-academy"))
+                .isInstanceOf(ConflictException.class);
+    }
+
+    @Test
+    void createCommunityFromTeam_failsWhenUserNotTeamHead() {
+        UUID callerId = UUID.randomUUID();
+        User caller = activeUser(callerId, "regularuser");
+        User owner = activeUser(UUID.randomUUID(), "teamowner");
+        Team team = team(owner, "Furia Academy", "furia-academy");
+
+        when(userFinder.findProfileByUserId(callerId)).thenReturn(caller);
+        when(teamFinder.findTeamByIdentifier("furia-academy")).thenReturn(team);
+        when(teamMemberRepository.findByTeamAndUser(team, caller)).thenReturn(null);
+
+        assertThatThrownBy(() -> communityService.createCommunityFromTeam(callerId, "furia-academy"))
+                .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    void attachTeamAndCommunity_attachesAndIntegratesMutualHeads() {
+        UUID callerId = UUID.randomUUID();
+        User caller = activeUser(callerId, "mutualhead");
+
+        UUID teamOwnerId = callerId;
+        User teamOwner = caller;
+        Team team = team(teamOwner, "Team Alpha", "team-alpha");
+
+        UUID commOwnerId = UUID.randomUUID();
+        User commOwner = activeUser(commOwnerId, "commowner");
+        Community community = activeCommunity(UUID.randomUUID(), commOwner);
+
+        // Caller is team owner and community admin
+        CommunityMember callerCommMember = CommunityMember.builder()
+                .community(community)
+                .user(caller)
+                .role(CommunityMemberRole.ADMIN)
+                .status(CommunityMemberStatus.ACTIVE)
+                .build();
+
+        UUID teamManagerId = UUID.randomUUID();
+        User teamManager = activeUser(teamManagerId, "manager1");
+        TeamMember tmManager = TeamMember.builder()
+                .team(team)
+                .user(teamManager)
+                .memberType(TeamMemberType.MANAGER)
+                .status(TeamMemberStatus.ACTIVE)
+                .build();
+
+        when(userFinder.findProfileByUserId(callerId)).thenReturn(caller);
+        when(teamFinder.findTeamByIdentifier("team-alpha")).thenReturn(team);
+        when(communityRepository.findById(community.getId())).thenReturn(Optional.of(community));
+        when(communityRepository.findByTeamId(team.getId())).thenReturn(Optional.empty());
+        when(communityMemberRepository.findByCommunityAndUser(community, caller)).thenReturn(Optional.of(callerCommMember));
+        when(communityMemberRepository.findByCommunityAndStatus(community, CommunityMemberStatus.ACTIVE))
+                .thenReturn(List.of(callerCommMember));
+        when(teamMemberRepository.findByTeamAndStatus(team, TeamMemberStatus.ACTIVE))
+                .thenReturn(List.of(tmManager));
+        when(communityRepository.save(any(Community.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        CommunityResponse response = communityService.attachTeamAndCommunity(callerId, "team-alpha", community.getId().toString());
+
+        assertThat(response.id()).isEqualTo(community.getId());
+        assertThat(community.getTeam()).isSameAs(team);
+
+        // Heads of team viram ADMIN na comunidade
+        verify(communityMemberRepository, org.mockito.Mockito.atLeastOnce()).save(any(CommunityMember.class));
+        // Heads da comunidade viram MANAGER no time
+        verify(teamMemberRepository, org.mockito.Mockito.atLeastOnce()).save(any(TeamMember.class));
+    }
+
+    @Test
+    void attachTeamAndCommunity_failsWhenAlreadyConnected() {
+        UUID callerId = UUID.randomUUID();
+        User caller = activeUser(callerId, "user");
+        Team team = team(caller, "Team Alpha", "team-alpha");
+        Community community = activeCommunity(UUID.randomUUID(), caller);
+
+        when(userFinder.findProfileByUserId(callerId)).thenReturn(caller);
+        when(teamFinder.findTeamByIdentifier("team-alpha")).thenReturn(team);
+        when(communityRepository.findById(community.getId())).thenReturn(Optional.of(community));
+        when(communityRepository.findByTeamId(team.getId())).thenReturn(Optional.of(community));
+
+        assertThatThrownBy(() -> communityService.attachTeamAndCommunity(callerId, "team-alpha", community.getId().toString()))
+                .isInstanceOf(ConflictException.class);
+    }
+
+    @Test
+    void listAvailableCommunitiesForTeam_returnsAvailable() {
+        UUID callerId = UUID.randomUUID();
+        User caller = activeUser(callerId, "teamowner");
+        Team team = team(caller, "Team Alpha", "team-alpha");
+        Community community = activeCommunity(UUID.randomUUID(), caller);
+
+        when(userFinder.findProfileByUserId(callerId)).thenReturn(caller);
+        when(teamFinder.findTeamByIdentifier("team-alpha")).thenReturn(team);
+        when(communityRepository.findByTeamId(team.getId())).thenReturn(Optional.empty());
+        when(communityRepository.findAvailableForTeam(callerId)).thenReturn(List.of(community));
+
+        List<CommunityResponse> result = communityService.listAvailableCommunitiesForTeam(callerId, "team-alpha");
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().id()).isEqualTo(community.getId());
+    }
+
+    @Test
+    void listAvailableTeamsForCommunity_returnsAvailable() {
+        UUID callerId = UUID.randomUUID();
+        User caller = activeUser(callerId, "commowner");
+        Community community = activeCommunity(UUID.randomUUID(), caller);
+        Team team = team(caller, "Team Alpha", "team-alpha");
+
+        when(userFinder.findProfileByUserId(callerId)).thenReturn(caller);
+        when(communityRepository.findById(community.getId())).thenReturn(Optional.of(community));
+        when(teamRepository.findAvailableForCommunity(callerId)).thenReturn(List.of(team));
+        when(teamRequiredRoleRepository.findByTeamId(team.getId())).thenReturn(List.of());
+
+        List<com.hokyozu.kyofuse.teams.dto.response.TeamResponse> result = communityService.listAvailableTeamsForCommunity(callerId, community.getId().toString());
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().id()).isEqualTo(team.getId());
     }
 
     private CommunityRequest validRequest() {

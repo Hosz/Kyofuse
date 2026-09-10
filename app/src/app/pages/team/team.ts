@@ -13,6 +13,7 @@ import { TeamMemberEditRequest, TeamMemberResponse } from '../../models/teams/te
 import { PLAYER_ROLE_OPTIONS, getPlayerRoleLabel } from '../../shared/models/profile-options.model';
 import { TEAM_MEMBER_STATUS_LABEL, TEAM_STATUS_OPTIONS } from '../../shared/models/team-options.model';
 import { ConfirmDialogComponent } from '../../components/shared/confirm-dialog/confirm-dialog';
+import { ModalComponent } from '../../components/shared/modal/modal';
 import { TeamMemberRowComponent } from '../../components/team/team-member-row/team-member-row';
 import { TeamMemberModalComponent } from '../../components/team/team-member-modal/team-member-modal';
 import { getCountryFlagUrl } from '../../shared/models/location-options.model';
@@ -25,7 +26,7 @@ type InfoTab = 'description' | 'requisites' | 'members' | 'history';
 
 @Component({
   selector: 'app-team',
-  imports: [RouterLink, AppSidebarComponent, FeedTabsComponent, ConfirmDialogComponent, TeamMemberRowComponent, TeamMemberModalComponent, TranslatePipe],
+  imports: [RouterLink, AppSidebarComponent, FeedTabsComponent, ConfirmDialogComponent, ModalComponent, TeamMemberRowComponent, TeamMemberModalComponent, TranslatePipe],
   templateUrl: './team.html',
   styleUrl: './team.css',
 })
@@ -120,8 +121,112 @@ export class TeamComponent {
   removingMember = signal(false);
   memberActionError = signal<string | null>(null);
 
+  isOwner = computed(() => {
+    const team = this.team();
+    const myUser = this.myUsername();
+    return !!team && !!myUser && team.ownerName === myUser;
+  });
+
+  isManager = computed(() => {
+    const myUser = this.myUsername();
+    if (!myUser) return false;
+    return this.members().some((m) => m.userName === myUser && m.memberType === 'MANAGER');
+  });
+
+  isHead = computed(() => this.isOwner() || this.isManager());
+
   /** Só o dono gere o elenco — o backend valida checkUserIsOwner nessas ações. */
-  canManageMembers = computed(() => this.viewMode() === 'admin');
+  canManageMembers = computed(() => this.isOwner());
+
+  createCommunityConfirmOpen = signal(false);
+  creatingCommunity = signal(false);
+  createCommunityError = signal<string | null>(null);
+
+  attachCommunityModalOpen = signal(false);
+  availableCommunities = signal<CommunityResponse[]>([]);
+  loadingAvailableCommunities = signal(false);
+  selectedCommunityId = signal<string | null>(null);
+  attachingCommunity = signal(false);
+  attachCommunityError = signal<string | null>(null);
+
+  openCreateCommunityConfirm(): void {
+    this.createCommunityError.set(null);
+    this.createCommunityConfirmOpen.set(true);
+  }
+
+  cancelCreateCommunity(): void {
+    if (this.creatingCommunity()) return;
+    this.createCommunityConfirmOpen.set(false);
+  }
+
+  confirmCreateCommunity(): void {
+    const id = this.team()?.id ?? this.teamId();
+    if (!id || this.creatingCommunity()) return;
+
+    this.creatingCommunity.set(true);
+    this.createCommunityError.set(null);
+
+    this.teamService.createCommunityFromTeam(id).subscribe({
+      next: (comm) => {
+        this.community.set(comm);
+        this.creatingCommunity.set(false);
+        this.createCommunityConfirmOpen.set(false);
+        this.toastService.success(this.i18n.t('teams.communityCreatedSuccess'));
+      },
+      error: (err) => {
+        this.creatingCommunity.set(false);
+        this.createCommunityError.set(err?.error?.message ?? 'Erro ao criar comunidade.');
+      },
+    });
+  }
+
+  openAttachCommunityModal(): void {
+    const id = this.team()?.id ?? this.teamId();
+    if (!id) return;
+
+    this.attachCommunityModalOpen.set(true);
+    this.attachCommunityError.set(null);
+    this.selectedCommunityId.set(null);
+    this.loadingAvailableCommunities.set(true);
+
+    this.teamService.listAvailableCommunities(id).subscribe({
+      next: (list) => {
+        this.availableCommunities.set(list);
+        this.loadingAvailableCommunities.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to list available communities:', err);
+        this.loadingAvailableCommunities.set(false);
+      },
+    });
+  }
+
+  closeAttachCommunityModal(): void {
+    if (this.attachingCommunity()) return;
+    this.attachCommunityModalOpen.set(false);
+  }
+
+  confirmAttachCommunity(): void {
+    const teamId = this.team()?.id ?? this.teamId();
+    const commId = this.selectedCommunityId();
+    if (!teamId || !commId || this.attachingCommunity()) return;
+
+    this.attachingCommunity.set(true);
+    this.attachCommunityError.set(null);
+
+    this.teamService.attachCommunity(teamId, commId).subscribe({
+      next: (comm) => {
+        this.community.set(comm);
+        this.attachingCommunity.set(false);
+        this.attachCommunityModalOpen.set(false);
+        this.toastService.success(this.i18n.t('teams.communityAttachedSuccess'));
+      },
+      error: (err) => {
+        this.attachingCommunity.set(false);
+        this.attachCommunityError.set(err?.error?.message ?? 'Erro ao vincular comunidade.');
+      },
+    });
+  }
 
   openMember(member: TeamMemberResponse): void {
     this.memberActionError.set(null);
@@ -262,18 +367,29 @@ export class TeamComponent {
     const team = this.team();
     if (!team) return;
 
+    const username = this.myUsername();
+    if (username) {
+      this.applyViewMode(team, username);
+      return;
+    }
+
     this.profileService.myProfile().subscribe({
       next: (profile) => {
         this.myUsername.set(profile.username);
-        if (profile.username === team.ownerName) {
-          this.viewMode.set('admin');
-        } else if (this.members().some((member) => member.userName === profile.username)) {
-          this.viewMode.set('member');
-        } else {
-          this.viewMode.set('visitor');
-        }
+        this.applyViewMode(team, profile.username);
       },
       error: (error) => console.error('Failed to fetch my profile:', error),
     });
+  }
+
+  private applyViewMode(team: TeamResponse, username: string): void {
+    const myMember = this.members().find((m) => m.userName === username);
+    if (username === team.ownerName || (myMember && myMember.memberType === 'MANAGER')) {
+      this.viewMode.set('admin');
+    } else if (myMember) {
+      this.viewMode.set('member');
+    } else {
+      this.viewMode.set('visitor');
+    }
   }
 }

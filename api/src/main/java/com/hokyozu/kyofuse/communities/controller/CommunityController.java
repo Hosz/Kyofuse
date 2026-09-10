@@ -12,9 +12,11 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import com.hokyozu.kyofuse.teams.dto.response.TeamResponse;
 import org.springframework.http.MediaType;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -105,5 +107,24 @@ public class CommunityController {
                                                       Pageable pageable) {
         UUID userId = UUID.fromString(jwt.getSubject());
         return communityService.listMyCommunities(userId, pageable);
+    }
+
+    @PostMapping("/{communityId}/attach-team/{teamId}")
+    public CommunityResponse attachTeamToCommunity(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String communityId,
+            @PathVariable String teamId
+    ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return communityService.attachTeamAndCommunity(userId, teamId, communityId);
+    }
+
+    @GetMapping("/{communityId}/available-teams")
+    public List<TeamResponse> listAvailableTeamsForCommunity(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String communityId
+    ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return communityService.listAvailableTeamsForCommunity(userId, communityId);
     }
 }

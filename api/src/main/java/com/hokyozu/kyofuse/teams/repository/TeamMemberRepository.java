@@ -30,6 +30,9 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, UUID> {
     @EntityGraph(attributePaths = {"user", "team"})
     List<TeamMember> findByTeam(Team team);
 
+    @EntityGraph(attributePaths = {"user", "team"})
+    List<TeamMember> findByTeamAndStatus(Team team, com.hokyozu.kyofuse.teams.enums.TeamMemberStatus status);
+
     Boolean existsByUser(User author);
 
     @Query("""

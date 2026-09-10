@@ -42,6 +42,42 @@ class CommunityMemberMapperTest {
     }
 
     @Test
+    void toOwnerEntity_shouldBuildActiveAdminMember() {
+        Community community = community();
+        User user = user("owner");
+        Instant before = Instant.now();
+
+        CommunityMember member = CommunityMemberMapper.toOwnerEntity(user, community);
+
+        assertThat(member.getCommunity()).isSameAs(community);
+        assertThat(member.getUser()).isSameAs(user);
+        assertThat(member.getRole()).isEqualTo(CommunityMemberRole.ADMIN);
+        assertThat(member.getStatus()).isEqualTo(CommunityMemberStatus.ACTIVE);
+        assertThat(member.getJoinedAt()).isBetween(before, Instant.now());
+        assertThat(member.getCreatedAt()).isBetween(before, Instant.now());
+        assertThat(member.getUpdatedAt()).isBetween(before, Instant.now());
+        assertThat(member.getLeftAt()).isNull();
+    }
+
+    @Test
+    void toAdminEntity_shouldBuildActiveAdminMember() {
+        Community community = community();
+        User user = user("admin");
+        Instant before = Instant.now();
+
+        CommunityMember member = CommunityMemberMapper.toAdminEntity(user, community);
+
+        assertThat(member.getCommunity()).isSameAs(community);
+        assertThat(member.getUser()).isSameAs(user);
+        assertThat(member.getRole()).isEqualTo(CommunityMemberRole.ADMIN);
+        assertThat(member.getStatus()).isEqualTo(CommunityMemberStatus.ACTIVE);
+        assertThat(member.getJoinedAt()).isBetween(before, Instant.now());
+        assertThat(member.getCreatedAt()).isBetween(before, Instant.now());
+        assertThat(member.getUpdatedAt()).isBetween(before, Instant.now());
+        assertThat(member.getLeftAt()).isNull();
+    }
+
+    @Test
     void toResponse_shouldMapMemberFields() {
         Community community = community();
         User user = user("member1");

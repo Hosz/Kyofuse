@@ -3,6 +3,7 @@ import { API_URL } from '../../../models/api-url.model';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { PageResponse } from '../../../models/page-response.model';
 import { CommunityRequest, CommunityResponse, UpdateCommunityRequest } from '../../../models/communities/community.model';
+import { TeamResponse } from '../../../models/teams/team.model';
 
 @Injectable({
   providedIn: 'root',
@@ -71,5 +72,13 @@ export class CommunityService {
   public listMyCommunities(page: number = 0, size: number = 20) {
     const params = new HttpParams().set('page', page.toString()).set('size', size.toString());
     return this.http.get<PageResponse<CommunityResponse>>(`${this.url}/my-communities`, { params });
+  }
+
+  public attachTeam(communityId: string, teamId: string) {
+    return this.http.post<CommunityResponse>(`${this.url}/${communityId}/attach-team/${teamId}`, {});
+  }
+
+  public listAvailableTeams(communityId: string) {
+    return this.http.get<TeamResponse[]>(`${this.url}/${communityId}/available-teams`);
   }
 }

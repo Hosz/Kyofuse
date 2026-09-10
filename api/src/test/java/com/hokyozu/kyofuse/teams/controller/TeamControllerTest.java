@@ -31,6 +31,9 @@ class TeamControllerTest {
     @Mock
     private TeamService teamService;
 
+    @Mock
+    private com.hokyozu.kyofuse.communities.service.CommunityService communityService;
+
     @InjectMocks
     private TeamController controller;
 
@@ -97,6 +100,41 @@ class TeamControllerTest {
 
         assertThat(result).isSameAs(expected);
         verify(teamService).inactiveTeam(userId, teamId);
+    }
+
+    @Test
+    void createCommunityFromTeamUsesAuthenticatedUserId() {
+        UUID userId = UUID.randomUUID();
+        String teamId = "team-alpha";
+        when(communityService.createCommunityFromTeam(userId, teamId)).thenReturn(null);
+
+        controller.createCommunityFromTeam(jwt(userId), teamId);
+
+        verify(communityService).createCommunityFromTeam(userId, teamId);
+    }
+
+    @Test
+    void attachCommunityToTeamUsesAuthenticatedUserId() {
+        UUID userId = UUID.randomUUID();
+        String teamId = "team-alpha";
+        String communityId = "comm-alpha";
+        when(communityService.attachTeamAndCommunity(userId, teamId, communityId)).thenReturn(null);
+
+        controller.attachCommunityToTeam(jwt(userId), teamId, communityId);
+
+        verify(communityService).attachTeamAndCommunity(userId, teamId, communityId);
+    }
+
+    @Test
+    void listAvailableCommunitiesForTeamUsesAuthenticatedUserId() {
+        UUID userId = UUID.randomUUID();
+        String teamId = "team-alpha";
+        when(communityService.listAvailableCommunitiesForTeam(userId, teamId)).thenReturn(List.of());
+
+        var result = controller.listAvailableCommunitiesForTeam(jwt(userId), teamId);
+
+        assertThat(result).isEmpty();
+        verify(communityService).listAvailableCommunitiesForTeam(userId, teamId);
     }
 
     private TeamRequest request() {
