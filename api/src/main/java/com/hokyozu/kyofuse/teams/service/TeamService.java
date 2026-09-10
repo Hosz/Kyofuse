@@ -122,8 +122,10 @@ public class TeamService {
         // "meus times", que é montado a partir de team_members.
         teamMemberRepository.save(TeamMemberMapper.toOwnerEntity(user, teamSaved));
 
-        Community community = communityService.autoCreateTeamCommunity(user, teamSaved);
-        conversationService.createCommunityConversation(community, user);
+        if (Boolean.TRUE.equals(request.createCommunity())) {
+            Community community = communityService.autoCreateTeamCommunity(user, teamSaved);
+            conversationService.createCommunityConversation(community, user);
+        }
 
         return TeamMapper.toResponse(teamSaved, requiredRolesSaved);
     }

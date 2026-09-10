@@ -244,7 +244,9 @@ export const ru: TranslationDictionary = {
     "faceitMin": "Faceit мин.",
     "faceitMax": "Faceit макс.",
     "gcMin": "GC мин.",
-    "gcMax": "GC макс.",
+    "gcMax": "GC max.",
+    "createCommunity": "Создать сообщество вместе с командой",
+    "createCommunityHint": "Автоматически создает связанное сообщество и чат-канал для вашей команды.",
   },
   "tournaments": {
     "title": "Центр турниров и чемпионатов",

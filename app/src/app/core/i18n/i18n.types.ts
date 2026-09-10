@@ -263,6 +263,8 @@ export interface TranslationDictionary {
     faceitMax: string;
     gcMin: string;
     gcMax: string;
+    createCommunity: string;
+    createCommunityHint: string;
   };
   tournaments: {
     title: string;

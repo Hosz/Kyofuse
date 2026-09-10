@@ -56,8 +56,26 @@ public record TeamRequest(
         @Min(1)
         @Max(21)
         Integer maxGcRank,
-        List<@NotNull PlayerRole> requiredRoles
+        List<@NotNull PlayerRole> requiredRoles,
+        Boolean createCommunity
 ) {
+        public TeamRequest(
+                String name,
+                String avatarUrl,
+                String bannerUrl,
+                String slug,
+                String description,
+                String region,
+                Integer minPremierRating,
+                Integer maxPremierRating,
+                Integer minFaceitLevel,
+                Integer maxFaceitLevel,
+                Integer minGcRank,
+                Integer maxGcRank,
+                List<@NotNull PlayerRole> requiredRoles
+        ) {
+                this(name, avatarUrl, bannerUrl, slug, description, region, minPremierRating, maxPremierRating, minFaceitLevel, maxFaceitLevel, minGcRank, maxGcRank, requiredRoles, null);
+        }
         @AssertTrue(message = "minPremierRating must be less than or equal to maxPremierRating")
         public boolean isPremierRatingRangeValid() {
                 return minPremierRating == null || maxPremierRating == null || minPremierRating <= maxPremierRating;

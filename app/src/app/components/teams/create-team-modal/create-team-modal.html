@@ -237,6 +237,34 @@
       </div>
     </div>
 
+    <div
+      class="flex cursor-pointer items-center justify-between rounded-lg border border-outline-variant bg-surface-container-low p-3 transition-colors hover:bg-surface-container"
+      (click)="toggleCreateCommunity()"
+    >
+      <div class="flex flex-col gap-0.5 pr-3">
+        <span class="text-label-sm font-semibold text-on-surface select-none">{{ 'teams.createCommunity' | trans }}</span>
+        <span class="text-label-sm text-on-surface-variant select-none">{{ 'teams.createCommunityHint' | trans }}</span>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        [attr.aria-checked]="createCommunity()"
+        [attr.aria-label]="'teams.createCommunity' | trans"
+        (click)="$event.stopPropagation(); toggleCreateCommunity()"
+        class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+        [class.bg-primary-container]="createCommunity()"
+        [class.bg-surface-container-highest]="!createCommunity()"
+      >
+        <span
+          class="pointer-events-none inline-block h-5 w-5 transform rounded-full shadow ring-0 transition duration-200 ease-in-out"
+          [class.translate-x-5]="createCommunity()"
+          [class.translate-x-0]="!createCommunity()"
+          [class.bg-on-primary-container]="createCommunity()"
+          [class.bg-on-surface-variant]="!createCommunity()"
+        ></span>
+      </button>
+    </div>
+
     @if (error()) {
       <p class="text-label-sm text-error">{{ error() }}</p>
     }

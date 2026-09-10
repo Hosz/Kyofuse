@@ -245,6 +245,8 @@ export const ja: TranslationDictionary = {
     "faceitMax": "Faceit 最大",
     "gcMin": "GC 最小",
     "gcMax": "GC 最大",
+    "createCommunity": "チームと一緒にコミュニティを作成",
+    "createCommunityHint": "チームにリンクされたコミュニティとチャットチャンネルを自動的に作成します。",
   },
   "tournaments": {
     "title": "大会 & チャンピオンシップハブ",

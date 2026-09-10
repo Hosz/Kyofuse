@@ -245,6 +245,8 @@ export const pt: TranslationDictionary = {
     "faceitMax": "Faceit máx.",
     "gcMin": "GC mín.",
     "gcMax": "GC máx.",
+    "createCommunity": "Criar comunidade junto com o time",
+    "createCommunityHint": "Cria automaticamente uma comunidade e canal de chat vinculados ao seu time.",
   },
   "tournaments": {
     "title": "Central de Torneios & Campeonatos",

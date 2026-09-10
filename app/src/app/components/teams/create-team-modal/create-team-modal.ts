@@ -40,6 +40,7 @@ export class CreateTeamModalComponent {
   minGcRank = signal<number | null>(null);
   maxGcRank = signal<number | null>(null);
   requiredRoles = signal<PlayerRole[]>([]);
+  createCommunity = signal(false);
 
   uploadingAvatar = signal(false);
   uploadingBanner = signal(false);
@@ -113,6 +114,10 @@ export class CreateTeamModalComponent {
     return this.requiredRoles().includes(role);
   }
 
+  toggleCreateCommunity(): void {
+    this.createCommunity.update((v) => !v);
+  }
+
   onClose(): void {
     if (this.saving()) return;
     this.reset();
@@ -143,6 +148,7 @@ export class CreateTeamModalComponent {
       minGcRank: this.minGcRank() ?? undefined,
       maxGcRank: this.maxGcRank() ?? undefined,
       requiredRoles: this.requiredRoles(),
+      createCommunity: this.createCommunity(),
     } as TeamRequest;
 
     this.teamService.createTeams(request).subscribe({
@@ -173,6 +179,7 @@ export class CreateTeamModalComponent {
     this.minGcRank.set(null);
     this.maxGcRank.set(null);
     this.requiredRoles.set([]);
+    this.createCommunity.set(false);
     this.error.set(null);
     this.slugTouched = false;
   }

@@ -245,6 +245,8 @@ export const zh: TranslationDictionary = {
     "faceitMax": "最高 Faceit",
     "gcMin": "最低 GC",
     "gcMax": "最高 GC",
+    "createCommunity": "随战队创建社区",
+    "createCommunityHint": "自动为您的战队创建关联的社区和聊天频道。",
   },
   "tournaments": {
     "title": "赛事与锦标赛中心",

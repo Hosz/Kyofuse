@@ -221,6 +221,52 @@ class TeamServiceTest {
     }
 
     @Test
+    void createTeamsDoesNotCreateCommunityWhenCreateCommunityIsFalse() {
+        UUID userId = UUID.randomUUID();
+        UUID teamId = UUID.randomUUID();
+        User user = User.builder().id(userId).username("owner").status(UserStatus.ACTIVE).build();
+        TeamRequest request = validRequest(List.of(PlayerRole.AWPER), false);
+
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
+        when(teamRepository.existsBySlug("kyofuse-academy")).thenReturn(false);
+        when(teamRepository.save(any(Team.class))).thenAnswer(invocation -> {
+            Team team = invocation.getArgument(0);
+            team.setId(teamId);
+            return team;
+        });
+        when(teamRequiredRoleRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TeamResponse response = teamService.createTeams(request, userId);
+
+        assertThat(response).isNotNull();
+        verify(communityService, never()).autoCreateTeamCommunity(any(), any());
+        verify(conversationService, never()).createCommunityConversation(any(), any());
+    }
+
+    @Test
+    void createTeamsDoesNotCreateCommunityWhenCreateCommunityIsNull() {
+        UUID userId = UUID.randomUUID();
+        UUID teamId = UUID.randomUUID();
+        User user = User.builder().id(userId).username("owner").status(UserStatus.ACTIVE).build();
+        TeamRequest request = validRequest(List.of(PlayerRole.AWPER), null);
+
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
+        when(teamRepository.existsBySlug("kyofuse-academy")).thenReturn(false);
+        when(teamRepository.save(any(Team.class))).thenAnswer(invocation -> {
+            Team team = invocation.getArgument(0);
+            team.setId(teamId);
+            return team;
+        });
+        when(teamRequiredRoleRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TeamResponse response = teamService.createTeams(request, userId);
+
+        assertThat(response).isNotNull();
+        verify(communityService, never()).autoCreateTeamCommunity(any(), any());
+        verify(conversationService, never()).createCommunityConversation(any(), any());
+    }
+
+    @Test
     void createTeamsSavesNoRequiredRolesWhenRequestRolesIsNull() {
         UUID userId = UUID.randomUUID();
         User user = User.builder()
@@ -848,6 +894,10 @@ class TeamServiceTest {
     }
 
     private TeamRequest validRequest(List<PlayerRole> requiredRoles) {
+        return validRequest(requiredRoles, true);
+    }
+
+    private TeamRequest validRequest(List<PlayerRole> requiredRoles, Boolean createCommunity) {
         return new TeamRequest(
                 "Kyofuse Academy",
                 null,
@@ -861,7 +911,8 @@ class TeamServiceTest {
                 10,
                 1,
                 21,
-                requiredRoles
+                requiredRoles,
+                createCommunity
         );
     }
 

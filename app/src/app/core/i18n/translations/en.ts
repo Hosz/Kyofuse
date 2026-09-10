@@ -245,6 +245,8 @@ export const en: TranslationDictionary = {
     "faceitMax": "Max. Faceit",
     "gcMin": "Min. GC",
     "gcMax": "Max. GC",
+    "createCommunity": "Create community with team",
+    "createCommunityHint": "Automatically creates a linked community and chat channel for your team.",
   },
   "tournaments": {
     "title": "Tournament & Championship Hub",
