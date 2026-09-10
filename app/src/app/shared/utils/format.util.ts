@@ -223,3 +223,68 @@ export function formatMessageDayDivider(isoDate: string, lang: string = 'pt'): s
   const yearShort = String(date.getFullYear()).slice(-2);
   return `${day}/${month}/${yearShort}`;
 }
+
+export const CHAT_MESSAGE_MAX_CHARS = 400;
+export const CHAT_MESSAGE_MAX_LINES = 6;
+
+/**
+ * Retorna se uma mensagem de chat é considerada longa o bastante para ser truncada
+ * no fluxo de mensagens e exigir a abertura do modal de visualização completa ("Ver mais").
+ */
+export function isLongChatMessage(
+  text: string | null | undefined,
+  maxChars = CHAT_MESSAGE_MAX_CHARS,
+  maxLines = CHAT_MESSAGE_MAX_LINES,
+): boolean {
+  if (!text) return false;
+  if (text.length > maxChars) return true;
+  const lines = text.split('\n');
+  return lines.length > maxLines;
+}
+
+/**
+ * Trunca o texto de uma mensagem de chat de forma limpa, respeitando limites de
+ * caracteres e quebras de linha, cortando no último espaço dentro de uma janela razoável.
+ */
+export function truncateChatMessage(
+  text: string | null | undefined,
+  maxChars = CHAT_MESSAGE_MAX_CHARS,
+  maxLines = CHAT_MESSAGE_MAX_LINES,
+): string {
+  if (!text) return '';
+  const lines = text.split('\n');
+  const isLongByLines = lines.length > maxLines;
+  const isLongByChars = text.length > maxChars;
+
+  if (!isLongByLines && !isLongByChars) {
+    return text;
+  }
+
+  let cutIndex = maxChars;
+  let cutByLines = false;
+
+  if (isLongByLines) {
+    const lineSlice = lines.slice(0, maxLines).join('\n');
+    if (lineSlice.length < cutIndex) {
+      cutIndex = lineSlice.length;
+      cutByLines = true;
+    }
+  }
+
+  if (cutIndex > text.length) {
+    cutIndex = text.length;
+  }
+
+  // Corta no último espaço se estiver cortando no meio de uma palavra
+  if (!cutByLines) {
+    const nextChar = text.charAt(cutIndex);
+    if (nextChar !== ' ' && nextChar !== '\n') {
+      const lastSpace = text.lastIndexOf(' ', cutIndex);
+      if (lastSpace > cutIndex - 40 && lastSpace > 0) {
+        cutIndex = lastSpace;
+      }
+    }
+  }
+
+  return text.slice(0, cutIndex).trimEnd();
+}

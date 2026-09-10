@@ -9,11 +9,13 @@ import { AuthService } from '../../../core/services/auth/auth.service';
 import { ConversationInfoPanelComponent } from '../conversation-info-panel/conversation-info-panel';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog';
 import { SkeletonComponent } from '../../shared/skeleton/skeleton';
+import { FullMessageModalComponent } from '../full-message-modal/full-message-modal';
+import { FullMessageViewData } from '../full-message-modal/full-message-modal.types';
 import { ToastService } from '../../../core/services/ui/toast.service';
 import { ConversationResponse, MessageResponse } from '../../../models/chat/chat.model';
-import { Conversation, TypingEvent } from '../../../shared/models/chat.model';
+import { Conversation, TypingEvent, ChatMessage, ChatMessageGroup } from '../../../shared/models/chat.model';
 import { previewFromChatMessage, toChatMessage, toChatMessageGroups, toConversation } from '../../../shared/utils/mappers.util';
-import { toTimeAgo } from '../../../shared/utils/format.util';
+import { toTimeAgo, isLongChatMessage, truncateChatMessage, FALLBACK_AVATAR_URL } from '../../../shared/utils/format.util';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { I18nService } from '../../../core/i18n/i18n.service';
 
@@ -36,7 +38,7 @@ function normalize(value: string): string {
  */
 @Component({
   selector: 'app-chat-dock',
-  imports: [ConversationInfoPanelComponent, ConfirmDialogComponent, SkeletonComponent, TranslatePipe],
+  imports: [ConversationInfoPanelComponent, ConfirmDialogComponent, SkeletonComponent, FullMessageModalComponent, TranslatePipe],
   templateUrl: './chat-dock.html',
   styleUrl: './chat-dock.css',
 })
@@ -92,6 +94,7 @@ export class ChatDockComponent implements OnDestroy {
   draft = signal('');
 
   messagePendingDeletion = signal<string | null>(null);
+  selectedFullMessage = signal<FullMessageViewData | null>(null);
 
   private myUserId = signal<string | null>(null);
   private loaded = false;
@@ -383,6 +386,44 @@ export class ChatDockComponent implements OnDestroy {
         this.toastService.error('Não foi possível enviar a mensagem.');
       },
     });
+  }
+
+  isLong(text: string | null | undefined): boolean {
+    return isLongChatMessage(text);
+  }
+
+  truncate(text: string | null | undefined): string {
+    return truncateChatMessage(text);
+  }
+
+  openFullMessage(message: ChatMessage, group?: ChatMessageGroup): void {
+    const conv = this.active();
+    const isMe = message.author === 'me';
+    const senderName = isMe
+      ? this.i18n.t('chat.you')
+      : (message.senderNickname || group?.senderNickname || conv?.participant.name || 'Usuário');
+    const senderHandle = isMe
+      ? undefined
+      : (message.senderUsername || group?.senderUsername || conv?.participant.handle || undefined);
+    const senderAvatarUrl = isMe
+      ? undefined
+      : (message.senderAvatarUrl || group?.senderAvatarUrl || conv?.participant.avatarUrl || FALLBACK_AVATAR_URL);
+
+    this.selectedFullMessage.set({
+      id: message.id,
+      content: message.content,
+      author: message.author,
+      senderName,
+      senderHandle,
+      senderAvatarUrl,
+      timestamp: message.exactTime || group?.timeFormatted || message.timestamp,
+      tooltipTime: message.tooltipTime,
+      media: message.media,
+    });
+  }
+
+  closeFullMessage(): void {
+    this.selectedFullMessage.set(null);
   }
 
   askDeleteMessage(messageId: string): void {

@@ -7,7 +7,9 @@ import { ConversationInfoPanelComponent } from '../conversation-info-panel/conve
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog';
 import { ImageModalComponent } from '../../shared/image-modal/image-modal';
 import { MessageInfoModalComponent } from '../message-info-modal/message-info-modal';
-import { ChatMessage } from '../../../shared/models/chat.model';
+import { FullMessageModalComponent } from '../full-message-modal/full-message-modal';
+import { FullMessageViewData } from '../full-message-modal/full-message-modal.types';
+import { ChatMessage, ChatMessageGroup } from '../../../shared/models/chat.model';
 import { MediaService } from '../../../core/services/media/media.service';
 import { MessageService } from '../../../core/services/chat/message.service';
 import { ToastService } from '../../../core/services/ui/toast.service';
@@ -15,10 +17,11 @@ import { PostMediaItemRequest } from '../../../models/posts/post-request.model';
 import { Subscription } from 'rxjs';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { I18nService } from '../../../core/i18n/i18n.service';
+import { isLongChatMessage, truncateChatMessage } from '../../../shared/utils/format.util';
 
 @Component({
   selector: 'app-chat-window',
-  imports: [ConversationInfoPanelComponent, ConfirmDialogComponent, ImageModalComponent, MessageInfoModalComponent, TranslatePipe],
+  imports: [ConversationInfoPanelComponent, ConfirmDialogComponent, ImageModalComponent, MessageInfoModalComponent, FullMessageModalComponent, TranslatePipe],
   templateUrl: './chat-window.html',
   styleUrl: './chat-window.css',
 })
@@ -60,6 +63,7 @@ export class ChatWindowComponent implements OnDestroy {
 
   /** Mensagem esperando confirmação de exclusão — apagar não dá pra desfazer. */
   messagePendingDeletion = signal<ChatMessage | null>(null);
+  selectedFullMessage = signal<FullMessageViewData | null>(null);
   menuOpen = signal(false);
   infoPanelOpen = signal(false);
 
@@ -141,6 +145,44 @@ export class ChatWindowComponent implements OnDestroy {
 
   closeImage(): void {
     this.selectedImageUrl.set(null);
+  }
+
+  isLong(text: string | null | undefined): boolean {
+    return isLongChatMessage(text);
+  }
+
+  truncate(text: string | null | undefined): string {
+    return truncateChatMessage(text);
+  }
+
+  openFullMessage(message: ChatMessage, group?: ChatMessageGroup): void {
+    const conv = this.conversation();
+    const isMe = message.author === 'me';
+    const senderName = isMe
+      ? this.i18n.t('chat.you')
+      : (message.senderNickname || group?.senderNickname || conv?.participant.name || 'Usuário');
+    const senderHandle = isMe
+      ? undefined
+      : (message.senderUsername || group?.senderUsername || conv?.participant.handle || undefined);
+    const senderAvatarUrl = isMe
+      ? undefined
+      : (message.senderAvatarUrl || group?.senderAvatarUrl || conv?.participant.avatarUrl || this.fallbackAvatar);
+
+    this.selectedFullMessage.set({
+      id: message.id,
+      content: message.content,
+      author: message.author,
+      senderName,
+      senderHandle,
+      senderAvatarUrl,
+      timestamp: message.exactTime || group?.timeFormatted || message.timestamp,
+      tooltipTime: message.tooltipTime,
+      media: message.media,
+    });
+  }
+
+  closeFullMessage(): void {
+    this.selectedFullMessage.set(null);
   }
 
   openMessageInfo(messageId: string): void {

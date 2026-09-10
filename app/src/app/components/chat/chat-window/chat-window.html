@@ -242,8 +242,19 @@
                         </div>
                       }
                       @if (message.content) {
-                        <div class="rounded-2xl rounded-bl-sm bg-surface-container-high px-4 py-2.5 text-body-sm text-on-surface transition-colors hover:bg-surface-container-highest">
-                          {{ message.content }}
+                        <div class="whitespace-pre-wrap break-words rounded-2xl rounded-bl-sm bg-surface-container-high px-4 py-2.5 text-body-sm text-on-surface transition-colors hover:bg-surface-container-highest">
+                          @if (isLong(message.content)) {
+                            <span>{{ truncate(message.content) }}... </span>
+                            <button
+                              type="button"
+                              (click)="openFullMessage(message, group)"
+                              class="inline-flex cursor-pointer items-center font-bold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
+                            >
+                              {{ 'feed.showMore' | trans }}
+                            </button>
+                          } @else {
+                            {{ message.content }}
+                          }
                         </div>
                       }
                     </div>
@@ -290,8 +301,19 @@
                       </div>
                     }
                     @if (message.content) {
-                      <div class="max-w-[22rem] rounded-2xl rounded-br-sm border border-outline-variant bg-surface-container px-4 py-2.5 text-body-sm text-on-surface transition-colors hover:bg-surface-container-high">
-                        {{ message.content }}
+                      <div class="max-w-[22rem] whitespace-pre-wrap break-words rounded-2xl rounded-br-sm border border-outline-variant bg-surface-container px-4 py-2.5 text-body-sm text-on-surface transition-colors hover:bg-surface-container-high">
+                        @if (isLong(message.content)) {
+                          <span>{{ truncate(message.content) }}... </span>
+                          <button
+                            type="button"
+                            (click)="openFullMessage(message, group)"
+                            class="inline-flex cursor-pointer items-center font-bold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
+                          >
+                            {{ 'feed.showMore' | trans }}
+                          </button>
+                        } @else {
+                          {{ message.content }}
+                        }
                       </div>
                     }
                   </div>
@@ -498,4 +520,10 @@
   [info]="messageInfo()"
   [loading]="loadingMessageInfo()"
   (closed)="closeMessageInfo()"
+/>
+
+<app-full-message-modal
+  [data]="selectedFullMessage()"
+  (closed)="closeFullMessage()"
+  (openImage)="openImage($event)"
 />

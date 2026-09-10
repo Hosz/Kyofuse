@@ -372,6 +372,9 @@ export interface TranslationDictionary {
     noConversationsFound: string;
     noConversationsYet: string;
     deleteMessageTitle: string;
+    fullMessage: string;
+    copyText: string;
+    textCopied: string;
     newMessages: string;
     today: string;
     yesterday: string;

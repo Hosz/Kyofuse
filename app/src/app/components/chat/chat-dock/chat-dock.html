@@ -144,7 +144,18 @@
                                     : 'bg-surface-container-high/70 text-on-surface hover:bg-surface-container-high'
                                 "
                               >
-                                {{ message.content }}
+                                @if (isLong(message.content)) {
+                                  <span>{{ truncate(message.content) }}... </span>
+                                  <button
+                                    type="button"
+                                    (click)="openFullMessage(message, group)"
+                                    class="inline-flex cursor-pointer items-center font-bold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
+                                  >
+                                    {{ 'feed.showMore' | trans }}
+                                  </button>
+                                } @else {
+                                  {{ message.content }}
+                                }
                               </span>
                             }
                           </div>
@@ -357,6 +368,11 @@
     [cancelLabel]="'common.cancel' | trans"
     (confirmed)="confirmDeleteMessage()"
     (cancelled)="cancelDeleteMessage()"
+  />
+
+  <app-full-message-modal
+    [data]="selectedFullMessage()"
+    (closed)="closeFullMessage()"
   />
 
   <!-- Fora da janelinha de propósito: o backdrop-filter dela cria bloco de contenção
