@@ -6,11 +6,16 @@ import { I18nService } from '../../../../core/i18n/i18n.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { DeviceType, UserSession } from '../../../../models/auth/user-session.model';
 
+import { SkeletonComponent } from '../../../../components/shared/skeleton/skeleton';
+
 @Component({
   selector: 'app-sessions-settings-section',
-  imports: [CommonModule, TranslatePipe],
+  imports: [CommonModule, SkeletonComponent, TranslatePipe],
   templateUrl: './sessions-settings.html',
   styleUrl: './sessions-settings.css',
+  host: {
+    class: 'block w-full min-w-0',
+  },
 })
 export class SessionsSettingsSectionComponent implements OnInit {
   private readonly userSessionService = inject(UserSessionService);
@@ -25,8 +30,17 @@ export class SessionsSettingsSectionComponent implements OnInit {
   revokingAll = signal(false);
   togglingTrust = signal(false);
 
-  readonly currentSession = computed(() => this.sessions().find((s) => s.current) ?? null);
-  readonly otherSessions = computed(() => this.sessions().filter((s) => !s.current));
+  readonly currentSession = computed(() => {
+    const list = this.sessions();
+    const current = list.find((s) => s.current);
+    if (current) return current;
+    return list.length > 0 ? list[0] : null;
+  });
+  readonly otherSessions = computed(() => {
+    const current = this.currentSession();
+    if (!current) return [];
+    return this.sessions().filter((s) => s.id !== current.id);
+  });
 
   ngOnInit(): void {
     this.loadSessions();

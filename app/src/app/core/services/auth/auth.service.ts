@@ -47,7 +47,7 @@ export class AuthService {
       switchToken: result.switchToken,
     });
     if (result.deviceTrusted === false) {
-      this.userSessionService.showTrustPrompt.set(true);
+      this.userSessionService.markTrustPromptPending();
     }
   }
 

@@ -2,6 +2,7 @@ package com.hokyozu.kyofuse.auth.service;
 
 import com.hokyozu.kyofuse.auth.dto.response.UserSessionResponse;
 import com.hokyozu.kyofuse.auth.entity.UserSession;
+import com.hokyozu.kyofuse.auth.repository.UserRepository;
 import com.hokyozu.kyofuse.auth.repository.UserSessionRepository;
 import com.hokyozu.kyofuse.infrastructure.client.DeviceInfo;
 import com.hokyozu.kyofuse.infrastructure.client.UserAgentParser;
@@ -30,6 +31,7 @@ public class UserSessionService {
     private final UserAgentParser userAgentParser;
     private final GeoLocationService geoLocationService;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final UserRepository userRepository;
 
     @Transactional
     public UserSession recordOrUpdateSession(User user, String deviceId, String clientIp, String userAgent, LocationInfo explicitLocation) {
@@ -127,27 +129,45 @@ public class UserSessionService {
         userSessionRepository.save(session);
     }
 
+    @Transactional
+    public List<UserSessionResponse> listActiveSessions(UUID userId, String currentDeviceId, String clientIp, String userAgent) {
+        if (userId != null && userRepository != null) {
+            userRepository.findById(userId).ifPresent(user -> {
+                recordOrUpdateSession(user, currentDeviceId, clientIp, userAgent, null);
+            });
+        }
+        return listActiveSessions(userId, currentDeviceId);
+    }
+
     @Transactional(readOnly = true)
     public List<UserSessionResponse> listActiveSessions(UUID userId, String currentDeviceId) {
         String cleanCurrent = currentDeviceId != null ? currentDeviceId.trim() : "";
 
-        return userSessionRepository.findAllByUserIdAndRevokedFalseOrderByLastActiveAtDesc(userId)
-                .stream()
-                .map(s -> UserSessionResponse.builder()
-                        .id(s.getId())
-                        .deviceId(s.getDeviceId())
-                        .deviceType(s.getDeviceType())
-                        .deviceName(s.getDeviceName())
-                        .browser(s.getBrowser())
-                        .os(s.getOs())
-                        .ipAddress(maskIp(s.getIpAddress()))
-                        .location(s.getLocation())
-                        .trusted(s.isTrusted())
-                        .trustedAt(s.getTrustedAt())
-                        .lastActiveAt(s.getLastActiveAt())
-                        .createdAt(s.getCreatedAt())
-                        .current(cleanCurrent.equalsIgnoreCase(s.getDeviceId()))
-                        .build())
+        List<UserSession> sessions = userSessionRepository.findAllByUserIdAndRevokedFalseOrderByLastActiveAtDesc(userId);
+        boolean hasCurrent = sessions.stream().anyMatch(s -> !cleanCurrent.isEmpty() && cleanCurrent.equalsIgnoreCase(s.getDeviceId()));
+
+        return sessions.stream()
+                .map(s -> {
+                    boolean isCurrent = hasCurrent
+                            ? cleanCurrent.equalsIgnoreCase(s.getDeviceId())
+                            : (sessions.indexOf(s) == 0);
+
+                    return UserSessionResponse.builder()
+                            .id(s.getId())
+                            .deviceId(s.getDeviceId())
+                            .deviceType(s.getDeviceType())
+                            .deviceName(s.getDeviceName())
+                            .browser(s.getBrowser())
+                            .os(s.getOs())
+                            .ipAddress(maskIp(s.getIpAddress()))
+                            .location(s.getLocation())
+                            .trusted(s.isTrusted())
+                            .trustedAt(s.getTrustedAt())
+                            .lastActiveAt(s.getLastActiveAt())
+                            .createdAt(s.getCreatedAt())
+                            .current(isCurrent)
+                            .build();
+                })
                 .toList();
     }
 

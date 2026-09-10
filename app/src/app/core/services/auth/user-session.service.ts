@@ -11,8 +11,27 @@ export class UserSessionService {
   private readonly http = inject(HttpClient);
   private readonly url = `${API_URL}/api/auth/sessions`;
 
-  /** Controla exibição do modal/banner "Confiar neste dispositivo?" após login */
+  /** Controla exibição do modal/banner "Confiar neste dispositivo?" após carregar o feed */
   readonly showTrustPrompt = signal(false);
+  private readonly PENDING_TRUST_KEY = 'kyofuse_pending_trust_prompt';
+
+  public markTrustPromptPending(): void {
+    try {
+      localStorage.setItem(this.PENDING_TRUST_KEY, 'true');
+    } catch {}
+  }
+
+  public checkAndTriggerTrustPrompt(): void {
+    try {
+      const pending = localStorage.getItem(this.PENDING_TRUST_KEY);
+      if (pending === 'true') {
+        localStorage.removeItem(this.PENDING_TRUST_KEY);
+        setTimeout(() => {
+          this.showTrustPrompt.set(true);
+        }, 700);
+      }
+    } catch {}
+  }
 
   public listSessions(): Observable<UserSession[]> {
     return this.http.get<UserSession[]>(this.url);

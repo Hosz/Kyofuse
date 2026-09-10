@@ -1,4 +1,4 @@
-<section class="flex flex-col gap-6 rounded-2xl border border-outline-variant bg-surface-container-low p-6 sm:p-8 shadow-sm">
+<section class="w-full min-w-0 flex flex-col gap-6 rounded-2xl border border-outline-variant bg-surface-container-low p-6 sm:p-8 shadow-sm">
   <!-- Cabeçalho da Seção -->
   <div class="flex items-center justify-between border-b border-outline-variant pb-4">
     <div class="flex items-center gap-3">
@@ -13,7 +13,7 @@
   </div>
 
   @if (loading()) {
-    <p class="py-8 text-center text-body-sm text-on-surface-variant">{{ 'common.loading' | trans }}</p>
+    <app-skeleton variant="row" [count]="4" />
   } @else {
     <!-- SESSÃO ATUAL -->
     <div class="flex flex-col gap-3">
@@ -29,7 +29,7 @@
           role="button"
           tabindex="0"
           (keydown.enter)="openSessionDetails(curr)"
-          class="cursor-pointer group flex items-center justify-between rounded-xl border border-outline-variant bg-surface-container p-4 transition-all hover:border-primary/50 hover:bg-surface-container-high"
+          class="cursor-pointer group flex w-full min-w-0 items-center justify-between rounded-xl border border-outline-variant bg-surface-container p-4 transition-all hover:border-primary/50 hover:bg-surface-container-high"
         >
           <div class="flex items-center gap-4 min-w-0">
             <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -95,7 +95,7 @@
               role="button"
               tabindex="0"
               (keydown.enter)="openSessionDetails(session)"
-              class="cursor-pointer group flex items-center justify-between rounded-xl border border-outline-variant bg-surface-container p-4 transition-all hover:border-primary/40 hover:bg-surface-container-high"
+              class="cursor-pointer group flex w-full min-w-0 items-center justify-between rounded-xl border border-outline-variant bg-surface-container p-4 transition-all hover:border-primary/40 hover:bg-surface-container-high"
             >
               <div class="flex items-center gap-4 min-w-0">
                 <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface-container-high text-on-surface-variant group-hover:text-primary transition-colors">
@@ -140,7 +140,7 @@
     aria-labelledby="session-details-title"
   >
     <div
-      class="relative flex w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-low shadow-2xl"
+      class="relative flex w-full max-w-lg min-w-0 sm:min-w-[480px] flex-col overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-low shadow-2xl"
       (click)="$event.stopPropagation()"
     >
       <!-- Top Header -->

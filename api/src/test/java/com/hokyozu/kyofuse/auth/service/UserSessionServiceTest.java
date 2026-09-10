@@ -2,6 +2,7 @@ package com.hokyozu.kyofuse.auth.service;
 
 import com.hokyozu.kyofuse.auth.dto.response.UserSessionResponse;
 import com.hokyozu.kyofuse.auth.entity.UserSession;
+import com.hokyozu.kyofuse.auth.repository.UserRepository;
 import com.hokyozu.kyofuse.auth.repository.UserSessionRepository;
 import com.hokyozu.kyofuse.infrastructure.client.DeviceInfo;
 import com.hokyozu.kyofuse.infrastructure.client.UserAgentParser;
@@ -39,6 +40,9 @@ class UserSessionServiceTest {
 
     @Mock
     private RefreshTokenRepository refreshTokenRepository;
+
+    @Mock
+    private UserRepository userRepository;
 
     @InjectMocks
     private UserSessionService userSessionService;

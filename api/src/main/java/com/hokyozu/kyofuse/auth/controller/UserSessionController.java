@@ -2,6 +2,7 @@ package com.hokyozu.kyofuse.auth.controller;
 
 import com.hokyozu.kyofuse.auth.dto.response.UserSessionResponse;
 import com.hokyozu.kyofuse.auth.service.UserSessionService;
+import com.hokyozu.kyofuse.infrastructure.client.ClientIpResolver;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,7 @@ import java.util.UUID;
 public class UserSessionController {
 
     private final UserSessionService userSessionService;
+    private final ClientIpResolver clientIpResolver;
 
     @GetMapping
     public List<UserSessionResponse> listActiveSessions(
@@ -26,7 +28,9 @@ public class UserSessionController {
     ) {
         UUID userId = UUID.fromString(jwt.getSubject());
         String deviceId = request.getHeader("X-Device-Id");
-        return userSessionService.listActiveSessions(userId, deviceId);
+        String clientIp = clientIpResolver.resolve(request);
+        String userAgent = request.getHeader("User-Agent");
+        return userSessionService.listActiveSessions(userId, deviceId, clientIp, userAgent);
     }
 
     @PatchMapping("/trust")
