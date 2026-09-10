@@ -16,11 +16,24 @@
           <span class="font-semibold text-on-surface">Membros</span>
         </div>
 
-        <div class="flex flex-col gap-1">
-          <h1 class="text-headline-lg-mobile font-headline-lg text-on-surface">Membros</h1>
-          <span class="text-body-sm text-on-surface-variant">
-            {{ totalMembers() }} {{ totalMembers() === 1 ? 'membro ativo' : 'membros ativos' }}
-          </span>
+        <div class="flex items-center justify-between gap-4">
+          <div class="flex flex-col gap-1">
+            <h1 class="text-headline-lg-mobile font-headline-lg text-on-surface">Membros</h1>
+            <span class="text-body-sm text-on-surface-variant">
+              {{ totalMembers() }} {{ totalMembers() === 1 ? 'membro ativo' : 'membros ativos' }}
+            </span>
+          </div>
+
+          @if (isMember()) {
+            <button
+              type="button"
+              (click)="openInviteModal()"
+              class="flex cursor-pointer items-center gap-1.5 rounded-xl bg-primary-container px-3.5 py-2 text-label-md font-bold text-on-primary-container transition-all hover:brightness-110 active:scale-[0.98]"
+            >
+              <span class="material-symbols-outlined text-[18px]">person_add</span>
+              Convidar
+            </button>
+          }
         </div>
 
         @if (loading()) {
@@ -90,9 +103,21 @@
                         type="button"
                         (click)="openRemoveConfirm(member)"
                         aria-label="Remover membro"
+                        title="Remover da comunidade"
                         class="shrink-0 cursor-pointer rounded-full p-1.5 text-on-surface-variant transition-colors hover:bg-error/10 hover:text-error"
                       >
                         <span class="material-symbols-outlined text-[18px]">person_remove</span>
+                      </button>
+                    }
+                    @if (canBan(member)) {
+                      <button
+                        type="button"
+                        (click)="openBanConfirm(member)"
+                        aria-label="Banir membro"
+                        title="Banir da comunidade"
+                        class="shrink-0 cursor-pointer rounded-full p-1.5 text-on-surface-variant transition-colors hover:bg-error/10 hover:text-error"
+                      >
+                        <span class="material-symbols-outlined text-[18px]">gavel</span>
                       </button>
                     }
                   </div>
@@ -194,6 +219,92 @@
         class="cursor-pointer rounded-full bg-error px-4 py-2 text-label-md font-bold text-on-error transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {{ removing() ? 'Removendo...' : 'Remover' }}
+      </button>
+    </div>
+  </div>
+</app-modal>
+
+<app-modal [open]="banConfirmMember() !== null" title="Banir membro" (closed)="closeBanConfirm()">
+  <div class="flex flex-col gap-lg">
+    <div class="rounded-lg border border-error/30 bg-error/10 p-3 text-body-sm text-error">
+      Atenção: ao banir este membro, ele não poderá mais interagir nem retornar a esta comunidade.
+    </div>
+
+    <p class="text-body-sm text-on-surface">
+      Tem certeza que deseja banir
+      <span class="font-semibold text-on-surface">&#64;{{ banConfirmMember()?.memberUsername }}</span>
+      da comunidade?
+    </p>
+
+    @if (banError()) {
+      <p class="text-label-sm text-error">{{ banError() }}</p>
+    }
+
+    <div class="flex justify-end gap-2">
+      <button
+        type="button"
+        (click)="closeBanConfirm()"
+        [disabled]="banning()"
+        class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {{ 'common.cancel' | trans }}
+      </button>
+      <button
+        type="button"
+        (click)="confirmBan()"
+        [disabled]="banning()"
+        class="cursor-pointer rounded-full bg-error px-4 py-2 text-label-md font-bold text-on-error transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {{ banning() ? 'Banindo...' : 'Banir' }}
+      </button>
+    </div>
+  </div>
+</app-modal>
+
+<app-modal [open]="inviteModalOpen()" title="Convidar membro" (closed)="closeInviteModal()">
+  <div class="flex flex-col gap-lg">
+    <label class="flex flex-col gap-1.5">
+      <span class="text-label-sm font-semibold text-on-surface">Nome de usuário</span>
+      <input
+        type="text"
+        placeholder="Ex: player123"
+        [value]="inviteUsername()"
+        (input)="inviteUsername.set($any($event.target).value)"
+        class="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-body-sm text-on-surface outline-none focus:border-primary"
+      />
+    </label>
+
+    <label class="flex flex-col gap-1.5">
+      <span class="text-label-sm font-semibold text-on-surface">Mensagem (opcional)</span>
+      <textarea
+        placeholder="Adicione uma mensagem personalizada ao convite..."
+        [value]="inviteMessage()"
+        (input)="inviteMessage.set($any($event.target).value)"
+        rows="3"
+        class="resize-none rounded-lg border border-outline-variant bg-surface px-3 py-2 text-body-sm text-on-surface outline-none focus:border-primary"
+      ></textarea>
+    </label>
+
+    @if (inviteError()) {
+      <p class="text-label-sm text-error">{{ inviteError() }}</p>
+    }
+
+    <div class="flex justify-end gap-2">
+      <button
+        type="button"
+        (click)="closeInviteModal()"
+        [disabled]="sendingInvite()"
+        class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {{ 'common.cancel' | trans }}
+      </button>
+      <button
+        type="button"
+        (click)="confirmInvite()"
+        [disabled]="sendingInvite() || !inviteUsername().trim()"
+        class="cursor-pointer rounded-full bg-primary-container px-4 py-2 text-label-md font-bold text-on-primary-container transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {{ sendingInvite() ? ('common.loading' | trans) : ('modals.invite' | trans) }}
       </button>
     </div>
   </div>

@@ -30,6 +30,7 @@
             (toggleFriendRequest)="onToggleFriendRequest()"
             (friendRemoved)="onFriendRemoved()"
             (inviteClick)="openModal('invite')"
+            (inviteCommunityClick)="openModal('community-invite')"
             (messageClick)="onMessageClick()"
             (blocked)="onProfileBlocked()"
           />
@@ -192,6 +193,12 @@
 <app-entity-list-modal [title]="'nav.teams' | trans" [open]="activeModal() === 'teams'" [items]="teams()" (closed)="closeModal()" />
 <app-invite-modal
   [open]="activeModal() === 'invite'"
+  [targetName]="profile().nickname || profile().username"
+  [targetUsername]="profile().username"
+  (closed)="closeModal()"
+/>
+<app-community-invite-modal
+  [open]="activeModal() === 'community-invite'"
   [targetName]="profile().nickname || profile().username"
   [targetUsername]="profile().username"
   (closed)="closeModal()"

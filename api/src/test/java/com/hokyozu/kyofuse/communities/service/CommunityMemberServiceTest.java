@@ -536,6 +536,176 @@ class CommunityMemberServiceTest {
         verify(communityMemberRepository).save(memberMembership);
     }
 
+    @Test
+    void banMemberAllowsOwnerToBanMember() {
+        UUID ownerId = UUID.randomUUID();
+        UUID memberId = UUID.randomUUID();
+        UUID communityId = UUID.randomUUID();
+        User owner = activeUser(ownerId, "owner");
+        User member = activeUser(memberId, "member");
+        Community community = community(communityId, CommunityVisibility.PUBLIC, CommunityStatus.ACTIVE);
+        community.setOwner(owner);
+
+        CommunityMember memberMembership = memberWithRoleAndStatus(community, member, CommunityMemberRole.MEMBER, CommunityMemberStatus.ACTIVE);
+
+        when(userFinder.findProfileByUserId(ownerId)).thenReturn(owner);
+        when(communityRepository.findById(communityId)).thenReturn(Optional.of(community));
+        when(communityMemberRepository.findByUserIdAndCommunityId(memberId, communityId)).thenReturn(Optional.of(memberMembership));
+
+        communityMemberService.banMember(ownerId, communityId.toString(), memberId);
+
+        assertThat(memberMembership.getStatus()).isEqualTo(CommunityMemberStatus.BANNED);
+        verify(communityMemberRepository).save(memberMembership);
+    }
+
+    @Test
+    void banMemberAllowsAdminToBanModerator() {
+        UUID adminId = UUID.randomUUID();
+        UUID modId = UUID.randomUUID();
+        UUID communityId = UUID.randomUUID();
+        User admin = activeUser(adminId, "admin");
+        User mod = activeUser(modId, "mod");
+        User owner = activeUser(UUID.randomUUID(), "owner");
+        Community community = community(communityId, CommunityVisibility.PUBLIC, CommunityStatus.ACTIVE);
+        community.setOwner(owner);
+
+        CommunityMember adminMembership = memberWithRoleAndStatus(community, admin, CommunityMemberRole.ADMIN, CommunityMemberStatus.ACTIVE);
+        CommunityMember modMembership = memberWithRoleAndStatus(community, mod, CommunityMemberRole.MODERATOR, CommunityMemberStatus.ACTIVE);
+
+        when(userFinder.findProfileByUserId(adminId)).thenReturn(admin);
+        when(communityRepository.findById(communityId)).thenReturn(Optional.of(community));
+        when(communityMemberRepository.findByUserIdAndCommunityId(adminId, communityId)).thenReturn(Optional.of(adminMembership));
+        when(communityMemberRepository.findByUserIdAndCommunityId(modId, communityId)).thenReturn(Optional.of(modMembership));
+
+        communityMemberService.banMember(adminId, communityId.toString(), modId);
+
+        assertThat(modMembership.getStatus()).isEqualTo(CommunityMemberStatus.BANNED);
+        verify(communityMemberRepository).save(modMembership);
+    }
+
+    @Test
+    void banMemberRejectsAdminBanningAnotherAdmin() {
+        UUID admin1Id = UUID.randomUUID();
+        UUID admin2Id = UUID.randomUUID();
+        UUID communityId = UUID.randomUUID();
+        User admin1 = activeUser(admin1Id, "admin1");
+        User admin2 = activeUser(admin2Id, "admin2");
+        User owner = activeUser(UUID.randomUUID(), "owner");
+        Community community = community(communityId, CommunityVisibility.PUBLIC, CommunityStatus.ACTIVE);
+        community.setOwner(owner);
+
+        CommunityMember admin1Membership = memberWithRoleAndStatus(community, admin1, CommunityMemberRole.ADMIN, CommunityMemberStatus.ACTIVE);
+        CommunityMember admin2Membership = memberWithRoleAndStatus(community, admin2, CommunityMemberRole.ADMIN, CommunityMemberStatus.ACTIVE);
+
+        when(userFinder.findProfileByUserId(admin1Id)).thenReturn(admin1);
+        when(communityRepository.findById(communityId)).thenReturn(Optional.of(community));
+        when(communityMemberRepository.findByUserIdAndCommunityId(admin1Id, communityId)).thenReturn(Optional.of(admin1Membership));
+        when(communityMemberRepository.findByUserIdAndCommunityId(admin2Id, communityId)).thenReturn(Optional.of(admin2Membership));
+
+        assertThatThrownBy(() -> communityMemberService.banMember(admin1Id, communityId.toString(), admin2Id))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("Administradores não podem banir outros administradores.");
+
+        verify(communityMemberRepository, never()).save(any());
+    }
+
+    @Test
+    void banMemberRejectsModeratorBanningMember() {
+        UUID modId = UUID.randomUUID();
+        UUID memberId = UUID.randomUUID();
+        UUID communityId = UUID.randomUUID();
+        User mod = activeUser(modId, "mod");
+        User member = activeUser(memberId, "member");
+        User owner = activeUser(UUID.randomUUID(), "owner");
+        Community community = community(communityId, CommunityVisibility.PUBLIC, CommunityStatus.ACTIVE);
+        community.setOwner(owner);
+
+        CommunityMember modMembership = memberWithRoleAndStatus(community, mod, CommunityMemberRole.MODERATOR, CommunityMemberStatus.ACTIVE);
+
+        when(userFinder.findProfileByUserId(modId)).thenReturn(mod);
+        when(communityRepository.findById(communityId)).thenReturn(Optional.of(community));
+        when(communityMemberRepository.findByUserIdAndCommunityId(modId, communityId)).thenReturn(Optional.of(modMembership));
+
+        assertThatThrownBy(() -> communityMemberService.banMember(modId, communityId.toString(), memberId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("Apenas o dono e administradores podem banir membros.");
+
+        verify(communityMemberRepository, never()).save(any());
+    }
+
+    @Test
+    void banMemberRejectsBanningOwner() {
+        UUID adminId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID communityId = UUID.randomUUID();
+        User admin = activeUser(adminId, "admin");
+        User owner = activeUser(ownerId, "owner");
+        Community community = community(communityId, CommunityVisibility.PUBLIC, CommunityStatus.ACTIVE);
+        community.setOwner(owner);
+
+        CommunityMember adminMembership = memberWithRoleAndStatus(community, admin, CommunityMemberRole.ADMIN, CommunityMemberStatus.ACTIVE);
+
+        when(userFinder.findProfileByUserId(adminId)).thenReturn(admin);
+        when(communityRepository.findById(communityId)).thenReturn(Optional.of(community));
+        when(communityMemberRepository.findByUserIdAndCommunityId(adminId, communityId)).thenReturn(Optional.of(adminMembership));
+
+        assertThatThrownBy(() -> communityMemberService.banMember(adminId, communityId.toString(), ownerId))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("O dono da comunidade não pode ser banido.");
+
+        verify(communityMemberRepository, never()).save(any());
+    }
+
+    @Test
+    void updateMemberRoleRejectsAdminPromotingToAdmin() {
+        UUID adminId = UUID.randomUUID();
+        UUID memberId = UUID.randomUUID();
+        UUID communityId = UUID.randomUUID();
+        User admin = activeUser(adminId, "admin");
+        User member = activeUser(memberId, "member");
+        User owner = activeUser(UUID.randomUUID(), "owner");
+        Community community = community(communityId, CommunityVisibility.PUBLIC, CommunityStatus.ACTIVE);
+        community.setOwner(owner);
+
+        CommunityMember adminMembership = memberWithRoleAndStatus(community, admin, CommunityMemberRole.ADMIN, CommunityMemberStatus.ACTIVE);
+
+        when(userFinder.findProfileByUserId(adminId)).thenReturn(admin);
+        when(communityRepository.findById(communityId)).thenReturn(Optional.of(community));
+        when(communityMemberRepository.findByUserIdAndCommunityId(adminId, communityId)).thenReturn(Optional.of(adminMembership));
+
+        assertThatThrownBy(() -> communityMemberService.updateMemberRole(adminId, communityId.toString(), memberId, CommunityMemberRole.ADMIN))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("Apenas o dono da comunidade pode promover membros a Administrador.");
+
+        verify(communityMemberRepository, never()).save(any());
+    }
+
+    @Test
+    void updateMemberRoleRejectsAdminChangingAnotherAdminRole() {
+        UUID admin1Id = UUID.randomUUID();
+        UUID admin2Id = UUID.randomUUID();
+        UUID communityId = UUID.randomUUID();
+        User admin1 = activeUser(admin1Id, "admin1");
+        User admin2 = activeUser(admin2Id, "admin2");
+        User owner = activeUser(UUID.randomUUID(), "owner");
+        Community community = community(communityId, CommunityVisibility.PUBLIC, CommunityStatus.ACTIVE);
+        community.setOwner(owner);
+
+        CommunityMember admin1Membership = memberWithRoleAndStatus(community, admin1, CommunityMemberRole.ADMIN, CommunityMemberStatus.ACTIVE);
+        CommunityMember admin2Membership = memberWithRoleAndStatus(community, admin2, CommunityMemberRole.ADMIN, CommunityMemberStatus.ACTIVE);
+
+        when(userFinder.findProfileByUserId(admin1Id)).thenReturn(admin1);
+        when(communityRepository.findById(communityId)).thenReturn(Optional.of(community));
+        when(communityMemberRepository.findByUserIdAndCommunityId(admin1Id, communityId)).thenReturn(Optional.of(admin1Membership));
+        when(communityMemberRepository.findByUserIdAndCommunityId(admin2Id, communityId)).thenReturn(Optional.of(admin2Membership));
+
+        assertThatThrownBy(() -> communityMemberService.updateMemberRole(admin1Id, communityId.toString(), admin2Id, CommunityMemberRole.MODERATOR))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("Administradores não podem alterar o papel de outros administradores.");
+
+        verify(communityMemberRepository, never()).save(any());
+    }
+
     private CommunityMember memberWithStatus(Community community, User user, CommunityMemberStatus status) {
         return memberWithRoleAndStatus(community, user, CommunityMemberRole.MEMBER, status);
     }

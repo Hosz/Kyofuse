@@ -5,6 +5,8 @@ import { ModalComponent } from '../../components/shared/modal/modal';
 import { CommunityService } from '../../core/services/communities/community.service';
 import { ProfileService } from '../../core/services/profile/profile.service';
 import { CommunityMemberService } from '../../core/services/communities/community-member.service';
+import { CommunityInviteService } from '../../core/services/communities/community-invite.service';
+import { ToastService } from '../../core/services/ui/toast.service';
 import {
   CommunityMemberResponse,
   CommunityMemberRole,
@@ -40,7 +42,9 @@ export class CommunityMembersComponent {
 
   private communityService = inject(CommunityService);
   private communityMemberService = inject(CommunityMemberService);
+  private communityInviteService = inject(CommunityInviteService);
   private profileService = inject(ProfileService);
+  private toastService = inject(ToastService);
 
   readonly fallbackAvatar = FALLBACK_AVATAR_URL;
 
@@ -250,5 +254,95 @@ export class CommunityMembersComponent {
         this.removeError.set(error?.error?.message ?? 'Não foi possível remover esse membro.');
       },
     });
+  }
+
+  canBan(member: CommunityMemberResponse): boolean {
+    if (this.isOwner(member) || member.memberId === this.myUserId()) {
+      return false;
+    }
+    const role = this.myRole();
+    if (role === 'OWNER') return true;
+    if (role === 'ADMIN') return member.role !== 'ADMIN';
+    return false;
+  }
+
+  banConfirmMember = signal<CommunityMemberResponse | null>(null);
+  banning = signal(false);
+  banError = signal<string | null>(null);
+
+  openBanConfirm(member: CommunityMemberResponse): void {
+    this.banError.set(null);
+    this.banConfirmMember.set(member);
+  }
+
+  closeBanConfirm(): void {
+    if (this.banning()) return;
+    this.banConfirmMember.set(null);
+  }
+
+  confirmBan(): void {
+    const communityId = this.community()?.id ?? this.communityId();
+    const member = this.banConfirmMember();
+    if (!communityId || !member || this.banning()) return;
+
+    this.banning.set(true);
+    this.banError.set(null);
+
+    this.communityMemberService.banMember(communityId, member.memberId).subscribe({
+      next: () => {
+        this.banning.set(false);
+        this.banConfirmMember.set(null);
+        this.members.update((list) => list.filter((m) => m.id !== member.id));
+        this.toastService.success(`@${member.memberUsername} foi banido da comunidade.`);
+      },
+      error: (error) => {
+        console.error('Failed to ban member:', error);
+        this.banning.set(false);
+        this.banError.set(error?.error?.message ?? 'Não foi possível banir esse membro.');
+      },
+    });
+  }
+
+  isMember = computed(() => !!this.myRole());
+  inviteModalOpen = signal(false);
+  inviteUsername = signal('');
+  inviteMessage = signal('');
+  sendingInvite = signal(false);
+  inviteError = signal<string | null>(null);
+
+  openInviteModal(): void {
+    this.inviteUsername.set('');
+    this.inviteMessage.set('');
+    this.inviteError.set(null);
+    this.inviteModalOpen.set(true);
+  }
+
+  closeInviteModal(): void {
+    if (this.sendingInvite()) return;
+    this.inviteModalOpen.set(false);
+  }
+
+  confirmInvite(): void {
+    const communityId = this.community()?.communitySlug || this.community()?.id || this.communityId();
+    const username = this.inviteUsername().trim();
+    if (!communityId || !username || this.sendingInvite()) return;
+
+    this.sendingInvite.set(true);
+    this.inviteError.set(null);
+
+    this.communityInviteService
+      .inviteUser(communityId, username, { message: this.inviteMessage().trim() || undefined })
+      .subscribe({
+        next: () => {
+          this.sendingInvite.set(false);
+          this.inviteModalOpen.set(false);
+          this.toastService.success(`Convite enviado para @${username}.`);
+        },
+        error: (error) => {
+          console.error('Failed to invite user:', error);
+          this.sendingInvite.set(false);
+          this.inviteError.set(error?.error?.message ?? 'Não foi possível enviar o convite.');
+        },
+      });
   }
 }

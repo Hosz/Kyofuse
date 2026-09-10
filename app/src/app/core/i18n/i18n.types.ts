@@ -137,6 +137,10 @@ export interface TranslationDictionary {
     typeTeamInviteAccepted: string;
     typeTeamInviteDeclined: string;
     typeTeamInviteCanceled: string;
+    typeCommunityInviteReceived: string;
+    typeCommunityInviteAccepted: string;
+    typeCommunityInviteDeclined: string;
+    typeCommunityInviteCanceled: string;
     typeTeamMemberAdded: string;
     typeTeamMemberRemoved: string;
     typeTeamMemberLeft: string;
@@ -170,6 +174,8 @@ export interface TranslationDictionary {
     declined: string;
     teamInviteAcceptedSuccess: string;
     teamInviteDeclinedInfo: string;
+    communityInviteAcceptedSuccess: string;
+    communityInviteDeclinedInfo: string;
     followRequestAcceptedSuccess: string;
     followRequestDeclinedInfo: string;
   };
@@ -470,9 +476,11 @@ export interface TranslationDictionary {
     createCommunityTitle: string;
     createTeamTitle: string;
     inviteToTeamTitle: string;
+    inviteToCommunityTitle: string;
     invite: string;
     invited: string;
     noTeamsToInvite: string;
+    noCommunitiesToInvite: string;
     noUsersFound: string;
     pinDesc: string;
     pinDragTip: string;

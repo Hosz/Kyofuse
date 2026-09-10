@@ -96,6 +96,17 @@ class CommunityMemberControllerTest {
         verify(communityMemberService).removeMember(userId, communityId, memberId);
     }
 
+    @Test
+    void banMemberUsesAuthenticatedUserIdAndPathIds() {
+        UUID userId = UUID.randomUUID();
+        String communityId = UUID.randomUUID().toString();
+        UUID memberId = UUID.randomUUID();
+
+        controller.banMember(jwt(userId), communityId, memberId);
+
+        verify(communityMemberService).banMember(userId, communityId, memberId);
+    }
+
     private CommunityMemberResponse response(UUID communityId, UUID userId) {
         Instant now = Instant.now();
         return new CommunityMemberResponse(
