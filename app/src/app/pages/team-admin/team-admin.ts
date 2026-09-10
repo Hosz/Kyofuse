@@ -453,7 +453,7 @@ export class TeamAdminComponent {
   /** Preencher um papel anunciado tira a vaga do anúncio no backend — por isso o time
    * é relido, para a seção "Papéis Necessários" refletir a mudança na hora. */
   editMember(request: TeamMemberEditRequest): void {
-    const id = this.teamId();
+    const id = this.team()?.id ?? this.teamId();
     const member = this.selectedMember();
     if (!id || !member || this.savingMember()) return;
 

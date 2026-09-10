@@ -1,5 +1,6 @@
-import { Component, ElementRef, ViewChild, inject, output, signal } from '@angular/core';
+import { Component, ElementRef, ViewChild, computed, inject, output, signal } from '@angular/core';
 import { MentionInputComponent } from '../../../shared/components/mention-input/mention-input';
+import { CharLimitIndicatorComponent } from '../../../shared/components/char-limit-indicator/char-limit-indicator';
 import { ProfileService } from '../../../core/services/profile/profile.service';
 import { PostsService } from '../../../core/services/posts/posts.service';
 import { MediaService } from '../../../core/services/media/media.service';
@@ -10,7 +11,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-post-composer',
-  imports: [MentionInputComponent, TranslatePipe],
+  imports: [MentionInputComponent, CharLimitIndicatorComponent, TranslatePipe],
   templateUrl: './post-composer.html',
   styleUrl: './post-composer.css',
 })
@@ -34,6 +35,13 @@ export class PostComposerComponent {
   mediaItems = signal<PostMediaItemRequest[]>([]);
   uploading = signal(false);
   publishing = signal(false);
+
+  readonly isPublishDisabled = computed(() => {
+    const hasText = !!this.content().trim();
+    const hasMedia = this.mediaItems().length > 0;
+    const overLimit = this.content().length > 500;
+    return (!hasText && !hasMedia) || overLimit || this.uploading() || this.publishing();
+  });
 
   comingSoon(feature: string): void {
     this.toastService.info(`${feature} estará disponível em breve!`);
@@ -126,6 +134,11 @@ export class PostComposerComponent {
 
     if (!hasText && !hasMedia) {
       this.toastService.info('Escreva algo ou adicione uma imagem para publicar.');
+      return;
+    }
+
+    if (this.content().length > 500) {
+      this.toastService.error('A publicação não pode exceder 500 caracteres.');
       return;
     }
 

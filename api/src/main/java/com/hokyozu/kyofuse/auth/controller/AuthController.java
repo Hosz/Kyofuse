@@ -112,7 +112,8 @@ public class AuthController {
                     ));
             case AuthService.LoginOutcome.Authenticated authenticated -> {
                 applyAuthCookies(response, authenticated.result());
-                yield ResponseEntity.ok(AuthMapper.toResponse(authenticated.result().user(), authenticated.result().switchToken()));
+                boolean trusted = authService.isDeviceTrusted(authenticated.result().user().getId(), deviceId(httpRequest));
+                yield ResponseEntity.ok(AuthMapper.toResponse(authenticated.result().user(), authenticated.result().switchToken(), trusted));
             }
         };
     }
@@ -137,7 +138,8 @@ public class AuthController {
                     ));
             case AuthService.LoginOutcome.Authenticated authenticated -> {
                 applyAuthCookies(response, authenticated.result());
-                yield ResponseEntity.ok(AuthMapper.toResponse(authenticated.result().user(), authenticated.result().switchToken()));
+                boolean trusted = authService.isDeviceTrusted(authenticated.result().user().getId(), deviceId(httpRequest));
+                yield ResponseEntity.ok(AuthMapper.toResponse(authenticated.result().user(), authenticated.result().switchToken(), trusted));
             }
         };
     }
@@ -175,7 +177,8 @@ public class AuthController {
                     ));
             case AuthService.LoginOutcome.Authenticated authenticated -> {
                 applyAuthCookies(response, authenticated.result());
-                yield ResponseEntity.ok(AuthMapper.toResponse(authenticated.result().user(), authenticated.result().switchToken()));
+                boolean trusted = authService.isDeviceTrusted(authenticated.result().user().getId(), deviceId(httpRequest));
+                yield ResponseEntity.ok(AuthMapper.toResponse(authenticated.result().user(), authenticated.result().switchToken(), trusted));
             }
         };
     }
@@ -193,7 +196,8 @@ public class AuthController {
         AuthService.AuthResult result = authService.issueTokens(user, deviceId(httpRequest));
         applyAuthCookies(response, result);
         authService.publishLoginSuccess(user, clientIp(httpRequest), userAgent(httpRequest));
-        return ResponseEntity.ok(AuthMapper.toResponse(result.user(), result.switchToken()));
+        boolean trusted = authService.isDeviceTrusted(result.user().getId(), deviceId(httpRequest));
+        return ResponseEntity.ok(AuthMapper.toResponse(result.user(), result.switchToken(), trusted));
     }
 
     @PostMapping("/reactivate/resend")
@@ -213,8 +217,9 @@ public class AuthController {
     ) {
         AuthService.AuthResult result = authService.verifyMfa(request.mfaToken(), request.code(), clientIp(httpRequest), userAgent(httpRequest), deviceId(httpRequest));
         applyAuthCookies(response, result);
+        boolean trusted = authService.isDeviceTrusted(result.user().getId(), deviceId(httpRequest));
 
-        return AuthMapper.toResponse(result.user(), result.switchToken());
+        return AuthMapper.toResponse(result.user(), result.switchToken(), trusted);
     }
 
     @PostMapping("/switch-account")

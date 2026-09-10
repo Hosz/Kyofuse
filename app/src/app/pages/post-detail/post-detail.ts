@@ -11,10 +11,21 @@ import { CommentsService } from '../../core/services/comments/comments.service';
 import { Comment, Post } from '../../shared/models/social.model';
 import { toComment, toPost } from '../../shared/utils/mappers.util';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { CharLimitIndicatorComponent } from '../../shared/components/char-limit-indicator/char-limit-indicator';
 
 @Component({
   selector: 'app-post-detail',
-  imports: [MentionInputComponent, RouterLink, FormsModule, AppSidebarComponent, DiscoverySidebarComponent, PostCardComponent, CommentCardComponent, TranslatePipe],
+  imports: [
+    MentionInputComponent,
+    CharLimitIndicatorComponent,
+    RouterLink,
+    FormsModule,
+    AppSidebarComponent,
+    DiscoverySidebarComponent,
+    PostCardComponent,
+    CommentCardComponent,
+    TranslatePipe,
+  ],
   templateUrl: './post-detail.html',
   styleUrl: './post-detail.css',
 })
@@ -82,7 +93,7 @@ export class PostDetailComponent {
 
   submitComment(): void {
     const content = this.commentDraft().trim();
-    if (!content || this.posting()) return;
+    if (!content || this.posting() || this.commentDraft().length > 500) return;
 
     this.posting.set(true);
     this.commentsService.postComment(this.postId, { content }).subscribe({

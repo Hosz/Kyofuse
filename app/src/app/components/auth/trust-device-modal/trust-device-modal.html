@@ -1,0 +1,52 @@
+@if (userSessionService.showTrustPrompt()) {
+  <div
+    class="trust-modal-backdrop transition-opacity"
+    (click)="dismiss()"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="trust-modal-title"
+  >
+    <div
+      class="trust-modal-panel p-6 sm:p-7"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="flex items-start gap-4">
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <span class="material-symbols-outlined text-[28px]">devices_wearables</span>
+        </div>
+        <div class="flex flex-1 flex-col gap-1 min-w-0">
+          <h2 id="trust-modal-title" class="text-title-md font-bold text-on-surface">
+            {{ 'auth.trustDevicePromptTitle' | trans }}
+          </h2>
+          <p class="text-body-sm text-on-surface-variant leading-relaxed">
+            {{ 'auth.trustDevicePromptDesc' | trans }}
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-6 flex items-center justify-end gap-3 pt-3 border-t border-outline-variant/60">
+        <button
+          type="button"
+          (click)="dismiss()"
+          [disabled]="loading()"
+          class="cursor-pointer rounded-full border border-outline-variant px-5 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {{ 'auth.trustDeviceDismiss' | trans }}
+        </button>
+        <button
+          type="button"
+          (click)="confirm()"
+          [disabled]="loading()"
+          class="cursor-pointer flex items-center gap-2 rounded-full bg-primary-container px-6 py-2 text-label-md font-bold text-on-primary-container transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          @if (loading()) {
+            <span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+          } @else {
+            <span class="material-symbols-outlined text-[18px]">verified_user</span>
+          }
+          {{ 'auth.trustDeviceConfirm' | trans }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

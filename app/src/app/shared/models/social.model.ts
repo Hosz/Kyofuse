@@ -49,6 +49,7 @@ export interface Post {
   content: string;
   media?: PostMedia;
   mediaList?: PostMediaResponse[];
+  currentUserReaction?: string | null;
   stats: PostStats;
 }
 
@@ -64,6 +65,7 @@ export interface Comment {
   author: PostAuthor;
   timeAgo: string;
   content: string;
+  currentUserReaction?: string | null;
   stats: CommentStats;
 }
 

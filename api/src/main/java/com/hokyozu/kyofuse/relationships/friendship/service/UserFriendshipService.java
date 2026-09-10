@@ -75,7 +75,9 @@ public class UserFriendshipService {
             userFollowRepository.save(existingFollow);
         } else {
             UserFollow follow = UserFollowMapper.toFollow(userOne, userTwo);
+            UserFollow follow2 = UserFollowMapper.toFollow(userTwo, userOne);
             userFollowRepository.save(follow);
+            userFollowRepository.save(follow2);
         }
         userFriendshipRepository.save(friendship);
         userFriendRequestRepository.delete(friendRequest);

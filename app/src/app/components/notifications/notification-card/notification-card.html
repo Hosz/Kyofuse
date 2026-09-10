@@ -47,6 +47,16 @@
           {{ action.declineLabel }}
         </button>
       </div>
+    } @else if (notification().responseStatus === 'accepted') {
+      <div class="flex items-center gap-1.5 pt-1 text-label-sm font-bold text-primary">
+        <span class="material-symbols-outlined text-[16px]">check_circle</span>
+        <span>{{ 'notifications.accepted' | trans }}</span>
+      </div>
+    } @else if (notification().responseStatus === 'declined') {
+      <div class="flex items-center gap-1.5 pt-1 text-label-sm font-bold text-on-surface-variant">
+        <span class="material-symbols-outlined text-[16px]">cancel</span>
+        <span>{{ 'notifications.declined' | trans }}</span>
+      </div>
     }
   </div>
 

@@ -11,6 +11,7 @@ import java.util.List;
 public class ClientIpResolver {
 
     private static final List<String> IP_HEADERS = List.of(
+            "X-Client-IP",
             "CF-Connecting-IP",
             "X-Forwarded-For",
             "X-Real-IP",

@@ -57,8 +57,14 @@ public class CommentController {
         return commentService.listUserComments(viewerId, userId, pageable);
     }
 
-    @PatchMapping("/{postId}/{commentId}/delete")
-    public void deleteComment(@PathVariable UUID commentId, @PathVariable UUID postId, @AuthenticationPrincipal Jwt jwt) {
+    @RequestMapping(
+            value = {"/{postId}/{commentId}/delete", "/{postId}/{commentId}"},
+            method = {RequestMethod.DELETE, RequestMethod.PATCH}
+    )
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteComment(@PathVariable("commentId") UUID commentId,
+                              @PathVariable("postId") UUID postId,
+                              @AuthenticationPrincipal Jwt jwt) {
         UUID user = UUID.fromString(jwt.getSubject());
 
         commentService.deleteComment(commentId, postId, user);

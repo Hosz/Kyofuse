@@ -15,6 +15,7 @@ import java.util.UUID;
 @Repository
 public interface CommentReactionRepository extends JpaRepository<CommentReaction, UUID> {
     Optional<CommentReaction> findByComment_Post_IdAndComment_IdAndUserId(UUID postId, UUID commentId, UUID userId);
+    List<CommentReaction> findByCommentIdInAndUserId(java.util.Collection<UUID> commentIds, UUID userId);
 
     @EntityGraph(attributePaths = {"user"})
     Page<CommentReaction> findByComment_Post_IdAndComment_IdAndReactionType(UUID commentPostId, UUID commentId, ReactionType reactionType, Pageable pageable);

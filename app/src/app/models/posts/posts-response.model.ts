@@ -18,6 +18,7 @@ export interface postResponse  {
     viewCount?: number;
     maps: string[];
     media: PostMediaResponse[];
+    currentUserReaction?: string | null;
     createdAt: string;
     updatedAt: string;
 }

@@ -8,15 +8,15 @@
   <div class="grid grid-cols-2 gap-3">
     <!-- Google Button Wrapper -->
     <div
-      class="relative flex h-[42px] items-center justify-center overflow-hidden rounded-lg bg-secondary-fixed transition-all"
+      class="relative flex h-[42px] items-center justify-center overflow-hidden rounded-lg bg-secondary-fixed border border-black dark:border-transparent transition-all"
       [class.cursor-pointer]="!disabled() && !loading()"
       [class.hover:brightness-95]="!disabled() && !loading()"
       [class.active:scale-[0.97]]="!disabled() && !loading()"
       [class.opacity-50]="disabled() || loading()"
       [class.pointer-events-none]="disabled() || loading()"
     >
-      <div class="pointer-events-none flex items-center justify-center gap-2 px-4 py-2.5 text-label-md font-bold text-on-secondary">
-        <span class="flex h-5 w-5 items-center justify-center rounded-full bg-on-secondary text-[11px] font-bold text-secondary-fixed">G</span>
+      <div class="pointer-events-none flex items-center justify-center gap-2 px-4 py-2.5 text-label-md font-bold text-black dark:text-white">
+        <span class="flex h-5 w-5 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black text-[11px] font-bold">G</span>
         Google
       </div>
       <!-- Native Google GIS button overlay to open official modal popup -->

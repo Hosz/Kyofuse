@@ -62,11 +62,11 @@
             <div class="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                (click)="markAllAsRead()"
+                (click)="archiveAll()"
                 class="flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full border border-outline-variant px-4 py-2 text-label-sm font-bold text-on-surface transition-colors hover:bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
               >
-                <span class="material-symbols-outlined text-[16px]">done_all</span>
-                {{ 'notifications.markAllAsRead' | trans }}
+                <span class="material-symbols-outlined text-[16px]">archive</span>
+                {{ 'notifications.archiveAll' | trans }}
               </button>
             </div>
           </div>

@@ -19,9 +19,14 @@ public class NotificationController {
     private final NotificationService notificationService;
 
     @GetMapping("/unread-count")
-    public java.util.Map<String, Long> getUnreadCount(@AuthenticationPrincipal Jwt jwt) {
+    public java.util.Map<String, Long> getUnreadCount(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(required = false, defaultValue = "false") boolean sync) {
         UUID userId = UUID.fromString(jwt.getSubject());
-        return java.util.Map.of("unreadCount", notificationService.getUnreadCount(userId));
+        long count = sync
+                ? notificationService.syncUnreadCount(userId)
+                : notificationService.getUnreadCount(userId);
+        return java.util.Map.of("unreadCount", count);
     }
 
     @GetMapping
@@ -47,5 +52,11 @@ public class NotificationController {
     public void readAll(@AuthenticationPrincipal Jwt jwt) {
         UUID userId = UUID.fromString(jwt.getSubject());
         notificationService.readAll(userId);
+    }
+
+    @PatchMapping("/archiveall")
+    public void archiveAll(@AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        notificationService.archiveAll(userId);
     }
 }

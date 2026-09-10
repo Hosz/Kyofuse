@@ -20,7 +20,7 @@ public class PostViewsFlushScheduler {
     private final StringRedisTemplate redisTemplate;
     private final PostRepository postRepository;
 
-    @Scheduled(fixedDelay = 120000)
+    @Scheduled(fixedDelay = 10000)
     @Transactional
     public void flushViewsToDatabase() {
         Set<String> keys = redisTemplate.keys(PostViewsBufferService.POST_VIEWS_BUFFER_PREFIX + "*");

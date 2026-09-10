@@ -22,6 +22,7 @@ import com.hokyozu.kyofuse.relationships.permission.service.profile.ProfilePermi
 import com.hokyozu.kyofuse.relationships.privacy.entity.UserPrivacySettings;
 import com.hokyozu.kyofuse.relationships.privacy.enums.ProfileVisibility;
 import com.hokyozu.kyofuse.relationships.privacy.repository.UserPrivacySettingsRepository;
+import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.shared.exception.ForbiddenException;
 import com.hokyozu.kyofuse.shared.exception.NotFoundException;
 import com.hokyozu.kyofuse.users.entity.User;
@@ -254,7 +255,12 @@ public class UserFollowService {
         followPermissionService.validateRejectFollow(user, sender);
 
         UserFollow request = userFollowRepository.findByFollowerAndFollowedAndStatus(sender, user, FollowStatus.PENDING);
+        if (request == null) {
+            throw new BadRequestException("Solicitação para seguir não encontrada ou já respondida.");
+        }
         userFollowRepository.delete(request);
+
+        notificationService.markFollowRequestAsDeclined(user.getId(), sender.getId());
     }
 
     @Transactional
@@ -268,6 +274,9 @@ public class UserFollowService {
         followPermissionService.validateAcceptFollow(user, sender);
 
         UserFollow request = userFollowRepository.findByFollowerAndFollowedAndStatus(sender, user, FollowStatus.PENDING);
+        if (request == null) {
+            throw new BadRequestException("Solicitação para seguir não encontrada ou já respondida.");
+        }
         request.setStatus(FollowStatus.ACTIVE);
         userFollowRepository.save(request);
 
@@ -285,6 +294,8 @@ public class UserFollowService {
                         ))
                         .build()
         );
+
+        notificationService.markFollowRequestAsAccepted(user.getId(), sender.getId());
 
         GamerProfile senderProfile = gamerProfileFinder.findProfileByUserId(sender.getId());
         return UserFollowMapper.toResponse(request, senderProfile);

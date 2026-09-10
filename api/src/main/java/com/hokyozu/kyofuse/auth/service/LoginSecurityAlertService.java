@@ -9,11 +9,14 @@ import com.hokyozu.kyofuse.notifications.entity.Notification;
 import com.hokyozu.kyofuse.notifications.enums.NotificationStatus;
 import com.hokyozu.kyofuse.notifications.enums.NotificationTargetType;
 import com.hokyozu.kyofuse.notifications.enums.NotificationType;
+import com.hokyozu.kyofuse.notifications.mapper.NotificationMapper;
 import com.hokyozu.kyofuse.notifications.repository.NotificationRepository;
+import com.hokyozu.kyofuse.notifications.service.NotificationCounterService;
 import com.hokyozu.kyofuse.users.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -31,7 +34,11 @@ public class LoginSecurityAlertService {
     private final GeoLocationService geoLocationService;
     private final UserAgentParser userAgentParser;
     private final NotificationRepository notificationRepository;
+    private final NotificationCounterService notificationCounterService;
+    private final NotificationMapper notificationMapper;
+    private final SimpMessagingTemplate messagingTemplate;
     private final MailService mailService;
+    private final UserSessionService userSessionService;
 
     @Async
     @EventListener
@@ -43,11 +50,21 @@ public class LoginSecurityAlertService {
 
         try {
             User user = event.user();
+            String deviceId = event.deviceId();
+
+            if (deviceId != null && !deviceId.isBlank() && userSessionService != null && user.getId() != null) {
+                if (userSessionService.isDeviceTrusted(user.getId(), deviceId)) {
+                    log.info("[LoginSecurity] Dispositivo {} confiável para usuário {}. Notificação e e-mail suprimidos.", deviceId, user.getUsername());
+                    return;
+                }
+            }
             String clientIp = event.clientIp();
             String userAgent = event.userAgent();
             Instant loggedAt = event.loggedAt() != null ? event.loggedAt() : Instant.now();
 
-            LocationInfo location = geoLocationService.resolveLocation(clientIp);
+            LocationInfo location = (event.location() != null)
+                    ? event.location()
+                    : geoLocationService.resolveLocation(clientIp);
             DeviceInfo device = userAgentParser.parse(userAgent);
 
             String formattedLocation = location.formattedLocation();
@@ -79,8 +96,24 @@ public class LoginSecurityAlertService {
                     .createdAt(loggedAt)
                     .build();
 
-            notificationRepository.save(notification);
+            Notification saved = notificationRepository.save(notification);
             log.info("[LoginSecurity] Notificação in-app de login criada para usuário: {}", user.getUsername());
+
+            if (notificationCounterService != null && user.getId() != null) {
+                notificationCounterService.increment(user.getId());
+            }
+
+            if (messagingTemplate != null && notificationMapper != null && user.getId() != null) {
+                try {
+                    messagingTemplate.convertAndSendToUser(
+                            user.getId().toString(),
+                            "/queue/notifications",
+                            notificationMapper.toResponse(saved)
+                    );
+                } catch (Exception wsEx) {
+                    log.warn("[LoginSecurity] Falha ao enviar notificação de login via WebSocket: {}", wsEx.getMessage());
+                }
+            }
 
             mailService.sendLoginSecurityAlertEmail(
                     user.getEmail(),

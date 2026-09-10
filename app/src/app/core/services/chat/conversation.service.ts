@@ -6,7 +6,7 @@ import { PageResponse } from '../../../models/page-response.model';
 import { ConversationRequest, ConversationResponse, MessageResponse, UpdateConversationRequest } from '../../../models/chat/chat.model';
 import { WebSocketService } from '../websocket/websocket.service';
 import { CurrentUserService } from '../profile/current-user.service';
-import { Observable } from 'rxjs';
+import { Observable, Subject, tap } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -19,6 +19,9 @@ export class ConversationService {
   private websocketService = inject(WebSocketService);
   private router = inject(Router);
   private currentUserService = inject(CurrentUserService);
+
+  /** Emitido quando uma nova conversa é criada com sucesso na sessão atual. */
+  readonly conversationCreated$ = new Subject<ConversationResponse>();
 
   /** Compartilhado entre a sidebar (badge de notificação na aba conversas) e o dock. */
   readonly unreadCount = signal(0);
@@ -72,7 +75,9 @@ export class ConversationService {
   }
 
   public createConversation(request: ConversationRequest) {
-    return this.http.post<ConversationResponse>(`${this.url}/create`, request);
+    return this.http
+      .post<ConversationResponse>(`${this.url}/create`, request)
+      .pipe(tap((conversation) => this.conversationCreated$.next(conversation)));
   }
 
   /** Só conversas GROUP são editáveis, e apenas por um ADMIN ativo do grupo. */

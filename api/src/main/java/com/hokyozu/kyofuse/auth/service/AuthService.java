@@ -11,6 +11,8 @@ import com.hokyozu.kyofuse.auth.repository.UserRepository;
 import com.hokyozu.kyofuse.auth.validator.EmailAndUsernameAvailabilityValidator;
 import com.hokyozu.kyofuse.auth.validator.LoginFinderValidator;
 import com.hokyozu.kyofuse.auth.validator.LoginValidator;
+import com.hokyozu.kyofuse.infrastructure.geolocation.GeoLocationService;
+import com.hokyozu.kyofuse.infrastructure.geolocation.LocationInfo;
 import com.hokyozu.kyofuse.infrastructure.security.crypto.EmailCipherService;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.AccountSwitchService;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.JwtService;
@@ -32,6 +34,7 @@ import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.enums.UserRole;
 import com.hokyozu.kyofuse.users.enums.UserStatus;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -45,11 +48,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final GeoLocationService geoLocationService;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
@@ -79,6 +84,7 @@ public class AuthService {
     private final AccountReactivationService accountReactivationService;
 
     private final TokenBlacklistService tokenBlacklistService;
+    private final UserSessionService userSessionService;
 
     private static final String LOGIN_IP_KEY_PREFIX = "login:ip:";
     private static final String LOGIN_USER_KEY_PREFIX = "login:user:";
@@ -150,7 +156,7 @@ public class AuthService {
             return new LoginOutcome.MfaRequired(mfaTokenService.generate(user));
         }
 
-        publishLoginSuccess(user, clientIp, userAgent);
+        publishLoginSuccess(user, clientIp, userAgent, deviceId);
         return new LoginOutcome.Authenticated(issueTokens(user, deviceId));
     }
 
@@ -220,7 +226,7 @@ public class AuthService {
             return new LoginOutcome.MfaRequired(mfaTokenService.generate(user));
         }
 
-        publishLoginSuccess(user, clientIp, userAgent);
+        publishLoginSuccess(user, clientIp, userAgent, deviceId);
         return new LoginOutcome.Authenticated(issueTokens(user, deviceId));
     }
 
@@ -268,7 +274,7 @@ public class AuthService {
             return new LoginOutcome.MfaRequired(mfaTokenService.generate(user));
         }
 
-        publishLoginSuccess(user, clientIp, userAgent);
+        publishLoginSuccess(user, clientIp, userAgent, deviceId);
         return new LoginOutcome.Authenticated(issueTokens(user, deviceId));
     }
 
@@ -328,8 +334,8 @@ public class AuthService {
 
     private String generateUniqueUsername(String baseUsername) {
         String cleaned = baseUsername.replaceAll("[^a-zA-Z0-9_]", "").toLowerCase();
-        if (cleaned.isBlank()) {
-            cleaned = "user";
+        if (cleaned.isBlank() || !cleaned.matches(".*[a-zA-Z].*")) {
+            cleaned = "user" + cleaned;
         }
         if (cleaned.length() > 25) {
             cleaned = cleaned.substring(0, 25);
@@ -489,8 +495,40 @@ public class AuthService {
     }
 
     public void publishLoginSuccess(User user, String clientIp, String userAgent) {
+        publishLoginSuccess(user, clientIp, userAgent, null, null);
+    }
+
+    public void publishLoginSuccess(User user, String clientIp, String userAgent, String deviceId) {
+        publishLoginSuccess(user, clientIp, userAgent, null, deviceId);
+    }
+
+    public void publishLoginSuccess(User user, String clientIp, String userAgent, LocationInfo explicitLocation) {
+        publishLoginSuccess(user, clientIp, userAgent, explicitLocation, null);
+    }
+
+    public void publishLoginSuccess(User user, String clientIp, String userAgent, LocationInfo explicitLocation, String deviceId) {
         if (eventPublisher != null) {
-            eventPublisher.publishEvent(new UserLoginSuccessEvent(user, clientIp, userAgent, Instant.now()));
+            LocationInfo location = explicitLocation;
+            if (location == null && geoLocationService != null) {
+                try {
+                    location = geoLocationService.resolveLocation(clientIp);
+                } catch (Exception e) {
+                    log.warn("[Auth] Não foi possível resolver localização no login: {}", e.getMessage());
+                }
+            }
+            if (userSessionService != null && user != null) {
+                try {
+                    userSessionService.recordOrUpdateSession(user, deviceId, clientIp, userAgent, location);
+                } catch (Exception e) {
+                    log.error("[Auth] Erro ao registrar sessão de usuário: {}", e.getMessage(), e);
+                }
+            }
+            eventPublisher.publishEvent(new UserLoginSuccessEvent(user, clientIp, userAgent, Instant.now(), location, deviceId));
         }
+    }
+
+    public boolean isDeviceTrusted(UUID userId, String deviceId) {
+        if (userSessionService == null) return false;
+        return userSessionService.isDeviceTrusted(userId, deviceId);
     }
 }

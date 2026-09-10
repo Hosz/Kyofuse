@@ -151,6 +151,75 @@ export class CommunityMembersComponent {
     return false;
   }
 
+  roleModalMember = signal<CommunityMemberResponse | null>(null);
+  selectedRole = signal<CommunityMemberRole>('MEMBER');
+  updatingRole = signal(false);
+  roleUpdateError = signal<string | null>(null);
+
+  canChangeRole(member: CommunityMemberResponse): boolean {
+    if (this.isOwner(member) || member.memberId === this.myUserId()) {
+      return false;
+    }
+    const role = this.myRole();
+    if (role === 'OWNER') return true;
+    if (role === 'ADMIN') return member.role !== 'ADMIN';
+    return false;
+  }
+
+  availableRoles(): { role: CommunityMemberRole; label: string }[] {
+    const role = this.myRole();
+    if (role === 'OWNER') {
+      return [
+        { role: 'ADMIN', label: 'Administrador' },
+        { role: 'MODERATOR', label: 'Moderador' },
+        { role: 'MEMBER', label: 'Membro' },
+      ];
+    }
+    if (role === 'ADMIN') {
+      return [
+        { role: 'MODERATOR', label: 'Moderador' },
+        { role: 'MEMBER', label: 'Membro' },
+      ];
+    }
+    return [];
+  }
+
+  openRoleModal(member: CommunityMemberResponse): void {
+    this.roleUpdateError.set(null);
+    this.selectedRole.set(member.role);
+    this.roleModalMember.set(member);
+  }
+
+  closeRoleModal(): void {
+    if (this.updatingRole()) return;
+    this.roleModalMember.set(null);
+  }
+
+  confirmRoleUpdate(): void {
+    const communityId = this.community()?.id ?? this.communityId();
+    const member = this.roleModalMember();
+    const newRole = this.selectedRole();
+    if (!communityId || !member || this.updatingRole()) return;
+
+    this.updatingRole.set(true);
+    this.roleUpdateError.set(null);
+
+    this.communityMemberService.updateMemberRole(communityId, member.memberId, newRole).subscribe({
+      next: (updated) => {
+        this.updatingRole.set(false);
+        this.roleModalMember.set(null);
+        this.members.update((list) =>
+          list.map((m) => (m.id === member.id || m.memberId === member.memberId ? { ...m, role: updated.role } : m)),
+        );
+      },
+      error: (error) => {
+        console.error('Failed to update member role:', error);
+        this.updatingRole.set(false);
+        this.roleUpdateError.set(error?.error?.message ?? 'Não foi possível alterar o cargo deste membro.');
+      },
+    });
+  }
+
   openRemoveConfirm(member: CommunityMemberResponse): void {
     this.removeError.set(null);
     this.removeConfirmMember.set(member);
@@ -162,7 +231,7 @@ export class CommunityMembersComponent {
   }
 
   confirmRemove(): void {
-    const communityId = this.communityId();
+    const communityId = this.community()?.id ?? this.communityId();
     const member = this.removeConfirmMember();
     if (!communityId || !member || this.removing()) return;
 

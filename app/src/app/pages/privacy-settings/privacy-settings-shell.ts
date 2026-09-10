@@ -28,6 +28,7 @@ export class PrivacySettingsShellComponent {
 
   readonly securitySections = [
     { path: 'seguranca', key: 'settings.twoFactor', icon: 'security' },
+    { path: 'sessoes', key: 'settings.sessionsAndDevices', icon: 'devices' },
   ];
 
   readonly preferenceSections = [

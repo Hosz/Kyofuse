@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { API_URL } from '../../../models/api-url.model';
-import { Observable } from 'rxjs';
+import { catchError, Observable, of } from 'rxjs';
 import { postResponse } from '../../../models/posts/posts-response.model';
 import { PageResponse } from '../../../models/page-response.model';
 import { postRequest } from '../../../models/posts/post-request.model';
@@ -85,7 +85,19 @@ export class PostsService {
     return this.http.patch<void>(this.url + `/post/${postId}`, null);
   }
 
-  public recordView(postId: string): Observable<void> {
-    return this.http.post<void>(this.url + `/post/${postId}/view`, null);
+  private viewedPostIds = new Set<string>();
+
+  public recordView(postId: string): Observable<{ counted: boolean }> {
+    if (this.viewedPostIds.has(postId)) {
+      return of({ counted: false });
+    }
+    this.viewedPostIds.add(postId);
+    return this.http.post<{ counted: boolean }>(this.url + `/post/${postId}/view`, null).pipe(
+      catchError(() => of({ counted: false }))
+    );
+  }
+
+  public hasViewed(postId: string): boolean {
+    return this.viewedPostIds.has(postId);
   }
 }

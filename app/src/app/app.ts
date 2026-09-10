@@ -7,6 +7,7 @@ import { MobileNavComponent } from './components/layout/mobile-nav/mobile-nav';
 import { MobileDrawerComponent } from './components/layout/mobile-drawer/mobile-drawer';
 import { CookieBannerComponent } from './components/layout/cookie-banner/cookie-banner';
 import { CookiePreferencesModalComponent } from './components/layout/cookie-preferences-modal/cookie-preferences-modal';
+import { TrustDeviceModalComponent } from './components/auth/trust-device-modal/trust-device-modal';
 
 @Component({
   selector: 'app-root',
@@ -19,6 +20,7 @@ import { CookiePreferencesModalComponent } from './components/layout/cookie-pref
     MobileDrawerComponent,
     CookieBannerComponent,
     CookiePreferencesModalComponent,
+    TrustDeviceModalComponent,
   ],
   templateUrl: './app.html',
   styleUrl: './app.css'

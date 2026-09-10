@@ -104,6 +104,9 @@ class AuthServiceTest {
     private com.hokyozu.kyofuse.infrastructure.security.steam.SteamService steamService;
 
     @Mock
+    private com.hokyozu.kyofuse.infrastructure.geolocation.GeoLocationService geoLocationService;
+
+    @Mock
     private org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     @Mock
@@ -622,5 +625,26 @@ class AuthServiceTest {
         String token = authService.generateSwitchToken(userId, "device-1");
 
         assertThat(token).isEqualTo("generated-token");
+    }
+
+    @Test
+    void publishLoginSuccessResolvesLocationAndPublishesEvent() {
+        User user = User.builder().id(UUID.randomUUID()).username("player").build();
+        com.hokyozu.kyofuse.infrastructure.geolocation.LocationInfo location =
+                com.hokyozu.kyofuse.infrastructure.geolocation.LocationInfo.of(CLIENT_IP, "Curitiba", "Paraná", "Brasil", "BR");
+
+        when(geoLocationService.resolveLocation(CLIENT_IP)).thenReturn(location);
+
+        authService.publishLoginSuccess(user, CLIENT_IP, "Mozilla/5.0");
+
+        ArgumentCaptor<com.hokyozu.kyofuse.auth.event.UserLoginSuccessEvent> captor =
+                ArgumentCaptor.forClass(com.hokyozu.kyofuse.auth.event.UserLoginSuccessEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+
+        com.hokyozu.kyofuse.auth.event.UserLoginSuccessEvent event = captor.getValue();
+        assertThat(event.user()).isEqualTo(user);
+        assertThat(event.clientIp()).isEqualTo(CLIENT_IP);
+        assertThat(event.userAgent()).isEqualTo("Mozilla/5.0");
+        assertThat(event.location()).isEqualTo(location);
     }
 }

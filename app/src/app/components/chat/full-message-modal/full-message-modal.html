@@ -1,0 +1,79 @@
+<app-modal
+  [open]="data() !== null"
+  [title]="'chat.fullMessage' | trans"
+  size="large"
+  (closed)="closed.emit()"
+>
+  @if (data(); as msg) {
+    <div class="flex flex-col gap-4">
+      <!-- Cabeçalho com dados do remetente -->
+      <div class="flex items-center justify-between gap-3 border-b border-outline-variant/40 pb-3">
+        <div class="flex min-w-0 items-center gap-3">
+          <img
+            [src]="authorAvatar()"
+            [alt]="msg.senderName"
+            class="h-10 w-10 shrink-0 rounded-full border border-outline-variant/60 object-cover"
+          />
+          <div class="flex min-w-0 flex-col">
+            <div class="flex items-center gap-2">
+              <span class="truncate text-body-md font-bold text-on-surface">{{ msg.senderName }}</span>
+              @if (msg.author === 'me') {
+                <span class="rounded bg-primary/10 px-1.5 py-0.5 text-[11px] font-semibold text-primary">
+                  {{ 'chat.you' | trans }}
+                </span>
+              }
+            </div>
+            @if (msg.senderHandle) {
+              <span class="truncate text-label-sm text-on-surface-variant">&#64;{{ msg.senderHandle }}</span>
+            }
+          </div>
+        </div>
+
+        @if (formattedTime()) {
+          <span class="shrink-0 text-label-sm text-on-surface-variant" [title]="msg.tooltipTime || ''">
+            {{ formattedTime() }}
+          </span>
+        }
+      </div>
+
+      <!-- Mídias anexadas à mensagem (se existirem) -->
+      @if (msg.media && msg.media.length > 0) {
+        <div class="flex flex-wrap gap-2">
+          @for (m of msg.media; track m.id) {
+            <img
+              [src]="m.thumbnailUrl || m.url"
+              alt="Mídia da mensagem"
+              (click)="openImage.emit(m.url)"
+              class="max-h-60 max-w-[20rem] cursor-zoom-in rounded-xl border border-outline-variant object-cover transition-transform hover:scale-[1.02]"
+            />
+          }
+        </div>
+      }
+
+      <!-- Conteúdo completo da mensagem, com rolagem para textos grandes (até 12k caracteres) -->
+      <div class="scrollbar-minimal max-h-[50vh] overflow-y-auto whitespace-pre-wrap break-words text-body-md leading-relaxed text-on-surface select-text">
+        {{ msg.content }}
+      </div>
+
+      <!-- Rodapé com ações -->
+      <div class="flex items-center justify-between border-t border-outline-variant/40 pt-3">
+        <button
+          type="button"
+          (click)="copyMessage(msg.content)"
+          class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-outline-variant bg-surface-container px-3 py-1.5 text-body-sm font-medium text-on-surface transition-colors hover:bg-surface-container-high hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
+        >
+          <span class="material-symbols-outlined text-[18px]">content_copy</span>
+          <span>{{ 'chat.copyText' | trans }}</span>
+        </button>
+
+        <button
+          type="button"
+          (click)="closed.emit()"
+          class="cursor-pointer rounded-full bg-surface-container-highest px-4 py-1.5 text-body-sm font-semibold text-on-surface transition-colors hover:bg-outline-variant/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
+        >
+          {{ 'common.close' | trans }}
+        </button>
+      </div>
+    </div>
+  }
+</app-modal>

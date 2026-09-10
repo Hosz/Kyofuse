@@ -237,10 +237,15 @@ class PostControllerTest {
     @Test
     void recordViewDelegatesToBufferService() {
         UUID postId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Jwt jwt = jwt(userId);
 
-        controller.recordView(postId);
+        when(postViewsBufferService.recordView(postId, userId)).thenReturn(true);
 
-        verify(postViewsBufferService).recordView(postId);
+        var response = controller.recordView(jwt, postId);
+
+        assertThat(response.counted()).isTrue();
+        verify(postViewsBufferService).recordView(postId, userId);
     }
 
     private static Jwt jwt(UUID userId) {

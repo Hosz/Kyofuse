@@ -47,6 +47,7 @@ public class CommentService {
 
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
+    private final com.hokyozu.kyofuse.reactions.repository.CommentReactionRepository commentReactionRepository;
 
     private final PostFinder postFinder;
     private final CommentFinder commentFinder;
@@ -112,7 +113,12 @@ public class CommentService {
         commentPermissionService.validateViewComment(user, comment);
 
         GamerProfile authorProfile = gamerProfileFinder.findProfileByUserId(comment.getAuthor().getId());
-        return CommentMapper.toResponse(comment, authorProfile.getAvatarUrl(), authorProfile.getNickname());
+        com.hokyozu.kyofuse.reactions.enums.ReactionType userReaction = userId != null
+                ? commentReactionRepository.findByComment_Post_IdAndComment_IdAndUserId(comment.getPost().getId(), commentId, userId)
+                        .map(com.hokyozu.kyofuse.reactions.entity.CommentReaction::getReactionType)
+                        .orElse(null)
+                : null;
+        return CommentMapper.toResponse(comment, authorProfile.getAvatarUrl(), authorProfile.getNickname(), userReaction);
     }
 
     @Transactional(readOnly = true)
@@ -125,6 +131,7 @@ public class CommentService {
         Page<Comment> comments = commentRepository
                 .findByPostIdAndStatus(postId, CommentStatus.ACTIVE, pageable);
 
+        List<UUID> commentIds = comments.getContent().stream().map(Comment::getId).toList();
         List<UUID> authorIds = comments.getContent().stream()
                 .map(c -> c.getAuthor().getId())
                 .distinct()
@@ -135,11 +142,16 @@ public class CommentService {
                 : gamerProfileFinder.findAllByUserIds(authorIds).stream()
                         .collect(Collectors.toMap(p -> p.getUser().getId(), Function.identity(), (a, b) -> a));
 
+        Map<UUID, com.hokyozu.kyofuse.reactions.enums.ReactionType> userReactionsByComment = (commentIds.isEmpty() || userId == null)
+                ? Map.of()
+                : commentReactionRepository.findByCommentIdInAndUserId(commentIds, userId).stream()
+                        .collect(Collectors.toMap(r -> r.getComment().getId(), com.hokyozu.kyofuse.reactions.entity.CommentReaction::getReactionType, (a, b) -> a));
+
         return comments.map(comment -> {
             GamerProfile authorProfile = profilesByAuthor.get(comment.getAuthor().getId());
             String avatarUrl = authorProfile != null ? authorProfile.getAvatarUrl() : null;
             String nickname = authorProfile != null ? authorProfile.getNickname() : comment.getAuthor().getUsername();
-            return CommentMapper.toResponse(comment, avatarUrl, nickname);
+            return CommentMapper.toResponse(comment, avatarUrl, nickname, userReactionsByComment.get(comment.getId()));
         });
     }
 
@@ -155,9 +167,15 @@ public class CommentService {
         }
 
         Page<Comment> comments = commentRepository.findByAuthorIdAndStatus(targetUserId, CommentStatus.ACTIVE, pageable);
+        List<UUID> commentIds = comments.getContent().stream().map(Comment::getId).toList();
+
+        Map<UUID, com.hokyozu.kyofuse.reactions.enums.ReactionType> userReactionsByComment = (commentIds.isEmpty() || viewerId == null)
+                ? Map.of()
+                : commentReactionRepository.findByCommentIdInAndUserId(commentIds, viewerId).stream()
+                        .collect(Collectors.toMap(r -> r.getComment().getId(), com.hokyozu.kyofuse.reactions.entity.CommentReaction::getReactionType, (a, b) -> a));
 
         GamerProfile targetProfile = gamerProfileFinder.findProfileByUserId(targetUserId);
-        return comments.map(comment -> CommentMapper.toResponse(comment, targetProfile.getAvatarUrl(), targetProfile.getNickname()));
+        return comments.map(comment -> CommentMapper.toResponse(comment, targetProfile.getAvatarUrl(), targetProfile.getNickname(), userReactionsByComment.get(comment.getId())));
     }
 
     @Transactional

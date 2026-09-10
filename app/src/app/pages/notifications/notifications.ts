@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Router } from '@angular/router';
 import { AppSidebarComponent } from '../../components/layout/app-sidebar/app-sidebar';
 import { NotificationCardComponent } from '../../components/notifications/notification-card/notification-card';
@@ -16,7 +16,7 @@ import { FriendRequestResponse } from '../../models/friendship/friend-request.mo
 import { toTimeAgo } from '../../shared/utils/format.util';
 import { I18nService } from '../../core/i18n/i18n.service';
 
-type FilterId = 'all' | 'unread' | 'read' | 'archived' | 'system';
+type FilterId = 'all' | 'archived' | 'system';
 type ViewMode = 'notifications' | 'requests';
 type RequestTab = 'all' | 'friends' | 'follow' | 'teams' | 'messages';
 
@@ -89,8 +89,6 @@ const REQUESTS_EMPTY_MESSAGE: Record<RequestTab, string> = {
 
 const EMPTY_MESSAGE: Record<FilterId, string> = {
   all: 'Nenhuma notificação por aqui ainda.',
-  unread: 'Nenhuma notificação não lida.',
-  read: 'Nenhuma notificação lida.',
   archived: 'Nenhuma notificação arquivada.',
   system: 'Nenhuma notificação do sistema.',
 };
@@ -125,8 +123,6 @@ export class NotificationsComponent {
 
   filters: { id: FilterId; labelKey: string }[] = [
     { id: 'all', labelKey: 'notifications.filterAll' },
-    { id: 'unread', labelKey: 'notifications.filterUnread' },
-    { id: 'read', labelKey: 'notifications.filterRead' },
     { id: 'archived', labelKey: 'notifications.filterArchived' },
     { id: 'system', labelKey: 'notifications.filterSystem' },
   ];
@@ -148,7 +144,7 @@ export class NotificationsComponent {
 
   hasMoreFriendRequests = computed(() => !this.friendRequestsLastPage());
 
-  unreadCount = computed(() => this.notifications().filter((n) => n.status === 'unread').length);
+  readonly unreadCount = this.notificationService.unreadCount;
 
   /** Solicitações de conversa: o backend marca a primeira mensagem de uma conversa
    * ainda pendente como MESSAGE_REQUEST, então basta filtrar por esse tipo. O aceite
@@ -238,17 +234,27 @@ export class NotificationsComponent {
 
   filteredNotifications = computed(() => {
     const list = this.notifications();
+
+    // Encontra o ID do alerta de login lido mais recente
+    const latestReadLoginAlert = list.find((n) => n.isLoginAlert && n.status === 'read');
+    const latestReadLoginId = latestReadLoginAlert?.id;
+
+    // Estilo Instagram: mantém todos os alertas de login não lidos, mas apenas o último lido.
+    // Alertas de login lidos mais antigos são omitidos da listagem principal.
+    const deduplicated = list.filter((n) => {
+      if (!n.isLoginAlert) return true;
+      if (n.status === 'unread') return true;
+      if (n.status === 'read') return n.id === latestReadLoginId;
+      return true;
+    });
+
     switch (this.activeFilter()) {
-      case 'unread':
-        return list.filter((n) => n.status === 'unread');
-      case 'read':
-        return list.filter((n) => n.status === 'read');
       case 'archived':
-        return list.filter((n) => n.status === 'archived');
+        return deduplicated.filter((n) => n.status === 'archived');
       case 'system':
-        return list.filter((n) => n.source === 'system');
+        return deduplicated.filter((n) => n.source === 'system' && n.status !== 'archived');
       default:
-        return list.filter((n) => n.status !== 'archived');
+        return deduplicated.filter((n) => n.status !== 'archived');
     }
   });
 
@@ -257,32 +263,24 @@ export class NotificationsComponent {
   hasMoreToLoad = computed(() => !this.lastPage());
 
   constructor() {
-    /** Mantém a bolinha de contagem da sidebar em dia enquanto essa página está aberta,
-     * sem precisar de uma chamada extra à API a cada ação de ler/arquivar. */
-    effect(() => this.notificationService.unreadCount.set(this.unreadCount()));
-
     effect(() => {
       const lang = this.i18n.currentLang();
-      this.refreshNotificationTranslations(lang);
+      untracked(() => {
+        this.refreshNotificationTranslations(lang);
+      });
     });
   }
 
   private refreshNotificationTranslations(lang: string): void {
     this.notifications.update((list) =>
       list.map((n) => {
-        if (n.rawResponse) {
-          const fresh = this.toAppNotification(n.rawResponse);
-          return {
-            ...fresh,
-            status: n.status,
-          };
-        }
         const titleKey = TYPE_TITLE_KEY[n.type];
         const isActionable = (n.type === 'FOLLOW_REQUEST_RECEIVED' || n.type === 'TEAM_INVITE_RECEIVED') && !!n.action;
         return {
           ...n,
           title: titleKey ? this.i18n.t(titleKey) : n.title,
           timeAgo: toTimeAgo(n.createdAt, lang),
+          body: n.rawResponse ? this.getNotificationBody(n.rawResponse) : n.body,
           action: isActionable
             ? { acceptLabel: this.i18n.t('common.accept'), declineLabel: this.i18n.t('common.decline') }
             : undefined,
@@ -292,6 +290,17 @@ export class NotificationsComponent {
   }
 
   ngOnInit(): void {
+    // Ao entrar na área de notificações, marca automaticamente todas como lidas
+    this.notificationService.readAllNotifications().subscribe({
+      next: () => {
+        this.notificationService.unreadCount.set(0);
+        this.notifications.update((list) =>
+          list.map((n) => (n.status === 'unread' ? { ...n, status: 'read' } : n))
+        );
+      },
+      error: (error) => console.error('Failed to mark all as read on enter:', error),
+    });
+
     this.loadPage(0);
     this.loadFriendRequests();
     this.notificationService.newNotification$.subscribe({
@@ -346,7 +355,10 @@ export class NotificationsComponent {
     if (notification.status !== 'unread') return;
 
     this.notificationService.readNotification(notification.id).subscribe({
-      next: () => this.updateNotification(notification.id, (n) => ({ ...n, status: 'read' })),
+      next: () => {
+        this.updateNotification(notification.id, (n) => ({ ...n, status: 'read' }));
+        this.notificationService.unreadCount.update((c) => Math.max(0, c - 1));
+      },
       error: (error) => {
         console.error('Failed to mark notification as read:', error);
         this.toastService.error('Não foi possível marcar como lida.');
@@ -358,7 +370,13 @@ export class NotificationsComponent {
     if (notification.status === 'archived') return;
 
     this.notificationService.archiveNotification(notification.id).subscribe({
-      next: () => this.updateNotification(notification.id, (n) => ({ ...n, status: 'archived' })),
+      next: () => {
+        const wasUnread = notification.status === 'unread';
+        this.updateNotification(notification.id, (n) => ({ ...n, status: 'archived' }));
+        if (wasUnread) {
+          this.notificationService.unreadCount.update((c) => Math.max(0, c - 1));
+        }
+      },
       error: (error) => {
         console.error('Failed to archive notification:', error);
         this.toastService.error('Não foi possível arquivar a notificação.');
@@ -370,7 +388,33 @@ export class NotificationsComponent {
     const targetId = notification.targetId;
     if (!targetId) return;
 
-    const onSuccess = () => this.updateNotification(notification.id, (n) => ({ ...n, status: 'read', action: undefined }));
+    const nextType: NotificationType =
+      notification.type === 'TEAM_INVITE_RECEIVED' ? 'TEAM_INVITE_ACCEPTED' : 'FOLLOW_REQUEST_ACCEPTED';
+    const successToast =
+      notification.type === 'TEAM_INVITE_RECEIVED'
+        ? this.i18n.t('notifications.teamInviteAcceptedSuccess')
+        : this.i18n.t('notifications.followRequestAcceptedSuccess');
+
+    const onSuccess = () => {
+      this.updateNotification(notification.id, (n) => ({
+        ...n,
+        type: nextType,
+        title: this.i18n.t(TYPE_TITLE_KEY[nextType] ?? ''),
+        icon: TYPE_ICON[nextType] ?? n.icon,
+        status: 'read',
+        action: undefined,
+        responseStatus: 'accepted',
+        rawResponse: n.rawResponse
+          ? {
+              ...n.rawResponse,
+              type: nextType,
+              status: 'READ',
+            }
+          : undefined,
+      }));
+      this.toastService.success(successToast);
+    };
+
     const onError = (error: unknown) => {
       console.error('Failed to accept request:', error);
       this.toastService.error('Não foi possível aceitar a solicitação.');
@@ -387,7 +431,33 @@ export class NotificationsComponent {
     const targetId = notification.targetId;
     if (!targetId) return;
 
-    const onSuccess = () => this.updateNotification(notification.id, (n) => ({ ...n, status: 'archived', action: undefined }));
+    const nextType: NotificationType =
+      notification.type === 'TEAM_INVITE_RECEIVED' ? 'TEAM_INVITE_DECLINED' : 'FOLLOW_REQUEST_DECLINED';
+    const infoToast =
+      notification.type === 'TEAM_INVITE_RECEIVED'
+        ? this.i18n.t('notifications.teamInviteDeclinedInfo')
+        : this.i18n.t('notifications.followRequestDeclinedInfo');
+
+    const onSuccess = () => {
+      this.updateNotification(notification.id, (n) => ({
+        ...n,
+        type: nextType,
+        title: this.i18n.t(TYPE_TITLE_KEY[nextType] ?? ''),
+        icon: TYPE_ICON[nextType] ?? n.icon,
+        status: 'read',
+        action: undefined,
+        responseStatus: 'declined',
+        rawResponse: n.rawResponse
+          ? {
+              ...n.rawResponse,
+              type: nextType,
+              status: 'READ',
+            }
+          : undefined,
+      }));
+      this.toastService.info(infoToast);
+    };
+
     const onError = (error: unknown) => {
       console.error('Failed to decline request:', error);
       this.toastService.error('Não foi possível recusar a solicitação.');
@@ -406,6 +476,22 @@ export class NotificationsComponent {
         this.notifications.update((list) => list.map((n) => (n.status === 'unread' ? { ...n, status: 'read' } : n)));
       },
       error: (error) => console.error('Failed to mark all notifications as read:', error),
+    });
+  }
+
+  archiveAll(): void {
+    this.notificationService.archiveAllNotifications().subscribe({
+      next: () => {
+        this.notifications.update((list) =>
+          list.map((n) => ({ ...n, status: 'archived' }))
+        );
+        this.notificationService.unreadCount.set(0);
+        this.toastService.success(this.i18n.t('notifications.allArchivedSuccess'));
+      },
+      error: (error) => {
+        console.error('Failed to archive all notifications:', error);
+        this.toastService.error('Não foi possível arquivar as notificações.');
+      },
     });
   }
 
@@ -497,7 +583,13 @@ export class NotificationsComponent {
   private loadPage(page: number): void {
     this.notificationService.listNotifications(page).subscribe({
       next: (response) => {
-        const mapped = response.content.map((notification) => this.toAppNotification(notification));
+        const mapped = response.content.map((notification) => {
+          const appNotif = this.toAppNotification(notification);
+          if (page === 0 && appNotif.status === 'unread') {
+            return { ...appNotif, status: 'read' as const };
+          }
+          return appNotif;
+        });
         this.notifications.update((list) => (page === 0 ? mapped : [...list, ...mapped]));
         this.page.set(page);
         this.lastPage.set(response.last);
@@ -538,6 +630,13 @@ export class NotificationsComponent {
       ? this.formatLoginAlertBody(n)
       : this.getNotificationBody(n);
 
+    const responseStatus: 'accepted' | 'declined' | undefined =
+      n.type === 'TEAM_INVITE_ACCEPTED' || n.type === 'FOLLOW_REQUEST_ACCEPTED'
+        ? 'accepted'
+        : n.type === 'TEAM_INVITE_DECLINED' || n.type === 'FOLLOW_REQUEST_DECLINED'
+          ? 'declined'
+          : undefined;
+
     return {
       id: n.id,
       type: n.type,
@@ -546,7 +645,7 @@ export class NotificationsComponent {
       timeAgo: toTimeAgo(n.createdAt, this.i18n.currentLang()),
       createdAt: n.createdAt,
       status: n.status === 'UNREAD' ? 'unread' : n.status === 'READ' ? 'read' : 'archived',
-      icon: TYPE_ICON[n.type],
+      icon: TYPE_ICON[n.type] ?? 'notifications',
       avatarUrl: n.actor?.avatarUrl,
       body,
       action: isActionable
@@ -554,6 +653,8 @@ export class NotificationsComponent {
         : undefined,
       targetId: isActionable ? n.target?.id : undefined,
       conversationId,
+      responseStatus,
+      isLoginAlert,
       rawResponse: n,
     };
   }
@@ -578,9 +679,18 @@ export class NotificationsComponent {
           return [{ text: username, bold: true }, { text: ' ' + this.i18n.t('notifications.startedFollowingYou') }];
         case 'FOLLOW_REQUEST_ACCEPTED':
           return [{ text: username, bold: true }, { text: ' ' + this.i18n.t('notifications.acceptedFollowRequest') }];
+        case 'FOLLOW_REQUEST_DECLINED':
+          return [{ text: username, bold: true }, { text: ' ' + this.i18n.t('notifications.requestedToFollowYou') }];
         case 'POST_COMMENT':
           return [{ text: username, bold: true }, { text: ' ' + this.i18n.t('notifications.commentedOnPost') }];
         case 'TEAM_INVITE_RECEIVED':
+          return [{ text: username, bold: true }, { text: ' ' + this.i18n.t('notifications.invitedYouToTeam') }];
+        case 'TEAM_INVITE_ACCEPTED':
+          if (n.message && (n.message.includes('Aceitou') || n.message.includes('accepted'))) {
+            return [{ text: username, bold: true }, { text: ' ' + this.i18n.t('notifications.joinedTeam') }];
+          }
+          return [{ text: username, bold: true }, { text: ' ' + this.i18n.t('notifications.invitedYouToTeam') }];
+        case 'TEAM_INVITE_DECLINED':
           return [{ text: username, bold: true }, { text: ' ' + this.i18n.t('notifications.invitedYouToTeam') }];
         case 'TEAM_INVITE_CANCELED':
           return [{ text: username, bold: true }, { text: ' ' + this.i18n.t('notifications.inviteToTeamCanceled') }];

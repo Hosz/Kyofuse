@@ -52,6 +52,13 @@ export const PRIVACY_SETTINGS_ROUTES: Routes = [
           ),
       },
       {
+        path: 'sessoes',
+        loadComponent: () =>
+          import('./sections/sessions-settings/sessions-settings').then(
+            (m) => m.SessionsSettingsSectionComponent,
+          ),
+      },
+      {
         path: 'preferencias',
         loadComponent: () =>
           import('./sections/preferences-settings/preferences-settings').then(

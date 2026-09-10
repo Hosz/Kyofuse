@@ -1,6 +1,8 @@
 package com.hokyozu.kyofuse.teams.service;
 
 import com.hokyozu.kyofuse.auth.repository.UserRepository;
+import com.hokyozu.kyofuse.communities.repository.CommunityRepository;
+import com.hokyozu.kyofuse.communities.service.CommunityMemberService;
 import com.hokyozu.kyofuse.invites.entity.TeamInvite;
 import com.hokyozu.kyofuse.invites.enums.TeamInviteStatus;
 import com.hokyozu.kyofuse.invites.repository.TeamInviteRepository;
@@ -23,6 +25,7 @@ import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.finder.UserFinder;
 import com.hokyozu.kyofuse.users.service.UserChecker;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -34,6 +37,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TeamMemberService {
@@ -48,12 +52,24 @@ public class TeamMemberService {
     private final TeamChecker teamChecker;
     private final TeamInviteRepository teamInviteRepository;
     private final NotificationService notificationService;
+    private final CommunityRepository communityRepository;
+    private final CommunityMemberService communityMemberService;
+
+    @Transactional
+    public TeamMemberResponse addMember(String teamIdentifier, UUID userId, UUID userInvitedId) {
+        Team team = teamFinder.findTeamByIdentifier(teamIdentifier);
+        return addMemberInternal(team, userId, userInvitedId);
+    }
 
     @Transactional
     public TeamMemberResponse addMember(UUID teamId, UUID userId, UUID userInvitedId) {
+        Team team = teamFinder.findTeamById(teamId);
+        return addMemberInternal(team, userId, userInvitedId);
+    }
+
+    private TeamMemberResponse addMemberInternal(Team team, UUID userId, UUID userInvitedId) {
         User user = userFinder.findProfileByUserId(userId);
         User userInvited = userFinder.findProfileByUserId(userInvitedId);
-        Team team = teamFinder.findTeamById(teamId);
         boolean hasInvite = teamInviteRepository.existsByTeamAndReceiverAndStatus(team, userInvited, TeamInviteStatus.PENDING);
 
         teamChecker.checkInactive(team);
@@ -66,43 +82,67 @@ public class TeamMemberService {
             throw new BadRequestException("User is already a member of the team.");
         }
 
+        TeamMember savedTeamMember;
         if (hasInvite) {
             try {
                 TeamMember teamMember = TeamMemberMapper.toEntity(userInvited, team);
-                TeamMember savedTeamMember = teamMemberRepository.save(teamMember);
-
-                return TeamMemberMapper.toResponse(savedTeamMember);
+                savedTeamMember = teamMemberRepository.save(teamMember);
             } catch (Exception e) {
                 throw new BadRequestException("Failed to update the invite status. Error: " + e.getMessage());
             }
+        } else {
+            TeamMember teamMember = TeamMemberMapper.toEntity(userInvited, team);
+            savedTeamMember = teamMemberRepository.save(teamMember);
+
+            notificationService.createNotification(
+                    CreateNotificationRequest.builder()
+                            .recipient(userInvited)
+                            .actor(user)
+                            .type(NotificationType.TEAM_MEMBER_ADDED)
+                            .title("Novo membro do time.")
+                            .message(user.getUsername() + " adicionou você ao time.")
+                            .targetType(NotificationTargetType.TEAM)
+                            .targetId(teamMember.getId())
+                            .metadata(Map.of(
+                                    "TeamName", team.getName()
+                            ))
+                            .build()
+            );
         }
 
-        TeamMember teamMember = TeamMemberMapper.toEntity(userInvited, team);
-        TeamMember savedTeamMember = teamMemberRepository.save(teamMember);
-
-        notificationService.createNotification(
-                CreateNotificationRequest.builder()
-                        .recipient(userInvited)
-                        .actor(user)
-                        .type(NotificationType.TEAM_MEMBER_ADDED)
-                        .title("Novo membro do time.")
-                        .message(user.getUsername() + " adicionou você ao time.")
-                        .targetType(NotificationTargetType.TEAM)
-                        .targetId(teamMember.getId())
-                        .metadata(Map.of(
-                                "TeamName", team.getName()
-                        ))
-                        .build()
-        );
+        if (communityRepository != null && communityMemberService != null) {
+            try {
+                communityRepository.findByTeamId(team.getId()).ifPresent(comm -> {
+                    try {
+                        communityMemberService.addMember(userInvited, comm);
+                        log.info("[TeamMember] Membro {} adicionado à comunidade vinculada '{}'", userInvited.getUsername(), comm.getName());
+                    } catch (Exception ex) {
+                        log.warn("[TeamMember] Não foi possível adicionar membro na comunidade do time: {}", ex.getMessage());
+                    }
+                });
+            } catch (Exception ex) {
+                log.warn("[TeamMember] Erro ao sincronizar membro com a comunidade do time: {}", ex.getMessage());
+            }
+        }
 
         return TeamMemberMapper.toResponse(savedTeamMember);
     }
 
     @Transactional
+    public TeamMemberResponse editMember(String teamIdentifier, UUID userEditedId, UUID userId, TeamMemberEditRequest request) {
+        Team team = teamFinder.findTeamByIdentifier(teamIdentifier);
+        return editMemberInternal(team, userEditedId, userId, request);
+    }
+
+    @Transactional
     public TeamMemberResponse editMember(UUID teamId, UUID userEditedId, UUID userId, TeamMemberEditRequest request) {
+        Team team = teamFinder.findTeamById(teamId);
+        return editMemberInternal(team, userEditedId, userId, request);
+    }
+
+    private TeamMemberResponse editMemberInternal(Team team, UUID userEditedId, UUID userId, TeamMemberEditRequest request) {
         User user = userFinder.findProfileByUserId(userId);
         User userEdited = userFinder.findProfileByUserId(userEditedId);
-        Team team = teamFinder.findTeamById(teamId);
 
         teamChecker.checkInactive(team);
         teamChecker.checkUserIsOwner(team, user);
@@ -187,18 +227,26 @@ public class TeamMemberService {
     }
 
     @Transactional
+    public void removeMember(String teamIdentifier, UUID userId, UUID userRemovedId) {
+        Team team = teamFinder.findTeamByIdentifier(teamIdentifier);
+        removeMemberInternal(team, userId, userRemovedId);
+    }
+
+    @Transactional
     public void removeMember(UUID teamId, UUID userId, UUID userRemovedId) {
+        Team team = teamFinder.findTeamById(teamId);
+        removeMemberInternal(team, userId, userRemovedId);
+    }
+
+    private void removeMemberInternal(Team team, UUID userId, UUID userRemovedId) {
         User user = userFinder.findProfileByUserId(userId);
         User userRemoved = userFinder.findProfileByUserId(userRemovedId);
-        Team team = teamFinder.findTeamById(teamId);
 
         teamChecker.checkInactive(team);
         teamChecker.checkUserIsOwner(team, user);
 
         userChecker.checkActive(user);
         userChecker.checkActive(userRemoved);
-
-        teamChecker.checkUserIsOwner(team, user);
 
         if (team.getOwner().getId().equals(userRemoved.getId())) {
             throw new BadRequestException("Team owner cannot be removed from the team.");
@@ -228,9 +276,19 @@ public class TeamMemberService {
     }
 
     @Transactional
+    public void leaveTeam(String teamIdentifier, UUID userId) {
+        Team team = teamFinder.findTeamByIdentifier(teamIdentifier);
+        leaveTeamInternal(team, userId);
+    }
+
+    @Transactional
     public void leaveTeam(UUID teamId, UUID userId) {
-        User user = userFinder.findProfileByUserId(userId);
         Team team = teamFinder.findTeamById(teamId);
+        leaveTeamInternal(team, userId);
+    }
+
+    private void leaveTeamInternal(Team team, UUID userId) {
+        User user = userFinder.findProfileByUserId(userId);
 
         userChecker.checkActive(user);
 
@@ -266,8 +324,18 @@ public class TeamMemberService {
     }
 
     @Transactional(readOnly = true)
+    public TeamMemberResponse detailMember(String teamIdentifier, UUID userId, UUID teamMemberId) {
+        Team team = teamFinder.findTeamByIdentifier(teamIdentifier);
+        return detailMemberInternal(team, userId, teamMemberId);
+    }
+
+    @Transactional(readOnly = true)
     public TeamMemberResponse detailMember(UUID teamId, UUID userId, UUID teamMemberId) {
         Team team = teamFinder.findTeamById(teamId);
+        return detailMemberInternal(team, userId, teamMemberId);
+    }
+
+    private TeamMemberResponse detailMemberInternal(Team team, UUID userId, UUID teamMemberId) {
         User user = userFinder.findProfileByUserId(userId);
         User teamMemberUser = userFinder.findProfileByUserId(teamMemberId);
 

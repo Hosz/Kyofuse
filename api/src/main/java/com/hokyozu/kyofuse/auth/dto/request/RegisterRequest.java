@@ -2,6 +2,7 @@ package com.hokyozu.kyofuse.auth.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record RegisterRequest(
@@ -19,8 +20,9 @@ public record RegisterRequest(
         @Size(max = 160)
         String email,
 
-        @NotBlank
-        @Size(min = 1, max = 40)
+        @NotBlank(message = "O username não pode ser vazio.")
+        @Size(min = 3, max = 40, message = "O username deve ter entre 3 e 40 caracteres.")
+        @Pattern(regexp = "^(?=.*[a-zA-Z])[a-zA-Z0-9_]+$", message = "O username deve conter apenas letras, números e sublinhado (_), e possuir no mínimo uma letra.")
         String username,
 
         @NotBlank

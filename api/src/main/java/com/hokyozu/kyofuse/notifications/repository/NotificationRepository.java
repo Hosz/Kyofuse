@@ -33,5 +33,19 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
     """)
     int markAllAsRead(@Param("userId") UUID userId, @Param("now") Instant now);
 
+    @Modifying
+    @Query("""
+        UPDATE Notification n
+        SET n.status = com.hokyozu.kyofuse.notifications.enums.NotificationStatus.ARCHIVED
+        WHERE n.user.id = :userId AND n.status != com.hokyozu.kyofuse.notifications.enums.NotificationStatus.ARCHIVED
+    """)
+    int markAllAsArchived(@Param("userId") UUID userId);
+
     long countByUserIdAndStatus(UUID userId, com.hokyozu.kyofuse.notifications.enums.NotificationStatus status);
+
+    List<Notification> findAllByUserIdAndTargetTypeAndTargetId(
+            UUID userId,
+            com.hokyozu.kyofuse.notifications.enums.NotificationTargetType targetType,
+            UUID targetId
+    );
 }

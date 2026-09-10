@@ -35,8 +35,8 @@ class CommunityMemberControllerTest {
     @Test
     void joinCommunityUsesAuthenticatedUserIdAndPathCommunityId() {
         UUID userId = UUID.randomUUID();
-        UUID communityId = UUID.randomUUID();
-        CommunityMemberResponse expected = response(communityId, userId);
+        String communityId = UUID.randomUUID().toString();
+        CommunityMemberResponse expected = response(UUID.randomUUID(), userId);
         when(communityMemberService.joinCommunity(userId, communityId)).thenReturn(expected);
 
         CommunityMemberResponse result = controller.joinCommunity(jwt(userId), communityId);
@@ -48,9 +48,9 @@ class CommunityMemberControllerTest {
     @Test
     void listCommunityMembersDelegatesCommunityIdUserIdAndPageable() {
         UUID userId = UUID.randomUUID();
-        UUID communityId = UUID.randomUUID();
+        String communityId = UUID.randomUUID().toString();
         Pageable pageable = PageRequest.of(0, 20);
-        Page<CommunityMemberResponse> expected = new PageImpl<>(List.of(response(communityId, userId)));
+        Page<CommunityMemberResponse> expected = new PageImpl<>(List.of(response(UUID.randomUUID(), userId)));
         when(communityMemberService.listCommunityMembers(communityId, userId, pageable)).thenReturn(expected);
 
         Page<CommunityMemberResponse> result = controller.listCommunityMembers(jwt(userId), communityId, pageable);
@@ -60,9 +60,25 @@ class CommunityMemberControllerTest {
     }
 
     @Test
+    void updateMemberRoleDelegatesToService() {
+        UUID userId = UUID.randomUUID();
+        String communityId = UUID.randomUUID().toString();
+        UUID memberId = UUID.randomUUID();
+        com.hokyozu.kyofuse.communities.dto.request.UpdateCommunityMemberRoleRequest req =
+                new com.hokyozu.kyofuse.communities.dto.request.UpdateCommunityMemberRoleRequest(CommunityMemberRole.MODERATOR);
+        CommunityMemberResponse expected = response(UUID.randomUUID(), memberId);
+        when(communityMemberService.updateMemberRole(userId, communityId, memberId, CommunityMemberRole.MODERATOR)).thenReturn(expected);
+
+        CommunityMemberResponse result = controller.updateMemberRole(jwt(userId), communityId, memberId, req);
+
+        assertThat(result).isSameAs(expected);
+        verify(communityMemberService).updateMemberRole(userId, communityId, memberId, CommunityMemberRole.MODERATOR);
+    }
+
+    @Test
     void leaveCommunityUsesAuthenticatedUserIdAndPathCommunityId() {
         UUID userId = UUID.randomUUID();
-        UUID communityId = UUID.randomUUID();
+        String communityId = UUID.randomUUID().toString();
 
         controller.leaveCommunity(jwt(userId), communityId);
 
@@ -72,7 +88,7 @@ class CommunityMemberControllerTest {
     @Test
     void removeMemberUsesAuthenticatedUserIdAndPathIds() {
         UUID userId = UUID.randomUUID();
-        UUID communityId = UUID.randomUUID();
+        String communityId = UUID.randomUUID().toString();
         UUID memberId = UUID.randomUUID();
 
         controller.removeMember(jwt(userId), communityId, memberId);

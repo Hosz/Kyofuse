@@ -45,6 +45,7 @@ export interface TranslationDictionary {
     loadMore: string;
     loading: string;
     comments: string;
+    comment: string;
     repost: string;
     views: string;
     deletePostTitle: string;
@@ -52,6 +53,8 @@ export interface TranslationDictionary {
     deleteConfirm: string;
     privateAccountTitle: string;
     privateAccountDesc: string;
+    showMore: string;
+    showLess: string;
   };
   composer: {
     placeholder: string;
@@ -105,6 +108,8 @@ export interface TranslationDictionary {
     allFilter: string;
     unreadFilter: string;
     markAllAsRead: string;
+    archiveAll: string;
+    allArchivedSuccess: string;
     emptyTitle: string;
     emptyDesc: string;
     emptyRequestsTitle: string;
@@ -161,6 +166,12 @@ export interface TranslationDictionary {
     timeAgoDays: string;
     loginAlertTitle: string;
     loginAlertMessage: string;
+    accepted: string;
+    declined: string;
+    teamInviteAcceptedSuccess: string;
+    teamInviteDeclinedInfo: string;
+    followRequestAcceptedSuccess: string;
+    followRequestDeclinedInfo: string;
   };
   communities: {
     title: string;
@@ -362,6 +373,9 @@ export interface TranslationDictionary {
     noConversationsFound: string;
     noConversationsYet: string;
     deleteMessageTitle: string;
+    fullMessage: string;
+    copyText: string;
+    textCopied: string;
     newMessages: string;
     today: string;
     yesterday: string;
@@ -569,6 +583,32 @@ export interface TranslationDictionary {
     copiedToClipboard: string;
     copyAllCodes: string;
     savedBackupCodesSecurely: string;
+    sessionsAndDevices: string;
+    sessionsDesc: string;
+    currentSession: string;
+    thisDevice: string;
+    otherSessions: string;
+    noOtherSessions: string;
+    revokeAllOthers: string;
+    revokeOtherConfirmTitle: string;
+    revokeOtherConfirmDesc: string;
+    revokeSession: string;
+    revokeSessionConfirmTitle: string;
+    revokeSessionConfirmDesc: string;
+    trustedDevice: string;
+    untrustedDevice: string;
+    trustThisDevice: string;
+    untrustThisDevice: string;
+    activeNow: string;
+    sessionDetails: string;
+    approximateLocation: string;
+    deviceAndOs: string;
+    browserClient: string;
+    ipAddress: string;
+    firstLogin: string;
+    lastActive: string;
+    trustStatus: string;
+    revoking: string;
   };
   auth: {
     welcome: string;
@@ -646,6 +686,7 @@ export interface TranslationDictionary {
     usernameRequired: string;
     usernameMin: string;
     usernamePattern: string;
+    usernameLetterRequired: string;
     emailRequired: string;
     emailInvalid: string;
     passwordCreateRequired: string;
@@ -654,6 +695,11 @@ export interface TranslationDictionary {
     passwordsDoNotMatch: string;
     robotRequired: string;
     emailOrUsernameRequired: string;
+    trustDevicePromptTitle: string;
+    trustDevicePromptDesc: string;
+    trustDeviceConfirm: string;
+    trustDeviceDismiss: string;
+    deviceTrustedSuccess: string;
   };
   roadmap: {
     title: string;

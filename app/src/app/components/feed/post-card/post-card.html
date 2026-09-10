@@ -54,7 +54,7 @@
       </div>
 
       @if (post().content) {
-        <app-post-content [content]="post().content"></app-post-content>
+        <app-post-content [content]="post().content" [collapsible]="!isDetail()"></app-post-content>
       }
 
       <!-- Grid de Mídias / Imagens -->
@@ -130,10 +130,11 @@
           [postId]="post().id"
           [likeCount]="post().stats.likes"
           [reactionCount]="post().stats.reactions"
+          [currentUserReaction]="post().currentUserReaction"
         />
         <div class="flex items-center gap-1.5 text-on-surface-variant/80" [attr.title]="'feed.views' | trans">
           <span class="material-symbols-outlined text-[18px]">visibility</span>
-          <span class="text-label-md">{{ post().stats.views ?? 0 }}</span>
+          <span class="text-label-md">{{ displayedViews() }}</span>
         </div>
         <app-share-button [path]="'/post/' + post().id" />
       </div>

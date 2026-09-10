@@ -24,11 +24,10 @@ export class ModalComponent {
   title = input.required<string>();
 
   /**
-   * 'compact' encolhe o painel para o tamanho de um menu de opções — usado quando o
-   * modal carrega só alguns botões e ocupar a largura inteira do diálogo padrão
-   * pareceria desproporcional.
+   * 'compact' encolhe o painel para o tamanho de um menu de opções.
+   * 'large' expande o painel para visualização confortável de conteúdos extensos (ex: mensagens longas).
    */
-  size = input<'default' | 'compact'>('default');
+  size = input<'default' | 'compact' | 'large'>('default');
 
   closed = output<void>();
 

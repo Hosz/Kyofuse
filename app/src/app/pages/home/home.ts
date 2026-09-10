@@ -17,6 +17,7 @@ import { CommunityResponse } from '../../models/communities/community.model';
 import { toPost } from '../../shared/utils/mappers.util';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { I18nService } from '../../core/i18n/i18n.service';
+import { UserSessionService } from '../../core/services/auth/user-session.service';
 
 /**
  * Abas fixas do topo. As demais abas são ids de comunidade fixada — como são UUIDs,
@@ -51,6 +52,7 @@ export class HomeComponent {
   private communityService = inject(CommunityService);
   private toastService = inject(ToastService);
   private i18n = inject(I18nService);
+  private userSessionService = inject(UserSessionService);
 
   posts = signal<Post[]>([]);
   loading = signal(true);
@@ -103,6 +105,7 @@ export class HomeComponent {
   ngOnInit() {
     this.loadFeed(0);
     this.loadPinnedCommunities();
+    this.userSessionService.checkAndTriggerTrustPrompt();
   }
 
   selectFeed(feed: ActiveFeed): void {

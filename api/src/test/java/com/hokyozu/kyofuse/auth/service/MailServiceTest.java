@@ -69,4 +69,30 @@ class MailServiceTest {
 
         verifyNoInteractions(mailSender);
     }
+
+    @Test
+    void sendEmailVerificationEmailSendsMessageSuccessfully() {
+        mailService.sendEmailVerificationEmail("user@example.com", "token123");
+
+        ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(mailSender).send(captor.capture());
+
+        SimpleMailMessage message = captor.getValue();
+        assertThat(message.getTo()).containsExactly("user@example.com");
+        assertThat(message.getSubject()).contains("Confirmação de E-mail");
+        assertThat(message.getText()).contains("/verificar-email?token=token123");
+    }
+
+    @Test
+    void sendEmailLinkVerificationEmailSendsMessageSuccessfully() {
+        mailService.sendEmailLinkVerificationEmail("new@example.com", "token456");
+
+        ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(mailSender).send(captor.capture());
+
+        SimpleMailMessage message = captor.getValue();
+        assertThat(message.getTo()).containsExactly("new@example.com");
+        assertThat(message.getSubject()).contains("Confirmação de Vinculação");
+        assertThat(message.getText()).contains("/verificar-email?token=token456");
+    }
 }

@@ -34,7 +34,7 @@ export class SidebarNavComponent {
   ]);
 
   ngOnInit(): void {
-    this.notificationService.refreshUnreadCount();
+    this.notificationService.refreshUnreadCount(true);
     this.conversationService.refreshUnreadStatus();
   }
 }

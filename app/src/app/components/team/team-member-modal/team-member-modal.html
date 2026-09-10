@@ -96,35 +96,37 @@
             </button>
           }
 
-          <button
-            type="button"
-            (click)="removeRequested.emit(m)"
-            [disabled]="removing()"
-            class="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-left text-body-sm text-error transition-colors hover:bg-error-container hover:text-on-error-container disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <span class="material-symbols-outlined text-[18px]">person_remove</span>
-            {{ removing() ? 'Expulsando...' : 'Expulsar do time' }}
-          </button>
+          @if (canRemove()) {
+            <button
+              type="button"
+              (click)="removeRequested.emit(m)"
+              [disabled]="removing()"
+              class="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-left text-body-sm text-error transition-colors hover:bg-error-container hover:text-on-error-container disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <span class="material-symbols-outlined text-[18px]">person_remove</span>
+              {{ removing() ? 'Expulsando...' : 'Expulsar do time' }}
+            </button>
 
-          <button
-            type="button"
-            disabled
-            title="Vote kick ainda não está disponível"
-            class="flex cursor-not-allowed items-center gap-2 rounded-lg px-3 py-2.5 text-left text-body-sm text-on-surface-variant opacity-60"
-          >
-            <span class="material-symbols-outlined text-[18px]">how_to_vote</span>
-            Abrir vote kick
-          </button>
+            <button
+              type="button"
+              disabled
+              title="Vote kick ainda não está disponível"
+              class="flex cursor-not-allowed items-center gap-2 rounded-lg px-3 py-2.5 text-left text-body-sm text-on-surface-variant opacity-60"
+            >
+              <span class="material-symbols-outlined text-[18px]">how_to_vote</span>
+              Abrir vote kick
+            </button>
 
-          <button
-            type="button"
-            disabled
-            title="Banimento ainda não está disponível"
-            class="flex cursor-not-allowed items-center gap-2 rounded-lg px-3 py-2.5 text-left text-body-sm text-on-surface-variant opacity-60"
-          >
-            <span class="material-symbols-outlined text-[18px]">gavel</span>
-            Banir do time
-          </button>
+            <button
+              type="button"
+              disabled
+              title="Banimento ainda não está disponível"
+              class="flex cursor-not-allowed items-center gap-2 rounded-lg px-3 py-2.5 text-left text-body-sm text-on-surface-variant opacity-60"
+            >
+              <span class="material-symbols-outlined text-[18px]">gavel</span>
+              Banir do time
+            </button>
+          }
         </div>
       }
 

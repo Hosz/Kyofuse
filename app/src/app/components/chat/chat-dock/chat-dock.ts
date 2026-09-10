@@ -9,13 +9,16 @@ import { AuthService } from '../../../core/services/auth/auth.service';
 import { ConversationInfoPanelComponent } from '../conversation-info-panel/conversation-info-panel';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog';
 import { SkeletonComponent } from '../../shared/skeleton/skeleton';
+import { FullMessageModalComponent } from '../full-message-modal/full-message-modal';
+import { FullMessageViewData } from '../full-message-modal/full-message-modal.types';
 import { ToastService } from '../../../core/services/ui/toast.service';
 import { ConversationResponse, MessageResponse } from '../../../models/chat/chat.model';
-import { Conversation, TypingEvent } from '../../../shared/models/chat.model';
+import { Conversation, TypingEvent, ChatMessage, ChatMessageGroup } from '../../../shared/models/chat.model';
 import { previewFromChatMessage, toChatMessage, toChatMessageGroups, toConversation } from '../../../shared/utils/mappers.util';
-import { toTimeAgo } from '../../../shared/utils/format.util';
+import { toTimeAgo, isLongChatMessage, truncateChatMessage, FALLBACK_AVATAR_URL } from '../../../shared/utils/format.util';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { I18nService } from '../../../core/i18n/i18n.service';
+import { CharLimitIndicatorComponent } from '../../../shared/components/char-limit-indicator/char-limit-indicator';
 
 const CONVERSATIONS_PAGE_SIZE = 30;
 const MESSAGES_PAGE_SIZE = 30;
@@ -36,7 +39,7 @@ function normalize(value: string): string {
  */
 @Component({
   selector: 'app-chat-dock',
-  imports: [ConversationInfoPanelComponent, ConfirmDialogComponent, SkeletonComponent, TranslatePipe],
+  imports: [ConversationInfoPanelComponent, ConfirmDialogComponent, SkeletonComponent, FullMessageModalComponent, CharLimitIndicatorComponent, TranslatePipe],
   templateUrl: './chat-dock.html',
   styleUrl: './chat-dock.css',
 })
@@ -53,6 +56,7 @@ export class ChatDockComponent implements OnDestroy {
   private chatSub: Subscription | null = null;
   private userQueueSub: Subscription | null = null;
   private statusSub: Subscription | null = null;
+  private conversationCreatedSub: Subscription | null = null;
   private readonly typingSubs = new Map<string, Subscription>();
   private readonly typingTrackers = new Map<string, Map<string, { name: string; timeoutId: any }>>();
 
@@ -91,6 +95,7 @@ export class ChatDockComponent implements OnDestroy {
   draft = signal('');
 
   messagePendingDeletion = signal<string | null>(null);
+  selectedFullMessage = signal<FullMessageViewData | null>(null);
 
   private myUserId = signal<string | null>(null);
   private loaded = false;
@@ -179,6 +184,27 @@ export class ChatDockComponent implements OnDestroy {
         this.handleIncomingMessage(messageResponse, myId);
       },
       error: (err) => console.error('[ChatDock] User queue error:', err),
+    });
+
+    this.profileService.myProfile().subscribe({
+      next: (profile) => this.myUserId.set(profile.userId),
+      error: () => {},
+    });
+
+    this.conversationCreatedSub = this.conversationService.conversationCreated$.subscribe({
+      next: (conversation) => {
+        const myId = this.myUserId();
+        if (myId) {
+          const mapped = toConversation(conversation, myId, this.i18n.currentLang());
+          this.conversations.update((list) => {
+            const filtered = list.filter((c) => c.id !== mapped.id);
+            return [mapped, ...filtered];
+          });
+          this.syncTypingSubscriptions([mapped.id], myId);
+        } else {
+          this.load();
+        }
+      },
     });
 
     // Rola pro fim sempre que a conversa aberta muda ou recebe mensagem nova. Precisa
@@ -274,7 +300,7 @@ export class ChatDockComponent implements OnDestroy {
   toggle(): void {
     const next = !this.open();
     this.open.set(next);
-    if (next && !this.loaded) {
+    if (next) {
       this.loaded = true;
       this.load();
     }
@@ -336,8 +362,8 @@ export class ChatDockComponent implements OnDestroy {
     const myId = this.myUserId();
     if (!conversation || !content || !myId || !this.canType() || this.sending()) return;
 
-    if (content.length > 2000) {
-      this.toastService.error('A mensagem não pode exceder 2.000 caracteres.');
+    if (content.length > 12000) {
+      this.toastService.error('A mensagem não pode exceder 12.000 caracteres.');
       return;
     }
 
@@ -361,6 +387,44 @@ export class ChatDockComponent implements OnDestroy {
         this.toastService.error('Não foi possível enviar a mensagem.');
       },
     });
+  }
+
+  isLong(text: string | null | undefined): boolean {
+    return isLongChatMessage(text);
+  }
+
+  truncate(text: string | null | undefined): string {
+    return truncateChatMessage(text);
+  }
+
+  openFullMessage(message: ChatMessage, group?: ChatMessageGroup): void {
+    const conv = this.active();
+    const isMe = message.author === 'me';
+    const senderName = isMe
+      ? this.i18n.t('chat.you')
+      : (message.senderNickname || group?.senderNickname || conv?.participant.name || 'Usuário');
+    const senderHandle = isMe
+      ? undefined
+      : (message.senderUsername || group?.senderUsername || conv?.participant.handle || undefined);
+    const senderAvatarUrl = isMe
+      ? undefined
+      : (message.senderAvatarUrl || group?.senderAvatarUrl || conv?.participant.avatarUrl || FALLBACK_AVATAR_URL);
+
+    this.selectedFullMessage.set({
+      id: message.id,
+      content: message.content,
+      author: message.author,
+      senderName,
+      senderHandle,
+      senderAvatarUrl,
+      timestamp: message.exactTime || group?.timeFormatted || message.timestamp,
+      tooltipTime: message.tooltipTime,
+      media: message.media,
+    });
+  }
+
+  closeFullMessage(): void {
+    this.selectedFullMessage.set(null);
   }
 
   askDeleteMessage(messageId: string): void {
@@ -397,7 +461,27 @@ export class ChatDockComponent implements OnDestroy {
 
     this.conversations.update((list) => {
       const targetIndex = list.findIndex((c) => c.id === conversationId);
-      if (targetIndex === -1) return list;
+      if (targetIndex === -1) {
+        this.conversationService.getConversationDetails(conversationId).subscribe({
+          next: (conv) => {
+            const mapped = toConversation(conv, myId, this.i18n.currentLang());
+            const isThem = messageResponse.senderId !== myId;
+            const unreadCount = isCurrent || !isThem ? 0 : 1;
+            const newConv: Conversation = {
+              ...mapped,
+              lastMessageAt: toTimeAgo(new Date().toISOString(), this.i18n.currentLang()),
+              lastMessagePreview: previewFromChatMessage(chatMsg, mapped.type !== 'DIRECT'),
+              unread: unreadCount > 0 || (mapped.relationship === 'request-received' && !isCurrent),
+              unreadCount,
+              messages: [chatMsg],
+            };
+            this.conversations.update((current) => [newConv, ...current.filter((c) => c.id !== conv.id)]);
+            this.syncTypingSubscriptions([conv.id], myId);
+          },
+          error: (err) => console.error('[ChatDock] Failed to fetch incoming conversation:', err),
+        });
+        return list;
+      }
 
       const target = list[targetIndex];
       const exists = target.messages.some((m) => m.id === chatMsg.id);
@@ -516,7 +600,9 @@ export class ChatDockComponent implements OnDestroy {
   }
 
   private load(): void {
-    this.loading.set(true);
+    if (this.conversations().length === 0) {
+      this.loading.set(true);
+    }
 
     this.profileService.myProfile().subscribe({
       next: (profile) => {
@@ -639,6 +725,7 @@ export class ChatDockComponent implements OnDestroy {
     this.chatSub?.unsubscribe();
     this.statusSub?.unsubscribe();
     this.userQueueSub?.unsubscribe();
+    this.conversationCreatedSub?.unsubscribe();
 
     for (const sub of this.typingSubs.values()) {
       sub.unsubscribe();

@@ -71,16 +71,21 @@ public class AuthMapper {
     }
 
     public static AuthResponse toResponse(User user) {
-        return toResponse(user, null);
+        return toResponse(user, null, false);
     }
 
     public static AuthResponse toResponse(User user, String switchToken) {
+        return toResponse(user, switchToken, false);
+    }
+
+    public static AuthResponse toResponse(User user, String switchToken, boolean deviceTrusted) {
         return new AuthResponse(
                 user.getId(),
                 user.getEmail(),
                 user.getUsername(),
                 user.getRole().name(),
-                switchToken
+                switchToken,
+                deviceTrusted
         );
     }
 

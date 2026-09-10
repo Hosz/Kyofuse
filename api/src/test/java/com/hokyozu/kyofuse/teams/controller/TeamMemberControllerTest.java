@@ -36,7 +36,7 @@ class TeamMemberControllerTest {
 
     @Test
     void addMemberUsesAuthenticatedUserIdAndPathIds() {
-        UUID teamId = UUID.randomUUID();
+        String teamId = UUID.randomUUID().toString();
         UUID userId = UUID.randomUUID();
         UUID invitedId = UUID.randomUUID();
         TeamMemberResponse expected = response();
@@ -50,7 +50,7 @@ class TeamMemberControllerTest {
 
     @Test
     void editMemberUsesAuthenticatedUserIdPathIdsAndRequest() {
-        UUID teamId = UUID.randomUUID();
+        String teamId = UUID.randomUUID().toString();
         UUID userId = UUID.randomUUID();
         UUID editedId = UUID.randomUUID();
         TeamMemberEditRequest request = new TeamMemberEditRequest(PlayerRole.RIFLER, TeamMemberType.PLAYER);
@@ -79,7 +79,7 @@ class TeamMemberControllerTest {
 
     @Test
     void detailMemberUsesAuthenticatedUserIdAndPathIds() {
-        UUID teamId = UUID.randomUUID();
+        String teamId = UUID.randomUUID().toString();
         UUID userId = UUID.randomUUID();
         UUID memberId = UUID.randomUUID();
         TeamMemberResponse expected = response();
@@ -93,7 +93,7 @@ class TeamMemberControllerTest {
 
     @Test
     void removeMemberUsesAuthenticatedUserIdAndPathIds() {
-        UUID teamId = UUID.randomUUID();
+        String teamId = UUID.randomUUID().toString();
         UUID userId = UUID.randomUUID();
         UUID removedId = UUID.randomUUID();
 
@@ -104,7 +104,7 @@ class TeamMemberControllerTest {
 
     @Test
     void leaveTeamUsesAuthenticatedUserIdAndPathTeamId() {
-        UUID teamId = UUID.randomUUID();
+        String teamId = UUID.randomUUID().toString();
         UUID userId = UUID.randomUUID();
 
         controller.leaveTeam(teamId, jwt(userId));

@@ -123,6 +123,10 @@ export class ProfileSetupComponent implements OnInit {
       this.errorMessage.set('O nome de usuário pode conter apenas letras, números e sublinhado (_).');
       return;
     }
+    if (!/[a-zA-Z]/.test(rawUsername)) {
+      this.errorMessage.set('O nome de usuário deve conter no mínimo uma letra.');
+      return;
+    }
 
     if (!rawNickname) {
       this.errorMessage.set('Informe seu apelido (nickname).');

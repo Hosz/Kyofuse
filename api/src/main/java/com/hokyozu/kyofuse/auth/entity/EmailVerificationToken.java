@@ -36,6 +36,17 @@ public class EmailVerificationToken {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Convert(converter = com.hokyozu.kyofuse.infrastructure.security.crypto.EncryptedEmailConverter.class)
+    @Column(name = "pending_email", length = 500)
+    private String pendingEmail;
+
+    @Column(name = "pending_email_index", length = 64)
+    private String pendingEmailIndex;
+
+    @Column(name = "token_type", length = 30, nullable = false)
+    @Builder.Default
+    private String tokenType = "REGISTRATION";
+
     public boolean isExpired() {
         return Instant.now().isAfter(expiresAt);
     }

@@ -1,5 +1,7 @@
 package com.hokyozu.kyofuse.teams.service;
 
+import com.hokyozu.kyofuse.communities.repository.CommunityRepository;
+import com.hokyozu.kyofuse.communities.service.CommunityMemberService;
 import com.hokyozu.kyofuse.invites.repository.TeamInviteRepository;
 import com.hokyozu.kyofuse.notifications.service.NotificationService;
 import com.hokyozu.kyofuse.profiles.enums.PlayerRole;
@@ -58,6 +60,12 @@ class TeamMemberServiceTest {
     @Mock
     private NotificationService notificationService;
 
+    @Mock
+    private CommunityRepository communityRepository;
+
+    @Mock
+    private CommunityMemberService communityMemberService;
+
     @Spy
     private UserChecker userChecker = new UserChecker();
 
@@ -94,6 +102,29 @@ class TeamMemberServiceTest {
         assertThat(saved.getMemberType()).isEqualTo(TeamMemberType.UNASSIGNED);
         assertThat(response.teamName()).isEqualTo(team.getName());
         assertThat(response.userName()).isEqualTo(invited.getUsername());
+    }
+
+    @Test
+    void addMemberAlsoAddsMemberToLinkedCommunity() {
+        User owner = activeUser("owner");
+        User invited = activeUser("invited");
+        Team team = activeTeam(owner);
+        com.hokyozu.kyofuse.communities.entity.Community community = com.hokyozu.kyofuse.communities.entity.Community.builder()
+                .id(UUID.randomUUID())
+                .name("Team Community")
+                .team(team)
+                .build();
+
+        when(userFinder.findProfileByUserId(owner.getId())).thenReturn(owner);
+        when(userFinder.findProfileByUserId(invited.getId())).thenReturn(invited);
+        when(teamFinder.findTeamById(team.getId())).thenReturn(team);
+        when(teamMemberRepository.existsByTeamAndUser(team, invited)).thenReturn(false);
+        when(teamMemberRepository.save(any(TeamMember.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(communityRepository.findByTeamId(team.getId())).thenReturn(java.util.Optional.of(community));
+
+        teamMemberService.addMember(team.getId(), owner.getId(), invited.getId());
+
+        verify(communityMemberService).addMember(invited, community);
     }
 
     @Test

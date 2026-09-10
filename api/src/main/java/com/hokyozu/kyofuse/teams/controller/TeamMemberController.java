@@ -21,7 +21,7 @@ public class TeamMemberController {
     private final TeamMemberService teamMemberService;
 
     @PostMapping("/{teamId}/add/{userInvitedId}")
-    public TeamMemberResponse addMember(@PathVariable UUID teamId,
+    public TeamMemberResponse addMember(@PathVariable String teamId,
                                         @AuthenticationPrincipal Jwt jwt,
                                         @PathVariable UUID userInvitedId) {
 
@@ -30,7 +30,7 @@ public class TeamMemberController {
     }
 
     @PatchMapping("/{teamId}/edit/{userEditedId}")
-    public TeamMemberResponse editMember(@PathVariable UUID teamId,
+    public TeamMemberResponse editMember(@PathVariable String teamId,
                                          @PathVariable UUID userEditedId,
                                          @AuthenticationPrincipal Jwt jwt,
                                          @Valid @RequestBody TeamMemberEditRequest request) {
@@ -49,7 +49,7 @@ public class TeamMemberController {
     }
 
     @GetMapping("/{teamId}/{teamMemberId}")
-    public TeamMemberResponse detailMember(@PathVariable UUID teamId,
+    public TeamMemberResponse detailMember(@PathVariable String teamId,
                                            @PathVariable UUID teamMemberId,
                                            @AuthenticationPrincipal Jwt jwt) {
 
@@ -58,7 +58,7 @@ public class TeamMemberController {
     }
 
     @DeleteMapping("/{teamId}/{userRemovedId}/remove")
-    public void removeMember(@PathVariable UUID teamId,
+    public void removeMember(@PathVariable String teamId,
                              @PathVariable UUID userRemovedId,
                              @AuthenticationPrincipal Jwt jwt) {
 
@@ -67,7 +67,7 @@ public class TeamMemberController {
     }
 
     @DeleteMapping("/{teamId}/leave")
-    public void leaveTeam(@PathVariable UUID teamId,
+    public void leaveTeam(@PathVariable String teamId,
                           @AuthenticationPrincipal Jwt jwt) {
 
         UUID userId = UUID.fromString(jwt.getSubject());

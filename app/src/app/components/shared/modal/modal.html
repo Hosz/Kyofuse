@@ -13,7 +13,7 @@
       tabindex="-1"
       (click)="$event.stopPropagation()"
       class="scrollbar-minimal flex max-h-[80vh] w-full flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container-low shadow-2xl focus:outline-none"
-      [class]="size() === 'compact' ? 'max-w-[17rem]' : 'max-w-[28rem]'"
+      [class]="size() === 'compact' ? 'max-w-[17rem]' : size() === 'large' ? 'max-w-[38rem]' : 'max-w-[28rem]'"
     >
       <div
         class="flex shrink-0 items-center justify-between border-b border-outline-variant px-lg"
