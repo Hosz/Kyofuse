@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.hokyozu.kyofuse.teams.dto.response.TeamResponse;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.List;
@@ -69,9 +70,10 @@ public class CommunityController {
 
     @DeleteMapping("/{communityId}")
     public void deleteCommunity(@AuthenticationPrincipal Jwt jwt,
-                                @PathVariable UUID communityId) {
+                                @PathVariable UUID communityId,
+                                @RequestParam(name = "deleteTeam", defaultValue = "false") boolean deleteTeam) {
         UUID userId = UUID.fromString(jwt.getSubject());
-        communityService.deleteCommunity(userId, communityId);
+        communityService.deleteCommunity(userId, communityId, deleteTeam);
     }
 
     @PatchMapping("/{communityId}/archive")
@@ -126,5 +128,15 @@ public class CommunityController {
     ) {
         UUID userId = UUID.fromString(jwt.getSubject());
         return communityService.listAvailableTeamsForCommunity(userId, communityId);
+    }
+
+    @DeleteMapping("/{communityId}/detach-team")
+    public ResponseEntity<Void> detachTeam(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String communityId
+    ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        communityService.detachTeamCommunityByCommunity(userId, communityId);
+        return ResponseEntity.noContent().build();
     }
 }

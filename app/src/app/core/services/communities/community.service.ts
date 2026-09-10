@@ -26,8 +26,13 @@ export class CommunityService {
     return this.http.get<CommunityResponse>(`${this.url}/${communityId}`);
   }
 
-  public deleteCommunity(communityId: string) {
-    return this.http.delete<void>(`${this.url}/${communityId}`);
+  public deleteCommunity(communityId: string, deleteTeam: boolean = false) {
+    const params = new HttpParams().set('deleteTeam', String(deleteTeam));
+    return this.http.delete<void>(`${this.url}/${communityId}`, { params });
+  }
+
+  public detachTeam(communityId: string) {
+    return this.http.delete<void>(`${this.url}/${communityId}/detach-team`);
   }
 
   public archiveCommunity(communityId: string) {

@@ -1,5 +1,6 @@
 package com.hokyozu.kyofuse.communities.repository;
 
+import com.hokyozu.kyofuse.communities.entity.Community;
 import com.hokyozu.kyofuse.communities.entity.CommunityJoinRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,4 +14,6 @@ public interface CommunityJoinRequestRepository extends JpaRepository<CommunityJ
 
     @EntityGraph(attributePaths = {"community", "requester"})
     Page<CommunityJoinRequest> findByCommunityId(UUID communityId, Pageable pageable);
+
+    void deleteByCommunity(Community community);
 }

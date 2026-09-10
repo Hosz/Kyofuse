@@ -78,9 +78,9 @@ class CommunityControllerTest {
         UUID userId = UUID.randomUUID();
         UUID communityId = UUID.randomUUID();
 
-        controller.deleteCommunity(jwt(userId), communityId);
+        controller.deleteCommunity(jwt(userId), communityId, false);
 
-        verify(communityService).deleteCommunity(userId, communityId);
+        verify(communityService).deleteCommunity(userId, communityId, false);
     }
 
     @Test
@@ -141,6 +141,17 @@ class CommunityControllerTest {
 
         assertThat(result).isEmpty();
         verify(communityService).listAvailableTeamsForCommunity(userId, communityId);
+    }
+
+    @Test
+    void detachTeamUsesAuthenticatedUserIdAndPathCommunityId() {
+        UUID userId = UUID.randomUUID();
+        String communityId = "comm-1";
+
+        var response = controller.detachTeam(jwt(userId), communityId);
+
+        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+        verify(communityService).detachTeamCommunityByCommunity(userId, communityId);
     }
 
     private CommunityRequest request() {

@@ -67,29 +67,42 @@
 
                 <div class="flex shrink-0 flex-col items-stretch gap-3 sm:items-end">
                   @if (community()!.teamName) {
-                    <a
-                      [routerLink]="['/times', community()!.teamSlug]"
-                      class="flex items-center gap-3 rounded-xl border border-outline-variant bg-surface-container px-3 py-2.5 transition-colors hover:border-primary"
-                    >
-                      @if (community()!.teamAvatarUrl) {
-                        <img
-                          [src]="community()!.teamAvatarUrl"
-                          [alt]="community()!.teamName"
-                          class="h-10 w-10 shrink-0 rounded-lg object-cover"
-                        />
-                      } @else {
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-container-high">
-                          <span class="material-symbols-outlined text-[20px] text-on-surface-variant">shield</span>
+                    <div class="flex items-center gap-2">
+                      <a
+                        [routerLink]="['/times', community()!.teamSlug]"
+                        class="flex items-center gap-3 rounded-xl border border-outline-variant bg-surface-container px-3 py-2.5 transition-colors hover:border-primary"
+                      >
+                        @if (community()!.teamAvatarUrl) {
+                          <img
+                            [src]="community()!.teamAvatarUrl"
+                            [alt]="community()!.teamName"
+                            class="h-10 w-10 shrink-0 rounded-lg object-cover"
+                          />
+                        } @else {
+                          <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-container-high">
+                            <span class="material-symbols-outlined text-[20px] text-on-surface-variant">shield</span>
+                          </span>
+                        }
+
+                        <span class="flex min-w-0 flex-col">
+                          <span class="text-label-sm uppercase tracking-[0.05em] text-on-surface-variant">{{ 'communities.teamCommunity' | trans }}</span>
+                          <span class="truncate text-body-sm font-bold text-on-surface">{{ community()!.teamName }}</span>
                         </span>
+
+                        <span class="material-symbols-outlined shrink-0 text-[18px] text-on-surface-variant">chevron_right</span>
+                      </a>
+
+                      @if (isHead()) {
+                        <button
+                          type="button"
+                          (click)="openDetachTeamModal()"
+                          [title]="'communities.detachTeam' | trans"
+                          class="flex h-10 w-10 items-center justify-center rounded-xl border border-outline-variant bg-surface-container text-on-surface-variant transition-colors hover:border-error hover:text-error"
+                        >
+                          <span class="material-symbols-outlined text-[20px]">link_off</span>
+                        </button>
                       }
-
-                      <span class="flex min-w-0 flex-col">
-                        <span class="text-label-sm uppercase tracking-[0.05em] text-on-surface-variant">{{ 'communities.teamCommunity' | trans }}</span>
-                        <span class="truncate text-body-sm font-bold text-on-surface">{{ community()!.teamName }}</span>
-                      </span>
-
-                      <span class="material-symbols-outlined shrink-0 text-[18px] text-on-surface-variant">chevron_right</span>
-                    </a>
+                    </div>
                   } @else if (isHead()) {
                     <button
                       type="button"
@@ -134,6 +147,14 @@
                         class="cursor-pointer whitespace-nowrap rounded-full border border-error px-4 py-2 text-label-sm font-bold text-error transition-colors hover:bg-error/10"
                       >
                         {{ 'common.delete' | trans }}
+                      </button>
+                      <button
+                        type="button"
+                        (click)="askLeave()"
+                        [disabled]="leaving()"
+                        class="cursor-pointer whitespace-nowrap rounded-full border border-outline-variant px-4 py-2 text-label-sm font-bold text-on-surface transition-colors hover:border-error hover:text-error disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {{ (leaving() ? 'communities.leaving' : 'communities.leaveCommunity') | trans }}
                       </button>
                     } @else if (isMember()) {
                       <button
@@ -551,40 +572,135 @@
 
   <app-modal
     [open]="confirmAction() !== null"
-    [title]="confirmAction() === 'archive' ? 'Arquivar comunidade' : 'Excluir comunidade'"
+    [title]="confirmAction() === 'archive' ? 'Arquivar comunidade' : ('communities.deleteCommunityConfirmTitle' | trans)"
     (closed)="closeConfirmAction()"
   >
-    <div class="flex flex-col gap-lg">
-      <p class="text-body-sm text-on-surface">
-        @if (confirmAction() === 'archive') {
+    <div class="flex flex-col gap-4">
+      @if (confirmAction() === 'archive') {
+        <p class="text-body-sm text-on-surface">
           Tem certeza que deseja arquivar essa comunidade? Ela deixará de aparecer para novos membros, mas o histórico é preservado.
-        } @else {
-          Tem certeza que deseja excluir essa comunidade permanentemente? Essa ação não pode ser desfeita.
+        </p>
+
+        @if (actionError()) {
+          <p class="text-label-sm text-error">{{ actionError() }}</p>
         }
-      </p>
 
-      @if (actionError()) {
-        <p class="text-label-sm text-error">{{ actionError() }}</p>
+        <div class="flex justify-end gap-2 pt-2">
+          <button
+            type="button"
+            (click)="closeConfirmAction()"
+            [disabled]="actionLoading()"
+            class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {{ 'common.cancel' | trans }}
+          </button>
+          <button
+            type="button"
+            (click)="confirmActionSubmit()"
+            [disabled]="actionLoading()"
+            class="cursor-pointer rounded-full bg-error px-4 py-2 text-label-md font-bold text-on-error transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {{ actionLoading() ? ('common.loading' | trans) : ('communities.archive' | trans) }}
+          </button>
+        </div>
+      } @else if (!community()?.teamId) {
+        <p class="text-body-sm text-on-surface">
+          {{ 'communities.deleteCommunityConfirmMessage' | trans }}
+        </p>
+
+        @if (actionError()) {
+          <p class="text-label-sm text-error">{{ actionError() }}</p>
+        }
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button
+            type="button"
+            (click)="closeConfirmAction()"
+            [disabled]="actionLoading()"
+            class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {{ 'common.cancel' | trans }}
+          </button>
+          <button
+            type="button"
+            (click)="confirmActionSubmit(false)"
+            [disabled]="actionLoading()"
+            class="cursor-pointer rounded-full bg-error px-4 py-2 text-label-md font-bold text-on-error transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {{ actionLoading() ? ('common.loading' | trans) : ('common.delete' | trans) }}
+          </button>
+        </div>
+      } @else if (isLinkedTeamOwner()) {
+        <p class="text-body-sm text-on-surface">
+          {{ 'communities.deleteCommunityBothChoiceMessage' | trans }}
+        </p>
+        <div class="rounded-xl border border-outline-variant/60 bg-surface-container p-3 text-label-sm text-on-surface-variant flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary text-[20px]">shield</span>
+          <span>Time vinculado: <strong class="text-on-surface">&#64;{{ community()!.teamSlug || community()!.teamName }}</strong></span>
+        </div>
+
+        @if (actionError()) {
+          <p class="text-label-sm text-error">{{ actionError() }}</p>
+        }
+
+        <div class="flex flex-col sm:flex-row justify-end gap-2 pt-2">
+          <button
+            type="button"
+            (click)="closeConfirmAction()"
+            [disabled]="actionLoading()"
+            class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {{ 'common.cancel' | trans }}
+          </button>
+          <button
+            type="button"
+            (click)="confirmActionSubmit(false)"
+            [disabled]="actionLoading()"
+            class="cursor-pointer rounded-full border border-error/50 px-4 py-2 text-label-md font-bold text-error transition-colors hover:bg-error-container hover:text-on-error-container disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {{ actionLoading() ? ('common.loading' | trans) : ('communities.deleteOnlyCommunity' | trans) }}
+          </button>
+          <button
+            type="button"
+            (click)="confirmActionSubmit(true)"
+            [disabled]="actionLoading()"
+            class="cursor-pointer rounded-full bg-error px-4 py-2 text-label-md font-bold text-on-error transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {{ actionLoading() ? ('common.loading' | trans) : ('communities.deleteCommunityAndTeam' | trans) }}
+          </button>
+        </div>
+      } @else {
+        <p class="text-body-sm text-on-surface">
+          {{ 'communities.deleteCommunityWithTeamMessage' | trans }}
+        </p>
+        <div class="rounded-xl border border-outline-variant/60 bg-surface-container p-3 text-label-sm text-on-surface-variant flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary text-[20px]">shield</span>
+          <span>Time vinculado: <strong class="text-on-surface">&#64;{{ community()!.teamSlug || community()!.teamName }}</strong></span>
+        </div>
+
+        @if (actionError()) {
+          <p class="text-label-sm text-error">{{ actionError() }}</p>
+        }
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button
+            type="button"
+            (click)="closeConfirmAction()"
+            [disabled]="actionLoading()"
+            class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {{ 'common.cancel' | trans }}
+          </button>
+          <button
+            type="button"
+            (click)="confirmActionSubmit(false)"
+            [disabled]="actionLoading()"
+            class="cursor-pointer rounded-full bg-error px-4 py-2 text-label-md font-bold text-on-error transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {{ actionLoading() ? ('common.loading' | trans) : ('common.delete' | trans) }}
+          </button>
+        </div>
       }
-
-      <div class="flex justify-end gap-2">
-        <button
-          type="button"
-          (click)="closeConfirmAction()"
-          [disabled]="actionLoading()"
-          class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {{ 'common.cancel' | trans }}
-        </button>
-        <button
-          type="button"
-          (click)="confirmActionSubmit()"
-          [disabled]="actionLoading()"
-          class="cursor-pointer rounded-full bg-error px-4 py-2 text-label-md font-bold text-on-error transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {{ actionLoading() ? 'Aguarde...' : confirmAction() === 'archive' ? 'Arquivar' : 'Excluir' }}
-        </button>
-      </div>
     </div>
   </app-modal>
 
@@ -673,13 +789,24 @@
 
 <app-confirm-dialog
   [open]="leaveConfirmOpen()"
-  title="Sair da comunidade"
-  message="Você deixa de ser membro e perde o acesso aos conteúdos exclusivos dela."
-  confirmLabel="Sair"
+  [title]="leaveConfirmTitle()"
+  [message]="leaveConfirmMessage()"
+  [confirmLabel]="isSoleMember() ? ('common.delete' | trans) : 'Sair'"
   [pending]="leaving()"
   [error]="leaveError()"
-  (confirmed)="leave()"
+  (confirmed)="canConfirmLeave() ? leave() : cancelLeave()"
   (cancelled)="cancelLeave()"
+/>
+
+<app-confirm-dialog
+  [open]="detachTeamModalOpen()"
+  [title]="'communities.detachTeamConfirmTitle' | trans"
+  [message]="'communities.detachTeamConfirmMessage' | trans"
+  [confirmLabel]="'communities.detachTeam' | trans"
+  [pending]="detachingTeam()"
+  [error]="detachTeamError()"
+  (confirmed)="confirmDetachTeam()"
+  (cancelled)="closeDetachTeamModal()"
 />
 
 <app-image-modal

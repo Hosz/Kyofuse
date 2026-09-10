@@ -26,6 +26,8 @@ import com.hokyozu.kyofuse.users.finder.UserFinder;
 import com.hokyozu.kyofuse.users.service.UserChecker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -54,6 +56,10 @@ public class TeamMemberService {
     private final NotificationService notificationService;
     private final CommunityRepository communityRepository;
     private final CommunityMemberService communityMemberService;
+
+    @Autowired
+    @Lazy
+    private TeamService teamService;
 
     @Transactional
     public TeamMemberResponse addMember(String teamIdentifier, UUID userId, UUID userInvitedId) {
@@ -293,7 +299,16 @@ public class TeamMemberService {
         userChecker.checkActive(user);
 
         if (team.getOwner().getId().equals(user.getId())) {
-            throw new BadRequestException("Team owner cannot leave the team.");
+            List<TeamMember> activeMembers = teamMemberRepository.findByTeamAndStatus(team, com.hokyozu.kyofuse.teams.enums.TeamMemberStatus.ACTIVE);
+            boolean hasOtherActiveMembers = activeMembers.stream()
+                    .anyMatch(m -> !m.getUser().getId().equals(user.getId()));
+            if (hasOtherActiveMembers) {
+                throw new BadRequestException("O dono não pode sair do time enquanto houver outros membros. Transfira a posse ou apague o time.");
+            }
+            if (teamService != null) {
+                teamService.deleteTeam(userId, team.getId(), false);
+            }
+            return;
         }
 
         if (!teamMemberRepository.existsByTeamAndUser(team, user)) {

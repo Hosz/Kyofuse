@@ -18,4 +18,6 @@ public interface UserPinnedCommunityRepository extends JpaRepository<UserPinnedC
     boolean existsByUserIdAndCommunityId(UUID userId, UUID communityId);
 
     int countByUserId(UUID userId);
+
+    void deleteByCommunityId(UUID communityId);
 }

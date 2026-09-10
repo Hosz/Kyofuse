@@ -18,12 +18,15 @@ import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.finder.UserFinder;
 import com.hokyozu.kyofuse.users.service.UserChecker;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -35,6 +38,10 @@ public class CommunityMemberService {
     private final UserFinder userFinder;
     private final UserChecker userChecker;
     private final GamerProfileFinder gamerProfileFinder;
+
+    @Autowired
+    @Lazy
+    private CommunityService communityService;
 
     @Transactional
     public CommunityMemberResponse joinCommunity(UUID userId, UUID communityId) {
@@ -120,7 +127,16 @@ public class CommunityMemberService {
 
         Community community = communityMember.getCommunity();
         if (community.getOwner().getId().equals(userId)) {
-            throw new BadRequestException("Community owner cannot leave the community");
+            List<CommunityMember> activeMembers = communityMemberRepository.findByCommunityAndStatus(community, CommunityMemberStatus.ACTIVE);
+            boolean hasOtherActiveMembers = activeMembers.stream()
+                    .anyMatch(m -> !m.getUser().getId().equals(userId));
+            if (hasOtherActiveMembers) {
+                throw new BadRequestException("O dono não pode sair da comunidade enquanto houver outros membros. Transfira a posse ou apague a comunidade.");
+            }
+            if (communityService != null) {
+                communityService.deleteCommunity(userId, community.getId(), false);
+            }
+            return;
         }
 
         communityMember.setStatus(CommunityMemberStatus.LEFT);

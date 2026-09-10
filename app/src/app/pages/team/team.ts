@@ -1,5 +1,5 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AppSidebarComponent } from '../../components/layout/app-sidebar/app-sidebar';
 import { FeedTabsComponent } from '../../components/feed/feed-tabs/feed-tabs';
 import { FeedTab } from '../../shared/models/social.model';
@@ -34,6 +34,7 @@ export class TeamComponent {
   /** Vinculado automaticamente ao parâmetro de rota :teamId (withComponentInputBinding). */
   teamId = input<string | null>(null);
 
+  private router = inject(Router);
   private teamService = inject(TeamService);
   private teamMemberService = inject(TeamMemberService);
   private communityService = inject(CommunityService);
@@ -63,6 +64,7 @@ export class TeamComponent {
   viewMode = signal<ViewMode>('visitor');
   activeInfoTab = signal<InfoTab>('description');
   myUsername = signal<string | null>(null);
+  myUserId = signal<string | null>(null);
 
   leaving = signal(false);
   leaveError = signal<string | null>(null);
@@ -135,8 +137,90 @@ export class TeamComponent {
 
   isHead = computed(() => this.isOwner() || this.isManager());
 
+  isCommunityOwner = computed(() => {
+    const comm = this.community();
+    const uid = this.myUserId();
+    return !!comm && !!uid && comm.ownerId === uid;
+  });
+
+  activeMembersCount = computed(() => this.members().filter((m) => m.status === 'ACTIVE').length);
+
+  isSoleMember = computed(() => this.isOwner() && this.activeMembersCount() <= 1);
+
   /** Só o dono gere o elenco — o backend valida checkUserIsOwner nessas ações. */
   canManageMembers = computed(() => this.isOwner());
+
+  deleteTeamModalOpen = signal(false);
+  deletingTeam = signal(false);
+  deleteTeamError = signal<string | null>(null);
+
+  openDeleteTeamModal(): void {
+    this.deleteTeamError.set(null);
+    this.deleteTeamModalOpen.set(true);
+  }
+
+  closeDeleteTeamModal(): void {
+    if (this.deletingTeam()) return;
+    this.deleteTeamModalOpen.set(false);
+  }
+
+  confirmDeleteTeam(deleteCommunity: boolean): void {
+    const id = this.team()?.id ?? this.teamId();
+    if (!id || this.deletingTeam()) return;
+
+    this.deletingTeam.set(true);
+    this.deleteTeamError.set(null);
+
+    this.teamService.deleteTeam(id, deleteCommunity).subscribe({
+      next: () => {
+        this.deletingTeam.set(false);
+        this.deleteTeamModalOpen.set(false);
+        this.toastService.success(this.i18n.t('teams.teamDeletedSuccess'));
+        this.router.navigateByUrl('/times');
+      },
+      error: (err) => {
+        console.error('Failed to delete team:', err);
+        this.deletingTeam.set(false);
+        this.deleteTeamError.set(err?.error?.message ?? 'Não foi possível excluir o time.');
+      },
+    });
+  }
+
+  detachCommunityModalOpen = signal(false);
+  detachingCommunity = signal(false);
+  detachCommunityError = signal<string | null>(null);
+
+  openDetachCommunityModal(): void {
+    this.detachCommunityError.set(null);
+    this.detachCommunityModalOpen.set(true);
+  }
+
+  closeDetachCommunityModal(): void {
+    if (this.detachingCommunity()) return;
+    this.detachCommunityModalOpen.set(false);
+  }
+
+  confirmDetachCommunity(): void {
+    const id = this.team()?.id ?? this.teamId();
+    if (!id || this.detachingCommunity()) return;
+
+    this.detachingCommunity.set(true);
+    this.detachCommunityError.set(null);
+
+    this.teamService.detachCommunity(id).subscribe({
+      next: () => {
+        this.detachingCommunity.set(false);
+        this.detachCommunityModalOpen.set(false);
+        this.community.set(null);
+        this.toastService.success(this.i18n.t('teams.detachCommunitySuccess'));
+      },
+      error: (err) => {
+        console.error('Failed to detach community:', err);
+        this.detachingCommunity.set(false);
+        this.detachCommunityError.set(err?.error?.message ?? 'Não foi possível desvincular a comunidade.');
+      },
+    });
+  }
 
   createCommunityConfirmOpen = signal(false);
   creatingCommunity = signal(false);
@@ -295,6 +379,33 @@ export class TeamComponent {
 
   leaveConfirmOpen = signal(false);
 
+  leaveConfirmTitle = computed(() => {
+    if (this.isSoleMember()) {
+      return this.i18n.t('teams.deleteTeamConfirmTitle');
+    }
+    if (this.isOwner() && this.activeMembersCount() > 1) {
+      return 'Atenção';
+    }
+    return 'Sair do time';
+  });
+
+  leaveConfirmMessage = computed(() => {
+    if (this.isSoleMember()) {
+      return this.i18n.t('teams.leaveTeamSoleMemberWarning');
+    }
+    if (this.isOwner() && this.activeMembersCount() > 1) {
+      return this.i18n.t('teams.leaveTeamOwnerHasMembersWarning');
+    }
+    return 'Você deixa de ser membro do time. Para voltar, alguém precisa te convidar de novo.';
+  });
+
+  canConfirmLeave = computed(() => {
+    if (this.isOwner() && this.activeMembersCount() > 1) {
+      return false;
+    }
+    return true;
+  });
+
   askLeaveTeam(): void {
     this.leaveError.set(null);
     this.leaveConfirmOpen.set(true);
@@ -309,6 +420,8 @@ export class TeamComponent {
     const id = this.team()?.id ?? this.teamId();
     if (!id || this.leaving()) return;
 
+    const dissolving = this.isSoleMember();
+
     this.leaveConfirmOpen.set(false);
     this.leaving.set(true);
     this.leaveError.set(null);
@@ -316,13 +429,18 @@ export class TeamComponent {
     this.teamMemberService.leaveTeam(id).subscribe({
       next: () => {
         this.leaving.set(false);
-        this.viewMode.set('visitor');
-        this.loadMembers(id);
+        if (dissolving) {
+          this.toastService.success(this.i18n.t('teams.teamDeletedSuccess'));
+          this.router.navigateByUrl('/times');
+        } else {
+          this.viewMode.set('visitor');
+          this.loadMembers(id);
+        }
       },
       error: (error) => {
         console.error('Failed to leave team:', error);
         this.leaving.set(false);
-        this.leaveError.set('Não foi possível sair do time. Tente novamente.');
+        this.leaveError.set(error?.error?.message ?? 'Não foi possível sair do time. Tente novamente.');
       },
     });
   }
@@ -375,6 +493,7 @@ export class TeamComponent {
 
     this.profileService.myProfile().subscribe({
       next: (profile) => {
+        this.myUserId.set(profile.userId);
         this.myUsername.set(profile.username);
         this.applyViewMode(team, profile.username);
       },

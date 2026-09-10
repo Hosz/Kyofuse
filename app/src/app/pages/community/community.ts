@@ -4,6 +4,7 @@ import { AppSidebarComponent } from '../../components/layout/app-sidebar/app-sid
 import { ModalComponent } from '../../components/shared/modal/modal';
 import { CommunityService } from '../../core/services/communities/community.service';
 import { CommunityMemberService } from '../../core/services/communities/community-member.service';
+import { TeamService } from '../../core/services/teams/team.service';
 import { CommunityJoinRequestService } from '../../core/services/communities/community-join-request.service';
 import { ConversationService } from '../../core/services/chat/conversation.service';
 import { PostsService } from '../../core/services/posts/posts.service';
@@ -64,6 +65,7 @@ export class CommunityComponent {
 
   private router = inject(Router);
   private communityService = inject(CommunityService);
+  private teamService = inject(TeamService);
   private communityMemberService = inject(CommunityMemberService);
   private communityJoinRequestService = inject(CommunityJoinRequestService);
   private conversationService = inject(ConversationService);
@@ -189,12 +191,69 @@ export class CommunityComponent {
         this.community.set(updatedComm);
         this.attachingTeam.set(false);
         this.attachTeamModalOpen.set(false);
+        if (updatedComm.teamId) {
+          this.loadLinkedTeam(updatedComm.teamId);
+        }
         this.toastService.success(this.i18n.t('communities.teamAttachedSuccess'));
       },
       error: (err) => {
         this.attachingTeam.set(false);
         this.attachTeamError.set(err?.error?.message ?? 'Erro ao vincular time.');
       },
+    });
+  }
+
+  linkedTeam = signal<TeamResponse | null>(null);
+
+  isLinkedTeamOwner = computed(() => {
+    const t = this.linkedTeam();
+    const uid = this.myUserId();
+    return !!t && !!uid && t.ownerId === uid;
+  });
+
+  detachTeamModalOpen = signal(false);
+  detachingTeam = signal(false);
+  detachTeamError = signal<string | null>(null);
+
+  openDetachTeamModal(): void {
+    this.detachTeamError.set(null);
+    this.detachTeamModalOpen.set(true);
+  }
+
+  closeDetachTeamModal(): void {
+    if (this.detachingTeam()) return;
+    this.detachTeamModalOpen.set(false);
+  }
+
+  confirmDetachTeam(): void {
+    const commId = this.community()?.id ?? this.communityId();
+    if (!commId || this.detachingTeam()) return;
+
+    this.detachingTeam.set(true);
+    this.detachTeamError.set(null);
+
+    this.communityService.detachTeam(commId).subscribe({
+      next: () => {
+        this.detachingTeam.set(false);
+        this.detachTeamModalOpen.set(false);
+        this.community.update((c) =>
+          c ? { ...c, teamId: null, teamName: null, teamSlug: null, teamAvatarUrl: null } : null,
+        );
+        this.linkedTeam.set(null);
+        this.toastService.success(this.i18n.t('communities.detachTeamSuccess'));
+      },
+      error: (err) => {
+        console.error('Failed to detach team:', err);
+        this.detachingTeam.set(false);
+        this.detachTeamError.set(err?.error?.message ?? 'Não foi possível desvincular o time.');
+      },
+    });
+  }
+
+  private loadLinkedTeam(teamId: string): void {
+    this.teamService.detailTeam(teamId).subscribe({
+      next: (team) => this.linkedTeam.set(team),
+      error: () => this.linkedTeam.set(null),
     });
   }
 
@@ -210,6 +269,8 @@ export class CommunityComponent {
 
   members = signal<CommunityMemberResponse[]>([]);
   membersLoading = signal(false);
+  activeMembersCount = computed(() => this.members().filter((m) => m.status === 'ACTIVE').length);
+  isSoleMember = computed(() => this.isOwner() && this.activeMembersCount() <= 1);
 
   joinRequests = signal<CommunityJoinRequestResponse[]>([]);
   joinRequestsLoading = signal(false);
@@ -328,6 +389,11 @@ export class CommunityComponent {
         this.loadMembers();
         this.loadPosts();
         if (community.visibility === 'PRIVATE') this.loadJoinRequests();
+        if (community.teamId) {
+          this.loadLinkedTeam(community.teamId);
+        } else {
+          this.linkedTeam.set(null);
+        }
       },
       error: (error) => {
         console.error('Failed to fetch community:', error);
@@ -463,6 +529,33 @@ export class CommunityComponent {
   leaveConfirmOpen = signal(false);
   leaveError = signal<string | null>(null);
 
+  leaveConfirmTitle = computed(() => {
+    if (this.isSoleMember()) {
+      return this.i18n.t('communities.deleteCommunityConfirmTitle');
+    }
+    if (this.isOwner() && this.activeMembersCount() > 1) {
+      return 'Atenção';
+    }
+    return 'Sair da comunidade';
+  });
+
+  leaveConfirmMessage = computed(() => {
+    if (this.isSoleMember()) {
+      return this.i18n.t('communities.leaveCommunitySoleMemberWarning');
+    }
+    if (this.isOwner() && this.activeMembersCount() > 1) {
+      return this.i18n.t('communities.leaveCommunityOwnerHasMembersWarning');
+    }
+    return 'Você deixa de ser membro e perde o acesso aos conteúdos exclusivos dela.';
+  });
+
+  canConfirmLeave = computed(() => {
+    if (this.isOwner() && this.activeMembersCount() > 1) {
+      return false;
+    }
+    return true;
+  });
+
   askLeave(): void {
     this.leaveError.set(null);
     this.leaveConfirmOpen.set(true);
@@ -476,15 +569,24 @@ export class CommunityComponent {
   leave(): void {
     const id = this.communityId();
     if (!id || this.leaving()) return;
+
+    const dissolving = this.isSoleMember();
+
     this.leaveConfirmOpen.set(false);
     this.leaving.set(true);
+    this.leaveError.set(null);
 
     this.communityMemberService.leaveCommunity(id).subscribe({
       next: () => {
         this.leaving.set(false);
-        this.isMember.set(false);
-        this.members.set([]);
-        this.loadPosts();
+        if (dissolving) {
+          this.toastService.success(this.i18n.t('communities.communityDeletedSuccess'));
+          this.router.navigateByUrl('/comunidade');
+        } else {
+          this.isMember.set(false);
+          this.members.set([]);
+          this.loadPosts();
+        }
       },
       error: (error) => {
         this.leaving.set(false);
@@ -572,7 +674,7 @@ export class CommunityComponent {
     this.confirmAction.set(null);
   }
 
-  confirmActionSubmit(): void {
+  confirmActionSubmit(deleteTeam: boolean = false): void {
     const id = this.communityId();
     const action = this.confirmAction();
     if (!id || !action || this.actionLoading()) return;
@@ -580,11 +682,18 @@ export class CommunityComponent {
     this.actionLoading.set(true);
     this.actionError.set(null);
 
-    const request$ = action === 'archive' ? this.communityService.archiveCommunity(id) : this.communityService.deleteCommunity(id);
+    const request$ =
+      action === 'archive'
+        ? this.communityService.archiveCommunity(id)
+        : this.communityService.deleteCommunity(id, deleteTeam);
+
     request$.subscribe({
       next: () => {
         this.actionLoading.set(false);
         this.confirmAction.set(null);
+        if (action === 'delete') {
+          this.toastService.success(this.i18n.t('communities.communityDeletedSuccess'));
+        }
         this.router.navigateByUrl('/comunidade');
       },
       error: (error) => {

@@ -217,6 +217,18 @@ export interface TranslationDictionary {
     noAvailableTeams: string;
     selectTeamToAttach: string;
     teamAttachedSuccess: string;
+    detachTeam: string;
+    detachTeamConfirmTitle: string;
+    detachTeamConfirmMessage: string;
+    detachTeamSuccess: string;
+    detachingTeam: string;
+    deleteCommunityWithTeamMessage: string;
+    deleteCommunityBothChoiceMessage: string;
+    deleteOnlyCommunity: string;
+    deleteCommunityAndTeam: string;
+    leaveCommunitySoleMemberWarning: string;
+    leaveCommunityOwnerHasMembersWarning: string;
+    communityDeletedSuccess: string;
   };
   teams: {
     title: string;
@@ -283,6 +295,21 @@ export interface TranslationDictionary {
     selectCommunityToAttach: string;
     communityCreatedSuccess: string;
     communityAttachedSuccess: string;
+    deleteTeam: string;
+    deleteTeamConfirmTitle: string;
+    deleteTeamConfirmMessage: string;
+    deleteTeamWithCommunityMessage: string;
+    deleteTeamBothChoiceMessage: string;
+    deleteOnlyTeam: string;
+    deleteTeamAndCommunity: string;
+    detachCommunity: string;
+    detachCommunityConfirmTitle: string;
+    detachCommunityConfirmMessage: string;
+    detachCommunitySuccess: string;
+    detachingCommunity: string;
+    leaveTeamSoleMemberWarning: string;
+    leaveTeamOwnerHasMembersWarning: string;
+    teamDeletedSuccess: string;
   };
   tournaments: {
     title: string;

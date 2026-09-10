@@ -75,4 +75,13 @@ export class TeamService {
   public listAvailableCommunities(teamId: string) {
     return this.http.get<CommunityResponse[]>(`${this.url}/${teamId}/available-communities`);
   }
+
+  public deleteTeam(teamId: string, deleteCommunity: boolean = false) {
+    const params = new HttpParams().set('deleteCommunity', String(deleteCommunity));
+    return this.http.delete<void>(`${this.url}/${teamId}`, { params });
+  }
+
+  public detachCommunity(teamId: string) {
+    return this.http.delete<void>(`${this.url}/${teamId}/community/detach`);
+  }
 }

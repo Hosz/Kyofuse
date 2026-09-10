@@ -10,8 +10,10 @@ import com.hokyozu.kyofuse.communities.enums.CommunityMemberRole;
 import com.hokyozu.kyofuse.communities.enums.CommunityMemberStatus;
 import com.hokyozu.kyofuse.communities.enums.CommunityStatus;
 import com.hokyozu.kyofuse.communities.enums.CommunityVisibility;
+import com.hokyozu.kyofuse.communities.repository.CommunityJoinRequestRepository;
 import com.hokyozu.kyofuse.communities.repository.CommunityMemberRepository;
 import com.hokyozu.kyofuse.communities.repository.CommunityRepository;
+import com.hokyozu.kyofuse.communities.repository.UserPinnedCommunityRepository;
 import com.hokyozu.kyofuse.communities.validator.CommunityCreationValidator;
 import com.hokyozu.kyofuse.communities.validator.CommunityEditValidator;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
@@ -28,6 +30,7 @@ import com.hokyozu.kyofuse.teams.repository.TeamMemberRepository;
 import com.hokyozu.kyofuse.teams.repository.TeamRepository;
 import com.hokyozu.kyofuse.teams.repository.TeamRequiredRoleRepository;
 import com.hokyozu.kyofuse.teams.service.TeamChecker;
+import com.hokyozu.kyofuse.teams.service.TeamService;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.enums.UserStatus;
 import com.hokyozu.kyofuse.users.finder.UserFinder;
@@ -74,6 +77,12 @@ class CommunityServiceTest {
     private CommunityMemberRepository communityMemberRepository;
 
     @Mock
+    private CommunityJoinRequestRepository communityJoinRequestRepository;
+
+    @Mock
+    private UserPinnedCommunityRepository userPinnedCommunityRepository;
+
+    @Mock
     private ConversationService conversationService;
 
     @Mock
@@ -94,11 +103,19 @@ class CommunityServiceTest {
     @Mock
     private TeamRequiredRoleRepository teamRequiredRoleRepository;
 
+    @Mock
+    private TeamService teamService;
+
     @Spy
     private UserChecker userChecker = new UserChecker();
 
     @InjectMocks
     private CommunityService communityService;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        org.springframework.test.util.ReflectionTestUtils.setField(communityService, "teamService", teamService);
+    }
 
     @Test
     void createCommunitySavesActiveCommunityForActiveUser() {
@@ -319,6 +336,82 @@ class CommunityServiceTest {
                 .hasMessage("Community not found");
 
         verify(communityRepository, never()).delete(any());
+    }
+
+    @Test
+    void deleteCommunityWithTeamDetachesWhenDeleteTeamIsFalse() {
+        UUID userId = UUID.randomUUID();
+        UUID communityId = UUID.randomUUID();
+        User owner = activeUser(userId, "owner");
+        Team team = Team.builder().id(UUID.randomUUID()).owner(owner).build();
+        Community community = activeCommunity(communityId, owner);
+        community.setTeam(team);
+
+        when(userFinder.findProfileByUserId(userId)).thenReturn(owner);
+        when(communityRepository.findById(communityId)).thenReturn(Optional.of(community));
+
+        communityService.deleteCommunity(userId, communityId, false);
+
+        assertThat(community.getTeam()).isNull();
+        verify(communityRepository).delete(community);
+        verify(teamService, never()).deleteTeam(any(), any(UUID.class), any(boolean.class));
+    }
+
+    @Test
+    void deleteCommunityWithTeamDeletesBothWhenUserIsOwnerOfBoth() {
+        UUID userId = UUID.randomUUID();
+        UUID communityId = UUID.randomUUID();
+        User owner = activeUser(userId, "owner");
+        Team team = Team.builder().id(UUID.randomUUID()).owner(owner).build();
+        Community community = activeCommunity(communityId, owner);
+        community.setTeam(team);
+
+        when(userFinder.findProfileByUserId(userId)).thenReturn(owner);
+        when(communityRepository.findById(communityId)).thenReturn(Optional.of(community));
+
+        communityService.deleteCommunity(userId, communityId, true);
+
+        verify(teamService).deleteTeam(userId, team.getId(), false);
+        verify(communityRepository).delete(community);
+    }
+
+    @Test
+    void deleteCommunityWithTeamRejectsDeletingTeamWhenNotTeamOwner() {
+        UUID userId = UUID.randomUUID();
+        UUID communityId = UUID.randomUUID();
+        User owner = activeUser(userId, "owner");
+        User teamOwner = activeUser(UUID.randomUUID(), "teamOwner");
+        Team team = Team.builder().id(UUID.randomUUID()).owner(teamOwner).build();
+        Community community = activeCommunity(communityId, owner);
+        community.setTeam(team);
+
+        when(userFinder.findProfileByUserId(userId)).thenReturn(owner);
+        when(communityRepository.findById(communityId)).thenReturn(Optional.of(community));
+
+        assertThatThrownBy(() -> communityService.deleteCommunity(userId, communityId, true))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("Apenas o dono do time pode solicitar a exclusão do mesmo.");
+
+        verify(communityRepository, never()).delete(any());
+        verify(teamService, never()).deleteTeam(any(), any(UUID.class), any(boolean.class));
+    }
+
+    @Test
+    void detachTeamCommunityByCommunityDetachesSuccessfully() {
+        UUID userId = UUID.randomUUID();
+        UUID communityId = UUID.randomUUID();
+        User owner = activeUser(userId, "owner");
+        Team team = Team.builder().id(UUID.randomUUID()).owner(owner).build();
+        Community community = activeCommunity(communityId, owner);
+        community.setTeam(team);
+
+        when(userFinder.findProfileByUserId(userId)).thenReturn(owner);
+        when(communityRepository.findById(communityId)).thenReturn(Optional.of(community));
+
+        communityService.detachTeamCommunityByCommunity(userId, communityId.toString());
+
+        assertThat(community.getTeam()).isNull();
+        verify(communityRepository).save(community);
     }
 
     @Test

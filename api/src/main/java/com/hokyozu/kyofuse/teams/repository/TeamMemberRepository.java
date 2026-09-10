@@ -49,4 +49,6 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, UUID> {
 
     @EntityGraph(attributePaths = {"user", "team"})
     List<TeamMember> findByUser(User user);
+
+    void deleteByTeam(Team team);
 }

@@ -15,4 +15,6 @@ public interface TeamRequiredRoleRepository extends JpaRepository<TeamRequiredRo
     List<TeamRequiredRole> findByTeamIdIn(List<UUID> teamIds);
 
     List<TeamRequiredRole> findByTeamIdAndRoleName(UUID teamId, PlayerRole roleName);
+
+    void deleteByTeamId(UUID teamId);
 }

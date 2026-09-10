@@ -36,4 +36,6 @@ public interface CommunityMemberRepository extends JpaRepository<CommunityMember
     // Sem paginação de propósito: usado pra notificar todos os membros ativos de uma
     // comunidade quando alguém manda uma mensagem, não pra exibir uma listagem.
     List<CommunityMember> findByCommunityAndStatus(Community community, CommunityMemberStatus status);
+
+    void deleteByCommunity(Community community);
 }

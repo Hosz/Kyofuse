@@ -137,6 +137,28 @@ class TeamControllerTest {
         verify(communityService).listAvailableCommunitiesForTeam(userId, teamId);
     }
 
+    @Test
+    void deleteTeamUsesAuthenticatedUserId() {
+        UUID userId = UUID.randomUUID();
+        String teamId = "team-alpha";
+
+        var response = controller.deleteTeam(jwt(userId), teamId, false);
+
+        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+        verify(teamService).deleteTeam(userId, teamId, false);
+    }
+
+    @Test
+    void detachCommunityUsesAuthenticatedUserId() {
+        UUID userId = UUID.randomUUID();
+        String teamId = "team-alpha";
+
+        var response = controller.detachCommunity(jwt(userId), teamId);
+
+        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+        verify(communityService).detachTeamCommunityByTeam(userId, teamId);
+    }
+
     private TeamRequest request() {
         return new TeamRequest(
                 "Kyofuse Team",

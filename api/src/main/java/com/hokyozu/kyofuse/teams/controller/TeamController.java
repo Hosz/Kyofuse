@@ -20,6 +20,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.List;
@@ -137,5 +138,26 @@ public class TeamController {
     ) {
         UUID userId = UUID.fromString(jwt.getSubject());
         return communityService.listAvailableCommunitiesForTeam(userId, teamId);
+    }
+
+    @DeleteMapping("/{teamId}")
+    public ResponseEntity<Void> deleteTeam(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String teamId,
+            @RequestParam(name = "deleteCommunity", defaultValue = "false") boolean deleteCommunity
+    ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        teamService.deleteTeam(userId, teamId, deleteCommunity);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{teamId}/community/detach")
+    public ResponseEntity<Void> detachCommunity(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String teamId
+    ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        communityService.detachTeamCommunityByTeam(userId, teamId);
+        return ResponseEntity.noContent().build();
     }
 }

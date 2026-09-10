@@ -56,11 +56,19 @@ class CommunityMemberServiceTest {
     @Mock
     private GamerProfileFinder gamerProfileFinder;
 
+    @Mock
+    private CommunityService communityService;
+
     @Spy
     private UserChecker userChecker = new UserChecker();
 
     @InjectMocks
     private CommunityMemberService communityMemberService;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        org.springframework.test.util.ReflectionTestUtils.setField(communityMemberService, "communityService", communityService);
+    }
 
     @Test
     void joinCommunityCreatesActiveMemberForPublicCommunity() {
@@ -232,23 +240,49 @@ class CommunityMemberServiceTest {
     }
 
     @Test
-    void leaveCommunityRejectsOwner() {
+    void leaveCommunityRejectsOwnerWhenOtherMembersExist() {
+        UUID ownerId = UUID.randomUUID();
+        UUID otherMemberId = UUID.randomUUID();
+        UUID communityId = UUID.randomUUID();
+        User owner = activeUser(ownerId, "owner");
+        User otherUser = activeUser(otherMemberId, "other");
+        Community community = community(communityId, CommunityVisibility.PUBLIC, CommunityStatus.ACTIVE);
+        community.setOwner(owner);
+        CommunityMember ownerMembership = memberWithStatus(community, owner, CommunityMemberStatus.ACTIVE);
+        CommunityMember otherMembership = memberWithStatus(community, otherUser, CommunityMemberStatus.ACTIVE);
+
+        when(userFinder.findProfileByUserId(ownerId)).thenReturn(owner);
+        when(communityMemberRepository.findByUserIdAndCommunityId(ownerId, communityId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(communityMemberRepository.findByCommunityAndStatus(community, CommunityMemberStatus.ACTIVE))
+                .thenReturn(List.of(ownerMembership, otherMembership));
+
+        assertThatThrownBy(() -> communityMemberService.leaveCommunity(ownerId, communityId))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("O dono não pode sair da comunidade enquanto houver outros membros. Transfira a posse ou apague a comunidade.");
+
+        verify(communityMemberRepository, never()).save(any());
+        verify(communityService, never()).deleteCommunity(any(), any(), any(boolean.class));
+    }
+
+    @Test
+    void leaveCommunityDissolvesCommunityWhenOwnerIsSoleMember() {
         UUID ownerId = UUID.randomUUID();
         UUID communityId = UUID.randomUUID();
         User owner = activeUser(ownerId, "owner");
         Community community = community(communityId, CommunityVisibility.PUBLIC, CommunityStatus.ACTIVE);
         community.setOwner(owner);
-        CommunityMember membership = memberWithStatus(community, owner, CommunityMemberStatus.ACTIVE);
+        CommunityMember ownerMembership = memberWithStatus(community, owner, CommunityMemberStatus.ACTIVE);
 
         when(userFinder.findProfileByUserId(ownerId)).thenReturn(owner);
         when(communityMemberRepository.findByUserIdAndCommunityId(ownerId, communityId))
-                .thenReturn(Optional.of(membership));
+                .thenReturn(Optional.of(ownerMembership));
+        when(communityMemberRepository.findByCommunityAndStatus(community, CommunityMemberStatus.ACTIVE))
+                .thenReturn(List.of(ownerMembership));
 
-        assertThatThrownBy(() -> communityMemberService.leaveCommunity(ownerId, communityId))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessage("Community owner cannot leave the community");
+        communityMemberService.leaveCommunity(ownerId, communityId);
 
-        verify(communityMemberRepository, never()).save(any());
+        verify(communityService).deleteCommunity(ownerId, communityId, false);
     }
 
     @Test

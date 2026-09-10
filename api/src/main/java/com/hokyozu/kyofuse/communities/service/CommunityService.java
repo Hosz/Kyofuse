@@ -15,10 +15,16 @@ import com.hokyozu.kyofuse.communities.repository.CommunityRepository;
 import com.hokyozu.kyofuse.communities.validator.CommunityCreationValidator;
 import com.hokyozu.kyofuse.communities.validator.CommunityEditValidator;
 import com.hokyozu.kyofuse.communities.enums.CommunityMemberRole;
+import com.hokyozu.kyofuse.communities.repository.CommunityJoinRequestRepository;
+import com.hokyozu.kyofuse.communities.repository.UserPinnedCommunityRepository;
+import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.shared.exception.ConflictException;
 import com.hokyozu.kyofuse.shared.exception.ForbiddenException;
 import com.hokyozu.kyofuse.shared.exception.NotFoundException;
 import com.hokyozu.kyofuse.storage.service.ImageProcessingService;
+import com.hokyozu.kyofuse.teams.service.TeamService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.time.Instant;
@@ -66,11 +72,17 @@ public class CommunityService {
 
     private final CommunityRepository communityRepository;
     private final CommunityMemberRepository communityMemberRepository;
+    private final CommunityJoinRequestRepository communityJoinRequestRepository;
+    private final UserPinnedCommunityRepository userPinnedCommunityRepository;
     private final TeamRepository teamRepository;
     private final TeamChecker teamChecker;
     private final TeamFinder teamFinder;
     private final TeamMemberRepository teamMemberRepository;
     private final TeamRequiredRoleRepository teamRequiredRoleRepository;
+
+    @Autowired
+    @Lazy
+    private TeamService teamService;
 
     @CacheEvict(value = "communities_public", allEntries = true)
     @Transactional
@@ -213,16 +225,45 @@ public class CommunityService {
         return CommunityMapper.toResponse(community);
     }
 
-    @CacheEvict(value = "communities_public", allEntries = true)
+    @CacheEvict(value = {"communities_public", "teams_public"}, allEntries = true)
     @Transactional
     public void deleteCommunity(UUID userId, UUID communityId) {
+        deleteCommunity(userId, communityId, false);
+    }
+
+    @CacheEvict(value = {"communities_public", "teams_public"}, allEntries = true)
+    @Transactional
+    public void deleteCommunity(UUID userId, UUID communityId, boolean deleteTeam) {
         User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
+
         Community community = communityRepository.findById(communityId)
                 .orElseThrow(() -> new NotFoundException("Community not found"));
 
         if (!community.getOwner().getId().equals(user.getId())) {
             throw new NotFoundException("Community not found");
         }
+
+        Team team = community.getTeam();
+        if (team != null) {
+            if (deleteTeam) {
+                if (!team.getOwner().getId().equals(user.getId())) {
+                    throw new ForbiddenException("Apenas o dono do time pode solicitar a exclusão do mesmo.");
+                }
+                community.setTeam(null);
+                communityRepository.save(community);
+                if (teamService != null) {
+                    teamService.deleteTeam(userId, team.getId(), false);
+                }
+            } else {
+                community.setTeam(null);
+                communityRepository.save(community);
+            }
+        }
+
+        userPinnedCommunityRepository.deleteByCommunityId(community.getId());
+        communityJoinRequestRepository.deleteByCommunity(community);
+        communityMemberRepository.deleteByCommunity(community);
 
         communityRepository.delete(community);
     }
@@ -505,5 +546,61 @@ public class CommunityService {
         return teamRepository.findAvailableForCommunity(userId).stream()
                 .map(t -> TeamMapper.toResponse(t, teamRequiredRoleRepository.findByTeamId(t.getId())))
                 .toList();
+    }
+
+    @CacheEvict(value = {"communities_public", "teams_public"}, allEntries = true)
+    @Transactional
+    public void detachTeamCommunityByTeam(UUID userId, String teamIdentifier) {
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
+
+        Team team = teamFinder.findTeamByIdentifier(teamIdentifier);
+        Community community = communityRepository.findByTeamId(team.getId())
+                .orElseThrow(() -> new BadRequestException("O time não possui comunidade vinculada."));
+
+        if (!isUserHeadOfTeam(team, user) && !isUserHeadOfCommunity(community, user)) {
+            throw new ForbiddenException("Apenas os donos ou administradores/gerentes podem desvincular o time e a comunidade.");
+        }
+
+        community.setTeam(null);
+        community.setUpdatedAt(Instant.now());
+        communityRepository.save(community);
+    }
+
+    @CacheEvict(value = {"communities_public", "teams_public"}, allEntries = true)
+    @Transactional
+    public void detachTeamCommunityByCommunity(UUID userId, String communityIdentifier) {
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
+
+        Community community = findCommunityByIdentifier(communityIdentifier);
+        if (community.getTeam() == null) {
+            throw new BadRequestException("A comunidade não possui time vinculado.");
+        }
+        Team team = community.getTeam();
+
+        if (!isUserHeadOfTeam(team, user) && !isUserHeadOfCommunity(community, user)) {
+            throw new ForbiddenException("Apenas os donos ou administradores/gerentes podem desvincular o time e a comunidade.");
+        }
+
+        community.setTeam(null);
+        community.setUpdatedAt(Instant.now());
+        communityRepository.save(community);
+    }
+
+    public boolean isUserHeadOfTeam(Team team, User user) {
+        if (team.getOwner().getId().equals(user.getId())) {
+            return true;
+        }
+        return teamMemberRepository.findByTeamAndStatus(team, TeamMemberStatus.ACTIVE).stream()
+                .anyMatch(tm -> tm.getUser().getId().equals(user.getId()) && tm.getMemberType() == TeamMemberType.MANAGER);
+    }
+
+    public boolean isUserHeadOfCommunity(Community community, User user) {
+        if (community.getOwner().getId().equals(user.getId())) {
+            return true;
+        }
+        return communityMemberRepository.findByCommunityAndStatus(community, CommunityMemberStatus.ACTIVE).stream()
+                .anyMatch(cm -> cm.getUser().getId().equals(user.getId()) && cm.getRole() == CommunityMemberRole.ADMIN);
     }
 }
