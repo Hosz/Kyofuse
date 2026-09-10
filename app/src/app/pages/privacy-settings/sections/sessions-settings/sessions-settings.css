@@ -5,3 +5,16 @@
   min-width: 0;
   box-sizing: border-box;
 }
+
+.session-modal-panel {
+  width: 100%;
+  max-width: 34rem !important; /* 544px */
+  box-sizing: border-box;
+}
+
+.revoke-modal-panel {
+  width: 100%;
+  max-width: 30rem !important; /* 480px */
+  box-sizing: border-box;
+}
+
