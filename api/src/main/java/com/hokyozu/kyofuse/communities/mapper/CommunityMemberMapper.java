@@ -41,6 +41,18 @@ public class CommunityMemberMapper {
                 .build();
     }
 
+    public static CommunityMember toAdminEntity(User user, Community community) {
+        return CommunityMember.builder()
+                .community(community)
+                .user(user)
+                .role(CommunityMemberRole.ADMIN)
+                .status(CommunityMemberStatus.ACTIVE)
+                .joinedAt(Instant.now())
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+    }
+
     /**
      * gamerProfile pode vir null quando o chamador não precisa exibir a identidade
      * visual do membro (ex.: resposta de entrar na comunidade, onde o usuário é o

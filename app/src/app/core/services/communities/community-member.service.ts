@@ -33,4 +33,8 @@ export class CommunityMemberService {
   public updateMemberRole(communityId: string, memberId: string, role: string) {
     return this.http.patch<CommunityMemberResponse>(`${this.url}/${communityId}/role/${memberId}`, { role });
   }
+
+  public banMember(communityId: string, memberId: string) {
+    return this.http.post<void>(`${this.url}/${communityId}/ban/${memberId}`, {});
+  }
 }

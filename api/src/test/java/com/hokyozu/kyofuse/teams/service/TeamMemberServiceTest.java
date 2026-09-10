@@ -78,8 +78,16 @@ class TeamMemberServiceTest {
     @Mock
     private TeamRequiredRoleFulfillment teamRequiredRoleFulfillment;
 
+    @Mock
+    private TeamService teamService;
+
     @InjectMocks
     private TeamMemberService teamMemberService;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        org.springframework.test.util.ReflectionTestUtils.setField(teamMemberService, "teamService", teamService);
+    }
 
     @Test
     void addMemberCreatesUnassignedMemberForTeamOwner() {
@@ -419,15 +427,37 @@ class TeamMemberServiceTest {
     }
 
     @Test
-    void leaveTeamRejectsOwner() {
+    void leaveTeamRejectsOwnerWhenOtherMembersExist() {
         User owner = activeUser("owner");
+        User other = activeUser("other");
         Team team = activeTeam(owner);
+        TeamMember ownerMember = TeamMember.builder().team(team).user(owner).status(TeamMemberStatus.ACTIVE).build();
+        TeamMember otherMember = TeamMember.builder().team(team).user(other).status(TeamMemberStatus.ACTIVE).build();
+
         when(userFinder.findProfileByUserId(owner.getId())).thenReturn(owner);
         when(teamFinder.findTeamById(team.getId())).thenReturn(team);
+        when(teamMemberRepository.findByTeamAndStatus(team, TeamMemberStatus.ACTIVE))
+                .thenReturn(List.of(ownerMember, otherMember));
 
         assertThatThrownBy(() -> teamMemberService.leaveTeam(team.getId(), owner.getId()))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessage("Team owner cannot leave the team.");
+                .hasMessage("O dono não pode sair do time enquanto houver outros membros. Transfira a posse ou apague o time.");
+    }
+
+    @Test
+    void leaveTeamDissolvesTeamWhenOwnerIsSoleMember() {
+        User owner = activeUser("owner");
+        Team team = activeTeam(owner);
+        TeamMember ownerMember = TeamMember.builder().team(team).user(owner).status(TeamMemberStatus.ACTIVE).build();
+
+        when(userFinder.findProfileByUserId(owner.getId())).thenReturn(owner);
+        when(teamFinder.findTeamById(team.getId())).thenReturn(team);
+        when(teamMemberRepository.findByTeamAndStatus(team, TeamMemberStatus.ACTIVE))
+                .thenReturn(List.of(ownerMember));
+
+        teamMemberService.leaveTeam(team.getId(), owner.getId());
+
+        verify(teamService).deleteTeam(owner.getId(), team.getId(), false);
     }
 
     @Test

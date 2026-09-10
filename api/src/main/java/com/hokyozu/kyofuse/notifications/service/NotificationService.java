@@ -165,6 +165,46 @@ public class NotificationService {
     }
 
     @Transactional
+    public void markCommunityInviteAsAccepted(UUID userId, UUID inviteId) {
+        notificationRepository.findAllByUserIdAndTargetTypeAndTargetId(userId, NotificationTargetType.COMMUNITY_INVITE, inviteId)
+                .forEach(notification -> {
+                    notification.setType(NotificationType.COMMUNITY_INVITE_ACCEPTED);
+                    notification.setTitle("Convite aceito.");
+                    if (notification.getStatus() == NotificationStatus.UNREAD) {
+                        notificationCounterService.decrement(userId);
+                    }
+                    notification.setStatus(NotificationStatus.READ);
+                    notification.setReadAt(Instant.now());
+                    notificationRepository.save(notification);
+                });
+    }
+
+    @Transactional
+    public void markCommunityInviteAsDeclined(UUID userId, UUID inviteId) {
+        notificationRepository.findAllByUserIdAndTargetTypeAndTargetId(userId, NotificationTargetType.COMMUNITY_INVITE, inviteId)
+                .forEach(notification -> {
+                    notification.setType(NotificationType.COMMUNITY_INVITE_DECLINED);
+                    notification.setTitle("Convite recusado.");
+                    if (notification.getStatus() == NotificationStatus.UNREAD) {
+                        notificationCounterService.decrement(userId);
+                    }
+                    notification.setStatus(NotificationStatus.READ);
+                    notification.setReadAt(Instant.now());
+                    notificationRepository.save(notification);
+                });
+    }
+
+    @Transactional
+    public void markCommunityInviteAsCanceled(UUID receiverId, UUID inviteId) {
+        notificationRepository.findAllByUserIdAndTargetTypeAndTargetId(receiverId, NotificationTargetType.COMMUNITY_INVITE, inviteId)
+                .forEach(notification -> {
+                    notification.setType(NotificationType.COMMUNITY_INVITE_CANCELED);
+                    notification.setTitle("Convite cancelado.");
+                    notificationRepository.save(notification);
+                });
+    }
+
+    @Transactional
     public void markFollowRequestAsAccepted(UUID userId, UUID senderId) {
         notificationRepository.findAllByUserIdAndTargetTypeAndTargetId(userId, NotificationTargetType.FOLLOW, senderId)
                 .forEach(notification -> {

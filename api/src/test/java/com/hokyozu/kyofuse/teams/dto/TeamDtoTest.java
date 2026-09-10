@@ -401,4 +401,18 @@ class TeamDtoTest {
         assertThat(request.isGcRankRangeValid()).isTrue();
         assertThat(validator.validate(request)).isEmpty();
     }
+
+    @Test
+    void teamRequestAcceptsCreateCommunityFlag() {
+        TeamRequest requestTrue = new TeamRequest("Kyofuse Academy", null, null, "kyofuse-academy", null, null, null, null, null, null, null, null, null, true);
+        TeamRequest requestFalse = new TeamRequest("Kyofuse Academy", null, null, "kyofuse-academy", null, null, null, null, null, null, null, null, null, false);
+        TeamRequest requestNull = new TeamRequest("Kyofuse Academy", null, null, "kyofuse-academy", null, null, null, null, null, null, null, null, null, null);
+
+        assertThat(validator.validate(requestTrue)).isEmpty();
+        assertThat(validator.validate(requestFalse)).isEmpty();
+        assertThat(validator.validate(requestNull)).isEmpty();
+        assertThat(requestTrue.createCommunity()).isTrue();
+        assertThat(requestFalse.createCommunity()).isFalse();
+        assertThat(requestNull.createCommunity()).isNull();
+    }
 }

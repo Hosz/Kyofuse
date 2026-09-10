@@ -18,12 +18,15 @@ import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.finder.UserFinder;
 import com.hokyozu.kyofuse.users.service.UserChecker;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -35,6 +38,10 @@ public class CommunityMemberService {
     private final UserFinder userFinder;
     private final UserChecker userChecker;
     private final GamerProfileFinder gamerProfileFinder;
+
+    @Autowired
+    @Lazy
+    private CommunityService communityService;
 
     @Transactional
     public CommunityMemberResponse joinCommunity(UUID userId, UUID communityId) {
@@ -120,7 +127,16 @@ public class CommunityMemberService {
 
         Community community = communityMember.getCommunity();
         if (community.getOwner().getId().equals(userId)) {
-            throw new BadRequestException("Community owner cannot leave the community");
+            List<CommunityMember> activeMembers = communityMemberRepository.findByCommunityAndStatus(community, CommunityMemberStatus.ACTIVE);
+            boolean hasOtherActiveMembers = activeMembers.stream()
+                    .anyMatch(m -> !m.getUser().getId().equals(userId));
+            if (hasOtherActiveMembers) {
+                throw new BadRequestException("O dono não pode sair da comunidade enquanto houver outros membros. Transfira a posse ou apague a comunidade.");
+            }
+            if (communityService != null) {
+                communityService.deleteCommunity(userId, community.getId(), false);
+            }
+            return;
         }
 
         communityMember.setStatus(CommunityMemberStatus.LEFT);
@@ -234,11 +250,54 @@ public class CommunityMemberService {
                 .filter(m -> m.getStatus() == CommunityMemberStatus.ACTIVE)
                 .orElseThrow(() -> new NotFoundException("Membro ativo não encontrado na comunidade."));
 
+        if (!isOwner && targetMember.getRole() == CommunityMemberRole.ADMIN) {
+            throw new ForbiddenException("Administradores não podem alterar o papel de outros administradores.");
+        }
+
         targetMember.setRole(newRole);
         targetMember.setUpdatedAt(Instant.now());
         communityMemberRepository.save(targetMember);
 
         return CommunityMemberMapper.toResponse(targetMember, gamerProfileFinder.findProfileByUserId(memberId));
+    }
+
+    @Transactional
+    public void banMember(UUID actorId, String communityIdentifier, UUID memberId) {
+        User actor = userFinder.findProfileByUserId(actorId);
+        userChecker.checkActive(actor);
+
+        Community community = findCommunityByIdentifier(communityIdentifier);
+
+        boolean isOwner = community.getOwner().getId().equals(actorId);
+        if (!isOwner) {
+            CommunityMember actorMember = communityMemberRepository.findByUserIdAndCommunityId(actorId, community.getId())
+                    .filter(m -> m.getStatus() == CommunityMemberStatus.ACTIVE)
+                    .orElseThrow(() -> new ForbiddenException("Você não é membro ativo desta comunidade."));
+            if (actorMember.getRole() != CommunityMemberRole.ADMIN) {
+                throw new ForbiddenException("Apenas o dono e administradores podem banir membros.");
+            }
+        }
+
+        if (memberId.equals(actorId)) {
+            throw new BadRequestException("Você não pode banir a si mesmo.");
+        }
+
+        if (community.getOwner().getId().equals(memberId)) {
+            throw new BadRequestException("O dono da comunidade não pode ser banido.");
+        }
+
+        CommunityMember targetMember = communityMemberRepository.findByUserIdAndCommunityId(memberId, community.getId())
+                .filter(m -> m.getStatus() == CommunityMemberStatus.ACTIVE)
+                .orElseThrow(() -> new NotFoundException("Membro ativo não encontrado na comunidade."));
+
+        if (!isOwner && targetMember.getRole() == CommunityMemberRole.ADMIN) {
+            throw new ForbiddenException("Administradores não podem banir outros administradores.");
+        }
+
+        targetMember.setStatus(CommunityMemberStatus.BANNED);
+        targetMember.setLeftAt(Instant.now());
+        targetMember.setUpdatedAt(Instant.now());
+        communityMemberRepository.save(targetMember);
     }
 
     public Community findCommunityByIdentifier(String identifier) {
@@ -273,7 +332,7 @@ public class CommunityMemberService {
                 .orElse(false);
     }
 
-    private boolean isActiveMember(UUID userId, UUID communityId) {
+    public boolean isActiveMember(UUID userId, UUID communityId) {
         return communityMemberRepository.findByUserIdAndCommunityId(userId, communityId)
                 .filter(member -> member.getStatus() == CommunityMemberStatus.ACTIVE)
                 .isPresent();

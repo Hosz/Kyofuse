@@ -77,6 +77,7 @@ export class ProfileHeaderComponent {
   toggleFriendRequest = output<void>();
   friendRemoved = output<void>();
   inviteClick = output<void>();
+  inviteCommunityClick = output<void>();
   messageClick = output<void>();
   blocked = output<void>();
 

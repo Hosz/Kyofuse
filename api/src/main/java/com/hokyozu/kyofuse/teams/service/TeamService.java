@@ -2,7 +2,9 @@ package com.hokyozu.kyofuse.teams.service;
 
 import com.hokyozu.kyofuse.chat.service.ConversationService;
 import com.hokyozu.kyofuse.communities.entity.Community;
+import com.hokyozu.kyofuse.communities.repository.CommunityRepository;
 import com.hokyozu.kyofuse.communities.service.CommunityService;
+import com.hokyozu.kyofuse.invites.repository.TeamInviteRepository;
 import com.hokyozu.kyofuse.profiles.enums.PlayerRole;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.shared.exception.ConflictException;
@@ -50,6 +52,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -70,6 +73,8 @@ public class TeamService {
     private final TeamRepository teamRepository;
     private final TeamRequiredRoleRepository teamRequiredRoleRepository;
     private final TeamMemberRepository teamMemberRepository;
+    private final TeamInviteRepository teamInviteRepository;
+    private final CommunityRepository communityRepository;
     private final GamerProfileRepository gamerProfileRepository;
 
     @CacheEvict(value = "teams_public", allEntries = true)
@@ -122,8 +127,10 @@ public class TeamService {
         // "meus times", que é montado a partir de team_members.
         teamMemberRepository.save(TeamMemberMapper.toOwnerEntity(user, teamSaved));
 
-        Community community = communityService.autoCreateTeamCommunity(user, teamSaved);
-        conversationService.createCommunityConversation(community, user);
+        if (Boolean.TRUE.equals(request.createCommunity())) {
+            Community community = communityService.autoCreateTeamCommunity(user, teamSaved);
+            conversationService.createCommunityConversation(community, user);
+        }
 
         return TeamMapper.toResponse(teamSaved, requiredRolesSaved);
     }
@@ -255,6 +262,48 @@ public class TeamService {
         Team teamSaved = teamRepository.save(team);
 
         return TeamMapper.toResponse(teamSaved, requiredRoles);
+    }
+
+    @CacheEvict(value = {"teams_public", "communities_public"}, allEntries = true)
+    @Transactional
+    public void deleteTeam(UUID userId, UUID teamId, boolean deleteCommunity) {
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
+
+        Team team = teamFinder.findTeamById(teamId);
+        teamChecker.checkUserIsOwner(team, user);
+
+        Optional<Community> communityOpt = communityRepository.findByTeamId(team.getId());
+        if (communityOpt.isPresent()) {
+            Community community = communityOpt.get();
+            if (deleteCommunity) {
+                if (!community.getOwner().getId().equals(user.getId())) {
+                    throw new ForbiddenException("Apenas o dono da comunidade pode solicitar a exclusão da mesma.");
+                }
+                communityService.deleteCommunity(userId, community.getId(), false);
+            } else {
+                community.setTeam(null);
+                community.setUpdatedAt(Instant.now());
+                communityRepository.save(community);
+            }
+        }
+
+        teamInviteRepository.deleteByTeam(team);
+        teamMemberRepository.deleteByTeam(team);
+        teamRequiredRoleRepository.deleteByTeamId(team.getId());
+        teamRepository.delete(team);
+    }
+
+    @CacheEvict(value = {"teams_public", "communities_public"}, allEntries = true)
+    @Transactional
+    public void deleteTeam(UUID userId, String teamIdentifier, boolean deleteCommunity) {
+        User user = userFinder.findProfileByUserId(userId);
+        userChecker.checkActive(user);
+
+        Team team = teamFinder.findTeamByIdentifier(teamIdentifier);
+        teamChecker.checkUserIsOwner(team, user);
+
+        deleteTeam(userId, team.getId(), deleteCommunity);
     }
 
     @CacheEvict(value = "teams_public", allEntries = true)

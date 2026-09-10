@@ -1,5 +1,5 @@
-import { Component, computed, inject, input, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, computed, HostListener, inject, input, signal } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { AppSidebarComponent } from '../../components/layout/app-sidebar/app-sidebar';
 import { FeedTabsComponent } from '../../components/feed/feed-tabs/feed-tabs';
 import { FeedTab } from '../../shared/models/social.model';
@@ -13,6 +13,7 @@ import { TeamMemberEditRequest, TeamMemberResponse } from '../../models/teams/te
 import { PLAYER_ROLE_OPTIONS, getPlayerRoleLabel } from '../../shared/models/profile-options.model';
 import { TEAM_MEMBER_STATUS_LABEL, TEAM_STATUS_OPTIONS } from '../../shared/models/team-options.model';
 import { ConfirmDialogComponent } from '../../components/shared/confirm-dialog/confirm-dialog';
+import { ModalComponent } from '../../components/shared/modal/modal';
 import { TeamMemberRowComponent } from '../../components/team/team-member-row/team-member-row';
 import { TeamMemberModalComponent } from '../../components/team/team-member-modal/team-member-modal';
 import { getCountryFlagUrl } from '../../shared/models/location-options.model';
@@ -25,7 +26,7 @@ type InfoTab = 'description' | 'requisites' | 'members' | 'history';
 
 @Component({
   selector: 'app-team',
-  imports: [RouterLink, AppSidebarComponent, FeedTabsComponent, ConfirmDialogComponent, TeamMemberRowComponent, TeamMemberModalComponent, TranslatePipe],
+  imports: [RouterLink, AppSidebarComponent, FeedTabsComponent, ConfirmDialogComponent, ModalComponent, TeamMemberRowComponent, TeamMemberModalComponent, TranslatePipe],
   templateUrl: './team.html',
   styleUrl: './team.css',
 })
@@ -33,6 +34,7 @@ export class TeamComponent {
   /** Vinculado automaticamente ao parâmetro de rota :teamId (withComponentInputBinding). */
   teamId = input<string | null>(null);
 
+  private router = inject(Router);
   private teamService = inject(TeamService);
   private teamMemberService = inject(TeamMemberService);
   private communityService = inject(CommunityService);
@@ -62,9 +64,40 @@ export class TeamComponent {
   viewMode = signal<ViewMode>('visitor');
   activeInfoTab = signal<InfoTab>('description');
   myUsername = signal<string | null>(null);
+  myUserId = signal<string | null>(null);
 
   leaving = signal(false);
   leaveError = signal<string | null>(null);
+
+  communityMenuOpen = signal(false);
+  moreMenuOpen = signal(false);
+
+  toggleCommunityMenu(): void {
+    this.communityMenuOpen.update((v) => !v);
+  }
+
+  closeCommunityMenu(): void {
+    this.communityMenuOpen.set(false);
+  }
+
+  toggleMoreMenu(): void {
+    this.moreMenuOpen.update((v) => !v);
+  }
+
+  closeMoreMenu(): void {
+    this.moreMenuOpen.set(false);
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const el = event.target as HTMLElement | null;
+    if (!el?.closest('#team-community-menu-container')) {
+      this.communityMenuOpen.set(false);
+    }
+    if (!el?.closest('#team-more-menu-container')) {
+      this.moreMenuOpen.set(false);
+    }
+  }
 
   /** Todo Team nasce com uma Community vinculada, mas um time antigo pode não ter —
    * por isso o 404 aqui é um resultado esperado, não um erro. */
@@ -120,8 +153,194 @@ export class TeamComponent {
   removingMember = signal(false);
   memberActionError = signal<string | null>(null);
 
+  isOwner = computed(() => {
+    const team = this.team();
+    const myUser = this.myUsername();
+    return !!team && !!myUser && team.ownerName === myUser;
+  });
+
+  isManager = computed(() => {
+    const myUser = this.myUsername();
+    if (!myUser) return false;
+    return this.members().some((m) => m.userName === myUser && m.memberType === 'MANAGER');
+  });
+
+  isHead = computed(() => this.isOwner() || this.isManager());
+
+  isCommunityOwner = computed(() => {
+    const comm = this.community();
+    const uid = this.myUserId();
+    return !!comm && !!uid && comm.ownerId === uid;
+  });
+
+  activeMembersCount = computed(() => this.members().filter((m) => m.status === 'ACTIVE').length);
+
+  isSoleMember = computed(() => this.isOwner() && this.activeMembersCount() <= 1);
+
   /** Só o dono gere o elenco — o backend valida checkUserIsOwner nessas ações. */
-  canManageMembers = computed(() => this.viewMode() === 'admin');
+  canManageMembers = computed(() => this.isOwner());
+
+  deleteTeamModalOpen = signal(false);
+  deletingTeam = signal(false);
+  deleteTeamError = signal<string | null>(null);
+
+  openDeleteTeamModal(): void {
+    this.deleteTeamError.set(null);
+    this.deleteTeamModalOpen.set(true);
+  }
+
+  closeDeleteTeamModal(): void {
+    if (this.deletingTeam()) return;
+    this.deleteTeamModalOpen.set(false);
+  }
+
+  confirmDeleteTeam(deleteCommunity: boolean): void {
+    const id = this.team()?.id ?? this.teamId();
+    if (!id || this.deletingTeam()) return;
+
+    this.deletingTeam.set(true);
+    this.deleteTeamError.set(null);
+
+    this.teamService.deleteTeam(id, deleteCommunity).subscribe({
+      next: () => {
+        this.deletingTeam.set(false);
+        this.deleteTeamModalOpen.set(false);
+        this.toastService.success(this.i18n.t('teams.teamDeletedSuccess'));
+        this.router.navigateByUrl('/times');
+      },
+      error: (err) => {
+        console.error('Failed to delete team:', err);
+        this.deletingTeam.set(false);
+        this.deleteTeamError.set(err?.error?.message ?? 'Não foi possível excluir o time.');
+      },
+    });
+  }
+
+  detachCommunityModalOpen = signal(false);
+  detachingCommunity = signal(false);
+  detachCommunityError = signal<string | null>(null);
+
+  openDetachCommunityModal(): void {
+    this.detachCommunityError.set(null);
+    this.detachCommunityModalOpen.set(true);
+  }
+
+  closeDetachCommunityModal(): void {
+    if (this.detachingCommunity()) return;
+    this.detachCommunityModalOpen.set(false);
+  }
+
+  confirmDetachCommunity(): void {
+    const id = this.team()?.id ?? this.teamId();
+    if (!id || this.detachingCommunity()) return;
+
+    this.detachingCommunity.set(true);
+    this.detachCommunityError.set(null);
+
+    this.teamService.detachCommunity(id).subscribe({
+      next: () => {
+        this.detachingCommunity.set(false);
+        this.detachCommunityModalOpen.set(false);
+        this.community.set(null);
+        this.toastService.success(this.i18n.t('teams.detachCommunitySuccess'));
+      },
+      error: (err) => {
+        console.error('Failed to detach community:', err);
+        this.detachingCommunity.set(false);
+        this.detachCommunityError.set(err?.error?.message ?? 'Não foi possível desvincular a comunidade.');
+      },
+    });
+  }
+
+  createCommunityConfirmOpen = signal(false);
+  creatingCommunity = signal(false);
+  createCommunityError = signal<string | null>(null);
+
+  attachCommunityModalOpen = signal(false);
+  availableCommunities = signal<CommunityResponse[]>([]);
+  loadingAvailableCommunities = signal(false);
+  selectedCommunityId = signal<string | null>(null);
+  attachingCommunity = signal(false);
+  attachCommunityError = signal<string | null>(null);
+
+  openCreateCommunityConfirm(): void {
+    this.createCommunityError.set(null);
+    this.createCommunityConfirmOpen.set(true);
+  }
+
+  cancelCreateCommunity(): void {
+    if (this.creatingCommunity()) return;
+    this.createCommunityConfirmOpen.set(false);
+  }
+
+  confirmCreateCommunity(): void {
+    const id = this.team()?.id ?? this.teamId();
+    if (!id || this.creatingCommunity()) return;
+
+    this.creatingCommunity.set(true);
+    this.createCommunityError.set(null);
+
+    this.teamService.createCommunityFromTeam(id).subscribe({
+      next: (comm) => {
+        this.community.set(comm);
+        this.creatingCommunity.set(false);
+        this.createCommunityConfirmOpen.set(false);
+        this.toastService.success(this.i18n.t('teams.communityCreatedSuccess'));
+      },
+      error: (err) => {
+        this.creatingCommunity.set(false);
+        this.createCommunityError.set(err?.error?.message ?? 'Erro ao criar comunidade.');
+      },
+    });
+  }
+
+  openAttachCommunityModal(): void {
+    const id = this.team()?.id ?? this.teamId();
+    if (!id) return;
+
+    this.attachCommunityModalOpen.set(true);
+    this.attachCommunityError.set(null);
+    this.selectedCommunityId.set(null);
+    this.loadingAvailableCommunities.set(true);
+
+    this.teamService.listAvailableCommunities(id).subscribe({
+      next: (list) => {
+        this.availableCommunities.set(list);
+        this.loadingAvailableCommunities.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to list available communities:', err);
+        this.loadingAvailableCommunities.set(false);
+      },
+    });
+  }
+
+  closeAttachCommunityModal(): void {
+    if (this.attachingCommunity()) return;
+    this.attachCommunityModalOpen.set(false);
+  }
+
+  confirmAttachCommunity(): void {
+    const teamId = this.team()?.id ?? this.teamId();
+    const commId = this.selectedCommunityId();
+    if (!teamId || !commId || this.attachingCommunity()) return;
+
+    this.attachingCommunity.set(true);
+    this.attachCommunityError.set(null);
+
+    this.teamService.attachCommunity(teamId, commId).subscribe({
+      next: (comm) => {
+        this.community.set(comm);
+        this.attachingCommunity.set(false);
+        this.attachCommunityModalOpen.set(false);
+        this.toastService.success(this.i18n.t('teams.communityAttachedSuccess'));
+      },
+      error: (err) => {
+        this.attachingCommunity.set(false);
+        this.attachCommunityError.set(err?.error?.message ?? 'Erro ao vincular comunidade.');
+      },
+    });
+  }
 
   openMember(member: TeamMemberResponse): void {
     this.memberActionError.set(null);
@@ -190,6 +409,33 @@ export class TeamComponent {
 
   leaveConfirmOpen = signal(false);
 
+  leaveConfirmTitle = computed(() => {
+    if (this.isSoleMember()) {
+      return this.i18n.t('teams.deleteTeamConfirmTitle');
+    }
+    if (this.isOwner() && this.activeMembersCount() > 1) {
+      return 'Atenção';
+    }
+    return 'Sair do time';
+  });
+
+  leaveConfirmMessage = computed(() => {
+    if (this.isSoleMember()) {
+      return this.i18n.t('teams.leaveTeamSoleMemberWarning');
+    }
+    if (this.isOwner() && this.activeMembersCount() > 1) {
+      return this.i18n.t('teams.leaveTeamOwnerHasMembersWarning');
+    }
+    return 'Você deixa de ser membro do time. Para voltar, alguém precisa te convidar de novo.';
+  });
+
+  canConfirmLeave = computed(() => {
+    if (this.isOwner() && this.activeMembersCount() > 1) {
+      return false;
+    }
+    return true;
+  });
+
   askLeaveTeam(): void {
     this.leaveError.set(null);
     this.leaveConfirmOpen.set(true);
@@ -204,6 +450,8 @@ export class TeamComponent {
     const id = this.team()?.id ?? this.teamId();
     if (!id || this.leaving()) return;
 
+    const dissolving = this.isSoleMember();
+
     this.leaveConfirmOpen.set(false);
     this.leaving.set(true);
     this.leaveError.set(null);
@@ -211,13 +459,18 @@ export class TeamComponent {
     this.teamMemberService.leaveTeam(id).subscribe({
       next: () => {
         this.leaving.set(false);
-        this.viewMode.set('visitor');
-        this.loadMembers(id);
+        if (dissolving) {
+          this.toastService.success(this.i18n.t('teams.teamDeletedSuccess'));
+          this.router.navigateByUrl('/times');
+        } else {
+          this.viewMode.set('visitor');
+          this.loadMembers(id);
+        }
       },
       error: (error) => {
         console.error('Failed to leave team:', error);
         this.leaving.set(false);
-        this.leaveError.set('Não foi possível sair do time. Tente novamente.');
+        this.leaveError.set(error?.error?.message ?? 'Não foi possível sair do time. Tente novamente.');
       },
     });
   }
@@ -262,18 +515,30 @@ export class TeamComponent {
     const team = this.team();
     if (!team) return;
 
+    const username = this.myUsername();
+    if (username) {
+      this.applyViewMode(team, username);
+      return;
+    }
+
     this.profileService.myProfile().subscribe({
       next: (profile) => {
+        this.myUserId.set(profile.userId);
         this.myUsername.set(profile.username);
-        if (profile.username === team.ownerName) {
-          this.viewMode.set('admin');
-        } else if (this.members().some((member) => member.userName === profile.username)) {
-          this.viewMode.set('member');
-        } else {
-          this.viewMode.set('visitor');
-        }
+        this.applyViewMode(team, profile.username);
       },
       error: (error) => console.error('Failed to fetch my profile:', error),
     });
+  }
+
+  private applyViewMode(team: TeamResponse, username: string): void {
+    const myMember = this.members().find((m) => m.userName === username);
+    if (username === team.ownerName || (myMember && myMember.memberType === 'MANAGER')) {
+      this.viewMode.set('admin');
+    } else if (myMember) {
+      this.viewMode.set('member');
+    } else {
+      this.viewMode.set('visitor');
+    }
   }
 }

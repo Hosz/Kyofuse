@@ -10,6 +10,8 @@ import { MediaService } from '../../core/services/media/media.service';
 import { ToastService } from '../../core/services/ui/toast.service';
 import { TeamResponse, UpdateTeamRequest } from '../../models/teams/team.model';
 import { TeamMemberEditRequest, TeamMemberResponse } from '../../models/teams/team-member.model';
+import { CommunityService } from '../../core/services/communities/community.service';
+import { CommunityResponse } from '../../models/communities/community.model';
 import { PLAYER_ROLE_OPTIONS, PlayerRole, getPlayerRoleLabel } from '../../shared/models/profile-options.model';
 import {
   TEAM_MEMBER_STATUS_LABEL,
@@ -57,11 +59,28 @@ export class TeamAdminComponent {
   private teamMemberService = inject(TeamMemberService);
   private teamInviteService = inject(TeamInviteService);
   private profileService = inject(ProfileService);
+  private communityService = inject(CommunityService);
   private mediaService = inject(MediaService);
   private toastService = inject(ToastService);
   private i18n = inject(I18nService);
   private observer?: IntersectionObserver;
   private inviteSearchDebounce?: ReturnType<typeof setTimeout>;
+
+  myUsername = signal<string | null>(null);
+  myUserId = signal<string | null>(null);
+  community = signal<CommunityResponse | null>(null);
+
+  isOwner = computed(() => {
+    const team = this.team();
+    const myUser = this.myUsername();
+    return !!team && !!myUser && team.ownerName === myUser;
+  });
+
+  isCommunityOwner = computed(() => {
+    const comm = this.community();
+    const uid = this.myUserId();
+    return !!comm && !!uid && comm.ownerId === uid;
+  });
 
   readonly roleOptions = PLAYER_ROLE_OPTIONS;
   readonly memberTypeOptions = TEAM_MEMBER_TYPE_OPTIONS;
@@ -158,6 +177,45 @@ export class TeamAdminComponent {
   private membersLastPage = signal(true);
   membersLoadingMore = signal(false);
   hasMoreMembersToLoad = computed(() => !this.membersLastPage());
+
+  activeMembersCount = computed(() => this.members().filter((m) => m.status === 'ACTIVE').length);
+  isSoleMember = computed(() => this.isOwner() && this.activeMembersCount() <= 1);
+
+  deleteTeamModalOpen = signal(false);
+  deletingTeam = signal(false);
+  deleteTeamError = signal<string | null>(null);
+
+  openDeleteTeamModal(): void {
+    this.deleteTeamError.set(null);
+    this.deleteTeamModalOpen.set(true);
+  }
+
+  closeDeleteTeamModal(): void {
+    if (this.deletingTeam()) return;
+    this.deleteTeamModalOpen.set(false);
+  }
+
+  confirmDeleteTeam(deleteCommunity: boolean): void {
+    const id = this.team()?.id ?? this.teamId();
+    if (!id || this.deletingTeam()) return;
+
+    this.deletingTeam.set(true);
+    this.deleteTeamError.set(null);
+
+    this.teamService.deleteTeam(id, deleteCommunity).subscribe({
+      next: () => {
+        this.deletingTeam.set(false);
+        this.deleteTeamModalOpen.set(false);
+        this.toastService.success(this.i18n.t('teams.teamDeletedSuccess'));
+        this.router.navigateByUrl('/times');
+      },
+      error: (err) => {
+        console.error('Failed to delete team:', err);
+        this.deletingTeam.set(false);
+        this.deleteTeamError.set(err?.error?.message ?? 'Não foi possível excluir o time.');
+      },
+    });
+  }
 
   inviteUsername = signal('');
   inviteMessage = signal('');
@@ -285,6 +343,14 @@ export class TeamAdminComponent {
   removeError = signal<string | null>(null);
 
   ngOnInit(): void {
+    this.profileService.myProfile().subscribe({
+      next: (profile) => {
+        this.myUsername.set(profile.username);
+        this.myUserId.set(profile.userId);
+      },
+      error: (error) => console.error('Failed to fetch profile:', error),
+    });
+
     const id = this.teamId();
     if (!id) {
       this.notFound.set(true);
@@ -302,6 +368,7 @@ export class TeamAdminComponent {
         this.setupSectionObserver();
         this.loadMembers(team.id);
         this.loadLookingForTeam(team.id);
+        this.loadCommunity(team.id);
       },
       error: (error) => {
         console.error('Failed to fetch team:', error);
@@ -310,6 +377,13 @@ export class TeamAdminComponent {
         this.loading.set(false);
         this.setupSectionObserver();
       },
+    });
+  }
+
+  private loadCommunity(teamId: string): void {
+    this.communityService.detailCommunityByTeam(teamId).subscribe({
+      next: (community) => this.community.set(community),
+      error: () => this.community.set(null),
     });
   }
 
@@ -519,6 +593,33 @@ export class TeamAdminComponent {
   leaving = signal(false);
   leaveError = signal<string | null>(null);
 
+  leaveConfirmTitle = computed(() => {
+    if (this.isSoleMember()) {
+      return this.i18n.t('teams.deleteTeamConfirmTitle');
+    }
+    if (this.isOwner() && this.activeMembersCount() > 1) {
+      return 'Atenção';
+    }
+    return 'Sair do time';
+  });
+
+  leaveConfirmMessage = computed(() => {
+    if (this.isSoleMember()) {
+      return this.i18n.t('teams.leaveTeamSoleMemberWarning');
+    }
+    if (this.isOwner() && this.activeMembersCount() > 1) {
+      return this.i18n.t('teams.leaveTeamOwnerHasMembersWarning');
+    }
+    return 'Você deixa de ser membro do time. Para voltar, alguém precisa te convidar de novo.';
+  });
+
+  canConfirmLeave = computed(() => {
+    if (this.isOwner() && this.activeMembersCount() > 1) {
+      return false;
+    }
+    return true;
+  });
+
   askLeaveTeam(): void {
     this.leaveError.set(null);
     this.leaveConfirmOpen.set(true);
@@ -533,19 +634,24 @@ export class TeamAdminComponent {
     const teamId = this.team()?.id ?? this.teamId();
     if (!teamId || this.leaving()) return;
 
+    const dissolving = this.isSoleMember();
+
+    this.leaveConfirmOpen.set(false);
     this.leaving.set(true);
     this.leaveError.set(null);
 
     this.teamMemberService.leaveTeam(teamId).subscribe({
       next: () => {
         this.leaving.set(false);
-        this.leaveConfirmOpen.set(false);
+        if (dissolving) {
+          this.toastService.success(this.i18n.t('teams.teamDeletedSuccess'));
+        }
         this.router.navigateByUrl('/times');
       },
       error: (error) => {
         console.error('Failed to leave team:', error);
         this.leaving.set(false);
-        this.leaveError.set('Não foi possível sair do time. Tente novamente.');
+        this.leaveError.set(error?.error?.message ?? 'Não foi possível sair do time. Tente novamente.');
       },
     });
   }

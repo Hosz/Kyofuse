@@ -76,17 +76,17 @@ class CommunityControllerTest {
     @Test
     void deleteCommunityUsesAuthenticatedUserIdAndPathCommunityId() {
         UUID userId = UUID.randomUUID();
-        UUID communityId = UUID.randomUUID();
+        String communityId = "comm-alpha";
 
-        controller.deleteCommunity(jwt(userId), communityId);
+        controller.deleteCommunity(jwt(userId), communityId, false);
 
-        verify(communityService).deleteCommunity(userId, communityId);
+        verify(communityService).deleteCommunity(userId, communityId, false);
     }
 
     @Test
     void archiveCommunityUsesAuthenticatedUserIdAndPathCommunityId() {
         UUID userId = UUID.randomUUID();
-        UUID communityId = UUID.randomUUID();
+        String communityId = "comm-alpha";
 
         controller.archiveCommunity(jwt(userId), communityId);
 
@@ -117,6 +117,41 @@ class CommunityControllerTest {
 
         assertThat(result).isSameAs(expected);
         verify(communityService).listMyCommunities(userId, pageable);
+    }
+
+    @Test
+    void attachTeamToCommunityUsesAuthenticatedUserId() {
+        UUID userId = UUID.randomUUID();
+        String communityId = "comm-alpha";
+        String teamId = "team-alpha";
+        when(communityService.attachTeamAndCommunity(userId, teamId, communityId)).thenReturn(null);
+
+        controller.attachTeamToCommunity(jwt(userId), communityId, teamId);
+
+        verify(communityService).attachTeamAndCommunity(userId, teamId, communityId);
+    }
+
+    @Test
+    void listAvailableTeamsForCommunityUsesAuthenticatedUserId() {
+        UUID userId = UUID.randomUUID();
+        String communityId = "comm-alpha";
+        when(communityService.listAvailableTeamsForCommunity(userId, communityId)).thenReturn(List.of());
+
+        var result = controller.listAvailableTeamsForCommunity(jwt(userId), communityId);
+
+        assertThat(result).isEmpty();
+        verify(communityService).listAvailableTeamsForCommunity(userId, communityId);
+    }
+
+    @Test
+    void detachTeamUsesAuthenticatedUserIdAndPathCommunityId() {
+        UUID userId = UUID.randomUUID();
+        String communityId = "comm-1";
+
+        var response = controller.detachTeam(jwt(userId), communityId);
+
+        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+        verify(communityService).detachTeamCommunityByCommunity(userId, communityId);
     }
 
     private CommunityRequest request() {

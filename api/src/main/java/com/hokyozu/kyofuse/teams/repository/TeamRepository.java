@@ -47,4 +47,15 @@ public interface TeamRepository extends JpaRepository<Team, UUID>, JpaSpecificat
     Page<Team> findByIdIn(Collection<UUID> ids, Pageable pageable);
 
     List<Team> findAllByOwner(com.hokyozu.kyofuse.users.entity.User owner);
+
+    @EntityGraph(attributePaths = {"owner"})
+    @Query("""
+        SELECT DISTINCT t FROM Team t
+        LEFT JOIN TeamMember tm ON tm.team = t AND tm.user.id = :userId AND tm.status = com.hokyozu.kyofuse.teams.enums.TeamMemberStatus.ACTIVE AND tm.memberType = com.hokyozu.kyofuse.teams.enums.TeamMemberType.MANAGER
+        WHERE t.status != com.hokyozu.kyofuse.teams.enums.TeamStatus.INACTIVE
+          AND (t.owner.id = :userId OR tm.id IS NOT NULL)
+          AND NOT EXISTS (SELECT 1 FROM Community c WHERE c.team = t)
+        ORDER BY t.name ASC
+    """)
+    List<Team> findAvailableForCommunity(@Param("userId") UUID userId);
 }

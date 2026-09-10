@@ -1,15 +1,19 @@
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, computed, HostListener, inject, input, OnDestroy, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AppSidebarComponent } from '../../components/layout/app-sidebar/app-sidebar';
 import { ModalComponent } from '../../components/shared/modal/modal';
+import { RoleIconComponent } from '../../components/shared/role-icon/role-icon';
 import { CommunityService } from '../../core/services/communities/community.service';
 import { ProfileService } from '../../core/services/profile/profile.service';
 import { CommunityMemberService } from '../../core/services/communities/community-member.service';
+import { CommunityInviteService } from '../../core/services/communities/community-invite.service';
+import { ToastService } from '../../core/services/ui/toast.service';
 import {
   CommunityMemberResponse,
   CommunityMemberRole,
   CommunityResponse,
 } from '../../models/communities/community.model';
+import { gamerProfileResponse } from '../../models/profile/gamer-profile.model';
 import { FALLBACK_AVATAR_URL } from '../../shared/utils/format.util';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
@@ -30,7 +34,7 @@ const MEMBERS_PAGE_SIZE = 100;
 
 @Component({
   selector: 'app-community-members',
-  imports: [RouterLink, AppSidebarComponent, ModalComponent, TranslatePipe],
+  imports: [RouterLink, AppSidebarComponent, ModalComponent, RoleIconComponent, TranslatePipe],
   templateUrl: './community-members.html',
   styleUrl: './community-members.css',
 })
@@ -40,7 +44,9 @@ export class CommunityMembersComponent {
 
   private communityService = inject(CommunityService);
   private communityMemberService = inject(CommunityMemberService);
+  private communityInviteService = inject(CommunityInviteService);
   private profileService = inject(ProfileService);
+  private toastService = inject(ToastService);
 
   readonly fallbackAvatar = FALLBACK_AVATAR_URL;
 
@@ -250,5 +256,183 @@ export class CommunityMembersComponent {
         this.removeError.set(error?.error?.message ?? 'Não foi possível remover esse membro.');
       },
     });
+  }
+
+  canBan(member: CommunityMemberResponse): boolean {
+    if (this.isOwner(member) || member.memberId === this.myUserId()) {
+      return false;
+    }
+    const role = this.myRole();
+    if (role === 'OWNER') return true;
+    if (role === 'ADMIN') return member.role !== 'ADMIN';
+    return false;
+  }
+
+  banConfirmMember = signal<CommunityMemberResponse | null>(null);
+  banning = signal(false);
+  banError = signal<string | null>(null);
+
+  openBanConfirm(member: CommunityMemberResponse): void {
+    this.banError.set(null);
+    this.banConfirmMember.set(member);
+  }
+
+  closeBanConfirm(): void {
+    if (this.banning()) return;
+    this.banConfirmMember.set(null);
+  }
+
+  confirmBan(): void {
+    const communityId = this.community()?.id ?? this.communityId();
+    const member = this.banConfirmMember();
+    if (!communityId || !member || this.banning()) return;
+
+    this.banning.set(true);
+    this.banError.set(null);
+
+    this.communityMemberService.banMember(communityId, member.memberId).subscribe({
+      next: () => {
+        this.banning.set(false);
+        this.banConfirmMember.set(null);
+        this.members.update((list) => list.filter((m) => m.id !== member.id));
+        this.toastService.success(`@${member.memberUsername} foi banido da comunidade.`);
+      },
+      error: (error) => {
+        console.error('Failed to ban member:', error);
+        this.banning.set(false);
+        this.banError.set(error?.error?.message ?? 'Não foi possível banir esse membro.');
+      },
+    });
+  }
+
+  isMember = computed(() => !!this.myRole());
+  inviteModalOpen = signal(false);
+  inviteUsername = signal('');
+  inviteMessage = signal('');
+  sendingInvite = signal(false);
+  inviteError = signal<string | null>(null);
+
+  suggestedProfiles = signal<gamerProfileResponse[]>([]);
+  suggestionsLoading = signal(false);
+  suggestionsOpen = signal(false);
+  selectedProfile = signal<gamerProfileResponse | null>(null);
+  private inviteSearchDebounce?: ReturnType<typeof setTimeout>;
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const el = event.target as HTMLElement | null;
+    if (!el?.closest('#invite-autocomplete-container')) {
+      this.suggestionsOpen.set(false);
+    }
+  }
+
+  openInviteModal(): void {
+    this.inviteUsername.set('');
+    this.inviteMessage.set('');
+    this.inviteError.set(null);
+    this.suggestedProfiles.set([]);
+    this.suggestionsLoading.set(false);
+    this.suggestionsOpen.set(false);
+    this.selectedProfile.set(null);
+    if (this.inviteSearchDebounce) clearTimeout(this.inviteSearchDebounce);
+    this.inviteModalOpen.set(true);
+  }
+
+  closeInviteModal(): void {
+    if (this.sendingInvite()) return;
+    this.suggestionsOpen.set(false);
+    this.inviteModalOpen.set(false);
+  }
+
+  onInviteUsernameInput(value: string): void {
+    this.inviteUsername.set(value);
+    this.inviteError.set(null);
+
+    const query = value.trim().replace(/^@/, '');
+    if (this.selectedProfile() && this.selectedProfile()?.username.toLowerCase() !== query.toLowerCase()) {
+      this.selectedProfile.set(null);
+    }
+
+    if (!query) {
+      if (this.inviteSearchDebounce) clearTimeout(this.inviteSearchDebounce);
+      this.suggestedProfiles.set([]);
+      this.suggestionsOpen.set(false);
+      this.suggestionsLoading.set(false);
+      return;
+    }
+
+    this.suggestionsOpen.set(true);
+    this.suggestionsLoading.set(true);
+
+    if (this.inviteSearchDebounce) clearTimeout(this.inviteSearchDebounce);
+    this.inviteSearchDebounce = setTimeout(() => {
+      this.profileService.listingProfiles({ username: query }, 0, 5).subscribe({
+        next: (response) => {
+          this.suggestedProfiles.set(response.content);
+          this.suggestionsLoading.set(false);
+        },
+        error: (err) => {
+          console.error('Failed to fetch profile suggestions:', err);
+          this.suggestedProfiles.set([]);
+          this.suggestionsLoading.set(false);
+        },
+      });
+    }, 250);
+  }
+
+  onInviteUsernameFocus(): void {
+    const query = this.inviteUsername().trim().replace(/^@/, '');
+    if (query) {
+      this.suggestionsOpen.set(true);
+      if (this.suggestedProfiles().length === 0 && !this.suggestionsLoading()) {
+        this.onInviteUsernameInput(this.inviteUsername());
+      }
+    }
+  }
+
+  selectSuggestedProfile(profile: gamerProfileResponse): void {
+    this.inviteUsername.set(profile.username);
+    this.selectedProfile.set(profile);
+    this.suggestionsOpen.set(false);
+    this.suggestedProfiles.set([]);
+  }
+
+  clearSelectedProfile(): void {
+    this.selectedProfile.set(null);
+    this.inviteUsername.set('');
+    this.suggestedProfiles.set([]);
+    this.suggestionsOpen.set(false);
+  }
+
+  closeSuggestions(): void {
+    this.suggestionsOpen.set(false);
+  }
+
+  confirmInvite(): void {
+    const communityId = this.community()?.communitySlug || this.community()?.id || this.communityId();
+    const username = (this.selectedProfile()?.username || this.inviteUsername()).trim().replace(/^@/, '');
+    if (!communityId || !username || this.sendingInvite()) return;
+
+    this.sendingInvite.set(true);
+    this.inviteError.set(null);
+
+    this.communityInviteService
+      .inviteUser(communityId, username, { message: this.inviteMessage().trim() || undefined })
+      .subscribe({
+        next: () => {
+          this.sendingInvite.set(false);
+          this.inviteModalOpen.set(false);
+          this.toastService.success(`Convite enviado para @${username}.`);
+        },
+        error: (error) => {
+          console.error('Failed to invite user:', error);
+          this.sendingInvite.set(false);
+          this.inviteError.set(error?.error?.message ?? 'Não foi possível enviar o convite.');
+        },
+      });
+  }
+
+  ngOnDestroy(): void {
+    if (this.inviteSearchDebounce) clearTimeout(this.inviteSearchDebounce);
   }
 }

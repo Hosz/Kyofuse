@@ -11,6 +11,7 @@ import { FollowService } from '../../core/services/follow/follow.service';
 import { FriendshipService } from '../../core/services/friendship/friendship.service';
 import { FriendRequestService } from '../../core/services/friendship/friend-request.service';
 import { TeamInviteService } from '../../core/services/teams/team-invite.service';
+import { CommunityInviteService } from '../../core/services/communities/community-invite.service';
 import { NotificationResponse, NotificationType } from '../../models/notifications/notification.model';
 import { FriendRequestResponse } from '../../models/friendship/friend-request.model';
 import { toTimeAgo } from '../../shared/utils/format.util';
@@ -29,6 +30,10 @@ const TYPE_TITLE_KEY: Partial<Record<NotificationType, string>> = {
   TEAM_INVITE_ACCEPTED: 'notifications.typeTeamInviteAccepted',
   TEAM_INVITE_DECLINED: 'notifications.typeTeamInviteDeclined',
   TEAM_INVITE_CANCELED: 'notifications.typeTeamInviteCanceled',
+  COMMUNITY_INVITE_RECEIVED: 'notifications.typeCommunityInviteReceived',
+  COMMUNITY_INVITE_ACCEPTED: 'notifications.typeCommunityInviteAccepted',
+  COMMUNITY_INVITE_DECLINED: 'notifications.typeCommunityInviteDeclined',
+  COMMUNITY_INVITE_CANCELED: 'notifications.typeCommunityInviteCanceled',
   TEAM_MEMBER_ADDED: 'notifications.typeTeamMemberAdded',
   TEAM_MEMBER_REMOVED: 'notifications.typeTeamMemberRemoved',
   TEAM_MEMBER_LEFT: 'notifications.typeTeamMemberLeft',
@@ -52,6 +57,10 @@ const TYPE_ICON: Record<NotificationType, string> = {
   TEAM_INVITE_ACCEPTED: 'groups',
   TEAM_INVITE_DECLINED: 'group_off',
   TEAM_INVITE_CANCELED: 'group_off',
+  COMMUNITY_INVITE_RECEIVED: 'diversity_3',
+  COMMUNITY_INVITE_ACCEPTED: 'diversity_3',
+  COMMUNITY_INVITE_DECLINED: 'group_off',
+  COMMUNITY_INVITE_CANCELED: 'group_off',
   TEAM_MEMBER_ADDED: 'group_add',
   TEAM_MEMBER_REMOVED: 'person_remove',
   TEAM_MEMBER_LEFT: 'logout',
@@ -108,6 +117,7 @@ export class NotificationsComponent {
   private friendshipService = inject(FriendshipService);
   private friendRequestService = inject(FriendRequestService);
   private teamInviteService = inject(TeamInviteService);
+  private communityInviteService = inject(CommunityInviteService);
   private router = inject(Router);
   private toastService = inject(ToastService);
 
@@ -162,7 +172,9 @@ export class NotificationsComponent {
   /** Convites de time ainda pendentes: mesma lógica, derivados das notificações
    * (não existe endpoint pra listar convites recebidos por mim em todos os times). */
   teamInviteRequests = computed(() =>
-    this.notifications().filter((n) => n.type === 'TEAM_INVITE_RECEIVED' && !!n.action),
+    this.notifications().filter(
+      (n) => (n.type === 'TEAM_INVITE_RECEIVED' || n.type === 'COMMUNITY_INVITE_RECEIVED') && !!n.action,
+    ),
   );
 
   /** Pedidos de amizade viram notificações sintéticas pra renderizarem no mesmo card das
@@ -275,7 +287,11 @@ export class NotificationsComponent {
     this.notifications.update((list) =>
       list.map((n) => {
         const titleKey = TYPE_TITLE_KEY[n.type];
-        const isActionable = (n.type === 'FOLLOW_REQUEST_RECEIVED' || n.type === 'TEAM_INVITE_RECEIVED') && !!n.action;
+        const isActionable =
+          (n.type === 'FOLLOW_REQUEST_RECEIVED' ||
+            n.type === 'TEAM_INVITE_RECEIVED' ||
+            n.type === 'COMMUNITY_INVITE_RECEIVED') &&
+          !!n.action;
         return {
           ...n,
           title: titleKey ? this.i18n.t(titleKey) : n.title,
@@ -389,11 +405,17 @@ export class NotificationsComponent {
     if (!targetId) return;
 
     const nextType: NotificationType =
-      notification.type === 'TEAM_INVITE_RECEIVED' ? 'TEAM_INVITE_ACCEPTED' : 'FOLLOW_REQUEST_ACCEPTED';
+      notification.type === 'COMMUNITY_INVITE_RECEIVED'
+        ? 'COMMUNITY_INVITE_ACCEPTED'
+        : notification.type === 'TEAM_INVITE_RECEIVED'
+          ? 'TEAM_INVITE_ACCEPTED'
+          : 'FOLLOW_REQUEST_ACCEPTED';
     const successToast =
-      notification.type === 'TEAM_INVITE_RECEIVED'
-        ? this.i18n.t('notifications.teamInviteAcceptedSuccess')
-        : this.i18n.t('notifications.followRequestAcceptedSuccess');
+      notification.type === 'COMMUNITY_INVITE_RECEIVED'
+        ? this.i18n.t('notifications.communityInviteAcceptedSuccess')
+        : notification.type === 'TEAM_INVITE_RECEIVED'
+          ? this.i18n.t('notifications.teamInviteAcceptedSuccess')
+          : this.i18n.t('notifications.followRequestAcceptedSuccess');
 
     const onSuccess = () => {
       this.updateNotification(notification.id, (n) => ({
@@ -420,7 +442,9 @@ export class NotificationsComponent {
       this.toastService.error('Não foi possível aceitar a solicitação.');
     };
 
-    if (notification.type === 'TEAM_INVITE_RECEIVED') {
+    if (notification.type === 'COMMUNITY_INVITE_RECEIVED') {
+      this.communityInviteService.acceptInvite(targetId).subscribe({ next: onSuccess, error: onError });
+    } else if (notification.type === 'TEAM_INVITE_RECEIVED') {
       this.teamInviteService.acceptInvite(targetId).subscribe({ next: onSuccess, error: onError });
     } else {
       this.followService.acceptFollowRequest(targetId).subscribe({ next: onSuccess, error: onError });
@@ -432,11 +456,17 @@ export class NotificationsComponent {
     if (!targetId) return;
 
     const nextType: NotificationType =
-      notification.type === 'TEAM_INVITE_RECEIVED' ? 'TEAM_INVITE_DECLINED' : 'FOLLOW_REQUEST_DECLINED';
+      notification.type === 'COMMUNITY_INVITE_RECEIVED'
+        ? 'COMMUNITY_INVITE_DECLINED'
+        : notification.type === 'TEAM_INVITE_RECEIVED'
+          ? 'TEAM_INVITE_DECLINED'
+          : 'FOLLOW_REQUEST_DECLINED';
     const infoToast =
-      notification.type === 'TEAM_INVITE_RECEIVED'
-        ? this.i18n.t('notifications.teamInviteDeclinedInfo')
-        : this.i18n.t('notifications.followRequestDeclinedInfo');
+      notification.type === 'COMMUNITY_INVITE_RECEIVED'
+        ? this.i18n.t('notifications.communityInviteDeclinedInfo')
+        : notification.type === 'TEAM_INVITE_RECEIVED'
+          ? this.i18n.t('notifications.teamInviteDeclinedInfo')
+          : this.i18n.t('notifications.followRequestDeclinedInfo');
 
     const onSuccess = () => {
       this.updateNotification(notification.id, (n) => ({
@@ -463,7 +493,9 @@ export class NotificationsComponent {
       this.toastService.error('Não foi possível recusar a solicitação.');
     };
 
-    if (notification.type === 'TEAM_INVITE_RECEIVED') {
+    if (notification.type === 'COMMUNITY_INVITE_RECEIVED') {
+      this.communityInviteService.declineInvite(targetId).subscribe({ next: onSuccess, error: onError });
+    } else if (notification.type === 'TEAM_INVITE_RECEIVED') {
       this.teamInviteService.declineInvite(targetId).subscribe({ next: onSuccess, error: onError });
     } else {
       this.followService.rejectFollowRequest(targetId).subscribe({ next: onSuccess, error: onError });
@@ -610,7 +642,10 @@ export class NotificationsComponent {
   }
 
   private toAppNotification(n: NotificationResponse): AppNotification {
-    const isActionable = n.type === 'FOLLOW_REQUEST_RECEIVED' || n.type === 'TEAM_INVITE_RECEIVED';
+    const isActionable =
+      n.type === 'FOLLOW_REQUEST_RECEIVED' ||
+      n.type === 'TEAM_INVITE_RECEIVED' ||
+      n.type === 'COMMUNITY_INVITE_RECEIVED';
     // Solicitação de mensagem não tem aceite aqui: o Aceitar/Recusar vive na própria
     // conversa, então guardamos o id dela pra poder navegar até lá.
     const conversationId = n.target?.type === 'CONVERSATION' ? n.target.id : undefined;
@@ -631,9 +666,13 @@ export class NotificationsComponent {
       : this.getNotificationBody(n);
 
     const responseStatus: 'accepted' | 'declined' | undefined =
-      n.type === 'TEAM_INVITE_ACCEPTED' || n.type === 'FOLLOW_REQUEST_ACCEPTED'
+      n.type === 'TEAM_INVITE_ACCEPTED' ||
+      n.type === 'FOLLOW_REQUEST_ACCEPTED' ||
+      n.type === 'COMMUNITY_INVITE_ACCEPTED'
         ? 'accepted'
-        : n.type === 'TEAM_INVITE_DECLINED' || n.type === 'FOLLOW_REQUEST_DECLINED'
+        : n.type === 'TEAM_INVITE_DECLINED' ||
+          n.type === 'FOLLOW_REQUEST_DECLINED' ||
+          n.type === 'COMMUNITY_INVITE_DECLINED'
           ? 'declined'
           : undefined;
 
@@ -683,6 +722,11 @@ export class NotificationsComponent {
           return [{ text: username, bold: true }, { text: ' ' + this.i18n.t('notifications.requestedToFollowYou') }];
         case 'POST_COMMENT':
           return [{ text: username, bold: true }, { text: ' ' + this.i18n.t('notifications.commentedOnPost') }];
+        case 'COMMUNITY_INVITE_RECEIVED':
+        case 'COMMUNITY_INVITE_ACCEPTED':
+        case 'COMMUNITY_INVITE_DECLINED':
+        case 'COMMUNITY_INVITE_CANCELED':
+          return [{ text: n.message }];
         case 'TEAM_INVITE_RECEIVED':
           return [{ text: username, bold: true }, { text: ' ' + this.i18n.t('notifications.invitedYouToTeam') }];
         case 'TEAM_INVITE_ACCEPTED':

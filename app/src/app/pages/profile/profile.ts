@@ -13,6 +13,7 @@ import { EntitySummaryCardComponent } from '../../components/profile/entity-summ
 import { EntityListModalComponent } from '../../components/profile/entity-list-modal/entity-list-modal';
 import { UserListModalComponent } from '../../components/profile/user-list-modal/user-list-modal';
 import { InviteModalComponent } from '../../components/profile/invite-modal/invite-modal';
+import { CommunityInviteModalComponent } from '../../components/profile/community-invite-modal/community-invite-modal';
 import { FeedTabsComponent } from '../../components/feed/feed-tabs/feed-tabs';
 import { FeedListComponent } from '../../components/feed/feed-list/feed-list';
 import { PostCardComponent } from '../../components/feed/post-card/post-card';
@@ -33,7 +34,7 @@ import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { I18nService } from '../../core/i18n/i18n.service';
 
 type ProfileTabId = 'posts' | 'reposts' | 'media' | 'replies';
-type ModalKind = 'followers' | 'following' | 'friends' | 'communities' | 'teams' | 'invite' | null;
+type ModalKind = 'followers' | 'following' | 'friends' | 'communities' | 'teams' | 'invite' | 'community-invite' | null;
 
 export interface ReplyItem {
   comment: Comment;
@@ -74,6 +75,7 @@ const EMPTY_PROFILE: gamerProfileResponse = {
     EntityListModalComponent,
     UserListModalComponent,
     InviteModalComponent,
+    CommunityInviteModalComponent,
     FeedTabsComponent,
     FeedListComponent,
     PostCardComponent,

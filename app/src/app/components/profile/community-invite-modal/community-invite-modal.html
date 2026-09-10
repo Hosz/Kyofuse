@@ -1,0 +1,44 @@
+<app-modal [open]="open()" [title]="modalTitle()" (closed)="closed.emit()">
+  <div class="flex flex-col gap-lg">
+    @if (loading()) {
+      <p class="py-6 text-center text-body-sm text-on-surface-variant">{{ 'common.loading' | trans }}</p>
+    } @else {
+      <div class="flex flex-col gap-md">
+        @for (community of activeCommunities(); track community.id) {
+          <div class="flex items-center gap-3">
+            @if (community.communityAvatarUrl) {
+              <img [src]="community.communityAvatarUrl" [alt]="community.communityName" class="h-11 w-11 shrink-0 rounded-lg object-cover" />
+            } @else {
+              <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary-container/20 text-primary">
+                <span class="material-symbols-outlined text-[22px]">diversity_3</span>
+              </div>
+            }
+
+            <div class="flex min-w-0 flex-1 flex-col">
+              <span class="truncate text-body-sm font-semibold text-on-surface">{{ community.communityName }}</span>
+              <span class="truncate text-label-sm uppercase text-on-surface-variant">{{ community.communitySlug }}</span>
+            </div>
+
+            <button
+              type="button"
+              (click)="invite(community)"
+              [disabled]="stateOf(community.id) === 'sending' || stateOf(community.id) === 'sent'"
+              class="shrink-0 cursor-pointer rounded-full px-4 py-1.5 text-label-md font-bold transition-colors disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
+              [class]="
+                stateOf(community.id) === 'sent'
+                  ? 'border border-outline-variant text-on-surface-variant'
+                  : 'bg-primary-container text-on-primary-container hover:brightness-110'
+              "
+            >
+              {{ label(community.id) }}
+            </button>
+          </div>
+        } @empty {
+          <p class="py-4 text-center text-body-sm text-on-surface-variant">
+            {{ 'modals.noCommunitiesToInvite' | trans }}
+          </p>
+        }
+      </div>
+    }
+  </div>
+</app-modal>

@@ -5,6 +5,8 @@ import com.hokyozu.kyofuse.teams.dto.request.TeamRequest;
 import com.hokyozu.kyofuse.teams.dto.request.UpdateTeamRequest;
 import com.hokyozu.kyofuse.teams.dto.request.UpdateTeamRequiredRolesRequest;
 import com.hokyozu.kyofuse.profiles.dto.response.GamerProfileResponse;
+import com.hokyozu.kyofuse.communities.dto.response.CommunityResponse;
+import com.hokyozu.kyofuse.communities.service.CommunityService;
 import com.hokyozu.kyofuse.teams.dto.response.TeamResponse;
 import com.hokyozu.kyofuse.teams.service.TeamService;
 import jakarta.validation.Valid;
@@ -18,8 +20,10 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -28,6 +32,7 @@ import java.util.UUID;
 public class TeamController {
 
     private final TeamService teamService;
+    private final CommunityService communityService;
 
     @PostMapping("/create")
     public TeamResponse createTeams(@AuthenticationPrincipal Jwt jwt, @RequestBody @Valid TeamRequest request) {
@@ -108,5 +113,51 @@ public class TeamController {
         UUID userId = UUID.fromString(jwt.getSubject());
 
         return teamService.manageRequiredRoles(userId, teamId, request);
+    }
+
+    @PostMapping("/{teamId}/community/create")
+    public CommunityResponse createCommunityFromTeam(@AuthenticationPrincipal Jwt jwt, @PathVariable String teamId) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return communityService.createCommunityFromTeam(userId, teamId);
+    }
+
+    @PostMapping("/{teamId}/community/attach/{communityId}")
+    public CommunityResponse attachCommunityToTeam(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String teamId,
+            @PathVariable String communityId
+    ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return communityService.attachTeamAndCommunity(userId, teamId, communityId);
+    }
+
+    @GetMapping("/{teamId}/available-communities")
+    public List<CommunityResponse> listAvailableCommunitiesForTeam(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String teamId
+    ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return communityService.listAvailableCommunitiesForTeam(userId, teamId);
+    }
+
+    @DeleteMapping("/{teamId}")
+    public ResponseEntity<Void> deleteTeam(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String teamId,
+            @RequestParam(name = "deleteCommunity", defaultValue = "false") boolean deleteCommunity
+    ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        teamService.deleteTeam(userId, teamId, deleteCommunity);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{teamId}/community/detach")
+    public ResponseEntity<Void> detachCommunity(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String teamId
+    ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        communityService.detachTeamCommunityByTeam(userId, teamId);
+        return ResponseEntity.noContent().build();
     }
 }

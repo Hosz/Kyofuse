@@ -2,10 +2,13 @@ package com.hokyozu.kyofuse.teams.service;
 
 import com.hokyozu.kyofuse.chat.service.ConversationService;
 import com.hokyozu.kyofuse.communities.entity.Community;
+import com.hokyozu.kyofuse.communities.repository.CommunityRepository;
 import com.hokyozu.kyofuse.communities.service.CommunityService;
+import com.hokyozu.kyofuse.invites.repository.TeamInviteRepository;
 import com.hokyozu.kyofuse.profiles.enums.PlayerRole;
 import com.hokyozu.kyofuse.shared.exception.BadRequestException;
 import com.hokyozu.kyofuse.shared.exception.ConflictException;
+import com.hokyozu.kyofuse.shared.exception.ForbiddenException;
 import com.hokyozu.kyofuse.shared.exception.NotFoundException;
 import com.hokyozu.kyofuse.teams.dto.request.TeamFilter;
 import com.hokyozu.kyofuse.teams.dto.request.TeamRequest;
@@ -27,6 +30,7 @@ import com.hokyozu.kyofuse.profiles.repository.GamerProfileRepository;
 import com.hokyozu.kyofuse.teams.entity.TeamMember;
 import com.hokyozu.kyofuse.teams.enums.TeamMemberStatus;
 import com.hokyozu.kyofuse.teams.enums.TeamMemberType;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -39,6 +43,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,6 +76,12 @@ class TeamServiceTest {
     private TeamRequiredRoleRepository teamRequiredRoleRepository;
 
     @Mock
+    private TeamInviteRepository teamInviteRepository;
+
+    @Mock
+    private CommunityRepository communityRepository;
+
+    @Mock
     private CommunityService communityService;
 
     @Mock
@@ -93,6 +104,11 @@ class TeamServiceTest {
 
     @InjectMocks
     private TeamService teamService;
+
+    @BeforeEach
+    void setUp() {
+        ReflectionTestUtils.setField(teamService, "communityService", communityService);
+    }
 
     @Test
     void listPlayersLookingForTeamExcludesWhoIsAlreadyInTheTeam() {
@@ -218,6 +234,52 @@ class TeamServiceTest {
         assertThat(response.id()).isEqualTo(teamId);
         assertThat(response.ownerName()).isEqualTo("owner");
         assertThat(response.requiredRoles()).containsExactly(PlayerRole.AWPER, PlayerRole.RIFLER);
+    }
+
+    @Test
+    void createTeamsDoesNotCreateCommunityWhenCreateCommunityIsFalse() {
+        UUID userId = UUID.randomUUID();
+        UUID teamId = UUID.randomUUID();
+        User user = User.builder().id(userId).username("owner").status(UserStatus.ACTIVE).build();
+        TeamRequest request = validRequest(List.of(PlayerRole.AWPER), false);
+
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
+        when(teamRepository.existsBySlug("kyofuse-academy")).thenReturn(false);
+        when(teamRepository.save(any(Team.class))).thenAnswer(invocation -> {
+            Team team = invocation.getArgument(0);
+            team.setId(teamId);
+            return team;
+        });
+        when(teamRequiredRoleRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TeamResponse response = teamService.createTeams(request, userId);
+
+        assertThat(response).isNotNull();
+        verify(communityService, never()).autoCreateTeamCommunity(any(), any());
+        verify(conversationService, never()).createCommunityConversation(any(), any());
+    }
+
+    @Test
+    void createTeamsDoesNotCreateCommunityWhenCreateCommunityIsNull() {
+        UUID userId = UUID.randomUUID();
+        UUID teamId = UUID.randomUUID();
+        User user = User.builder().id(userId).username("owner").status(UserStatus.ACTIVE).build();
+        TeamRequest request = validRequest(List.of(PlayerRole.AWPER), null);
+
+        when(userFinder.findProfileByUserId(userId)).thenReturn(user);
+        when(teamRepository.existsBySlug("kyofuse-academy")).thenReturn(false);
+        when(teamRepository.save(any(Team.class))).thenAnswer(invocation -> {
+            Team team = invocation.getArgument(0);
+            team.setId(teamId);
+            return team;
+        });
+        when(teamRequiredRoleRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TeamResponse response = teamService.createTeams(request, userId);
+
+        assertThat(response).isNotNull();
+        verify(communityService, never()).autoCreateTeamCommunity(any(), any());
+        verify(conversationService, never()).createCommunityConversation(any(), any());
     }
 
     @Test
@@ -848,6 +910,10 @@ class TeamServiceTest {
     }
 
     private TeamRequest validRequest(List<PlayerRole> requiredRoles) {
+        return validRequest(requiredRoles, true);
+    }
+
+    private TeamRequest validRequest(List<PlayerRole> requiredRoles, Boolean createCommunity) {
         return new TeamRequest(
                 "Kyofuse Academy",
                 null,
@@ -861,7 +927,8 @@ class TeamServiceTest {
                 10,
                 1,
                 21,
-                requiredRoles
+                requiredRoles,
+                createCommunity
         );
     }
 
@@ -885,5 +952,83 @@ class TeamServiceTest {
                 .maxGcRank(21)
                 .status(TeamStatus.ACTIVE)
                 .build();
+    }
+
+    @Test
+    void deleteTeamWithoutCommunityDeletesTeamAndMembers() {
+        UUID userId = UUID.randomUUID();
+        UUID teamId = UUID.randomUUID();
+        User owner = activeUser(userId, "owner");
+        Team team = activeTeam(teamId, owner);
+
+        when(userFinder.findProfileByUserId(userId)).thenReturn(owner);
+        when(teamFinder.findTeamById(teamId)).thenReturn(team);
+        when(communityRepository.findByTeamId(teamId)).thenReturn(Optional.empty());
+
+        teamService.deleteTeam(userId, teamId, false);
+
+        verify(teamInviteRepository).deleteByTeam(team);
+        verify(teamMemberRepository).deleteByTeam(team);
+        verify(teamRequiredRoleRepository).deleteByTeamId(teamId);
+        verify(teamRepository).delete(team);
+    }
+
+    @Test
+    void deleteTeamWithCommunityDetachesWhenDeleteCommunityIsFalse() {
+        UUID userId = UUID.randomUUID();
+        UUID teamId = UUID.randomUUID();
+        User owner = activeUser(userId, "owner");
+        Team team = activeTeam(teamId, owner);
+        Community community = Community.builder().id(UUID.randomUUID()).owner(owner).team(team).build();
+
+        when(userFinder.findProfileByUserId(userId)).thenReturn(owner);
+        when(teamFinder.findTeamById(teamId)).thenReturn(team);
+        when(communityRepository.findByTeamId(teamId)).thenReturn(Optional.of(community));
+
+        teamService.deleteTeam(userId, teamId, false);
+
+        assertThat(community.getTeam()).isNull();
+        verify(communityRepository).save(community);
+        verify(teamRepository).delete(team);
+        verify(communityService, never()).deleteCommunity(any(UUID.class), any(UUID.class), any(boolean.class));
+    }
+
+    @Test
+    void deleteTeamWithCommunityDeletesBothWhenUserIsOwnerOfBoth() {
+        UUID userId = UUID.randomUUID();
+        UUID teamId = UUID.randomUUID();
+        User owner = activeUser(userId, "owner");
+        Team team = activeTeam(teamId, owner);
+        Community community = Community.builder().id(UUID.randomUUID()).owner(owner).team(team).build();
+
+        when(userFinder.findProfileByUserId(userId)).thenReturn(owner);
+        when(teamFinder.findTeamById(teamId)).thenReturn(team);
+        when(communityRepository.findByTeamId(teamId)).thenReturn(Optional.of(community));
+
+        teamService.deleteTeam(userId, teamId, true);
+
+        verify(communityService).deleteCommunity(userId, community.getId(), false);
+        verify(teamRepository).delete(team);
+    }
+
+    @Test
+    void deleteTeamWithCommunityRejectsDeletingCommunityWhenNotCommunityOwner() {
+        UUID userId = UUID.randomUUID();
+        UUID teamId = UUID.randomUUID();
+        User owner = activeUser(userId, "owner");
+        User otherOwner = activeUser(UUID.randomUUID(), "otherOwner");
+        Team team = activeTeam(teamId, owner);
+        Community community = Community.builder().id(UUID.randomUUID()).owner(otherOwner).team(team).build();
+
+        when(userFinder.findProfileByUserId(userId)).thenReturn(owner);
+        when(teamFinder.findTeamById(teamId)).thenReturn(team);
+        when(communityRepository.findByTeamId(teamId)).thenReturn(Optional.of(community));
+
+        assertThatThrownBy(() -> teamService.deleteTeam(userId, teamId, true))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("Apenas o dono da comunidade pode solicitar a exclusão da mesma.");
+
+        verify(teamRepository, never()).delete(any(Team.class));
+        verify(communityService, never()).deleteCommunity(any(UUID.class), any(UUID.class), any(boolean.class));
     }
 }

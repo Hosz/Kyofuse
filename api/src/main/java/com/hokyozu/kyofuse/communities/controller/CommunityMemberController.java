@@ -58,4 +58,12 @@ public class CommunityMemberController {
         UUID userId = UUID.fromString(jwt.getSubject());
         communityMemberService.removeMember(userId, communityId, memberId);
     }
+
+    @PostMapping("/{communityId}/ban/{memberId}")
+    public void banMember(@AuthenticationPrincipal Jwt jwt,
+                          @PathVariable String communityId,
+                          @PathVariable UUID memberId) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        communityMemberService.banMember(userId, communityId, memberId);
+    }
 }

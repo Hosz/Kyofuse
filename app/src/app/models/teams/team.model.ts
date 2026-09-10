@@ -37,6 +37,7 @@ export interface TeamRequest {
     minGcRank: number;
     maxGcRank: number;
     requiredRoles: PlayerRole[];
+    createCommunity?: boolean;
 }
 
 export interface TeamFilter {

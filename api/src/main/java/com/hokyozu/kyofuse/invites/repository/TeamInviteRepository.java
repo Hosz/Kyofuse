@@ -22,4 +22,6 @@ public interface TeamInviteRepository extends JpaRepository<TeamInvite, UUID> {
 
     @EntityGraph(attributePaths = {"team", "sender", "receiver"})
     TeamInvite findByTeamAndReceiver(Team team, User userInvited);
+
+    void deleteByTeam(Team team);
 }

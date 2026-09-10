@@ -46,6 +46,27 @@ class TeamMemberMapperTest {
     }
 
     @Test
+    void toManagerEntityCreatesActiveManagerWithoutAssignmentDueDate() {
+        User user = user("manager");
+        Team team = team("Academy");
+        Instant before = Instant.now();
+
+        TeamMember member = TeamMemberMapper.toManagerEntity(user, team);
+
+        Instant after = Instant.now();
+        assertThat(member.getTeam()).isSameAs(team);
+        assertThat(member.getUser()).isSameAs(user);
+        assertThat(member.getRoleInTeam()).isNull();
+        assertThat(member.getMemberType()).isEqualTo(TeamMemberType.MANAGER);
+        assertThat(member.getStatus()).isEqualTo(TeamMemberStatus.ACTIVE);
+        assertThat(member.getLeftAt()).isNull();
+        assertThat(member.getAssignmentDueAt()).isNull();
+        assertThat(member.getJoinedAt()).isBetween(before, after);
+        assertThat(member.getCreatedAt()).isBetween(before, after);
+        assertThat(member.getUpdatedAt()).isBetween(before, after);
+    }
+
+    @Test
     void toResponseMapsTeamMemberFields() {
         Instant now = Instant.now();
         TeamMember member = TeamMember.builder()

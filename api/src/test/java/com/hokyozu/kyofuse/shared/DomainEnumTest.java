@@ -42,6 +42,13 @@ class DomainEnumTest {
                 TeamInviteStatus.DECLINED,
                 TeamInviteStatus.CANCELED
         );
+        assertThat(com.hokyozu.kyofuse.communities.enums.CommunityInviteStatus.values()).containsExactly(
+                com.hokyozu.kyofuse.communities.enums.CommunityInviteStatus.PENDING,
+                com.hokyozu.kyofuse.communities.enums.CommunityInviteStatus.ACCEPTED,
+                com.hokyozu.kyofuse.communities.enums.CommunityInviteStatus.DECLINED,
+                com.hokyozu.kyofuse.communities.enums.CommunityInviteStatus.CANCELED,
+                com.hokyozu.kyofuse.communities.enums.CommunityInviteStatus.EXPIRED
+        );
         assertThat(NotificationStatus.values()).containsExactly(
                 NotificationStatus.UNREAD,
                 NotificationStatus.READ,
@@ -56,6 +63,10 @@ class DomainEnumTest {
                 NotificationType.TEAM_INVITE_ACCEPTED,
                 NotificationType.TEAM_INVITE_DECLINED,
                 NotificationType.TEAM_INVITE_CANCELED,
+                NotificationType.COMMUNITY_INVITE_RECEIVED,
+                NotificationType.COMMUNITY_INVITE_ACCEPTED,
+                NotificationType.COMMUNITY_INVITE_DECLINED,
+                NotificationType.COMMUNITY_INVITE_CANCELED,
                 NotificationType.TEAM_MEMBER_ADDED,
                 NotificationType.TEAM_MEMBER_REMOVED,
                 NotificationType.TEAM_MEMBER_LEFT,
@@ -77,6 +88,7 @@ class DomainEnumTest {
                 NotificationTargetType.COMMENT,
                 NotificationTargetType.TEAM,
                 NotificationTargetType.TEAM_INVITE,
+                NotificationTargetType.COMMUNITY_INVITE,
                 NotificationTargetType.FOLLOW,
                 NotificationTargetType.CONVERSATION,
                 NotificationTargetType.SYSTEM

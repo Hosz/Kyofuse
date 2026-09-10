@@ -48,4 +48,15 @@ public interface CommunityRepository extends JpaRepository<Community, UUID> {
     Optional<Community> findByTeamId(UUID teamId);
 
     List<Community> findAllByOwner(com.hokyozu.kyofuse.users.entity.User owner);
+
+    @EntityGraph(attributePaths = {"owner"})
+    @Query("""
+        SELECT DISTINCT c FROM Community c
+        LEFT JOIN CommunityMember cm ON cm.community = c AND cm.user.id = :userId AND cm.status = com.hokyozu.kyofuse.communities.enums.CommunityMemberStatus.ACTIVE AND cm.role = com.hokyozu.kyofuse.communities.enums.CommunityMemberRole.ADMIN
+        WHERE c.status = com.hokyozu.kyofuse.communities.enums.CommunityStatus.ACTIVE
+          AND c.team IS NULL
+          AND (c.owner.id = :userId OR cm.id IS NOT NULL)
+        ORDER BY c.name ASC
+    """)
+    List<Community> findAvailableForTeam(@Param("userId") UUID userId);
 }
