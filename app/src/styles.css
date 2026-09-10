@@ -284,8 +284,9 @@ body {
 .overflow-mark {
   background-color: rgba(227, 106, 0, 0.35);
   color: transparent !important;
-  border-radius: 3px;
-  padding-block: 1px;
+  border-radius: 2px;
+  padding: 0 !important;
+  margin: 0 !important;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }

@@ -27,7 +27,7 @@ import { API_URL } from '../../../models/api-url.model';
           <div
             #backdrop
             aria-hidden="true"
-            class="col-start-1 row-start-1 pointer-events-none select-none whitespace-pre-wrap break-words m-0 font-sans"
+            class="col-start-1 row-start-1 justify-self-start pointer-events-none select-none whitespace-pre-wrap break-words m-0 font-sans"
             [class]="computedClass"
             style="box-sizing: border-box; word-break: break-word; overflow-wrap: break-word; border: 0 !important; overflow: hidden;"
           ><span class="opacity-0 select-none" style="font: inherit; line-height: inherit; letter-spacing: inherit;">{{ textWithinLimit }}</span><mark
@@ -39,10 +39,12 @@ import { API_URL } from '../../../models/api-url.model';
                 line-height: inherit;
                 letter-spacing: inherit;
                 border: 0;
+                padding: 0;
+                margin: 0;
                 box-decoration-break: clone;
                 -webkit-box-decoration-break: clone;
               "
-            >{{ textBeyondLimit }}</mark>{{ endsWithNewline ? '\n ' : '' }}</div>
+            >{{ textBeyondLimit }}</mark>@if (endsWithNewline) {<br>}</div>
         }
 
         <!-- Textarea nativo que expande gradativamente até preencher a tela como no X -->
@@ -216,8 +218,14 @@ export class MentionInputComponent implements OnInit, OnDestroy, AfterViewInit {
 
   onScroll(): void {
     if (this.backdropRef && this.textareaRef) {
-      this.backdropRef.nativeElement.scrollTop = this.textareaRef.nativeElement.scrollTop;
-      this.backdropRef.nativeElement.scrollLeft = this.textareaRef.nativeElement.scrollLeft;
+      const textarea = this.textareaRef.nativeElement;
+      const backdrop = this.backdropRef.nativeElement;
+      backdrop.scrollTop = textarea.scrollTop;
+      backdrop.scrollLeft = textarea.scrollLeft;
+      if (textarea.clientWidth > 0 && backdrop.style.width !== `${textarea.clientWidth}px`) {
+        backdrop.style.width = `${textarea.clientWidth}px`;
+        backdrop.style.maxWidth = `${textarea.clientWidth}px`;
+      }
     }
   }
 
@@ -231,14 +239,24 @@ export class MentionInputComponent implements OnInit, OnDestroy, AfterViewInit {
     const minPx = this.minHeightPx;
     const maxPx = this.maxHeightPx;
 
+    const isScrolling = scrollHeight > maxPx;
     const targetHeight = Math.max(minPx, Math.min(scrollHeight, maxPx));
     textarea.style.height = `${targetHeight}px`;
-    textarea.style.overflowY = scrollHeight > maxPx ? 'auto' : 'hidden';
+    textarea.style.overflowY = isScrolling ? 'auto' : 'hidden';
 
     const backdrop = this.backdropRef?.nativeElement;
     if (backdrop) {
       backdrop.style.height = `${targetHeight}px`;
       backdrop.style.overflowY = 'hidden';
+      if (textarea.clientWidth > 0) {
+        backdrop.style.width = `${textarea.clientWidth}px`;
+        backdrop.style.maxWidth = `${textarea.clientWidth}px`;
+      } else {
+        backdrop.style.width = '100%';
+        backdrop.style.maxWidth = '100%';
+      }
+      backdrop.scrollTop = textarea.scrollTop;
+      backdrop.scrollLeft = textarea.scrollLeft;
     }
   }
 
