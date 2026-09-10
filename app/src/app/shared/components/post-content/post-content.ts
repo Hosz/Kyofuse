@@ -13,7 +13,7 @@ export interface ContentSegment {
   standalone: true,
   imports: [RouterLink, TranslatePipe],
   template: `
-    <p class="text-body-md text-on-surface whitespace-pre-wrap break-words">
+    <p class="text-body-md text-on-surface whitespace-pre-wrap break-words [overflow-wrap:anywhere] min-w-0">
       @for (segment of displaySegments(); track $index) {
         @if (segment.type === 'mention') {
           <a

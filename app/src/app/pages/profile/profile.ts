@@ -33,7 +33,7 @@ import { toComment, toPost } from '../../shared/utils/mappers.util';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { I18nService } from '../../core/i18n/i18n.service';
 
-type ProfileTabId = 'posts' | 'reposts' | 'media' | 'replies';
+type ProfileTabId = 'posts' | 'reposts' | 'media' | 'replies' | 'communities' | 'teams';
 type ModalKind = 'followers' | 'following' | 'friends' | 'communities' | 'teams' | 'invite' | 'community-invite' | null;
 
 export interface ReplyItem {
@@ -262,18 +262,21 @@ export class ProfileComponent {
     { id: 'reposts', label: this.i18n.t('profile.reposts'), active: this.activeTabId() === 'reposts' },
     { id: 'media', label: this.i18n.t('profile.media'), active: this.activeTabId() === 'media' },
     { id: 'replies', label: this.i18n.t('profile.replies'), active: this.activeTabId() === 'replies' },
+    { id: 'communities', label: this.i18n.t('nav.communities'), active: this.activeTabId() === 'communities' },
+    { id: 'teams', label: this.i18n.t('nav.teams'), active: this.activeTabId() === 'teams' },
   ]);
 
-  onTabSelected(tab: FeedTab): void {
-    if (tab.id === 'posts') this.activeTabId.set('posts');
-    else if (tab.id === 'reposts') this.activeTabId.set('reposts');
-    else if (tab.id === 'media') {
-      this.activeTabId.set('media');
+  selectTab(id: ProfileTabId): void {
+    this.activeTabId.set(id);
+    if (id === 'media') {
       this.loadMediaPostsIfNeeded();
-    } else {
-      this.activeTabId.set('replies');
+    } else if (id === 'replies') {
       this.loadRepliesIfNeeded();
     }
+  }
+
+  onTabSelected(tab: FeedTab): void {
+    this.selectTab(tab.id as ProfileTabId);
   }
 
   goToReply(reply: ReplyItem): void {

@@ -14,6 +14,7 @@ import { ProfileService } from '../../../core/services/profile/profile.service';
   standalone: true,
   imports: [CommonModule, RouterLink],
   templateUrl: './mobile-header.html',
+  styles: [':host { display: block; }'],
 })
 export class MobileHeaderComponent {
   private readonly router = inject(Router);

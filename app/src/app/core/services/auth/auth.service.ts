@@ -28,7 +28,7 @@ export class AuthService {
   private accountManager = inject(AccountManagerService);
   private userSessionService = inject(UserSessionService);
 
-  private readonly authenticated = signal(false);
+  private readonly authenticated = signal(!!this.accountManager.getActiveUserId());
   private logoutInProgress = false;
 
   private refreshInFlight: Observable<boolean> | null = null;
@@ -203,24 +203,16 @@ export class AuthService {
         return true;
       }),
       catchError((error: HttpErrorResponse) => {
-        this.authenticated.set(false);
-
-        // ⚠️ NOVO: Diferenciar 400 (ausente) de 401 (expirado)
-        if (error.status === 400) {
-          // Token ausente = erro técnico, não pode recuperar
-          console.debug('Auth: Refresh token ausente (400)');
+        // Diferenciar 400 (ausente) e 401 (expirado/revogado) de erros de rede
+        if (error.status === 400 || error.status === 401) {
+          this.authenticated.set(false);
+          console.debug('Auth: Refresh token inválido/expirado', error.status);
           return of(false);
         }
 
-        if (error.status === 401) {
-          // Token expirado/revogado = erro legítimo, pode tentar depois
-          console.debug('Auth: Refresh token expirado/revogado (401)');
-          return of(false);
-        }
-
-        // Outro erro = retorna false
-        console.debug('Auth: Erro desconhecido no refresh', error.status);
-        return of(false);
+        // Erro de rede ou indisponibilidade do backend: não invalida a sessão local
+        console.debug('Auth: Erro transitório no refresh', error.status);
+        return of(true);
       }),
       finalize(() => this.refreshInFlight = null),
       shareReplay(1),
