@@ -8,7 +8,8 @@ import {
   ViewChild,
   OnInit,
   OnDestroy,
-  AfterViewInit
+  AfterViewInit,
+  HostListener
 } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Subject, Subscription, of } from 'rxjs';
@@ -20,28 +21,44 @@ import { API_URL } from '../../../models/api-url.model';
   standalone: true,
   template: `
     <div class="relative w-full" (click)="focus()">
-      @if (!content || content.length === 0) {
-        <div
-          class="pointer-events-none absolute inset-0 select-none text-on-surface-variant/60 font-sans"
-          [class]="computedClass"
-        >
-          {{ placeholder }}
-        </div>
-      }
+      <div class="grid w-full">
+        <!-- Camada de fundo com o marca-texto perfeitamente alinhado -->
+        @if (isOverLimit) {
+          <div
+            #backdrop
+            aria-hidden="true"
+            class="col-start-1 row-start-1 pointer-events-none select-none whitespace-pre-wrap break-words m-0 font-sans"
+            [class]="computedClass"
+            style="box-sizing: border-box; word-break: break-word; overflow-wrap: break-word; border: 0 !important; overflow: hidden;"
+          ><span class="opacity-0 select-none" style="font: inherit; line-height: inherit; letter-spacing: inherit;">{{ textWithinLimit }}</span><mark
+              class="overflow-mark select-none inline p-0 m-0 rounded-xs"
+              style="
+                background-color: rgba(227, 106, 0, 0.35);
+                color: transparent;
+                font: inherit;
+                line-height: inherit;
+                letter-spacing: inherit;
+                border: 0;
+                box-decoration-break: clone;
+                -webkit-box-decoration-break: clone;
+              "
+            >{{ textBeyondLimit }}</mark>{{ endsWithNewline ? '\n ' : '' }}</div>
+        }
 
-      <div
-        #editor
-        contenteditable="true"
-        role="textbox"
-        aria-multiline="true"
-        [attr.aria-label]="placeholder"
-        (input)="onInput($event)"
-        (keydown)="onKeyDown($event)"
-        (paste)="onPaste($event)"
-        class="w-full break-words whitespace-pre-wrap outline-none focus:outline-none focus:ring-0 max-h-72 overflow-y-auto scrollbar-minimal font-sans"
-        [class]="computedClass"
-        [style.min-height]="minHeight"
-      ></div>
+        <!-- Textarea nativo que expande gradativamente até preencher a tela como no X -->
+        <textarea
+          #textarea
+          [rows]="rows"
+          [placeholder]="placeholder"
+          [value]="content"
+          (input)="onInput($event)"
+          (keydown)="onKeyDown($event)"
+          (scroll)="onScroll()"
+          class="col-start-1 row-start-1 w-full resize-none border-0 bg-transparent text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-0 whitespace-pre-wrap break-words m-0 font-sans z-10 scrollbar-minimal"
+          [class]="computedClass"
+          style="box-sizing: border-box; word-break: break-word; overflow-wrap: break-word; border: 0 !important; outline: none !important;"
+        ></textarea>
+      </div>
 
       @if (showAutocomplete) {
         <div
@@ -80,19 +97,7 @@ import { API_URL } from '../../../models/api-url.model';
   styles: [`
     :host {
       display: block;
-    }
-    [contenteditable]:empty:before {
-      display: none;
-    }
-    mark.overflow-mark {
-      background-color: rgba(227, 106, 0, 0.28);
-      color: #c45a00;
-      border-radius: 2px;
-      padding-inline: 1px;
-    }
-    :host-context(.dark) mark.overflow-mark {
-      background-color: rgba(227, 106, 0, 0.32);
-      color: #ff9d47;
+      width: 100%;
     }
   `]
 })
@@ -101,8 +106,9 @@ export class MentionInputComponent implements OnInit, OnDestroy, AfterViewInit {
     const nextVal = val || '';
     if (this._content !== nextVal) {
       this._content = nextVal;
-      if (this.editorRef && this.extractText() !== nextVal) {
-        this.renderDom(nextVal);
+      if (this.textareaRef) {
+        this.textareaRef.nativeElement.value = nextVal;
+        setTimeout(() => this.adjustHeight(), 0);
       }
     }
   }
@@ -117,13 +123,8 @@ export class MentionInputComponent implements OnInit, OnDestroy, AfterViewInit {
   @Input() inputClass: string = '';
   @Output() contentChange = new EventEmitter<string>();
 
-  @ViewChild('editor') editorRef!: ElementRef<HTMLDivElement>;
-
-  get textareaRef(): ElementRef<any> {
-    return this.editorRef;
-  }
-
-  private hasOverflowMark = false;
+  @ViewChild('textarea') textareaRef!: ElementRef<HTMLTextAreaElement>;
+  @ViewChild('backdrop') backdropRef?: ElementRef<HTMLDivElement>;
 
   get isOverLimit(): boolean {
     return !!(this.maxLength && this.content && this.content.length > this.maxLength);
@@ -139,14 +140,25 @@ export class MentionInputComponent implements OnInit, OnDestroy, AfterViewInit {
     return this.content.slice(this.maxLength);
   }
 
+  get endsWithNewline(): boolean {
+    return !!(this.content && this.content.endsWith('\n'));
+  }
+
   get computedClass(): string {
     return this.inputClass ? this.inputClass : 'p-0 text-body-md text-on-surface';
   }
 
-  get minHeight(): string {
+  private get minHeightPx(): number {
     const isSm = this.computedClass.includes('text-body-sm');
-    const lineHeight = isSm ? 1.25 : 1.5;
-    return `${(this.rows || 2) * lineHeight}rem`;
+    const lineHeight = isSm ? 20 : 24;
+    return (this.rows || 2) * lineHeight + 8;
+  }
+
+  private get maxHeightPx(): number {
+    if (typeof window !== 'undefined' && window.innerHeight) {
+      return Math.round(window.innerHeight * 0.6); // 60vh like X
+    }
+    return 500;
   }
 
   private http = inject(HttpClient);
@@ -166,6 +178,11 @@ export class MentionInputComponent implements OnInit, OnDestroy, AfterViewInit {
   caretTop = 40;
   caretLeft = 0;
 
+  @HostListener('window:resize')
+  onResize(): void {
+    this.adjustHeight();
+  }
+
   ngOnInit(): void {
     this.searchSub = this.searchSubject.pipe(
       debounceTime(120),
@@ -184,9 +201,7 @@ export class MentionInputComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    if (this._content) {
-      this.renderDom(this._content);
-    }
+    this.adjustHeight();
   }
 
   ngOnDestroy(): void {
@@ -194,19 +209,46 @@ export class MentionInputComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   focus(): void {
-    if (this.editorRef) {
-      this.editorRef.nativeElement.focus();
+    if (this.textareaRef) {
+      this.textareaRef.nativeElement.focus();
+    }
+  }
+
+  onScroll(): void {
+    if (this.backdropRef && this.textareaRef) {
+      this.backdropRef.nativeElement.scrollTop = this.textareaRef.nativeElement.scrollTop;
+      this.backdropRef.nativeElement.scrollLeft = this.textareaRef.nativeElement.scrollLeft;
+    }
+  }
+
+  adjustHeight(): void {
+    const textarea = this.textareaRef?.nativeElement;
+    if (!textarea) return;
+
+    textarea.style.height = 'auto';
+    const scrollHeight = textarea.scrollHeight;
+
+    const minPx = this.minHeightPx;
+    const maxPx = this.maxHeightPx;
+
+    const targetHeight = Math.max(minPx, Math.min(scrollHeight, maxPx));
+    textarea.style.height = `${targetHeight}px`;
+    textarea.style.overflowY = scrollHeight > maxPx ? 'auto' : 'hidden';
+
+    const backdrop = this.backdropRef?.nativeElement;
+    if (backdrop) {
+      backdrop.style.height = `${targetHeight}px`;
+      backdrop.style.overflowY = 'hidden';
     }
   }
 
   onInput(event: Event): void {
-    const text = this.extractText();
-    this._content = text;
+    const val = (event.target as HTMLTextAreaElement).value;
+    this._content = val;
     this.contentChange.emit(this._content);
 
-    const editor = this.editorRef?.nativeElement;
-    const cursorPosition = editor ? this.getCaretOffset(editor) : 0;
-    const textBeforeCursor = text.substring(0, cursorPosition);
+    const cursorPosition = (event.target as HTMLTextAreaElement).selectionStart;
+    const textBeforeCursor = val.substring(0, cursorPosition);
 
     const match = textBeforeCursor.match(/(?:^|\s)([@$]|(?:\/\/))([A-Za-z0-9_.-]*)$/);
     if (match) {
@@ -230,30 +272,8 @@ export class MentionInputComponent implements OnInit, OnDestroy, AfterViewInit {
       this.showAutocomplete = false;
     }
 
-    if (this.isOverLimit) {
-      this.renderOverflow(text);
-    } else if (this.hasOverflowMark) {
-      this.clearOverflow(text);
-    }
-  }
-
-  onPaste(event: ClipboardEvent): void {
-    event.preventDefault();
-    const text = event.clipboardData?.getData('text/plain') || '';
-    if (!text) return;
-
-    const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0) return;
-    const range = sel.getRangeAt(0);
-    range.deleteContents();
-    const textNode = document.createTextNode(text);
-    range.insertNode(textNode);
-    range.setStartAfter(textNode);
-    range.collapse(true);
-    sel.removeAllRanges();
-    sel.addRange(range);
-
-    this.onInput(event);
+    this.adjustHeight();
+    setTimeout(() => this.onScroll(), 0);
   }
 
   onKeyDown(event: KeyboardEvent): void {
@@ -277,10 +297,10 @@ export class MentionInputComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   selectSuggestion(suggestion: any): void {
-    const editor = this.editorRef?.nativeElement;
-    if (!editor) return;
+    const textarea = this.textareaRef?.nativeElement;
+    if (!textarea) return;
 
-    const cursor = this.getCaretOffset(editor);
+    const cursor = textarea.selectionStart;
     const textBeforeCursor = this.content.substring(0, cursor);
     const match = textBeforeCursor.match(/(\s*)([@$]|(?:\/\/))([A-Za-z0-9_.-]*)$/);
 
@@ -294,12 +314,12 @@ export class MentionInputComponent implements OnInit, OnDestroy, AfterViewInit {
       this.contentChange.emit(this._content);
       this.showAutocomplete = false;
 
-      this.renderDom(newText);
-
       setTimeout(() => {
         const newCursorPos = (beforeSpace + space + this.currentPrefix + suggestion.slug + ' ').length;
-        editor.focus();
-        this.setCaretOffset(editor, newCursorPos);
+        textarea.focus();
+        textarea.setSelectionRange(newCursorPos, newCursorPos);
+        this.adjustHeight();
+        this.onScroll();
       });
     }
   }
@@ -307,156 +327,5 @@ export class MentionInputComponent implements OnInit, OnDestroy, AfterViewInit {
   private updateCaretPosition(): void {
     this.caretTop = 40;
     this.caretLeft = 0;
-  }
-
-  private renderDom(text: string): void {
-    if (!this.editorRef) return;
-    const editor = this.editorRef.nativeElement;
-    if (!text) {
-      editor.innerHTML = '';
-      this.hasOverflowMark = false;
-      return;
-    }
-    if (this.maxLength && text.length > this.maxLength) {
-      const valid = text.slice(0, this.maxLength);
-      const overflow = text.slice(this.maxLength);
-      editor.innerHTML = `${this.escapeHtml(valid)}<mark class="overflow-mark rounded-xs bg-primary/25 text-primary font-medium select-text">${this.escapeHtml(overflow)}</mark>`;
-      this.hasOverflowMark = true;
-    } else {
-      editor.innerHTML = this.escapeHtml(text);
-      this.hasOverflowMark = false;
-    }
-  }
-
-  private renderOverflow(text: string): void {
-    if (!this.maxLength || !this.editorRef) return;
-    const editor = this.editorRef.nativeElement;
-    const caretOffset = this.getCaretOffset(editor);
-
-    const valid = text.slice(0, this.maxLength);
-    const overflow = text.slice(this.maxLength);
-
-    editor.innerHTML = `${this.escapeHtml(valid)}<mark class="overflow-mark rounded-xs bg-primary/25 text-primary font-medium select-text">${this.escapeHtml(overflow)}</mark>`;
-    this.hasOverflowMark = true;
-
-    this.setCaretOffset(editor, caretOffset);
-  }
-
-  private clearOverflow(text: string): void {
-    if (!this.editorRef) return;
-    const editor = this.editorRef.nativeElement;
-    const caretOffset = this.getCaretOffset(editor);
-
-    editor.innerHTML = this.escapeHtml(text);
-    this.hasOverflowMark = false;
-
-    this.setCaretOffset(editor, caretOffset);
-  }
-
-  private extractText(): string {
-    const el = this.editorRef?.nativeElement;
-    if (!el) return '';
-    return this.extractTextFromNode(el);
-  }
-
-  private extractTextFromNode(node: Node): string {
-    let text = '';
-    for (let i = 0; i < node.childNodes.length; i++) {
-      const child = node.childNodes[i];
-      if (child.nodeType === Node.TEXT_NODE) {
-        text += child.nodeValue || '';
-      } else if (child.nodeName === 'BR') {
-        text += '\n';
-      } else if (child.nodeName === 'DIV' || child.nodeName === 'P') {
-        if (text.length > 0 && !text.endsWith('\n')) text += '\n';
-        if (child.childNodes.length === 1 && child.childNodes[0].nodeName === 'BR') {
-          text += '\n';
-        } else {
-          text += this.extractTextFromNode(child);
-        }
-      } else {
-        text += this.extractTextFromNode(child);
-      }
-    }
-    return text;
-  }
-
-  private escapeHtml(str: string): string {
-    return str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;')
-      .replace(/\n/g, '<br>');
-  }
-
-  private getCaretOffset(editor: HTMLElement): number {
-    const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0) return 0;
-    const range = sel.getRangeAt(0);
-    const preCaretRange = range.cloneRange();
-    preCaretRange.selectNodeContents(editor);
-    preCaretRange.setEnd(range.endContainer, range.endOffset);
-
-    let count = 0;
-    const walker = document.createTreeWalker(
-      preCaretRange.cloneContents(),
-      NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT
-    );
-    let node = walker.nextNode();
-    while (node) {
-      if (node.nodeType === Node.TEXT_NODE) {
-        count += node.nodeValue?.length || 0;
-      } else if (node.nodeName === 'BR') {
-        count += 1;
-      }
-      node = walker.nextNode();
-    }
-    return count;
-  }
-
-  private setCaretOffset(editor: HTMLElement, targetOffset: number): void {
-    const sel = window.getSelection();
-    if (!sel) return;
-    let currentOffset = 0;
-    let targetNode: Node | null = null;
-    let nodeOffset = 0;
-
-    const walker = document.createTreeWalker(
-      editor,
-      NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT
-    );
-    let node = walker.nextNode();
-    while (node) {
-      if (node.nodeType === Node.TEXT_NODE) {
-        const len = node.nodeValue?.length || 0;
-        if (currentOffset + len >= targetOffset) {
-          targetNode = node;
-          nodeOffset = Math.max(0, Math.min(targetOffset - currentOffset, len));
-          break;
-        }
-        currentOffset += len;
-      } else if (node.nodeName === 'BR') {
-        if (currentOffset + 1 >= targetOffset) {
-          targetNode = node.parentNode;
-          nodeOffset = Array.from(targetNode?.childNodes || []).indexOf(node as ChildNode) + 1;
-          break;
-        }
-        currentOffset += 1;
-      }
-      node = walker.nextNode();
-    }
-
-    const range = document.createRange();
-    if (targetNode) {
-      range.setStart(targetNode, nodeOffset);
-      range.collapse(true);
-    } else {
-      range.selectNodeContents(editor);
-      range.collapse(false);
-    }
-    sel.removeAllRanges();
-    sel.addRange(range);
   }
 }

@@ -279,6 +279,23 @@ body {
 }
 
 /* ============================================================
+   Marca-texto de limite de caracteres excedido (estilo X/Twitter)
+   ============================================================ */
+.overflow-mark {
+  background-color: rgba(227, 106, 0, 0.35);
+  color: transparent !important;
+  border-radius: 3px;
+  padding-block: 1px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+:root.dark .overflow-mark,
+.dark .overflow-mark {
+  background-color: rgba(227, 106, 0, 0.45);
+}
+
+/* ============================================================
    Botões no Modo Claro:
    Botões brancos / contornados recebem letra preta e borda destacada
    ============================================================ */
