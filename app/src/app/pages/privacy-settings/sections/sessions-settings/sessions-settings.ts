@@ -75,13 +75,13 @@ export class SessionsSettingsSectionComponent implements OnInit {
       next: () => {
         this.revokingAll.set(false);
         this.showRevokeAllConfirm.set(false);
-        this.toastService.success('Outras sessões encerradas com sucesso.');
+        this.toastService.success(this.i18n.t('settings.otherSessionsRevokedSuccess'));
         this.loadSessions();
       },
       error: (err) => {
         console.error('Failed to revoke other sessions:', err);
         this.revokingAll.set(false);
-        this.toastService.error('Erro ao encerrar outras sessões.');
+        this.toastService.error(this.i18n.t('settings.otherSessionsRevokeError'));
       },
     });
   }
@@ -96,13 +96,13 @@ export class SessionsSettingsSectionComponent implements OnInit {
         if (this.selectedSession()?.id === sessionId) {
           this.selectedSession.set(null);
         }
-        this.toastService.success('Sessão encerrada com sucesso.');
+        this.toastService.success(this.i18n.t('settings.sessionRevokedSuccess'));
         this.loadSessions();
       },
       error: (err) => {
         console.error('Failed to revoke session:', err);
         this.revokingSessionId.set(null);
-        this.toastService.error('Erro ao encerrar sessão.');
+        this.toastService.error(this.i18n.t('settings.sessionRevokeError'));
       },
     });
   }
@@ -115,7 +115,7 @@ export class SessionsSettingsSectionComponent implements OnInit {
       this.userSessionService.untrustDevice(session.id).subscribe({
         next: () => {
           this.togglingTrust.set(false);
-          this.toastService.success('Dispositivo removido dos confiáveis.');
+          this.toastService.success(this.i18n.t('settings.deviceUntrustedSuccess'));
           this.loadSessions();
           if (this.selectedSession()?.id === session.id) {
             this.selectedSession.update((s) => (s ? { ...s, trusted: false, trustedAt: undefined } : null));
@@ -124,7 +124,7 @@ export class SessionsSettingsSectionComponent implements OnInit {
         error: (err) => {
           console.error('Failed to untrust device:', err);
           this.togglingTrust.set(false);
-          this.toastService.error('Erro ao alterar status de confiança.');
+          this.toastService.error(this.i18n.t('settings.trustStatusChangeError'));
         },
       });
     } else {
@@ -141,7 +141,7 @@ export class SessionsSettingsSectionComponent implements OnInit {
           error: (err) => {
             console.error('Failed to trust device:', err);
             this.togglingTrust.set(false);
-            this.toastService.error('Erro ao alterar status de confiança.');
+            this.toastService.error(this.i18n.t('settings.trustStatusChangeError'));
           },
         });
       } else {
@@ -167,25 +167,126 @@ export class SessionsSettingsSectionComponent implements OnInit {
     }
   }
 
+  formatDeviceName(session?: UserSession | null): string {
+    if (!session) return '';
+
+    let browser = (session.browser || '').trim();
+    let os = (session.os || '').trim();
+
+    // Fallback: If browser or os are missing, parse from deviceName if present
+    if (!browser || !os) {
+      const raw = (session.deviceName || '').trim();
+      const match = raw.match(/^(.*?)\s+(?:no|on|en|auf|sur|на)\s+(.*)$/i);
+      if (match) {
+        if (!browser) browser = match[1].trim();
+        if (!os) os = match[2].trim();
+      } else if (!browser && !os) {
+        if (raw.toLowerCase() === 'dispositivo desconhecido' || raw.toLowerCase() === 'unknown device') {
+          return this.i18n.t('settings.unknownDevice');
+        }
+        return raw;
+      }
+    }
+
+    const browserFormatted = this.formatBrowser(browser);
+    const osFormatted = this.formatOs(os);
+
+    if (browserFormatted && osFormatted) {
+      const template = this.i18n.t('settings.deviceOnOs');
+      return template.replace('{browser}', browserFormatted).replace('{os}', osFormatted);
+    }
+
+    return browserFormatted || osFormatted || session.deviceName || this.i18n.t('settings.unknownDevice');
+  }
+
+  formatBrowser(browser?: string): string {
+    if (!browser) return '';
+    const bLower = browser.trim().toLowerCase();
+    if (bLower === 'navegador web' || bLower === 'web browser' || bLower === 'navegador') {
+      return this.i18n.t('settings.unknownBrowser');
+    }
+    return browser;
+  }
+
+  formatOs(os?: string): string {
+    if (!os) return '';
+    const oLower = os.trim().toLowerCase();
+    if (
+      oLower === 'sistema operacional desconhecido' ||
+      oLower === 'unknown os' ||
+      oLower === 'unknown operating system'
+    ) {
+      return this.i18n.t('settings.unknownOs');
+    }
+    return os;
+  }
+
+  formatLocation(location?: string): string {
+    if (!location) return this.i18n.t('settings.unknownLocation');
+    const locLower = location.trim().toLowerCase();
+    if (
+      locLower === 'localização desconhecida' ||
+      locLower === 'localizacao desconhecida' ||
+      locLower === 'unknown location'
+    ) {
+      return this.i18n.t('settings.unknownLocation');
+    }
+    return location;
+  }
+
   formatRelativeTime(isoDate?: string): string {
     if (!isoDate) return '';
     const now = Date.now();
     const time = new Date(isoDate).getTime();
+    if (isNaN(time)) return '';
     const diffSeconds = Math.max(0, Math.floor((now - time) / 1000));
 
     if (diffSeconds < 60) {
       return this.i18n.t('settings.activeNow');
     }
-    const diffMinutes = Math.floor(diffSeconds / 60);
-    if (diffMinutes < 60) {
-      return `Há ${diffMinutes} min`;
+
+    const currentLang = this.i18n.currentLang() || 'pt';
+
+    try {
+      const rtf = new Intl.RelativeTimeFormat(currentLang, { numeric: 'always', style: 'long' });
+      const diffMinutes = Math.floor(diffSeconds / 60);
+      let formatted = '';
+
+      if (diffMinutes < 60) {
+        formatted = rtf.format(-diffMinutes, 'minute');
+      } else {
+        const diffHours = Math.floor(diffMinutes / 60);
+        if (diffHours < 24) {
+          formatted = rtf.format(-diffHours, 'hour');
+        } else {
+          const diffDays = Math.floor(diffHours / 24);
+          if (diffDays < 30) {
+            formatted = rtf.format(-diffDays, 'day');
+          } else {
+            const diffMonths = Math.floor(diffDays / 30);
+            if (diffMonths < 12) {
+              formatted = rtf.format(-diffMonths, 'month');
+            } else {
+              const diffYears = Math.floor(diffDays / 365);
+              formatted = rtf.format(-diffYears, 'year');
+            }
+          }
+        }
+      }
+
+      return formatted ? formatted.charAt(0).toUpperCase() + formatted.slice(1) : '';
+    } catch {
+      const diffMinutes = Math.floor(diffSeconds / 60);
+      if (diffMinutes < 60) {
+        return `Há ${diffMinutes} min`;
+      }
+      const diffHours = Math.floor(diffMinutes / 60);
+      if (diffHours < 24) {
+        return `Há ${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`;
+      }
+      const diffDays = Math.floor(diffHours / 24);
+      return `Há ${diffDays} ${diffDays === 1 ? 'dia' : 'dias'}`;
     }
-    const diffHours = Math.floor(diffMinutes / 60);
-    if (diffHours < 24) {
-      return `Há ${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`;
-    }
-    const diffDays = Math.floor(diffHours / 24);
-    return `Há ${diffDays} ${diffDays === 1 ? 'dia' : 'dias'}`;
   }
 
   formatExactDateTime(isoDate?: string): string {

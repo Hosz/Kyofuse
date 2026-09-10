@@ -609,6 +609,18 @@ export interface TranslationDictionary {
     lastActive: string;
     trustStatus: string;
     revoking: string;
+    deviceOnOs: string;
+    currentSessionDisconnectHint: string;
+    unknownLocation: string;
+    unknownDevice: string;
+    unknownBrowser: string;
+    unknownOs: string;
+    otherSessionsRevokedSuccess: string;
+    otherSessionsRevokeError: string;
+    sessionRevokedSuccess: string;
+    sessionRevokeError: string;
+    deviceUntrustedSuccess: string;
+    trustStatusChangeError: string;
   };
   auth: {
     welcome: string;

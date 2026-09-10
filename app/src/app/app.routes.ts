@@ -220,6 +220,26 @@ export const routes: Routes = [
     data: { document: 'diretrizes' },
   },
   {
+    path: 'regras',
+    redirectTo: 'diretrizes',
+    pathMatch: 'full',
+  },
+  {
+    path: 'rules',
+    redirectTo: 'diretrizes',
+    pathMatch: 'full',
+  },
+  {
+    path: 'terms',
+    redirectTo: 'termos',
+    pathMatch: 'full',
+  },
+  {
+    path: 'privacy',
+    redirectTo: 'privacidade',
+    pathMatch: 'full',
+  },
+  {
     path: '**',
     redirectTo: '',
   },
