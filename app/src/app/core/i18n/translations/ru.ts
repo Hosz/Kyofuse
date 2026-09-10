@@ -33,7 +33,9 @@ export const ru: TranslationDictionary = {
     "deletePostMessage": "Эта публикация будет удалена из ленты. Действие необратимо.",
     "deleteConfirm": "Удалить",
     "privateAccountTitle": "Это приватный аккаунт",
-    "privateAccountDesc": "Подпишитесь на этого игрока, чтобы видеть его публикации, ответы и контакты."
+    "privateAccountDesc": "Подпишитесь на этого игрока, чтобы видеть его публикации, ответы и контакты.",
+    "showMore": "Показать больше",
+    "showLess": "Показать меньше"
   },
   "composer": {
     "placeholder": "Что происходит на сервере?",

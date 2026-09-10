@@ -33,7 +33,9 @@ export const fr: TranslationDictionary = {
     "deletePostMessage": "Cette publication sera retirée du flux. Cette action est irréversible.",
     "deleteConfirm": "Supprimer",
     "privateAccountTitle": "Ce compte est privé",
-    "privateAccountDesc": "Suivez ce joueur pour voir ses publications, réponses et connexions."
+    "privateAccountDesc": "Suivez ce joueur pour voir ses publications, réponses et connexions.",
+    "showMore": "Voir plus",
+    "showLess": "Voir moins"
   },
   "composer": {
     "placeholder": "Que se passe-t-il sur le serveur ?",

@@ -33,7 +33,9 @@ export const zh: TranslationDictionary = {
     "deletePostMessage": "此动态将从动态流中删除。此操作无法撤销。",
     "deleteConfirm": "删除",
     "privateAccountTitle": "该账号为私密账号",
-    "privateAccountDesc": "关注该玩家即可查看其动态、回复和社交圈。"
+    "privateAccountDesc": "关注该玩家即可查看其动态、回复和社交圈。",
+    "showMore": "显示更多",
+    "showLess": "显示更少"
   },
   "composer": {
     "placeholder": "服务器里发生了什么新鲜事？",

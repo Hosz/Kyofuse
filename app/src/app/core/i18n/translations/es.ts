@@ -33,7 +33,9 @@ export const es: TranslationDictionary = {
     "deletePostMessage": "Esta publicación se eliminará del feed. Esta acción no se puede deshacer.",
     "deleteConfirm": "Eliminar",
     "privateAccountTitle": "Esta cuenta es privada",
-    "privateAccountDesc": "Sigue a este jugador para ver sus publicaciones, respuestas y conexiones."
+    "privateAccountDesc": "Sigue a este jugador para ver sus publicaciones, respuestas y conexiones.",
+    "showMore": "Mostrar más",
+    "showLess": "Mostrar menos"
   },
   "composer": {
     "placeholder": "¿Qué está pasando en el server?",

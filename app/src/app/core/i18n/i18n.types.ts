@@ -52,6 +52,8 @@ export interface TranslationDictionary {
     deleteConfirm: string;
     privateAccountTitle: string;
     privateAccountDesc: string;
+    showMore: string;
+    showLess: string;
   };
   composer: {
     placeholder: string;

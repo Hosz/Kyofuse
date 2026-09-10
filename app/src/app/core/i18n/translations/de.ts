@@ -33,7 +33,9 @@ export const de: TranslationDictionary = {
     "deletePostMessage": "Dieser Beitrag wird aus dem Feed entfernt. Dies kann nicht rückgängig gemacht werden.",
     "deleteConfirm": "Löschen",
     "privateAccountTitle": "Dieses Konto ist privat",
-    "privateAccountDesc": "Folge diesem Spieler, um Beiträge, Antworten und Verbindungen zu sehen."
+    "privateAccountDesc": "Folge diesem Spieler, um Beiträge, Antworten und Verbindungen zu sehen.",
+    "showMore": "Mehr anzeigen",
+    "showLess": "Weniger anzeigen"
   },
   "composer": {
     "placeholder": "Was passiert auf dem Server?",

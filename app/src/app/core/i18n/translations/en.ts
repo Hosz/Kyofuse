@@ -33,7 +33,9 @@ export const en: TranslationDictionary = {
     "deletePostMessage": "This post will be removed from your feed. This action cannot be undone.",
     "deleteConfirm": "Delete",
     "privateAccountTitle": "This account is private",
-    "privateAccountDesc": "Follow this player to see their posts, replies, and network."
+    "privateAccountDesc": "Follow this player to see their posts, replies, and network.",
+    "showMore": "Show more",
+    "showLess": "Show less"
   },
   "composer": {
     "placeholder": "What is happening on the server?",

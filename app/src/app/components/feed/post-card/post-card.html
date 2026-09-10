@@ -54,7 +54,7 @@
       </div>
 
       @if (post().content) {
-        <app-post-content [content]="post().content"></app-post-content>
+        <app-post-content [content]="post().content" [collapsible]="!isDetail()"></app-post-content>
       }
 
       <!-- Grid de Mídias / Imagens -->

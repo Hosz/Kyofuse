@@ -33,7 +33,9 @@ export const ja: TranslationDictionary = {
     "deletePostMessage": "この投稿はフィードから削除されます。この操作は取り消せません。",
     "deleteConfirm": "削除",
     "privateAccountTitle": "このアカウントは非公開です",
-    "privateAccountDesc": "このプレイヤーをフォローすると、投稿、返信、つながりを閲覧できます。"
+    "privateAccountDesc": "このプレイヤーをフォローすると、投稿、返信、つながりを閲覧できます。",
+    "showMore": "さらに表示",
+    "showLess": "一部を表示"
   },
   "composer": {
     "placeholder": "サーバーで何が起きてる？",
