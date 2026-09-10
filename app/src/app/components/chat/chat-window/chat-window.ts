@@ -18,10 +18,11 @@ import { Subscription } from 'rxjs';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { isLongChatMessage, truncateChatMessage } from '../../../shared/utils/format.util';
+import { CharLimitIndicatorComponent } from '../../../shared/components/char-limit-indicator/char-limit-indicator';
 
 @Component({
   selector: 'app-chat-window',
-  imports: [ConversationInfoPanelComponent, ConfirmDialogComponent, ImageModalComponent, MessageInfoModalComponent, FullMessageModalComponent, TranslatePipe],
+  imports: [ConversationInfoPanelComponent, ConfirmDialogComponent, ImageModalComponent, MessageInfoModalComponent, FullMessageModalComponent, CharLimitIndicatorComponent, TranslatePipe],
   templateUrl: './chat-window.html',
   styleUrl: './chat-window.css',
 })

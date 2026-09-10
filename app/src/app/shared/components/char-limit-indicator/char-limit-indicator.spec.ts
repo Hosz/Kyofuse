@@ -71,4 +71,30 @@ describe('CharLimitIndicatorComponent', () => {
     expect(span?.classList.contains('text-error')).toBe(true);
     expect(component.isExceeded()).toBe(true);
   });
+
+  it('quando showOnlyNearLimit for true, não deve renderizar nada se estiver longe do limite', () => {
+    fixture.componentRef.setInput('current', 5000);
+    fixture.componentRef.setInput('max', 12000);
+    fixture.componentRef.setInput('warningThreshold', 100);
+    fixture.componentRef.setInput('showOnlyNearLimit', true);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('svg')).toBeNull();
+    expect(compiled.querySelector('span')).toBeNull();
+  });
+
+  it('quando showOnlyNearLimit for true, deve renderizar quando faltar <= warningThreshold', () => {
+    fixture.componentRef.setInput('current', 11950);
+    fixture.componentRef.setInput('max', 12000);
+    fixture.componentRef.setInput('warningThreshold', 100);
+    fixture.componentRef.setInput('showOnlyNearLimit', true);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('svg')).not.toBeNull();
+    const span = compiled.querySelector('span');
+    expect(span).not.toBeNull();
+    expect(span?.textContent?.trim()).toBe('50');
+  });
 });

@@ -224,8 +224,8 @@ export function formatMessageDayDivider(isoDate: string, lang: string = 'pt'): s
   return `${day}/${month}/${yearShort}`;
 }
 
-export const CHAT_MESSAGE_MAX_CHARS = 400;
-export const CHAT_MESSAGE_MAX_LINES = 6;
+export const CHAT_MESSAGE_MAX_CHARS = 280;
+export const CHAT_MESSAGE_MAX_LINES = 5;
 
 /**
  * Retorna se uma mensagem de chat é considerada longa o bastante para ser truncada

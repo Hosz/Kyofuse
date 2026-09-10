@@ -242,7 +242,7 @@
                         </div>
                       }
                       @if (message.content) {
-                        <div class="whitespace-pre-wrap break-words rounded-2xl rounded-bl-sm bg-surface-container-high px-4 py-2.5 text-body-sm text-on-surface transition-colors hover:bg-surface-container-highest">
+                        <div class="whitespace-pre-wrap break-words [overflow-wrap:anywhere] rounded-2xl rounded-bl-sm bg-surface-container-high px-4 py-2.5 text-body-sm text-on-surface transition-colors hover:bg-surface-container-highest">
                           @if (isLong(message.content)) {
                             <span>{{ truncate(message.content) }}... </span>
                             <button
@@ -301,7 +301,7 @@
                       </div>
                     }
                     @if (message.content) {
-                      <div class="max-w-[22rem] whitespace-pre-wrap break-words rounded-2xl rounded-br-sm border border-outline-variant bg-surface-container px-4 py-2.5 text-body-sm text-on-surface transition-colors hover:bg-surface-container-high">
+                      <div class="max-w-[22rem] whitespace-pre-wrap break-words [overflow-wrap:anywhere] rounded-2xl rounded-br-sm border border-outline-variant bg-surface-container px-4 py-2.5 text-body-sm text-on-surface transition-colors hover:bg-surface-container-high">
                         @if (isLong(message.content)) {
                           <span>{{ truncate(message.content) }}... </span>
                           <button
@@ -423,7 +423,6 @@
             [value]="draft()"
             (input)="onDraftChange($any($event.target).value)"
             (keydown.enter)="onSend()"
-            maxlength="12000"
             class="w-full border-0 bg-transparent text-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-0"
           />
           <button
@@ -444,10 +443,16 @@
           >
             <span class="material-symbols-outlined text-[20px]">gif_box</span>
           </button>
+          <app-char-limit-indicator
+            [current]="draft().length"
+            [max]="12000"
+            [warningThreshold]="100"
+            [showOnlyNearLimit]="true"
+          />
           <button
             type="button"
             (click)="onSend()"
-            [disabled]="(!draft().trim() && pendingMedia().length === 0) || uploadingMedia()"
+            [disabled]="(!draft().trim() && pendingMedia().length === 0) || uploadingMedia() || draft().length > 12000"
             [attr.aria-label]="'chat.send' | trans"
             class="cursor-pointer rounded-full bg-primary-container p-2 text-on-primary-container transition-all hover:brightness-110 active:scale-[0.95] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
           >

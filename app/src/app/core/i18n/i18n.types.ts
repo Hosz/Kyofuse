@@ -45,6 +45,7 @@ export interface TranslationDictionary {
     loadMore: string;
     loading: string;
     comments: string;
+    comment: string;
     repost: string;
     views: string;
     deletePostTitle: string;

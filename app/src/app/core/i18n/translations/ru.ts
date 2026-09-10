@@ -27,6 +27,7 @@ export const ru: TranslationDictionary = {
     "loadMore": "Загрузить ещё",
     "loading": "Загрузка публикаций...",
     "comments": "Комментарии",
+    "comment": "Комментировать",
     "repost": "Поделиться",
     "views": "Просмотры",
     "deletePostTitle": "Удалить публикацию",

@@ -27,6 +27,7 @@ export const pt: TranslationDictionary = {
     "loadMore": "Carregar mais",
     "loading": "Carregando publicações...",
     "comments": "Comentários",
+    "comment": "Comentar",
     "repost": "Repostar",
     "views": "Visualizações",
     "deletePostTitle": "Apagar publicação",

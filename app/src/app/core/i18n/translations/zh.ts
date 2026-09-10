@@ -27,6 +27,7 @@ export const zh: TranslationDictionary = {
     "loadMore": "加载更多",
     "loading": "正在加载动态...",
     "comments": "评论",
+    "comment": "发布评论",
     "repost": "转发",
     "views": "浏览",
     "deletePostTitle": "删除动态",

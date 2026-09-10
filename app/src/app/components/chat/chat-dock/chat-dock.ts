@@ -18,6 +18,7 @@ import { previewFromChatMessage, toChatMessage, toChatMessageGroups, toConversat
 import { toTimeAgo, isLongChatMessage, truncateChatMessage, FALLBACK_AVATAR_URL } from '../../../shared/utils/format.util';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { I18nService } from '../../../core/i18n/i18n.service';
+import { CharLimitIndicatorComponent } from '../../../shared/components/char-limit-indicator/char-limit-indicator';
 
 const CONVERSATIONS_PAGE_SIZE = 30;
 const MESSAGES_PAGE_SIZE = 30;
@@ -38,7 +39,7 @@ function normalize(value: string): string {
  */
 @Component({
   selector: 'app-chat-dock',
-  imports: [ConversationInfoPanelComponent, ConfirmDialogComponent, SkeletonComponent, FullMessageModalComponent, TranslatePipe],
+  imports: [ConversationInfoPanelComponent, ConfirmDialogComponent, SkeletonComponent, FullMessageModalComponent, CharLimitIndicatorComponent, TranslatePipe],
   templateUrl: './chat-dock.html',
   styleUrl: './chat-dock.css',
 })

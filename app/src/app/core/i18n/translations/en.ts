@@ -27,6 +27,7 @@ export const en: TranslationDictionary = {
     "loadMore": "Load more",
     "loading": "Loading posts...",
     "comments": "Comments",
+    "comment": "Comment",
     "repost": "Repost",
     "views": "Views",
     "deletePostTitle": "Delete post",

@@ -27,6 +27,7 @@ export const ja: TranslationDictionary = {
     "loadMore": "もっと読み込む",
     "loading": "投稿を読み込み中...",
     "comments": "コメント",
+    "comment": "コメントする",
     "repost": "リポスト",
     "views": "閲覧数",
     "deletePostTitle": "投稿を削除",

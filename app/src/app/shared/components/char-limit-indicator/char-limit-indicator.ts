@@ -6,7 +6,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    @if (current() > 0) {
+    @if (visible()) {
       <div
         class="relative flex h-8 w-8 items-center justify-center shrink-0"
         [title]="isExceeded() ? ('Limite excedido em ' + (-remaining()) + ' caracteres') : (remaining() + ' caracteres restantes')"
@@ -55,12 +55,21 @@ export class CharLimitIndicatorComponent {
   readonly current = input.required<number>();
   readonly max = input<number>(500);
   readonly warningThreshold = input<number>(20);
+  readonly showOnlyNearLimit = input<boolean>(false);
 
   readonly circumference = 2 * Math.PI * 11.5; // ~72.257
 
   readonly remaining = computed(() => this.max() - this.current());
   readonly isExceeded = computed(() => this.remaining() < 0);
   readonly isWarning = computed(() => this.remaining() >= 0 && this.remaining() <= this.warningThreshold());
+
+  readonly visible = computed(() => {
+    if (this.current() <= 0) return false;
+    if (this.showOnlyNearLimit()) {
+      return this.remaining() <= this.warningThreshold();
+    }
+    return true;
+  });
 
   readonly showCount = computed(() => this.remaining() <= this.warningThreshold());
 
@@ -93,7 +102,9 @@ export class CharLimitIndicatorComponent {
         : 'text-[10px] text-error font-extrabold';
     }
     if (this.isWarning()) {
-      return 'text-[10px] text-on-surface-variant font-bold';
+      return this.remaining() >= 100
+        ? 'text-[9px] text-on-surface-variant font-bold'
+        : 'text-[10px] text-on-surface-variant font-bold';
     }
     return 'text-[10px] text-on-surface-variant font-medium';
   });

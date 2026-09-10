@@ -14,12 +14,10 @@ import { API_URL } from '../../../models/api-url.model';
         <div
           #backdrop
           aria-hidden="true"
-          class="pointer-events-none absolute inset-0 select-none overflow-hidden whitespace-pre-wrap break-words border-0 bg-transparent"
+          class="pointer-events-none absolute inset-0 select-none overflow-hidden whitespace-pre-wrap break-words border-0 bg-transparent m-0 font-sans"
           [class]="computedClass"
-        ><span class="opacity-0 select-none">{{ textWithinLimit }}</span><mark
-            class="rounded-xs select-none"
-            style="background-color: rgba(227, 106, 0, 0.32); color: transparent;"
-          >{{ textBeyondLimit }}</mark>{{ endsWithNewline ? '&#10;' : '' }}</div>
+          style="box-sizing: border-box; word-break: break-word; overflow-wrap: break-word;"
+        ><span class="opacity-0 select-none" style="font: inherit; line-height: inherit; letter-spacing: inherit;">{{ textWithinLimit }}</span><mark class="select-none inline p-0 m-0 rounded-xs" style="background-color: rgba(227, 106, 0, 0.35); color: transparent; font: inherit; line-height: inherit; letter-spacing: inherit; border: 0;">{{ textBeyondLimit }}</mark>{{ endsWithNewline ? '\n' : '' }}</div>
       }
 
       <textarea
@@ -30,8 +28,9 @@ import { API_URL } from '../../../models/api-url.model';
         (input)="onInput($event)"
         (keydown)="onKeyDown($event)"
         (scroll)="onScroll()"
-        class="relative z-10 w-full resize-none border-0 bg-transparent text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-0 whitespace-pre-wrap break-words"
+        class="relative z-10 w-full resize-none border-0 bg-transparent text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-0 whitespace-pre-wrap break-words m-0 font-sans"
         [class]="computedClass"
+        style="box-sizing: border-box; word-break: break-word; overflow-wrap: break-word;"
       ></textarea>
 
       @if (showAutocomplete) {
@@ -92,7 +91,7 @@ export class MentionInputComponent implements OnInit, OnDestroy {
   }
 
   get computedClass(): string {
-    return this.inputClass ? this.inputClass : 'text-body-md';
+    return this.inputClass ? this.inputClass : 'p-0 text-body-md';
   }
 
   onScroll(): void {
