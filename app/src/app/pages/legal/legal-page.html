@@ -119,27 +119,27 @@
             </h2>
             <nav class="flex flex-col space-y-2 text-body-sm text-on-surface-variant">
               @if (isPortuguese()) {
-                <a href="#termos-1" class="hover:text-primary transition-colors">1. Apresentação e Objeto</a>
-                <a href="#termos-2" class="hover:text-primary transition-colors">2. Mantenedores e Operação</a>
-                <a href="#termos-3" class="hover:text-primary transition-colors">3. Elegibilidade e Cadastro</a>
-                <a href="#termos-4" class="hover:text-primary transition-colors">4. Segurança da Conta</a>
-                <a href="#termos-5" class="hover:text-primary transition-colors">5. Conduta e Uso Proibido</a>
-                <a href="#termos-6" class="hover:text-primary transition-colors">6. Conteúdo do Usuário (UGC)</a>
-                <a href="#termos-7" class="hover:text-primary transition-colors">7. Isenção Valve Corporation</a>
-                <a href="#termos-8" class="hover:text-primary transition-colors">8. Sanções e Moderação</a>
-                <a href="#termos-9" class="hover:text-primary transition-colors">9. Limitação de Responsabilidade</a>
-                <a href="#termos-10" class="hover:text-primary transition-colors">10. Legislação e Foro</a>
+                <button type="button" (click)="scrollToSection('termos-1', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">1. Apresentação e Objeto</button>
+                <button type="button" (click)="scrollToSection('termos-2', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">2. Mantenedores e Operação</button>
+                <button type="button" (click)="scrollToSection('termos-3', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">3. Elegibilidade e Cadastro</button>
+                <button type="button" (click)="scrollToSection('termos-4', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">4. Segurança da Conta</button>
+                <button type="button" (click)="scrollToSection('termos-5', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">5. Conduta e Uso Proibido</button>
+                <button type="button" (click)="scrollToSection('termos-6', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">6. Conteúdo do Usuário (UGC)</button>
+                <button type="button" (click)="scrollToSection('termos-7', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">7. Isenção Valve Corporation</button>
+                <button type="button" (click)="scrollToSection('termos-8', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">8. Sanções e Moderação</button>
+                <button type="button" (click)="scrollToSection('termos-9', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">9. Limitação de Responsabilidade</button>
+                <button type="button" (click)="scrollToSection('termos-10', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">10. Legislação e Foro</button>
               } @else {
-                <a href="#termos-1" class="hover:text-primary transition-colors">1. Overview & Platform Scope</a>
-                <a href="#termos-2" class="hover:text-primary transition-colors">2. Operating Team & Status</a>
-                <a href="#termos-3" class="hover:text-primary transition-colors">3. Eligibility & Registration</a>
-                <a href="#termos-4" class="hover:text-primary transition-colors">4. Account Security</a>
-                <a href="#termos-5" class="hover:text-primary transition-colors">5. Prohibited Conduct</a>
-                <a href="#termos-6" class="hover:text-primary transition-colors">6. User Generated Content</a>
-                <a href="#termos-7" class="hover:text-primary transition-colors">7. Valve Corp. Disclaimer</a>
-                <a href="#termos-8" class="hover:text-primary transition-colors">8. Sanctions & Moderation</a>
-                <a href="#termos-9" class="hover:text-primary transition-colors">9. Limitation of Liability</a>
-                <a href="#termos-10" class="hover:text-primary transition-colors">10. Governing Law</a>
+                <button type="button" (click)="scrollToSection('termos-1', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">1. Overview & Platform Scope</button>
+                <button type="button" (click)="scrollToSection('termos-2', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">2. Operating Team & Status</button>
+                <button type="button" (click)="scrollToSection('termos-3', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">3. Eligibility & Registration</button>
+                <button type="button" (click)="scrollToSection('termos-4', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">4. Account Security</button>
+                <button type="button" (click)="scrollToSection('termos-5', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">5. Prohibited Conduct</button>
+                <button type="button" (click)="scrollToSection('termos-6', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">6. User Generated Content</button>
+                <button type="button" (click)="scrollToSection('termos-7', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">7. Valve Corp. Disclaimer</button>
+                <button type="button" (click)="scrollToSection('termos-8', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">8. Sanctions & Moderation</button>
+                <button type="button" (click)="scrollToSection('termos-9', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">9. Limitation of Liability</button>
+                <button type="button" (click)="scrollToSection('termos-10', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">10. Governing Law</button>
               }
             </nav>
           </div>
@@ -178,7 +178,7 @@
                 </p>
               </div>
               <p class="text-body-md text-on-surface-variant leading-relaxed">
-                Canal oficial de suporte técnico e contato institucional: <code class="rounded bg-surface-container-high px-1.5 py-0.5 text-primary">contato@kyofuse.com</code>.
+                Canal oficial de suporte técnico: <code class="rounded bg-surface-container-high px-1.5 py-0.5 text-primary">support@kyofuse.com</code> | Contato institucional: <code class="rounded bg-surface-container-high px-1.5 py-0.5 text-primary">contact@kyofuse.com</code> | Administração: <code class="rounded bg-surface-container-high px-1.5 py-0.5 text-primary">admin@kyofuse.com</code>.
               </p>
             </section>
 
@@ -289,7 +289,7 @@
                 </p>
               </div>
               <p class="text-body-md text-on-surface-variant leading-relaxed">
-                Official contact and technical inquiries: <code class="rounded bg-surface-container-high px-1.5 py-0.5 text-primary">contato@kyofuse.com</code>.
+                Official technical support: <code class="rounded bg-surface-container-high px-1.5 py-0.5 text-primary">support@kyofuse.com</code> | Institutional contact: <code class="rounded bg-surface-container-high px-1.5 py-0.5 text-primary">contact@kyofuse.com</code> | Administration: <code class="rounded bg-surface-container-high px-1.5 py-0.5 text-primary">admin@kyofuse.com</code>.
               </p>
             </section>
 
@@ -387,23 +387,23 @@
             </h2>
             <nav class="flex flex-col space-y-2 text-body-sm text-on-surface-variant">
               @if (isPortuguese()) {
-                <a href="#priv-1" class="hover:text-primary transition-colors">1. Enquadramento LGPD</a>
-                <a href="#priv-2" class="hover:text-primary transition-colors">2. Controlador e Contato</a>
-                <a href="#priv-3" class="hover:text-primary transition-colors">3. Dados Pessoais Coletados</a>
-                <a href="#priv-4" class="hover:text-primary transition-colors">4. Finalidades e Bases Legais</a>
-                <a href="#priv-5" class="hover:text-primary transition-colors">5. Segurança e Armazenamento</a>
-                <a href="#priv-6" class="hover:text-primary transition-colors">6. Compartilhamento Restrito</a>
-                <a href="#priv-7" class="hover:text-primary transition-colors">7. Retenção e Exclusão</a>
-                <a href="#priv-8" class="hover:text-primary transition-colors">8. Direitos do Titular (Art. 18)</a>
+                <button type="button" (click)="scrollToSection('priv-1', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">1. Enquadramento LGPD</button>
+                <button type="button" (click)="scrollToSection('priv-2', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">2. Controlador e Contato</button>
+                <button type="button" (click)="scrollToSection('priv-3', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">3. Dados Pessoais Coletados</button>
+                <button type="button" (click)="scrollToSection('priv-4', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">4. Finalidades e Bases Legais</button>
+                <button type="button" (click)="scrollToSection('priv-5', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">5. Segurança e Armazenamento</button>
+                <button type="button" (click)="scrollToSection('priv-6', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">6. Compartilhamento Restrito</button>
+                <button type="button" (click)="scrollToSection('priv-7', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">7. Retenção e Exclusão</button>
+                <button type="button" (click)="scrollToSection('priv-8', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">8. Direitos do Titular (Art. 18)</button>
               } @else {
-                <a href="#priv-1" class="hover:text-primary transition-colors">1. Privacy Framework</a>
-                <a href="#priv-2" class="hover:text-primary transition-colors">2. Data Controller & Contact</a>
-                <a href="#priv-3" class="hover:text-primary transition-colors">3. Personal Data Collected</a>
-                <a href="#priv-4" class="hover:text-primary transition-colors">4. Purposes & Legal Bases</a>
-                <a href="#priv-5" class="hover:text-primary transition-colors">5. Security Practices</a>
-                <a href="#priv-6" class="hover:text-primary transition-colors">6. Strict Sharing Policy</a>
-                <a href="#priv-7" class="hover:text-primary transition-colors">7. Retention & Deletion</a>
-                <a href="#priv-8" class="hover:text-primary transition-colors">8. User Rights</a>
+                <button type="button" (click)="scrollToSection('priv-1', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">1. Privacy Framework</button>
+                <button type="button" (click)="scrollToSection('priv-2', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">2. Data Controller & Contact</button>
+                <button type="button" (click)="scrollToSection('priv-3', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">3. Personal Data Collected</button>
+                <button type="button" (click)="scrollToSection('priv-4', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">4. Purposes & Legal Bases</button>
+                <button type="button" (click)="scrollToSection('priv-5', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">5. Security Practices</button>
+                <button type="button" (click)="scrollToSection('priv-6', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">6. Strict Sharing Policy</button>
+                <button type="button" (click)="scrollToSection('priv-7', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">7. Retention & Deletion</button>
+                <button type="button" (click)="scrollToSection('priv-8', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">8. User Rights</button>
               }
             </nav>
           </div>
@@ -431,7 +431,7 @@
                 </p>
               </div>
               <p class="text-body-md text-on-surface-variant leading-relaxed">
-                Canal para solicitações de privacidade e direitos do titular: <code class="rounded bg-surface-container-high px-1.5 py-0.5 text-primary">privacidade@kyofuse.com</code>.
+                Canal para solicitações de privacidade e direitos do titular: <code class="rounded bg-surface-container-high px-1.5 py-0.5 text-primary">contact@kyofuse.com</code>.
               </p>
             </section>
 
@@ -488,7 +488,7 @@
                 <span class="text-primary font-mono">08.</span> Direitos do Titular de Dados (Art. 18 da LGPD)
               </h2>
               <p class="text-body-md text-on-surface-variant leading-relaxed">
-                Você pode solicitar confirmação, acesso, retificação ou exclusão de dados através de <code class="rounded bg-surface-container-high px-1.5 py-0.5 text-primary">privacidade@kyofuse.com</code> ou no menu de gerenciamento de conta.
+                Você pode solicitar confirmação, acesso, retificação ou exclusão de dados através de <code class="rounded bg-surface-container-high px-1.5 py-0.5 text-primary">contact@kyofuse.com</code> ou no menu de gerenciamento de conta.
               </p>
             </section>
           } @else {
@@ -512,7 +512,7 @@
                 </p>
               </div>
               <p class="text-body-md text-on-surface-variant leading-relaxed">
-                Direct privacy contact: <code class="rounded bg-surface-container-high px-1.5 py-0.5 text-primary">privacidade@kyofuse.com</code>.
+                Direct privacy contact: <code class="rounded bg-surface-container-high px-1.5 py-0.5 text-primary">contact@kyofuse.com</code>.
               </p>
             </section>
 
@@ -569,7 +569,7 @@
                 <span class="text-primary font-mono">08.</span> User Rights
               </h2>
               <p class="text-body-md text-on-surface-variant leading-relaxed">
-                You may request access, rectification, or deletion of your data at any time by contacting <code class="rounded bg-surface-container-high px-1.5 py-0.5 text-primary">privacidade@kyofuse.com</code>.
+                You may request access, rectification, or deletion of your data at any time by contacting <code class="rounded bg-surface-container-high px-1.5 py-0.5 text-primary">contact@kyofuse.com</code>.
               </p>
             </section>
           }
@@ -590,15 +590,15 @@
             </h2>
             <nav class="flex flex-col space-y-2 text-body-sm text-on-surface-variant">
               @if (isPortuguese()) {
-                <a href="#cook-1" class="hover:text-primary transition-colors">1. O que são Cookies</a>
-                <a href="#cook-2" class="hover:text-primary transition-colors">2. Cookies no Kyofuse</a>
-                <a href="#cook-3" class="hover:text-primary transition-colors">3. Gerenciar Preferências</a>
-                <a href="#cook-4" class="hover:text-primary transition-colors">4. Desativação no Navegador</a>
+                <button type="button" (click)="scrollToSection('cook-1', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">1. O que são Cookies</button>
+                <button type="button" (click)="scrollToSection('cook-2', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">2. Cookies no Kyofuse</button>
+                <button type="button" (click)="scrollToSection('cook-3', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">3. Gerenciar Preferências</button>
+                <button type="button" (click)="scrollToSection('cook-4', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">4. Desativação no Navegador</button>
               } @else {
-                <a href="#cook-1" class="hover:text-primary transition-colors">1. What are Cookies</a>
-                <a href="#cook-2" class="hover:text-primary transition-colors">2. Storage Keys on Kyofuse</a>
-                <a href="#cook-3" class="hover:text-primary transition-colors">3. Manage Preferences</a>
-                <a href="#cook-4" class="hover:text-primary transition-colors">4. Browser Controls</a>
+                <button type="button" (click)="scrollToSection('cook-1', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">1. What are Cookies</button>
+                <button type="button" (click)="scrollToSection('cook-2', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">2. Storage Keys on Kyofuse</button>
+                <button type="button" (click)="scrollToSection('cook-3', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">3. Manage Preferences</button>
+                <button type="button" (click)="scrollToSection('cook-4', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">4. Browser Controls</button>
               }
             </nav>
 
@@ -822,15 +822,15 @@
             </h2>
             <nav class="flex flex-col space-y-2 text-body-sm text-on-surface-variant">
               @if (isPortuguese()) {
-                <a href="#dir-1" class="hover:text-primary transition-colors">1. Fair Play no CS2</a>
-                <a href="#dir-2" class="hover:text-primary transition-colors">2. Respeito Mútuo</a>
-                <a href="#dir-3" class="hover:text-primary transition-colors">3. Gestão de Equipes</a>
-                <a href="#dir-4" class="hover:text-primary transition-colors">4. Moderação e Punições</a>
+                <button type="button" (click)="scrollToSection('dir-1', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">1. Fair Play no CS2</button>
+                <button type="button" (click)="scrollToSection('dir-2', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">2. Respeito Mútuo</button>
+                <button type="button" (click)="scrollToSection('dir-3', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">3. Gestão de Equipes</button>
+                <button type="button" (click)="scrollToSection('dir-4', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">4. Moderação e Punições</button>
               } @else {
-                <a href="#dir-1" class="hover:text-primary transition-colors">1. Fair Play in CS2</a>
-                <a href="#dir-2" class="hover:text-primary transition-colors">2. Mutual Respect</a>
-                <a href="#dir-3" class="hover:text-primary transition-colors">3. Squad Cooperation</a>
-                <a href="#dir-4" class="hover:text-primary transition-colors">4. Moderation & Bans</a>
+                <button type="button" (click)="scrollToSection('dir-1', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">1. Fair Play in CS2</button>
+                <button type="button" (click)="scrollToSection('dir-2', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">2. Mutual Respect</button>
+                <button type="button" (click)="scrollToSection('dir-3', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">3. Squad Cooperation</button>
+                <button type="button" (click)="scrollToSection('dir-4', $event)" class="text-left hover:text-primary transition-colors cursor-pointer">4. Moderation & Bans</button>
               }
             </nav>
           </div>

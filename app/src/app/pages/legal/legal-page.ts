@@ -78,6 +78,28 @@ export class LegalPageComponent implements OnInit {
     }
   }
 
+  scrollToSection(id: string, event?: Event): void {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return;
+    }
+    const element = document.getElementById(id);
+    if (!element) {
+      return;
+    }
+    const headerOffset = 130;
+    const elementPosition = element.getBoundingClientRect().top;
+    const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+    window.scrollTo({
+      top: offsetPosition,
+      behavior: 'smooth',
+    });
+  }
+
   goBack(): void {
     if (typeof window !== 'undefined' && window.history.length > 1) {
       this.location.back();
