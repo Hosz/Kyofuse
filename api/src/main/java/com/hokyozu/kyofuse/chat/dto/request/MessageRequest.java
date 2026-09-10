@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 public record MessageRequest(
-        @Size(max = 2000)
+        @Size(max = 12000)
         String content,
 
         List<@Valid MessageMediaItemRequest> media

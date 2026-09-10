@@ -238,14 +238,15 @@
                   class="hidden"
                 />
 
-                <textarea
-                  rows="3"
-                  maxlength="2000"
+                <app-mention-input
+                  [rows]="3"
+                  [maxLength]="500"
                   placeholder="Compartilhe algo com a comunidade..."
-                  [value]="postContent()"
-                  (input)="postContent.set($any($event.target).value)"
-                  class="resize-none rounded-lg border border-outline-variant bg-surface px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
-                ></textarea>
+                  [content]="postContent()"
+                  (contentChange)="postContent.set($event)"
+                  class="w-full resize-none rounded-lg border border-outline-variant bg-surface px-3 py-2.5 text-body-sm text-on-surface outline-none focus:border-primary"
+                  inputClass="px-3 py-2.5 text-body-sm"
+                ></app-mention-input>
 
                 @if (postMediaItems().length > 0) {
                   <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -301,14 +302,17 @@
                     </label>
                   </div>
 
-                  <button
-                    type="button"
-                    (click)="publishPost()"
-                    [disabled]="publishing() || uploadingPostMedia() || (!postContent().trim() && postMediaItems().length === 0)"
-                    class="cursor-pointer rounded-full bg-primary-container px-4 py-2 text-label-md font-bold text-on-primary-container transition-all hover:brightness-110 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    {{ publishing() ? 'Publicando...' : 'Publicar' }}
-                  </button>
+                  <div class="flex items-center gap-2">
+                    <app-char-limit-indicator [current]="postContent().length" [max]="500" />
+                    <button
+                      type="button"
+                      (click)="publishPost()"
+                      [disabled]="publishing() || uploadingPostMedia() || (!postContent().trim() && postMediaItems().length === 0) || postContent().length > 500"
+                      class="cursor-pointer rounded-full bg-primary-container px-4 py-2 text-label-md font-bold text-on-primary-container transition-all hover:brightness-110 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {{ publishing() ? 'Publicando...' : 'Publicar' }}
+                    </button>
+                  </div>
                 </div>
 
                 @if (postError()) {

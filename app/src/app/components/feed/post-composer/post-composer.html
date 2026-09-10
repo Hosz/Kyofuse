@@ -20,6 +20,7 @@
         [placeholder]="'composer.placeholder' | trans"
         [attr.aria-label]="'composer.placeholder' | trans"
         [content]="content()"
+        [maxLength]="500"
         (contentChange)="onContentChange($event)"
         class="w-full resize-none border-0 bg-transparent text-body-md text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-0"
       ></app-mention-input>
@@ -97,13 +98,16 @@
       </button>
     </div>
 
-    <button
-      type="button"
-      (click)="onPublish()"
-      [disabled]="(!content().trim() && mediaItems().length === 0) || uploading() || publishing()"
-      class="ignite-glow cursor-pointer rounded-full bg-primary-container px-6 py-2.5 text-label-md font-bold text-on-primary-container transition-all hover:brightness-110 active:scale-[0.97] active:brightness-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-    >
-      {{ publishing() ? ('composer.publishing' | trans) : ('composer.publish' | trans) }}
-    </button>
+    <div class="flex items-center gap-3">
+      <app-char-limit-indicator [current]="content().length" [max]="500" />
+      <button
+        type="button"
+        (click)="onPublish()"
+        [disabled]="isPublishDisabled()"
+        class="ignite-glow cursor-pointer rounded-full bg-primary-container px-6 py-2.5 text-label-md font-bold text-on-primary-container transition-all hover:brightness-110 active:scale-[0.97] active:brightness-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+      >
+        {{ publishing() ? ('composer.publishing' | trans) : ('composer.publish' | trans) }}
+      </button>
+    </div>
   </div>
 </div>

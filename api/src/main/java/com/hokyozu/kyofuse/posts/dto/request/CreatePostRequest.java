@@ -11,7 +11,7 @@ import java.util.List;
 
 public record CreatePostRequest(
 
-        @Size(max = 2000, message = "Content must have at most 2000 characters")
+        @Size(max = 500, message = "Content must have at most 500 characters")
         String content,
 
         @NotNull(message = "Post type is required")

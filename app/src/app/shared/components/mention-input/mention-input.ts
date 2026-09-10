@@ -10,6 +10,18 @@ import { API_URL } from '../../../models/api-url.model';
   standalone: true,
   template: `
     <div class="relative w-full">
+      @if (isOverLimit) {
+        <div
+          #backdrop
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 select-none overflow-hidden whitespace-pre-wrap break-words border-0 bg-transparent"
+          [class]="computedClass"
+        ><span class="opacity-0 select-none">{{ textWithinLimit }}</span><mark
+            class="rounded-xs select-none"
+            style="background-color: rgba(227, 106, 0, 0.32); color: transparent;"
+          >{{ textBeyondLimit }}</mark>{{ endsWithNewline ? '&#10;' : '' }}</div>
+      }
+
       <textarea
         #textarea
         [rows]="rows"
@@ -17,7 +29,9 @@ import { API_URL } from '../../../models/api-url.model';
         [value]="content"
         (input)="onInput($event)"
         (keydown)="onKeyDown($event)"
-        class="w-full resize-none border-0 bg-transparent text-body-md text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-0"
+        (scroll)="onScroll()"
+        class="relative z-10 w-full resize-none border-0 bg-transparent text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-0 whitespace-pre-wrap break-words"
+        [class]="computedClass"
       ></textarea>
 
       @if (showAutocomplete) {
@@ -52,9 +66,41 @@ export class MentionInputComponent implements OnInit, OnDestroy {
   @Input() content: string = '';
   @Input() placeholder: string = '';
   @Input() rows: number = 2;
+  @Input() maxLength?: number;
+  @Input() inputClass: string = '';
   @Output() contentChange = new EventEmitter<string>();
 
   @ViewChild('textarea') textareaRef!: ElementRef<HTMLTextAreaElement>;
+  @ViewChild('backdrop') backdropRef?: ElementRef<HTMLDivElement>;
+
+  get isOverLimit(): boolean {
+    return !!(this.maxLength && this.content && this.content.length > this.maxLength);
+  }
+
+  get textWithinLimit(): string {
+    if (!this.maxLength || !this.content) return this.content || '';
+    return this.content.slice(0, this.maxLength);
+  }
+
+  get textBeyondLimit(): string {
+    if (!this.maxLength || !this.content) return '';
+    return this.content.slice(this.maxLength);
+  }
+
+  get endsWithNewline(): boolean {
+    return !!(this.content && this.content.endsWith('\n'));
+  }
+
+  get computedClass(): string {
+    return this.inputClass ? this.inputClass : 'text-body-md';
+  }
+
+  onScroll(): void {
+    if (this.backdropRef && this.textareaRef) {
+      this.backdropRef.nativeElement.scrollTop = this.textareaRef.nativeElement.scrollTop;
+      this.backdropRef.nativeElement.scrollLeft = this.textareaRef.nativeElement.scrollLeft;
+    }
+  }
 
   private http = inject(HttpClient);
   
@@ -126,6 +172,8 @@ export class MentionInputComponent implements OnInit, OnDestroy {
     } else {
       this.showAutocomplete = false;
     }
+
+    setTimeout(() => this.onScroll(), 0);
   }
 
   onKeyDown(event: KeyboardEvent) {

@@ -35,11 +35,24 @@ const ROLE_LABEL: Record<CommunityMemberRole, string> = {
   MEMBER: 'Membro',
 };
 
+import { MentionInputComponent } from '../../shared/components/mention-input/mention-input';
+import { CharLimitIndicatorComponent } from '../../shared/components/char-limit-indicator/char-limit-indicator';
+
 type ConfirmAction = 'archive' | 'delete' | null;
 
 @Component({
   selector: 'app-community',
-  imports: [RouterLink, AppSidebarComponent, ModalComponent, ConfirmDialogComponent, SkeletonComponent, ImageModalComponent, TranslatePipe],
+  imports: [
+    RouterLink,
+    AppSidebarComponent,
+    ModalComponent,
+    ConfirmDialogComponent,
+    SkeletonComponent,
+    ImageModalComponent,
+    TranslatePipe,
+    MentionInputComponent,
+    CharLimitIndicatorComponent,
+  ],
   templateUrl: './community.html',
   styleUrl: './community.css',
 })
@@ -299,6 +312,11 @@ export class CommunityComponent {
     const content = this.postContent().trim();
     const media = this.postMediaItems();
     if (!communityId || (!content && media.length === 0) || this.publishing() || this.uploadingPostMedia()) return;
+
+    if (this.postContent().length > 500) {
+      this.toastService.error('A publicação não pode exceder 500 caracteres.');
+      return;
+    }
 
     this.publishing.set(true);
     this.postError.set(null);
