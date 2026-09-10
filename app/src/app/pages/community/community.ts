@@ -332,6 +332,7 @@ export class CommunityComponent {
   editError = signal<string | null>(null);
 
   confirmAction = signal<ConfirmAction>(null);
+  deleteWithTeam = signal(false);
   actionLoading = signal(false);
   actionError = signal<string | null>(null);
 
@@ -707,11 +708,13 @@ export class CommunityComponent {
 
   openConfirmAction(action: ConfirmAction): void {
     this.actionError.set(null);
+    this.deleteWithTeam.set(false);
     this.confirmAction.set(action);
   }
 
   closeConfirmAction(): void {
     if (this.actionLoading()) return;
+    this.deleteWithTeam.set(false);
     this.confirmAction.set(null);
   }
 

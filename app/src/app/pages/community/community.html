@@ -201,10 +201,10 @@
                             <button
                               type="button"
                               (click)="closeMoreMenu(); openConfirmAction('delete')"
-                              class="flex w-full cursor-pointer items-center gap-2.5 px-4 py-2.5 text-left text-body-sm text-error transition-colors hover:bg-error-container/30"
+                              class="group flex w-full cursor-pointer items-center gap-2.5 px-4 py-2.5 text-left text-body-sm font-medium text-error transition-colors hover:bg-error/10 active:scale-[0.99]"
                             >
-                              <span class="material-symbols-outlined text-[18px] text-error">delete</span>
-                              <span>{{ 'common.delete' | trans }}</span>
+                              <span class="material-symbols-outlined text-[18px] text-error transition-transform group-hover:scale-110">delete_forever</span>
+                              <span>{{ 'communities.deleteCommunity' | trans }}</span>
                             </button>
                           }
                         </div>
@@ -598,6 +598,22 @@
   >
     <div class="flex flex-col gap-4">
       @if (confirmAction() === 'archive') {
+        <div class="flex items-center gap-3 rounded-xl border border-outline-variant bg-surface-container-low p-3">
+          <img
+            [src]="community()?.communityAvatarUrl || fallbackAvatar"
+            [alt]="community()?.communityName"
+            class="h-11 w-11 shrink-0 rounded-full object-cover border border-outline-variant/60"
+          />
+          <div class="flex flex-col min-w-0">
+            <span class="truncate text-body-md font-bold text-on-surface">
+              {{ community()?.communityName }}
+            </span>
+            <span class="truncate text-label-sm text-on-surface-variant">
+              &#64;{{ community()?.communitySlug }}
+            </span>
+          </div>
+        </div>
+
         <p class="text-body-sm text-on-surface">
           Tem certeza que deseja arquivar essa comunidade? Ela deixará de aparecer para novos membros, mas o histórico é preservado.
         </p>
@@ -611,7 +627,7 @@
             type="button"
             (click)="closeConfirmAction()"
             [disabled]="actionLoading()"
-            class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
+            class="cursor-pointer rounded-full border border-outline-variant px-5 py-2.5 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
           >
             {{ 'common.cancel' | trans }}
           </button>
@@ -619,106 +635,158 @@
             type="button"
             (click)="confirmActionSubmit()"
             [disabled]="actionLoading()"
-            class="cursor-pointer rounded-full bg-error px-4 py-2 text-label-md font-bold text-on-error transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+            class="cursor-pointer rounded-full bg-error px-5 py-2.5 text-label-md font-bold text-on-error transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60 flex items-center gap-2 shadow-sm"
           >
-            {{ actionLoading() ? ('common.loading' | trans) : ('communities.archive' | trans) }}
-          </button>
-        </div>
-      } @else if (!community()?.teamId) {
-        <p class="text-body-sm text-on-surface">
-          {{ 'communities.deleteCommunityConfirmMessage' | trans }}
-        </p>
-
-        @if (actionError()) {
-          <p class="text-label-sm text-error">{{ actionError() }}</p>
-        }
-
-        <div class="flex justify-end gap-2 pt-2">
-          <button
-            type="button"
-            (click)="closeConfirmAction()"
-            [disabled]="actionLoading()"
-            class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {{ 'common.cancel' | trans }}
-          </button>
-          <button
-            type="button"
-            (click)="confirmActionSubmit(false)"
-            [disabled]="actionLoading()"
-            class="cursor-pointer rounded-full bg-error px-4 py-2 text-label-md font-bold text-on-error transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {{ actionLoading() ? ('common.loading' | trans) : ('common.delete' | trans) }}
-          </button>
-        </div>
-      } @else if (isLinkedTeamOwner()) {
-        <p class="text-body-sm text-on-surface">
-          {{ 'communities.deleteCommunityBothChoiceMessage' | trans }}
-        </p>
-        <div class="rounded-xl border border-outline-variant/60 bg-surface-container p-3 text-label-sm text-on-surface-variant flex items-center gap-2">
-          <span class="material-symbols-outlined text-primary text-[20px]">shield</span>
-          <span>Time vinculado: <strong class="text-on-surface">&#64;{{ community()!.teamSlug || community()!.teamName }}</strong></span>
-        </div>
-
-        @if (actionError()) {
-          <p class="text-label-sm text-error">{{ actionError() }}</p>
-        }
-
-        <div class="flex flex-col sm:flex-row justify-end gap-2 pt-2">
-          <button
-            type="button"
-            (click)="closeConfirmAction()"
-            [disabled]="actionLoading()"
-            class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {{ 'common.cancel' | trans }}
-          </button>
-          <button
-            type="button"
-            (click)="confirmActionSubmit(false)"
-            [disabled]="actionLoading()"
-            class="cursor-pointer rounded-full border border-error/50 px-4 py-2 text-label-md font-bold text-error transition-colors hover:bg-error-container hover:text-on-error-container disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {{ actionLoading() ? ('common.loading' | trans) : ('communities.deleteOnlyCommunity' | trans) }}
-          </button>
-          <button
-            type="button"
-            (click)="confirmActionSubmit(true)"
-            [disabled]="actionLoading()"
-            class="cursor-pointer rounded-full bg-error px-4 py-2 text-label-md font-bold text-on-error transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {{ actionLoading() ? ('common.loading' | trans) : ('communities.deleteCommunityAndTeam' | trans) }}
+            @if (actionLoading()) {
+              <span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+              <span>{{ 'common.loading' | trans }}</span>
+            } @else {
+              <span class="material-symbols-outlined text-[18px]">archive</span>
+              <span>{{ 'communities.archive' | trans }}</span>
+            }
           </button>
         </div>
       } @else {
-        <p class="text-body-sm text-on-surface">
-          {{ 'communities.deleteCommunityWithTeamMessage' | trans }}
-        </p>
-        <div class="rounded-xl border border-outline-variant/60 bg-surface-container p-3 text-label-sm text-on-surface-variant flex items-center gap-2">
-          <span class="material-symbols-outlined text-primary text-[20px]">shield</span>
-          <span>Time vinculado: <strong class="text-on-surface">&#64;{{ community()!.teamSlug || community()!.teamName }}</strong></span>
+        <!-- Card de identificação da comunidade -->
+        <div class="flex items-center justify-between gap-3 rounded-xl border border-outline-variant/80 bg-surface-container-low p-3">
+          <div class="flex items-center gap-3 min-w-0">
+            <img
+              [src]="community()?.communityAvatarUrl || fallbackAvatar"
+              [alt]="community()?.communityName"
+              class="h-12 w-12 shrink-0 rounded-full object-cover border border-outline-variant/60 shadow-sm"
+            />
+            <div class="flex flex-col min-w-0">
+              <span class="truncate text-body-md font-bold text-on-surface">
+                {{ community()?.communityName }}
+              </span>
+              <span class="truncate text-label-sm text-on-surface-variant">
+                &#64;{{ community()?.communitySlug }}
+              </span>
+            </div>
+          </div>
+          <div class="flex shrink-0 items-center gap-1.5">
+            <span class="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-2.5 py-1 text-label-xs font-semibold text-on-surface-variant">
+              <span class="material-symbols-outlined text-[14px]">groups</span>
+              {{ activeMembersCount() }} {{ activeMembersCount() === 1 ? 'membro' : 'membros' }}
+            </span>
+          </div>
         </div>
 
-        @if (actionError()) {
-          <p class="text-label-sm text-error">{{ actionError() }}</p>
+        <!-- Box de alerta sobre os impactos da exclusão -->
+        <div class="flex flex-col gap-2 rounded-xl border border-error/30 bg-error/10 p-3.5 text-on-surface">
+          <div class="flex items-center gap-2 text-label-sm font-bold text-error">
+            <span class="material-symbols-outlined text-[20px]">warning</span>
+            <span>Atenção: esta ação é irreversível</span>
+          </div>
+          <ul class="list-inside list-disc space-y-1 text-label-sm text-on-surface-variant">
+            <li>Todos os canais, mensagens, publicações e mídias serão apagados permanentemente.</li>
+            <li>Todos os membros perderão o acesso à comunidade imediatamente.</li>
+            <li>O nome de usuário <strong>&#64;{{ community()?.communitySlug }}</strong> será liberado.</li>
+          </ul>
+        </div>
+
+        <!-- Se houver time vinculado -->
+        @if (community()?.teamId) {
+          @if (isLinkedTeamOwner()) {
+            <!-- Dono da comunidade e dono do time: Escolha explicativa -->
+            <div class="flex flex-col gap-2 pt-1">
+              <span class="text-label-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant">
+                O que deseja fazer com o time vinculado?
+              </span>
+
+              <div class="flex flex-col gap-2">
+                <!-- Opção 1: Desvincular e manter time ativo -->
+                <button
+                  type="button"
+                  (click)="deleteWithTeam.set(false)"
+                  class="flex cursor-pointer items-start gap-3 rounded-xl border p-3 text-left transition-all"
+                  [class]="!deleteWithTeam() ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-outline-variant bg-surface-container-low hover:bg-surface-container-high'"
+                >
+                  <span class="material-symbols-outlined mt-0.5 text-[20px]" [class]="!deleteWithTeam() ? 'text-primary' : 'text-on-surface-variant'">
+                    {{ !deleteWithTeam() ? 'radio_button_checked' : 'radio_button_unchecked' }}
+                  </span>
+                  <div class="flex flex-col gap-0.5 min-w-0">
+                    <span class="text-body-sm font-semibold text-on-surface">
+                      {{ 'communities.deleteOnlyCommunity' | trans }}
+                    </span>
+                    <span class="text-label-sm text-on-surface-variant">
+                      O time <strong class="text-on-surface">&#64;{{ community()!.teamSlug || community()!.teamName }}</strong> continuará existindo normalmente, sendo apenas desvinculado.
+                    </span>
+                  </div>
+                </button>
+
+                <!-- Opção 2: Excluir comunidade e time juntos -->
+                <button
+                  type="button"
+                  (click)="deleteWithTeam.set(true)"
+                  class="flex cursor-pointer items-start gap-3 rounded-xl border p-3 text-left transition-all"
+                  [class]="deleteWithTeam() ? 'border-error bg-error/10 ring-1 ring-error' : 'border-outline-variant bg-surface-container-low hover:bg-surface-container-high'"
+                >
+                  <span class="material-symbols-outlined mt-0.5 text-[20px]" [class]="deleteWithTeam() ? 'text-error' : 'text-on-surface-variant'">
+                    {{ deleteWithTeam() ? 'radio_button_checked' : 'radio_button_unchecked' }}
+                  </span>
+                  <div class="flex flex-col gap-0.5 min-w-0">
+                    <span class="text-body-sm font-semibold text-error">
+                      {{ 'communities.deleteCommunityAndTeam' | trans }}
+                    </span>
+                    <span class="text-label-sm text-on-surface-variant">
+                      O time <strong class="text-error">&#64;{{ community()!.teamSlug || community()!.teamName }}</strong> e todos os seus registros também serão apagados permanentemente.
+                    </span>
+                  </div>
+                </button>
+              </div>
+            </div>
+          } @else {
+            <!-- Time vinculado, mas o usuário não é dono do time -->
+            <div class="flex items-start gap-3 rounded-xl border border-outline-variant/60 bg-surface-container p-3 text-label-sm text-on-surface-variant">
+              <span class="material-symbols-outlined text-primary text-[20px] shrink-0 mt-0.5">shield</span>
+              <div class="flex flex-col gap-0.5">
+                <span class="text-body-sm font-semibold text-on-surface">
+                  Time vinculado: &#64;{{ community()!.teamSlug || community()!.teamName }}
+                </span>
+                <span>
+                  {{ 'communities.deleteCommunityWithTeamMessage' | trans }}
+                </span>
+              </div>
+            </div>
+          }
         }
 
-        <div class="flex justify-end gap-2 pt-2">
+        @if (actionError()) {
+          <div class="flex items-center gap-2 rounded-lg border border-error/30 bg-error/10 p-2.5 text-label-sm text-error">
+            <span class="material-symbols-outlined text-[18px]">error</span>
+            <span>{{ actionError() }}</span>
+          </div>
+        }
+
+        <div class="flex justify-end gap-2.5 pt-2">
           <button
             type="button"
             (click)="closeConfirmAction()"
             [disabled]="actionLoading()"
-            class="cursor-pointer rounded-full border border-outline-variant px-4 py-2 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
+            class="cursor-pointer rounded-full border border-outline-variant px-5 py-2.5 text-label-md font-bold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
           >
             {{ 'common.cancel' | trans }}
           </button>
           <button
             type="button"
-            (click)="confirmActionSubmit(false)"
+            (click)="confirmActionSubmit(deleteWithTeam())"
             [disabled]="actionLoading()"
-            class="cursor-pointer rounded-full bg-error px-4 py-2 text-label-md font-bold text-on-error transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+            class="cursor-pointer rounded-full bg-error px-5 py-2.5 text-label-md font-bold text-on-error transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 flex items-center justify-center gap-2 shadow-sm"
           >
-            {{ actionLoading() ? ('common.loading' | trans) : ('common.delete' | trans) }}
+            @if (actionLoading()) {
+              <span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+              <span>{{ 'common.loading' | trans }}</span>
+            } @else {
+              <span class="material-symbols-outlined text-[18px]">delete_forever</span>
+              <span>
+                {{ (isLinkedTeamOwner() && deleteWithTeam())
+                    ? ('communities.deleteCommunityAndTeam' | trans)
+                    : (isLinkedTeamOwner() && !deleteWithTeam())
+                    ? ('communities.deleteOnlyCommunity' | trans)
+                    : ('communities.deleteCommunity' | trans) }}
+              </span>
+            }
           </button>
         </div>
       }
@@ -812,7 +880,7 @@
   [open]="leaveConfirmOpen()"
   [title]="leaveConfirmTitle()"
   [message]="leaveConfirmMessage()"
-  [confirmLabel]="isSoleMember() ? ('common.delete' | trans) : 'Sair'"
+  [confirmLabel]="isSoleMember() ? ('communities.deleteCommunity' | trans) : 'Sair'"
   [pending]="leaving()"
   [error]="leaveError()"
   (confirmed)="canConfirmLeave() ? leave() : cancelLeave()"

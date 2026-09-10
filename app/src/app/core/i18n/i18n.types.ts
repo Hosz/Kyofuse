@@ -228,6 +228,9 @@ export interface TranslationDictionary {
     detachTeamConfirmMessage: string;
     detachTeamSuccess: string;
     detachingTeam: string;
+    deleteCommunity: string;
+    deleteCommunityConfirmTitle: string;
+    deleteCommunityConfirmMessage: string;
     deleteCommunityWithTeamMessage: string;
     deleteCommunityBothChoiceMessage: string;
     deleteOnlyCommunity: string;
