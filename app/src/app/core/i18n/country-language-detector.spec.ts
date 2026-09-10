@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { detectLanguageFromCountry } from './country-language-detector';
+import {
+  detectLanguageFromCountry,
+  detectLanguageFromDevice,
+  detectLanguageFromTimezone,
+} from './country-language-detector';
 
 describe('country-language-detector', () => {
   it('detecta português para Brasil e Portugal por nome e sigla', () => {
@@ -43,5 +47,27 @@ describe('country-language-detector', () => {
     expect(detectLanguageFromCountry(null)).toBeNull();
     expect(detectLanguageFromCountry(undefined)).toBeNull();
     expect(detectLanguageFromCountry('Atlântida')).toBeNull();
+  });
+
+  it('detecta idioma pelo fuso horário do dispositivo', () => {
+    expect(detectLanguageFromTimezone('America/Sao_Paulo')).toBe('pt');
+    expect(detectLanguageFromTimezone('America/Manaus')).toBe('pt');
+    expect(detectLanguageFromTimezone('Europe/Lisbon')).toBe('pt');
+    expect(detectLanguageFromTimezone('America/Buenos_Aires')).toBe('es');
+    expect(detectLanguageFromTimezone('Europe/Madrid')).toBe('es');
+    expect(detectLanguageFromTimezone('America/Mexico_City')).toBe('es');
+    expect(detectLanguageFromTimezone('Europe/Paris')).toBe('fr');
+    expect(detectLanguageFromTimezone('Europe/Berlin')).toBe('de');
+    expect(detectLanguageFromTimezone('Europe/Moscow')).toBe('ru');
+    expect(detectLanguageFromTimezone('Asia/Tokyo')).toBe('ja');
+    expect(detectLanguageFromTimezone('Asia/Shanghai')).toBe('zh');
+    expect(detectLanguageFromTimezone('America/New_York')).toBe('en');
+    expect(detectLanguageFromTimezone('Europe/London')).toBe('en');
+    expect(detectLanguageFromTimezone('Unknown/Timezone')).toBeNull();
+  });
+
+  it('detectLanguageFromDevice retorna idioma do fuso ou navegador', () => {
+    const lang = detectLanguageFromDevice();
+    expect(['pt', 'en', 'es', 'fr', 'de', 'ru', 'zh', 'ja']).toContain(lang);
   });
 });

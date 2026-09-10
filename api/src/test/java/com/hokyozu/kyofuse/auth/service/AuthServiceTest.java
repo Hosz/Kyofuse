@@ -7,6 +7,7 @@ import com.hokyozu.kyofuse.auth.repository.UserRepository;
 import com.hokyozu.kyofuse.auth.validator.EmailAndUsernameAvailabilityValidator;
 import com.hokyozu.kyofuse.auth.validator.LoginFinderValidator;
 import com.hokyozu.kyofuse.auth.validator.LoginValidator;
+import com.hokyozu.kyofuse.infrastructure.geolocation.LocationInfo;
 import com.hokyozu.kyofuse.infrastructure.security.crypto.EmailCipherService;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.JwtService;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.RefreshTokenService;
@@ -107,6 +108,9 @@ class AuthServiceTest {
     private com.hokyozu.kyofuse.infrastructure.geolocation.GeoLocationService geoLocationService;
 
     @Mock
+    private com.hokyozu.kyofuse.infrastructure.client.UserAgentParser userAgentParser;
+
+    @Mock
     private org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     @Mock
@@ -160,6 +164,25 @@ class AuthServiceTest {
         assertThat(result.getId()).isEqualTo(userId);
         assertThat(result.getEmail()).isEqualTo("hideo@example.com");
         assertThat(result.getUsername()).isEqualTo("hideo");
+    }
+
+    @Test
+    void registerPopulatesRegistrationCountryAndDevice() {
+        RegisterRequest request = new RegisterRequest("Sam", "Porter", "sam@example.com", "sam_bridges", "pass12345");
+        when(passwordEncoder.encode(anyString())).thenReturn("hashed-pwd");
+        when(emailCipherService.blindIndex(anyString())).thenReturn("email-idx");
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        when(geoLocationService.resolveLocation("203.0.113.10"))
+                .thenReturn(LocationInfo.of("203.0.113.10", "Curitiba", "PR", "Brasil", "BR"));
+        when(userAgentParser.parse("Mozilla/5.0 (Windows NT 10.0; Win64; x64)"))
+                .thenReturn(new com.hokyozu.kyofuse.infrastructure.client.DeviceInfo("Chrome", "Windows", "Computador", "Chrome no Windows"));
+
+        User user = authService.register(request, "203.0.113.10", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+
+        assertThat(user.getRegistrationCountry()).isEqualTo("Brasil");
+        assertThat(user.getRegistrationCountryCode()).isEqualTo("BR");
+        assertThat(user.getRegistrationDevice()).isEqualTo("Chrome no Windows");
     }
 
     @Test

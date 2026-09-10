@@ -15,11 +15,13 @@ import com.hokyozu.kyofuse.infrastructure.security.jwt.AuthCookieService;
 import com.hokyozu.kyofuse.users.entity.User;
 import com.hokyozu.kyofuse.users.enums.UserRole;
 import com.hokyozu.kyofuse.users.enums.UserStatus;
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -32,6 +34,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -71,6 +74,9 @@ class AuthControllerTest {
     @Mock
     private com.hokyozu.kyofuse.infrastructure.security.totp.MfaTokenService mfaTokenService;
 
+    @Mock
+    private com.hokyozu.kyofuse.infrastructure.geolocation.GeoLocationService geoLocationService;
+
     @InjectMocks
     private AuthController controller;
 
@@ -82,14 +88,14 @@ class AuthControllerTest {
         httpRequest.setRemoteAddr("203.0.113.10");
 
         when(clientIpResolver.resolve(httpRequest)).thenReturn("203.0.113.10");
-        when(authService.register(request, "203.0.113.10")).thenReturn(user);
+        when(authService.register(request, "203.0.113.10", null, httpRequest)).thenReturn(user);
 
         RegisterResponse response = controller.register(request, httpRequest);
 
         assertThat(response.userId()).isEqualTo(user.getId());
         assertThat(response.email()).isEqualTo(user.getEmail());
         assertThat(response.emailVerified()).isFalse();
-        verify(authService).register(request, "203.0.113.10");
+        verify(authService).register(request, "203.0.113.10", null, httpRequest);
     }
 
     @Test
@@ -364,6 +370,21 @@ class AuthControllerTest {
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().get("clientId")).isEqualTo("test-client-id.apps.googleusercontent.com");
+    }
+
+    @Test
+    void getLocationReturnsCountryAndCityWhenResolved() {
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(clientIpResolver.resolve(request)).thenReturn("200.189.1.5");
+        when(geoLocationService.resolveLocation(request, "200.189.1.5"))
+                .thenReturn(com.hokyozu.kyofuse.infrastructure.geolocation.LocationInfo.of("200.189.1.5", "São Paulo", "SP", "Brasil", "BR"));
+
+        ResponseEntity<Map<String, String>> response = controller.getLocation(request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).containsEntry("countryCode", "BR");
+        assertThat(response.getBody()).containsEntry("country", "Brasil");
+        assertThat(response.getBody()).containsEntry("city", "São Paulo");
     }
 
     private static User user() {

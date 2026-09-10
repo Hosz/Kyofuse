@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, output } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { LiveStatsCardComponent } from '../live-stats-card/live-stats-card';
 import { SocialLinksComponent } from '../../shared/social-links/social-links';
@@ -11,13 +11,14 @@ import { formatLocation, getCountryFlagUrl } from '../../../shared/models/locati
 import { getPlayerRoleLabel } from '../../../shared/models/profile-options.model';
 import { formatJoinedDate, FALLBACK_AVATAR_URL } from '../../../shared/utils/format.util';
 import { ToastService } from '../../../core/services/ui/toast.service';
+import { AboutAccountModalComponent } from '../about-account-modal/about-account-modal';
 
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-profile-header',
-  imports: [RouterLink, LiveStatsCardComponent, SocialLinksComponent, UserOptionsMenuComponent, RoleIconComponent, TranslatePipe],
+  imports: [RouterLink, LiveStatsCardComponent, SocialLinksComponent, UserOptionsMenuComponent, RoleIconComponent, TranslatePipe, AboutAccountModalComponent],
   templateUrl: './profile-header.html',
   styleUrl: './profile-header.css',
 })
@@ -26,6 +27,16 @@ export class ProfileHeaderComponent {
   private toastService = inject(ToastService);
   private i18n = inject(I18nService);
   profile = input.required<gamerProfileResponse>();
+
+  isAboutModalOpen = signal(false);
+
+  openAboutModal(): void {
+    this.isAboutModalOpen.set(true);
+  }
+
+  closeAboutModal(): void {
+    this.isAboutModalOpen.set(false);
+  }
 
   bannerUrl = input.required<string>();
   verified = input.required<boolean>();

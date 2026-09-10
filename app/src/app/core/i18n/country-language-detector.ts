@@ -184,6 +184,67 @@ export function detectLanguageFromCountry(country: string | null | undefined): A
   return COUNTRY_TO_LANGUAGE_MAP[withoutAccents] ?? null;
 }
 
+const TIMEZONE_TO_LANGUAGE_PREFIXES: Array<{ pattern: RegExp; lang: AppLanguage }> = [
+  // Brasil (todas as regiões de fuso horário do território brasileiro)
+  {
+    pattern: /^(America\/(Sao_Paulo|Fortaleza|Recife|Bahia|Belem|Manaus|Cuiaba|Porto_Velho|Rio_Branco|Campo_Grande|Maceio|Araguaina|Boa_Vista|Santarem|Noronha|Eirunepe)|Brazil\/)/i,
+    lang: 'pt',
+  },
+  // Portugal e ilhas
+  {
+    pattern: /^(Europe\/Lisbon|Atlantic\/(Madeira|Azores)|Portugal)/i,
+    lang: 'pt',
+  },
+  // Japão
+  {
+    pattern: /^(Asia\/Tokyo|Japan)/i,
+    lang: 'ja',
+  },
+  // China, Hong Kong, Macau, Taiwan
+  {
+    pattern: /^(Asia\/(Shanghai|Chongqing|Harbin|Urumqi|Kashgar|Hong_Kong|Macau|Taipei))/i,
+    lang: 'zh',
+  },
+  // Espanha e América Hispânica
+  {
+    pattern: /^(Europe\/Madrid|Atlantic\/Canary|Africa\/Ceuta|America\/(Argentina|Buenos_Aires|Cordoba|Jujuy|Mendoza|Catamarca|Rosario|Santiago|Bogota|Mexico_City|Cancun|Monterrey|Tijuana|Hermosillo|Chihuahua|Mazatlan|Merida|Matamoros|Lima|Caracas|Montevideo|Asuncion|La_Paz|Guayaquil|Costa_Rica|El_Salvador|Guatemala|Tegucigalpa|Managua|Panama|Havana|Santo_Domingo)|Pacific\/(Easter|Galapagos))/i,
+    lang: 'es',
+  },
+  // França e territórios ultramarinos
+  {
+    pattern: /^(Europe\/Paris|America\/(Guadeloupe|Martinique|Cayenne)|Indian\/(Reunion|Mayotte))/i,
+    lang: 'fr',
+  },
+  // Alemanha, Áustria, Suíça (alemã), Liechtenstein
+  {
+    pattern: /^(Europe\/(Berlin|Busingen|Vienna|Zurich|Vaduz))/i,
+    lang: 'de',
+  },
+  // Rússia e Belarus
+  {
+    pattern: /^(Europe\/(Moscow|Kaliningrad|Samara|Volgograd|Kirov|Astrakhan|Ulyanovsk|Saratov|Minsk)|Asia\/(Yekaterinburg|Omsk|Novosibirsk|Barnaul|Tomsk|Novokuznetsk|Krasnoyarsk|Irkutsk|Chita|Yakutsk|Khandyga|Vladivostok|Ust-Nera|Magadan|Sakhalin|Srednekolymsk|Kamchatka|Anadyr))/i,
+    lang: 'ru',
+  },
+  // Países anglófonos (EUA, Reino Unido, Canadá, Austrália, Nova Zelândia, Irlanda)
+  {
+    pattern: /^(America\/(New_York|Chicago|Denver|Los_Angeles|Phoenix|Anchorage|Adak|Detroit|Menominee|Boise|Toronto|Vancouver|Edmonton|Winnipeg|Halifax|St_Johns|Regina|Moncton|Glace_Bay|Goose_Bay|Inuvik|Iqaluit)|Pacific\/(Honolulu|Auckland|Chatham)|Europe\/(London|Dublin)|Australia\/)/i,
+    lang: 'en',
+  },
+];
+
+export function detectLanguageFromTimezone(timezone?: string): AppLanguage | null {
+  const tz = timezone ?? (typeof Intl !== 'undefined' && Intl.DateTimeFormat ? Intl.DateTimeFormat().resolvedOptions().timeZone : null);
+  if (!tz) return null;
+
+  for (const item of TIMEZONE_TO_LANGUAGE_PREFIXES) {
+    if (item.pattern.test(tz)) {
+      return item.lang;
+    }
+  }
+
+  return null;
+}
+
 export function detectLanguageFromBrowser(): AppLanguage {
   if (typeof navigator === 'undefined' || !navigator.language) {
     return 'pt';
@@ -191,7 +252,7 @@ export function detectLanguageFromBrowser(): AppLanguage {
 
   const primary = navigator.language.toLowerCase();
 
-  if (primary.startsWith('pt')) return 'pt';
+  if (primary.startsWith('pt') || primary.endsWith('-br') || primary.endsWith('-pt')) return 'pt';
   if (primary.startsWith('es')) return 'es';
   if (primary.startsWith('fr')) return 'fr';
   if (primary.startsWith('de')) return 'de';
@@ -204,7 +265,7 @@ export function detectLanguageFromBrowser(): AppLanguage {
   if (navigator.languages && navigator.languages.length) {
     for (const lang of navigator.languages) {
       const l = lang.toLowerCase();
-      if (l.startsWith('pt')) return 'pt';
+      if (l.startsWith('pt') || l.endsWith('-br') || l.endsWith('-pt')) return 'pt';
       if (l.startsWith('es')) return 'es';
       if (l.startsWith('fr')) return 'fr';
       if (l.startsWith('de')) return 'de';
@@ -216,4 +277,15 @@ export function detectLanguageFromBrowser(): AppLanguage {
   }
 
   return 'pt';
+}
+
+export function detectLanguageFromDevice(): AppLanguage {
+  // 1. Tenta identificar pela localização física da timezone configurada no dispositivo
+  const tzLang = detectLanguageFromTimezone();
+  if (tzLang) {
+    return tzLang;
+  }
+
+  // 2. Se a timezone for genérica/UTC, recorre ao idioma configurado no navegador
+  return detectLanguageFromBrowser();
 }

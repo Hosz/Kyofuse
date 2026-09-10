@@ -11,9 +11,12 @@ import com.hokyozu.kyofuse.auth.repository.UserRepository;
 import com.hokyozu.kyofuse.auth.validator.EmailAndUsernameAvailabilityValidator;
 import com.hokyozu.kyofuse.auth.validator.LoginFinderValidator;
 import com.hokyozu.kyofuse.auth.validator.LoginValidator;
+import com.hokyozu.kyofuse.infrastructure.client.DeviceInfo;
+import com.hokyozu.kyofuse.infrastructure.client.UserAgentParser;
 import com.hokyozu.kyofuse.infrastructure.geolocation.GeoLocationService;
 import com.hokyozu.kyofuse.infrastructure.geolocation.LocationInfo;
 import com.hokyozu.kyofuse.infrastructure.security.crypto.EmailCipherService;
+import jakarta.servlet.http.HttpServletRequest;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.AccountSwitchService;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.JwtService;
 import com.hokyozu.kyofuse.infrastructure.security.jwt.RefreshTokenService;
@@ -55,6 +58,7 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final GeoLocationService geoLocationService;
+    private final UserAgentParser userAgentParser;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
@@ -106,12 +110,25 @@ public class AuthService {
 
     @Transactional
     public User register(RegisterRequest request, String clientIp) {
+        return register(request, clientIp, null, null);
+    }
+
+    @Transactional
+    public User register(RegisterRequest request, String clientIp, String userAgent) {
+        return register(request, clientIp, userAgent, null);
+    }
+
+    @Transactional
+    public User register(RegisterRequest request, String clientIp, String userAgent, HttpServletRequest httpRequest) {
         rateLimiterService.checkAndConsume(REGISTER_IP_KEY_PREFIX + clientIp, rateLimitPolicies.register());
 
         String emailIndex = emailCipherService.blindIndex(request.email());
         emailAndUsernameAvailabilityValidator.validate(emailIndex, request.username());
         String passwordHash = passwordEncoder.encode(request.password());
         User user = AuthMapper.toEntity(request, passwordHash, emailIndex);
+
+        populateRegistrationInfo(user, clientIp, userAgent, httpRequest);
+
         userRepository.save(user);
         gamerProfileService.createGamerProfileMin(user);
         userPrivacySettingsService.createDefault(user);
@@ -217,7 +234,7 @@ public class AuthService {
                 );
             }
         } else {
-            user = createGoogleUser(payload, googleId, emailIndex);
+            user = createGoogleUser(payload, googleId, emailIndex, clientIp, userAgent);
         }
 
         rateLimiterService.recordSuccess(ipKey);
@@ -265,7 +282,7 @@ public class AuthService {
             }
         } else {
             Optional<SteamPlayerSummary> summaryOpt = steamService.getPlayerSummary(steamId);
-            user = createSteamUser(steamId, summaryOpt.orElse(null));
+            user = createSteamUser(steamId, summaryOpt.orElse(null), clientIp, userAgent);
         }
 
         rateLimiterService.recordSuccess(ipKey);
@@ -282,7 +299,7 @@ public class AuthService {
         return LOGIN_IP_KEY_PREFIX + clientIp;
     }
 
-    private User createSteamUser(String steamId, SteamPlayerSummary summary) {
+    private User createSteamUser(String steamId, SteamPlayerSummary summary, String clientIp, String userAgent) {
         String personaName = (summary != null && summary.personaName() != null && !summary.personaName().isBlank())
                 ? summary.personaName()
                 : "steam_" + steamId.substring(Math.max(0, steamId.length() - 6));
@@ -295,6 +312,13 @@ public class AuthService {
 
         User newUser = AuthMapper.toSteamEntity(steamId, personaName, syntheticEmail, emailIndex, uniqueUsername, passwordHash);
 
+        populateRegistrationInfo(newUser, clientIp, userAgent, null);
+
+        if (newUser.getRegistrationCountry() == null && summary != null && summary.locCountryCode() != null) {
+            newUser.setRegistrationCountry(summary.locCountryCode());
+            newUser.setRegistrationCountryCode(summary.locCountryCode());
+        }
+
         userRepository.save(newUser);
 
         String avatarUrl = summary != null ? summary.avatarFull() : null;
@@ -306,7 +330,7 @@ public class AuthService {
         return newUser;
     }
 
-    private User createGoogleUser(GoogleIdToken.Payload payload, String googleId, String emailIndex) {
+    private User createGoogleUser(GoogleIdToken.Payload payload, String googleId, String emailIndex, String clientIp, String userAgent) {
         String givenName = (String) payload.get("given_name");
         String familyName = (String) payload.get("family_name");
         String name = (String) payload.get("name");
@@ -325,11 +349,48 @@ public class AuthService {
 
         User newUser = AuthMapper.toGoogleEntity(googleId, givenName, familyName, email, emailIndex, uniqueUsername, passwordHash);
 
+        populateRegistrationInfo(newUser, clientIp, userAgent, null);
+
         userRepository.save(newUser);
         gamerProfileService.createGamerProfileMin(newUser);
         userPrivacySettingsService.createDefault(newUser);
 
         return newUser;
+    }
+
+    private void populateRegistrationInfo(User user, String clientIp, String userAgent, HttpServletRequest httpRequest) {
+        if (user == null) return;
+
+        if (clientIp != null && !clientIp.isBlank() && geoLocationService != null) {
+            try {
+                LocationInfo location = httpRequest != null
+                        ? geoLocationService.resolveLocation(httpRequest, clientIp)
+                        : geoLocationService.resolveLocation(clientIp);
+
+                if (location != null) {
+                    if (location.isLocal()) {
+                        user.setRegistrationCountry("Rede Local");
+                        user.setRegistrationCountryCode("LOC");
+                    } else if (location.country() != null && !location.country().isBlank()) {
+                        user.setRegistrationCountry(location.country());
+                        user.setRegistrationCountryCode(location.countryCode());
+                    }
+                }
+            } catch (Exception e) {
+                log.debug("[Auth] Não foi possível resolver localização no cadastro: {}", e.getMessage());
+            }
+        }
+
+        if (userAgentParser != null && userAgent != null && !userAgent.isBlank()) {
+            try {
+                DeviceInfo deviceInfo = userAgentParser.parse(userAgent);
+                if (deviceInfo != null && deviceInfo.summary() != null && !deviceInfo.summary().isBlank()) {
+                    user.setRegistrationDevice(deviceInfo.summary());
+                }
+            } catch (Exception e) {
+                log.debug("[Auth] Não foi possível resolver dispositivo no cadastro: {}", e.getMessage());
+            }
+        }
     }
 
     private String generateUniqueUsername(String baseUsername) {

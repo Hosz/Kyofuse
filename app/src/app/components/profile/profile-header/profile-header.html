@@ -74,10 +74,15 @@
                 </div>
               }
               @if (joinedDate()) {
-                <div class="flex items-center gap-1.5">
-                  <span class="material-symbols-outlined text-[16px] text-primary shrink-0">calendar_month</span>
-                  <span>{{ joinedDate() }}</span>
-                </div>
+                <button
+                  type="button"
+                  (click)="openAboutModal()"
+                  class="group inline-flex cursor-pointer items-center gap-1.5 rounded-md px-1.5 py-0.5 -mx-1 text-body-sm text-on-surface-variant transition-colors hover:text-on-surface hover:bg-surface-container-high/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container"
+                  [title]="'profile.aboutAccount' | trans"
+                >
+                  <span class="material-symbols-outlined text-[16px] text-primary shrink-0 transition-transform group-hover:scale-110">calendar_month</span>
+                  <span class="underline-offset-4 group-hover:underline">{{ joinedDate() }}</span>
+                </button>
               }
             </div>
           }
@@ -232,3 +237,9 @@
     <app-live-stats-card [stats]="stats()" />
   </div>
 </section>
+
+<app-about-account-modal
+  [open]="isAboutModalOpen()"
+  [profile]="profile()"
+  (closed)="closeAboutModal()"
+/>

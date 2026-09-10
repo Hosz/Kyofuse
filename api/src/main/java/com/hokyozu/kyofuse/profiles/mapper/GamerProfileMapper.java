@@ -89,10 +89,19 @@ public class GamerProfileMapper {
                 .map(GamerProfileFavoriteMap::getMapName)
                 .toList();
 
+        User user = savedProfile.getUser();
+        String regCountry = user != null ? user.getRegistrationCountry() : null;
+        String regCountryCode = user != null ? user.getRegistrationCountryCode() : null;
+        String regDevice = user != null ? user.getRegistrationDevice() : null;
+
+        if (regCountry == null && savedProfile.getCountry() != null && !savedProfile.getCountry().isBlank()) {
+            regCountry = savedProfile.getCountry();
+        }
+
         return new GamerProfileResponse(
                 savedProfile.getId(),
-                savedProfile.getUser().getId(),
-                savedProfile.getUser().getUsername(),
+                user != null ? user.getId() : null,
+                user != null ? user.getUsername() : null,
                 savedProfile.getNickname(),
                 savedProfile.getBio(),
                 savedProfile.getAvatarUrl(),
@@ -112,7 +121,10 @@ public class GamerProfileMapper {
                 savedProfile.getSetupStatus(),
                 maps,
                 savedProfile.getCreatedAt(),
-                savedProfile.getUpdatedAt()
+                savedProfile.getUpdatedAt(),
+                regCountry,
+                regCountryCode,
+                regDevice
         );
     }
 
