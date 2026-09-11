@@ -1,679 +1,436 @@
-# Kyofuse
+# Kyofuse ⚡
 
-[English](#english) | [Português](#português)
+<div align="center">
 
----
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Java: 21](https://img.shields.io/badge/Java-21-orange.svg?logo=openjdk)](https://openjdk.org/)
+[![Spring Boot: 4.x](https://img.shields.io/badge/Spring%20Boot-4.x-brightgreen.svg?logo=springboot)](https://spring.io/projects/spring-boot)
+[![Angular: 21](https://img.shields.io/badge/Angular-21-dd0031.svg?logo=angular)](https://angular.dev/)
+[![Tailwind CSS: v4](https://img.shields.io/badge/Tailwind_CSS-v4-38bdf8.svg?logo=tailwindcss)](https://tailwindcss.com/)
+[![PostgreSQL: 16](https://img.shields.io/badge/PostgreSQL-16-blue.svg?logo=postgresql)](https://www.postgresql.org/)
+[![Redis: 8](https://img.shields.io/badge/Redis-8-red.svg?logo=redis)](https://redis.io/)
+[![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED.svg?logo=docker)](https://www.docker.com/)
+[![Security: Defense--in--Depth](https://img.shields.io/badge/Security-Defense--in--Depth-emerald.svg)](#-arquitetura-de-segurança--privacy-by-design)
 
-# English
+**Plataforma social e hub competitivo de alta performance para a comunidade global de Counter-Strike 2 (CS2).**
 
-## Overview
+[Português](#português) • [English](#english)
 
-Kyofuse is a CS2 social platform where players can create competitive profiles, publish posts, find squads, send team invites and interact with the Counter-Strike 2 community.
-
-This is a full stack project built as a learning and portfolio application.
-
-The goal is to create a niche social network for CS2 players, focused on player profiles, squads, feed posts, team invites and community interaction.
-
-The project starts as a modular monolith and may evolve with real-time features, search, messaging, AI, observability and external integrations.
-
-## Main Features
-
-### V1 Scope
-
-- User registration and authentication
-- JWT-based login
-- Gamer profile for CS2 players
-- Feed posts
-- Comments
-- Reactions
-- Player search
-- Teams and squads
-- Team invites
-- Persistent notifications
-
-### Future Scope
-
-- Real-time online/offline/in-game presence (WebSocket + Redis)
-- Real-time typing indicators ("typing...")
-- Real-time message reactions with emojis
-- Live group & moderation events (joins, kicks, role changes)
-- Multi-tab/device read status synchronization
-- WebRTC voice channels signaling (squad & community voice chat)
-- Live feed social interactions (live post likes & comments counter)
-- FACEIT integration
-- Redis cache
-- Full-text search with Elasticsearch
-- Messaging with RabbitMQ or Kafka
-- AI-based player recommendations
-- AI moderation
-- Observability with Prometheus, Grafana and OpenTelemetry
-- CI/CD pipeline
-- Production deployment
-
-## Tech Stack
-
-### Backend
-
-Planned backend stack:
-
-- Java 21
-- Spring Boot
-- Spring Web
-- Spring Data JPA
-- Spring Security
-- JWT
-- PostgreSQL
-- Flyway
-- Bean Validation
-- Swagger/OpenAPI
-- JUnit 5
-- Mockito
-- Testcontainers
-
-### Frontend
-
-- Angular
-- Tailwind CSS
-- TypeScript
-
-### Infrastructure
-
-Planned infrastructure stack:
-
-- Docker
-- Docker Compose
-- PostgreSQL
-
-## Project Structure
-
-kyofuse/
-├── api/                 # Spring Boot backend
-├── app/                 # Angular frontend
-├── docs/                # Project documentation
-├── docker-compose.yml   # Local infrastructure
-├── README.md
-├── LICENSE
-└── .gitignore
-
-## Architecture
-
-Kyofuse starts as a modular monolith.
-
-Initial backend modules:
-
-auth
-users
-profiles
-posts
-comments
-reactions
-teams
-invites
-notifications
-moderation
-shared
-infrastructure
-
-The initial architecture prioritizes:
-
-- clear module boundaries
-- simple local development
-- maintainable code organization
-- future evolution without premature microservices
-- real business rules instead of only CRUD endpoints
-
-## Getting Started
-
-### Prerequisites
-
-Make sure you have installed:
-
-- Java 21+
-- Node.js LTS
-- npm
-- Docker
-- Docker Compose
-- Git
-
-## Running Locally
-
-### 1. Clone the repository
-
-git clone https://github.com/YOUR_USERNAME/kyofuse.git
-cd kyofuse
-
-### 2. Install frontend dependencies
-
-cd app
-npm install
-
-### 3. Run the frontend
-
-npm start
-
-The frontend should run at:
-
-http://localhost:4200
-
-### 4. Backend
-
-The backend setup is planned/in progress.
-
-When available, it should run at:
-
-http://localhost:8080
-
-### 5. Local services
-
-Docker Compose support is planned.
-
-When available, local services should be started with:
-
-docker compose up -d
-
-## API Documentation
-
-Swagger/OpenAPI documentation is planned.
-
-When available, it should be accessible at:
-
-http://localhost:8080/swagger-ui/index.html
-
-## Environment Variables
-
-The backend may use the following environment variables in local development:
-
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=kyofuse
-DB_USER=kyofuse
-DB_PASSWORD=local-password
-JWT_SECRET=local-development-secret
-
-Important:
-
-These values are examples for local development only.
-Do not use local credentials or example secrets in production.
-
-For local development, default values may be provided through application.yml or an .env file.
-
-## Database
-
-Kyofuse is planned to use PostgreSQL as its main database.
-
-Database migrations are planned to be handled with Flyway.
-
-Initial planned tables:
-
-users
-gamer_profiles
-posts
-comments
-reactions
-teams
-team_members
-team_invites
-notifications
-reports
-
-## Git Workflow
-
-The project uses a simple branch strategy:
-
-main
-develop
-feature/*
-fix/*
-chore/*
-
-Recommended flow:
-
-feature/* -> develop -> main
-
-## Commit Pattern
-
-This project follows Conventional Commits.
-
-Examples:
-
-chore: initialize kyofuse monorepo
-chore(app): initialize Angular project with Tailwind
-chore(api): initialize Spring Boot project
-feat(auth): implement user registration
-feat(auth): implement JWT login
-feat(profile): create gamer profile
-feat(feed): create post endpoint
-fix(invites): prevent duplicated pending invite
-docs(readme): update setup instructions
-
-## Roadmap
-
-### Phase 0 — Project Setup
-
-- Create monorepo structure
-- Configure Angular frontend
-- Configure Spring Boot backend
-- Configure Docker Compose
-- Configure PostgreSQL
-- Configure Flyway
-- Configure Swagger/OpenAPI
-
-### Phase 1 — Auth and Users
-
-- User registration
-- Login
-- Password hashing
-- JWT generation
-- Protected routes
-- Current user endpoint
-
-### Phase 2 — Gamer Profile
-
-- Create gamer profile
-- Edit profile
-- Public profile
-- Player search
-- CS2 role, rank and map preferences
-
-### Phase 3 — Feed
-
-- Create posts
-- List feed
-- Edit posts
-- Delete posts
-- Comments
-- Reactions
-
-### Phase 4 — Teams and Invites
-
-- Create teams
-- List teams
-- Team members
-- Send invites
-- Accept invites
-- Decline invites
-
-### Phase 5 — Notifications
-
-- Persistent notifications
-- Unread notification count
-- Mark notification as read
-- Notification events for invites and interactions
-
-### Phase 6 — Quality
-
-- Unit tests
-- Integration tests
-- Testcontainers
-- API documentation
-- Technical documentation
-- README improvements
-
-## Security Notes
-
-This repository must not include:
-
-- real database credentials
-- production JWT secrets
-- API keys
-- private tokens
-- personal access tokens
-- cloud provider credentials
-- private environment files
-- sensitive user data
-
-Use environment variables or ignored local configuration files for sensitive values.
-
-## License
-
-This project is licensed under the MIT License.
-
-## Status
-
-In development.
-
-Current stage:
-
-- Monorepo structure created
-- Angular frontend initialized
-- Tailwind CSS configured
-- Backend setup in progress
-- Local infrastructure setup planned
+</div>
 
 ---
 
 # Português
 
-## Visão geral
+## 📖 Visão Geral
 
-Kyofuse é uma plataforma social para jogadores de CS2 criarem perfis competitivos, publicarem posts, encontrarem squads, enviarem convites para times e interagirem com a comunidade de Counter-Strike 2.
+O **Kyofuse** é uma rede social e plataforma de recrutamento desenvolvida sob medida para o ecossistema competitivo de **Counter-Strike 2 (CS2)**.
 
-Este é um projeto full stack desenvolvido como aplicação de estudo e portfólio.
+Diferente de redes sociais generalistas, o Kyofuse centraliza as necessidades essenciais de jogadores, elencos táticos e criadores de conteúdo: formação de squads com recrutamento por funções táticas (*AWPer, IGL, Entry, etc.*), perfis detalhados com estatísticas competitivas, comunidades e hubs temáticos, mensageria instantânea com baixa latência e compartilhamento de mídias.
 
-O objetivo é criar uma rede social nichada para jogadores de CS2, com foco em perfis de jogadores, squads, feed de publicações, convites para times e interação entre a comunidade.
+Projetado como um **Monólito Modular orientado pelo Domain-Driven Design (DDD)**, o sistema une a resiliência transacional do Spring Boot no backend à reatividade moderna do Angular no frontend, sustentado por um barramento de tempo real via WebSocket (STOMP), cache e presença via Redis, armazenamento de objetos compatível com S3 (MinIO) e observabilidade completa através do Prometheus e Grafana.
 
-O projeto começa como um monólito modular e pode evoluir futuramente com recursos em tempo real, busca, mensageria, IA, observabilidade e integrações externas.
+---
 
-## Funcionalidades principais
+## 🎯 Principais Funcionalidades
 
-### Escopo da V1
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           KYOFUSE ECOSYSTEM                             │
+├───────────────────┬───────────────────┬─────────────────────────────────┤
+│ 🎮 CS2 PROFILES   │ 👥 SQUADS & TEAMS │ ⚡ REAL-TIME ENGINE             │
+│ • Patente & Rank  │ • Recrutamento LFM│ • Chat STOMP / WebSocket        │
+│ • Funções Táticas │ • Gestão de Elenco│ • Presença Ao Vivo (Redis)      │
+│ • Map Pool & Bio  │ • Convites Formais│ • Recibos de Entrega / Leitura  │
+├───────────────────┼───────────────────┼─────────────────────────────────┤
+│ 🌐 COMUNIDADES    │ 📰 FEED & MÍDIAS  │ 🛡️ IDENTIDADE & SESSÃO          │
+│ • Hubs Públicos   │ • Upload Seguro S3│ • 2FA TOTP (RFC 6238)           │
+│ • Hubs Privados   │ • Discussões & Com│ • Auditoria de Sessões Ativas   │
+│ • Feed Exclusivo  │ • Reações Emojis  │ • Troca Rápida de Contas        │
+└───────────────────┴───────────────────┴─────────────────────────────────┘
+```
 
-- Cadastro e autenticação de usuários
-- Login com JWT
-- Perfil gamer para jogadores de CS2
-- Publicações no feed
-- Comentários
-- Reações
-- Busca de jogadores
-- Times e squads
-- Convites para times
-- Notificações persistidas
+### 🎮 1. Perfil Gamer & Identidade Competitiva
+- **Registro de Habilidades e Patente:** Registro de patente competitiva, estilo de jogo e biografia gamer.
+- **Funções Táticas de CS2:** Definição clara de função primária e secundária (*Entry Fragger, AWPer, In-Game Leader (IGL), Lurker, Support e Anchor*).
+- **Map Pool Preferido:** Seleção dos mapas competitivos de domínio do jogador (Mirage, Inferno, Nuke, Dust II, Ancient, Anubis, etc.).
+- **Integração Steam & Bandeira Nacional:** Autenticação federada com Steam OpenID e resolução automática de nacionalidade via GeoIP.
+- **Grafo Social & Privacidade:** Conexões bilaterais de amizade com confirmação, seguidores, bloqueio de usuários e controles granulares de privacidade do perfil.
 
-### Escopo futuro
+### 👥 2. Gestão de Equipes, Squads & Recrutamento
+- **Hub de Equipes:** Criação e personalização de squads com escudo, banner, identificador exclusivo e página do elenco.
+- **Mural Tático de Vagas (*Looking For More - LFM*):** Times especificam funções em aberto no elenco para que jogadores compatíveis encontrem oportunidades ideais.
+- **Fluxo Bilateral de Ingressos:** Envio e recebimento formal de convites, análise de solicitações de entrada e política de sucessão de liderança.
 
-- Presença em tempo real online/offline/jogando (WebSocket + Redis)
-- Indicador de digitação em tempo real ("digitando...")
-- Reações a mensagens com emojis em tempo real
-- Eventos de grupo e moderação ao vivo (entrada/saída, promoção de admin)
-- Sincronização de status de leitura multi-aba/multi-dispositivo
-- Sinalização WebRTC para canais de voz (chat de voz para squads e comunidades)
-- Interações sociais do feed ao vivo (contadores de curtidas e comentários em tempo real)
-- Integração com FACEIT
-- Cache com Redis
-- Busca full-text com Elasticsearch
-- Mensageria com RabbitMQ ou Kafka
-- Recomendações de jogadores com IA
-- Moderação com IA
-- Observabilidade com Prometheus, Grafana e OpenTelemetry
-- Pipeline de CI/CD
-- Deploy em produção
+### 🌐 3. Comunidades & Hubs Temáticos
+- **Hubs Especializados:** Criação de comunidades públicas ou restritas com moderação própria, dedicadas a torneios, organizadores e criadores de conteúdo.
+- **Comunidades Fixadas:** Fixação de hubs favoritos diretamente no painel principal para acesso rápido.
+- **Feeds Segmentados:** Linha do tempo de publicações restrita aos membros da comunidade.
 
-## Stack técnica
+### 📰 4. Feed Social, Mídias & Reações
+- **Publicações com Mídias:** Postagens com suporte a marcação de mapas do CS2 e anexação de imagens com compressão e geração de thumbnails automáticos.
+- **Engajamento Completo:** Discussões aninhadas com comentários encadeados, contadores consolidados de visualizações e reações com emojis interativos.
 
-### Backend
+### ⚡ 5. Mensageria em Tempo Real & Presença
+- **Chat Privado e Grupal:** Troca instantânea de mensagens 1:1 e conversas coletivas com protocolo STOMP sobre WebSocket.
+- **Recibos de Entrega e Leitura:** Sincronização multi-dispositivo do status de leitura e visualização em tempo real.
+- **Indicador Efêmero de Digitação:** Notificação ágil de digitação ativa (*typing indicator*) sem consumo persistente de banco.
+- **Presença Ao Vivo:** Monitoramento de status (*Online, Jogando CS2, Ausente, Offline*) coordenado por heartbeats e pub/sub no Redis.
+- **Central de Notificações:** Notificações persistidas e eventos push para menções, convites e interações.
 
-Stack planejada para o backend:
+### 📊 6. Descoberta & Leaderboards
+- **Filtros de Busca Especializados:** Localização rápida de jogadores e squads combinando patentes, funções e disponibilidade.
+- **Leaderboards da Comunidade:** Painéis de destaque ordenados por atividade e métricas competitivas.
 
-- Java 21
-- Spring Boot
-- Spring Web
-- Spring Data JPA
-- Spring Security
-- JWT
-- PostgreSQL
-- Flyway
-- Bean Validation
-- Swagger/OpenAPI
-- JUnit 5
-- Mockito
-- Testcontainers
+---
 
-### Frontend
+## 🔒 Arquitetura de Segurança & Privacy by Design
 
-- Angular
-- Tailwind CSS
-- TypeScript
+O Kyofuse aplica uma postura rigorosa de **Defense-in-Depth (Defesa em Profundidade)** e **Zero-Trust**:
 
-### Infraestrutura
+```
+                  INTERNET (Clientes Web / Mobile)
+                                 │
+                                 ▼
+                ┌─────────────────────────────────┐
+                │     Nginx Gateway & Ingress     │
+                │  (Reverse Proxy, TLS, Headers)  │
+                └────────────────┬────────────────┘
+                                 │
+                ┌────────────────▼────────────────┐
+                │    Spring Security Pipeline     │
+                │   - Rate Limiting Distribuído   │
+                │   - Sanitização de Requisições  │
+                │   - Validação de Tokens JWT     │
+                └────────────────┬────────────────┘
+                                 │
+            ┌────────────────────┴────────────────────┐
+            ▼                                         ▼
+┌───────────────────────────┐             ┌─────────────────────────┐
+│     Camada de Domínio     │             │     Camada de Mídia     │
+│  - Checagem de Titularidade│             │  - Tika MIME Inspection │
+│  - Verificação de Escopo  │             │  - Processamento Seguro │
+└───────────┬───────────────┘             └────────────┬────────────┘
+            │                                         │
+════════════╪═════════════════════════════════════════╪════════════════ [Isolamento de Rede]
+            ▼                                         ▼
+┌───────────────────────────┐             ┌─────────────────────────┐
+│   PostgreSQL 16 (Dados)   │             │   MinIO / S3 (Storage)  │
+│  - PII Criptografada      │             │  - Acesso Segregado     │
+│  - Sem Exposição Externa  │             │  - Sem Execução Direta  │
+└───────────────────────────┘             └─────────────────────────┘
+```
 
-Stack planejada para infraestrutura:
+### 1. Prevenção de IDOR e Validação de Titularidade
+- Todas as requisições autenticadas extraem a identidade do usuário diretamente dos *claims* assinados do JWT (`@AuthenticationPrincipal`).
+- O sistema não aceita identificadores de usuário enviados pelo cliente para operações sensíveis. A camada de serviços valida deterministicamente se o usuário logado possui a posse do recurso antes de qualquer alteração ou leitura restrita.
 
-- Docker
-- Docker Compose
-- PostgreSQL
+### 2. Gestão de Identidade e Sessões
+- **Transporte Seguro de Tokens:** Tokens trafegam via cookies com atributos `HttpOnly`, `SameSite=Lax` e `Secure`, mitigando riscos de exfiltração por scripts maliciosos (XSS).
+- **Autenticação em Dois Fatores (2FA/TOTP):** Suporte nativo ao padrão RFC 6238 (Google Authenticator, Bitwarden), mantendo os segredos de TOTP criptografados em repouso.
+- **Auditoria de Sessões Concorrentes:** Registro de dispositivos conectados com resolução de IP/GeoIP e User-Agent, permitindo revogação remota de acessos indesejados.
+- **Troca Segura de Perfis:** Alternância ágil entre contas vinculadas sem contaminação de contexto de autorização.
 
-## Estrutura do projeto
+### 3. Proteção de Dados e Privacidade (LGPD / GDPR)
+- **Criptografia em Repouso de Dados Pessoais:** Dados sensíveis são armazenados no banco de dados sob criptografia simétrica forte.
+- **Indexação Cega (*Blind Indexing*):** Consultas de unicidade e buscas em campos de identidade são realizadas através de hashes criptográficos irreversíveis, dispensando a necessidade de expor dados claros em disco.
+- **Políticas Estruturadas de Retenção:** Trilhas de auditoria desacopladas com ciclo de vida legal parametrizado para garantir conformidade contínua.
 
-kyofuse/
-├── api/                 # Backend Spring Boot
-├── app/                 # Frontend Angular
-├── docs/                # Documentação do projeto
-├── docker-compose.yml   # Infraestrutura local
-├── README.md
-├── LICENSE
-└── .gitignore
+### 4. Mitigação de Abuso e Hardening de Infraestrutura
+- **Rate Limiting Distribuído:** Camadas dinâmicas de limitação de requisições sustentadas por Redis protegem endpoints críticos (autenticação, registro, 2FA e criação de publicações).
+- **Inspeção Estrita de Mídias:** Validação de cabeçalhos reais (*Magic Bytes*) via Apache Tika em todos os uploads para impedir arquivos executáveis ou malformados camuflados como imagens.
+- **Startup Security Enforcer:** Validador automatizado que analisa o ecossistema na inicialização e interrompe o boot em produção caso credenciais fracas ou padrões previsíveis sejam configurados.
+- **Segmentação Física de Redes:** A infraestrutura em Docker isola o tráfego de dados (`kyofuse-internal`) do tráfego público (`kyofuse-public`). Bancos de dados e instâncias de cache não possuem portas expostas diretamente para a internet.
 
-## Arquitetura
+---
 
-O Kyofuse começa como um monólito modular.
+## 🏛️ Arquitetura de Software & Módulos
 
-Módulos iniciais do backend:
+O backend é organizado em módulos independentes orientados a contextos de negócio:
 
-auth
-users
-profiles
-posts
-comments
-reactions
-teams
-invites
-notifications
-moderation
-shared
-infrastructure
+```
+com.hokyozu.kyofuse/
+├── auth/            # Autenticação, 2FA TOTP, sessões e troca de contas
+├── users/           # Gerenciamento de usuários, preferências e privacidade
+├── profiles/        # Perfis competitivos, patentes e funções táticas
+├── teams/           # Gestão de equipes, vagas abertas e cargos
+├── communities/     # Hubs temáticos, admissões e moderação comunitária
+├── posts/           # Publicações no feed, filtros de mapas e visualizações
+├── comments/        # Discussões aninhadas e moderação
+├── reactions/       # Reações com emojis em posts e comentários
+├── chat/            # Mensageria instantânea 1:1 e salas coletivas (STOMP)
+├── presence/        # Rastreamento de conectividade ao vivo via Redis
+├── notifications/   # Centro de notificações push e persistidas
+├── invites/         # Fluxo bilateral de convites para times e grupos
+├── leaderboard/     # Rankings de engajamento e métricas competitivas
+├── moderation/      # Denúncias e trilhas de auditoria
+├── storage/         # Pipeline de mídias, sanitização e storage S3
+└── infrastructure/  # Segurança, Redis, WebSocket e observabilidade
+```
 
-A arquitetura inicial prioriza:
+---
 
-- fronteiras claras entre módulos
-- desenvolvimento local simples
-- organização de código sustentável
-- evolução futura sem microsserviços prematuros
-- regras de negócio reais em vez de apenas endpoints CRUD
+## 🛠️ Stack Tecnológica
 
-## Como começar
+| Camada | Tecnologia | Propósito |
+|---|---|---|
+| **Backend Core** | Java 21, Spring Boot 4.x | Núcleo do sistema, concorrência e alta performance |
+| **Segurança & Auth** | Spring Security, OAuth2, TOTP (RFC 6238) | Autenticação, controle de acesso e 2FA |
+| **Banco de Dados** | PostgreSQL 16, Flyway (57+ migrations) | Persistência relacional transacional e versionamento |
+| **Tempo Real & Cache** | Redis 8, Spring WebSocket (STOMP) | Presença ao vivo, pub/sub, mensageria e rate limiting |
+| **Storage de Mídias** | MinIO / AWS S3 SDK v2, Apache Tika | Armazenamento de mídias, sanitização de binários e thumbnails |
+| **Frontend** | Angular 21, Tailwind CSS v4, TypeScript | SPA de alta reatividade com auto-escaping nativo |
+| **Observabilidade** | Prometheus, Grafana, Micrometer, Actuator | Monitoramento de métricas, saúde da JVM e latências |
+| **DevOps & Infra** | Docker, Docker Compose, Nginx, Mailpit | Orquestração de containers e simulação de SMTP |
+
+---
+
+## 🚀 Como Executar Localmente
 
 ### Pré-requisitos
+- **Git**
+- **Docker** e **Docker Compose** (v2.20+)
 
-Certifique-se de ter instalado:
-
-- Java 21+
-- Node.js LTS
-- npm
-- Docker
-- Docker Compose
-- Git
-
-## Rodando localmente
-
-### 1. Clone o repositório
-
+### 1. Clonar o Repositório
+```bash
 git clone https://github.com/YOUR_USERNAME/kyofuse.git
 cd kyofuse
+```
 
-### 2. Instale as dependências do frontend
+### 2. Configuração de Variáveis de Ambiente
+Crie seu arquivo de configuração local a partir do modelo:
+```bash
+cp .env.example .env
+```
 
-cd app
-npm install
+> [!IMPORTANT]
+> O arquivo `.env.example` fornece as referências das variáveis necessárias. Antes de iniciar, edite o `.env` gerando credenciais únicas de alta entropia.
+> 
+> Chaves seguras podem ser geradas via terminal com:
+> ```bash
+> openssl rand -base64 32
+> ```
 
-### 3. Rode o frontend
-
-npm start
-
-O frontend deve rodar em:
-
-http://localhost:4200
-
-### 4. Backend
-
-A configuração do backend está planejada/em andamento.
-
-Quando disponível, ele deverá rodar em:
-
-http://localhost:8080
-
-### 5. Serviços locais
-
-O suporte a Docker Compose está planejado.
-
-Quando disponível, os serviços locais deverão ser iniciados com:
-
+### 3. Iniciar os Serviços via Docker Compose
+Inicie a infraestrutura e os serviços em segundo plano:
+```bash
 docker compose up -d
+```
 
-## Documentação da API
+O compose coordenará a subida sequencial:
+1. `postgres`: Inicializa o banco de dados PostgreSQL 16.
+2. `redis`: Sobe o cluster de cache e mensageria em tempo real.
+3. `minio` & `minio-init`: Inicializa o object storage e cria os buckets de mídia.
+4. `mailpit`: Disponibiliza o servidor de captura de e-mails em desenvolvimento.
+5. `api`: Compila e sobe o backend Spring Boot, aplicando as migrações Flyway.
+6. `app`: Sobe a interface Angular servida pelo Nginx com proxy reverso.
+7. `prometheus` & `grafana`: Ativa a esteira de métricas e dashboards.
 
-A documentação com Swagger/OpenAPI está planejada.
+### 4. Portas e Serviços Locais
 
-Quando disponível, deverá ser acessada em:
+| Serviço | URL Local | Descrição |
+|---|---|---|
+| **Kyofuse Web App** | `http://localhost:4200` | Interface do usuário |
+| **API Backend** | `http://localhost:8080` | Endpoints REST e WebSocket |
+| **Mailpit Dashboard** | `http://localhost:8025` | Painel local de visualização de e-mails |
+| **MinIO Console** | `http://localhost:9001` | Dashboard administrativo do storage |
+| **Grafana Dashboards** | `http://localhost:3000` | Painéis e visualização de métricas |
 
-http://localhost:8080/swagger-ui/index.html
+---
 
-## Variáveis de ambiente
+## 🧪 Qualidade e Testes
 
-O backend poderá usar as seguintes variáveis de ambiente em desenvolvimento local:
+Execute as suítes de testes unitários e de integração:
 
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=kyofuse
-DB_USER=kyofuse
-DB_PASSWORD=local-password
-JWT_SECRET=local-development-secret
+```bash
+# Executar suíte de testes do Backend (Spring Boot + JUnit 5 + Mockito)
+cd api
+./mvnw test
 
-Importante:
+# Executar suíte de testes do Frontend (Angular + Vitest)
+cd ../app
+npm test
+```
 
-Esses valores são exemplos apenas para desenvolvimento local.
-Não use credenciais locais ou secrets de exemplo em produção.
+---
 
-Para desenvolvimento local, valores padrão poderão ser definidos por application.yml ou arquivo .env.
+## 🧭 Roadmap do Projeto
 
-## Banco de dados
+- [x] **Fase 1 — Núcleo de Identidade, Autenticação & 2FA:** JWT, TOTP, multi-conta, auditoria de sessões e recuperação segura.
+- [x] **Fase 2 — Perfil Gamer & Grafo Social:** Patentes de CS2, funções táticas, mapas prediletos, amizades e bloqueios.
+- [x] **Fase 3 — Times, Recrutamento & Comunidades:** Vagas por função (LFM), hubs públicos e privados, moderação de membros.
+- [x] **Fase 4 — Feed Social, Mídias & Reações:** Upload seguro de mídias, comentários e reações em tempo real.
+- [x] **Fase 5 — Chat em Tempo Real & Presença:** WebSocket STOMP, recibos de leitura, typing indicator e pub/sub Redis.
+- [x] **Fase 6 — Observabilidade & Métricas:** Instrumentação com Micrometer, Prometheus e dashboards no Grafana.
+- [ ] **Fase 7 — Próximos Passos:** Integração com estatísticas da FACEIT, canais de voz WebRTC para squads e gerenciamento automatizado de campeonatos.
 
-O Kyofuse está planejado para usar PostgreSQL como banco de dados principal.
+---
 
-As migrations do banco estão planejadas para serem gerenciadas com Flyway.
+## 🤝 Padrão de Contribuição e Git
 
-Tabelas iniciais planejadas:
+O repositório adota **Conventional Commits** e estrutura limpa de branches:
 
-users
-gamer_profiles
-posts
-comments
-reactions
-teams
-team_members
-team_invites
-notifications
-reports
+- `main`: Código validado para produção.
+- `develop`: Integração das novas funcionalidades em desenvolvimento.
+- `feature/*`: Novas funcionalidades.
+- `fix/*`: Resolução de correções e bugs.
+- `chore/*`: Atualizações de dependências e documentações.
 
-## Fluxo de Git
+```bash
+# Exemplos de commits:
+feat(chat): implement multi-device read synchronization
+fix(teams): prevent duplicate pending invitations
+```
 
-O projeto usa uma estratégia simples de branches:
+---
 
-main
-develop
-feature/*
-fix/*
-chore/*
+# English
 
-Fluxo recomendado:
+## 📖 Overview
 
-feature/* -> develop -> main
+**Kyofuse** is a high-performance, competitive social platform and team recruitment network engineered exclusively for the **Counter-Strike 2 (CS2)** ecosystem.
 
-## Padrão de commits
+Unlike generic social media, Kyofuse addresses the concrete requirements of players, competitive rosters, and gaming communities: tactical role-based squad recruitment (*AWPer, IGL, Entry Fragger, etc.*), authentic competitive gamer profiles, dedicated hubs, low-latency communication, and rich media sharing.
 
-Este projeto segue Conventional Commits.
+Built as a **Modular Monolith guided by Domain-Driven Design (DDD)**, Kyofuse combines the transactional reliability of Spring Boot 4 on the backend with the modern reactivity of Angular 21 on the frontend. The platform incorporates WebSocket STOMP for instant messaging, Redis for distributed presence and caching, S3-compatible media storage (MinIO), and full-stack observability powered by Prometheus and Grafana.
 
-Exemplos:
+---
 
-chore: initialize kyofuse monorepo
-chore(app): initialize Angular project with Tailwind
-chore(api): initialize Spring Boot project
-feat(auth): implement user registration
-feat(auth): implement JWT login
-feat(profile): create gamer profile
-feat(feed): create post endpoint
-fix(invites): prevent duplicated pending invite
-docs(readme): update setup instructions
+## 🎯 Key Capabilities
 
-## Roadmap
+### 🎮 1. Gamer Identity & Competitive CS2 Profiles
+- **Rank & Skill Records:** Track competitive ranks, competitive playstyle, and gamer biography.
+- **Tactical Roles:** Clear primary and secondary role specializations (*Entry Fragger, AWPer, In-Game Leader, Lurker, Support, and Anchor*).
+- **Map Pool Preferences:** Highlight mastery across active-duty and reserve competitive maps.
+- **Steam Integration & Geolocation:** Federated authentication via Steam OpenID and automatic flag resolution through GeoIP.
+- **Social Graph & Privacy:** Mutual friendships, followers, user blocking, and fine-grained profile privacy controls.
 
-### Fase 0 — Setup do projeto
+### 👥 2. Squad Management & Recruitment
+- **Team Hubs:** Create and manage squads with custom crests, banners, unique tags, and team roster pages.
+- **Tactical Openings (*Looking For More - LFM*):** Publish openings by specific tactical role to match compatible players.
+- **Bilateral Invite Workflows:** Formal invite dispatching, application reviews, and transparent leadership succession policies.
 
-- Criar estrutura de monorepo
-- Configurar frontend Angular
-- Configurar backend Spring Boot
-- Configurar Docker Compose
-- Configurar PostgreSQL
-- Configurar Flyway
-- Configurar Swagger/OpenAPI
+### 🌐 3. Thematic Communities & Hubs
+- **Dedicated Hubs:** Public and private gaming communities tailored for leagues, scrim groups, and creators.
+- **Pinned Hubs:** Custom pin functionality to display priority hubs on the personal dashboard.
+- **Segmented Feeds:** Community-exclusive discussion and content streams.
 
-### Fase 1 — Auth e usuários
+### 📰 4. Social Feed, Media & Reactions
+- **Rich Post Creation:** Media attachments with automatic image optimization and thumbnail generation, plus CS2 map tagging.
+- **Interactive Discussions:** Threaded nested discussions, consolidated view counting, and live emoji reactions.
 
-- Cadastro de usuário
-- Login
-- Hash de senha
-- Geração de JWT
-- Rotas protegidas
-- Endpoint de usuário atual
+### ⚡ 5. Real-Time Engine & Presence (WebSocket + Redis)
+- **Direct & Group Messaging:** 1:1 and multi-user direct conversations powered by STOMP over WebSocket.
+- **Delivery & Read Receipts:** Instant status updates and cross-device read synchronization.
+- **Ephemeral Typing Indicators:** Lightweight typing broadcast without persistent disk write overhead.
+- **Live Presence Engine:** Real-time online status (*Online, In-Game, Away, Offline*) backed by Redis heartbeats and pub/sub.
+- **Notification Center:** Persistent notification feeds and live push alerts for squad invites, mentions, and interactions.
 
-### Fase 2 — Perfil gamer
+### 📊 6. Discovery & Leaderboards
+- **Tactical Search:** Multi-attribute filtering across ranks, roles, and squad availability.
+- **Community Leaderboards:** Activity-based rankings and community standing highlights.
 
-- Criar perfil gamer
-- Editar perfil
-- Perfil público
-- Busca de jogadores
-- Função, rank e mapas preferidos de CS2
+---
 
-### Fase 3 — Feed
+## 🔒 Security Architecture & Privacy by Design
 
-- Criar posts
-- Listar feed
-- Editar posts
-- Deletar posts
-- Comentários
-- Reações
+Kyofuse enforces a strict **Defense-in-Depth** and **Zero-Trust** security architecture:
 
-### Fase 4 — Times e convites
+### 1. Insecure Direct Object Reference (IDOR) Mitigation
+- All authenticated actions derive caller identity exclusively from cryptographically verified JWT claims (`@AuthenticationPrincipal`).
+- The system never trusts client-supplied identifiers in request bodies or query parameters. The service layer strictly validates object ownership before executing any query or mutation.
 
-- Criar times
-- Listar times
-- Membros de time
-- Enviar convites
-- Aceitar convites
-- Recusar convites
+### 2. Session & Identity Governance
+- **Hardened Cookie Transport:** Tokens travel strictly via `HttpOnly`, `SameSite=Lax`, and `Secure` cookies, eliminating script-based exfiltration vectors (XSS).
+- **Two-Factor Authentication (2FA/TOTP):** Built on RFC 6238 standards, compatible with standard authenticator applications, with TOTP secrets encrypted at rest.
+- **Active Session Audit:** Multi-device session tracking with GeoIP and device fingerprint resolution, enabling instant remote revocation.
+- **Seamless Account Switching:** Switch between linked profiles safely without cross-account state contamination.
 
-### Fase 5 — Notificações
+### 3. At-Rest Data Encryption & Privacy Standards
+- **Envelope Encryption for Sensitive Data:** Personal Identifiable Information (PII) is encrypted at rest using strong symmetric ciphers.
+- **Blind Indexing:** Uniqueness guarantees and lookups on identity fields are performed via cryptographic hashes, avoiding cleartext PII exposure in the database.
+- **Structured Data Retention:** Compliant with modern privacy standards (LGPD / GDPR) using append-only immutable audit logs with legal retention rules.
 
-- Notificações persistidas
-- Contagem de notificações não lidas
-- Marcar notificação como lida
-- Eventos de notificação para convites e interações
+### 4. Abuse Mitigation & Infrastructure Hardening
+- **Distributed Rate Limiting:** Redis-backed request throttling on critical authentication, registration, and media upload paths.
+- **Binary MIME Inspection:** File uploads are checked for *Magic Bytes* using Apache Tika to block disguised malicious payloads.
+- **Startup Security Enforcer:** Fails the production boot process automatically if weak secrets, predictable passwords, or low-entropy credentials are detected.
+- **Docker Network Segmentation:** Two isolated network tiers (`kyofuse-internal` vs `kyofuse-public`). Relational databases and caching clusters are completely inaccessible from the outside world.
 
-### Fase 6 — Qualidade
+---
 
-- Testes unitários
-- Testes de integração
-- Testcontainers
-- Documentação da API
-- Documentação técnica
-- Melhorias no README
+## 🛠️ Technology Stack
 
-## Notas de segurança
+| Tier | Technologies |
+|---|---|
+| **Backend Core** | Java 21, Spring Boot 4.x, Spring Data JPA, Spring Security, Flyway |
+| **Frontend** | Angular 21, Tailwind CSS v4, TypeScript, RxJS |
+| **Real-Time & Cache** | Redis 8, Spring WebSocket (STOMP), RxStomp |
+| **Database** | PostgreSQL 16 |
+| **Storage** | MinIO / AWS S3 SDK v2, Apache Tika, Thumbnailator |
+| **Observability** | Prometheus, Grafana, Micrometer, Spring Boot Actuator |
+| **DevOps** | Docker, Docker Compose, Nginx, Mailpit |
 
-Este repositório não deve incluir:
+---
 
-- credenciais reais de banco de dados
-- secrets JWT de produção
-- chaves de API
-- tokens privados
-- personal access tokens
-- credenciais de provedores cloud
-- arquivos privados de ambiente
-- dados sensíveis de usuários
+## 🚀 Quick Start (Local Setup)
 
-Use variáveis de ambiente ou arquivos locais ignorados pelo Git para valores sensíveis.
+### Prerequisites
+- **Git**
+- **Docker** and **Docker Compose** (v2.20+)
 
-## Licença
+### 1. Clone the Repository
+```bash
+git clone https://github.com/YOUR_USERNAME/kyofuse.git
+cd kyofuse
+```
 
-Este projeto está licenciado sob a MIT License.
+### 2. Environment Configuration
+Copy the environment template:
+```bash
+cp .env.example .env
+```
 
-## Status
+> [!IMPORTANT]
+> The `.env.example` file contains safe placeholder values. Edit your `.env` file to set your own distinct, high-entropy secrets before starting the environment.
+>
+> Generate secure keys easily with:
+> ```bash
+> openssl rand -base64 32
+> ```
 
-Em desenvolvimento.
+### 3. Launch Services via Docker Compose
+Spin up the entire platform in one command:
+```bash
+docker compose up -d
+```
 
-Estágio atual:
+### 4. Access Points
 
-- Estrutura de monorepo criada
-- Frontend Angular inicializado
-- Tailwind CSS configurado
-- Setup do backend em andamento
-- Configuração da infraestrutura local planejada
+| Service | Address |
+|---|---|
+| **Web Frontend** | `http://localhost:4200` |
+| **API & WebSocket** | `http://localhost:8080` |
+| **Mailpit Dashboard** | `http://localhost:8025` |
+| **MinIO Console** | `http://localhost:9001` |
+| **Grafana Dashboards** | `http://localhost:3000` |
+
+---
+
+## 🧪 Testing
+
+```bash
+# Run backend test suite (Spring Boot + JUnit 5 + Mockito)
+cd api
+./mvnw test
+
+# Run frontend test suite (Angular + Vitest)
+cd ../app
+npm test
+```
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
